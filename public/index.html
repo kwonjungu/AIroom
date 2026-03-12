@@ -6,499 +6,310 @@
     <title>백암초등학교 온라인 교무실</title>
     <style>
         :root {
-            --primary: #4A90D9;
-            --primary-dark: #357ABD;
-            --primary-light: #E8F0FE;
-            --accent: #FF6B6B;
-            --accent-hover: #FF5252;
-            --success: #51CF66;
-            --success-dark: #2F9E44;
-            --warning: #FCC419;
-            --bg: #F0F4F8;
-            --card-bg: #FFFFFF;
-            --text: #2D3748;
-            --text-light: #718096;
-            --border: #E2E8F0;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
-            --radius: 16px;
-            --radius-sm: 10px;
+            --primary:#4A90D9; --primary-dark:#357ABD; --primary-light:#E8F0FE;
+            --accent:#FF6B6B; --success:#51CF66; --success-dark:#2F9E44;
+            --bg:#F7F8FA; --card-bg:#FFFFFF; --text:#2D3748; --text-light:#718096;
+            --border:#E2E8F0; --shadow:0 2px 12px rgba(0,0,0,0.06);
+            --radius:14px; --radius-sm:10px;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
-            background: var(--bg); color: var(--text); min-height: 100vh;
-        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
-        /* ===== Header ===== */
-        .header {
-            background: linear-gradient(135deg, var(--primary) 0%, #6C5CE7 100%);
-            color: white; position: sticky; top:0; z-index:100;
-            box-shadow: 0 4px 20px rgba(74,144,217,0.3);
-        }
-        .header-inner {
-            max-width:1400px; margin:0 auto; padding:18px 30px;
-            display:flex; align-items:center; justify-content:space-between;
-        }
-        .header-left { display:flex; align-items:center; gap:14px; }
-        .school-icon {
-            width:48px; height:48px; background:rgba(255,255,255,0.2);
-            border-radius:12px; display:flex; align-items:center; justify-content:center;
-            font-size:26px; backdrop-filter:blur(10px);
-        }
-        .header-title h1 { font-size:22px; font-weight:700; letter-spacing:-0.5px; }
-        .header-title p { font-size:12px; opacity:0.85; margin-top:2px; }
-        .header-right { display:flex; align-items:center; gap:10px; }
-        .header-date {
-            font-size:13px; opacity:0.9; background:rgba(255,255,255,0.15);
-            padding:7px 14px; border-radius:20px;
-        }
-        .btn-admin {
-            background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3);
-            color:white; padding:9px 18px; border-radius:10px; cursor:pointer;
-            font-size:13px; font-weight:600; transition:all 0.2s;
-        }
-        .btn-admin:hover { background:rgba(255,255,255,0.3); }
+        /* Header */
+        .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);}
+        .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;}
+        .header-left{display:flex;align-items:center;gap:14px;}
+        .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
+        .header-title h1{font-size:21px;font-weight:700;}
+        .header-title p{font-size:11px;opacity:0.85;margin-top:2px;}
+        .header-right{display:flex;align-items:center;gap:10px;}
+        .header-date{font-size:12px;opacity:0.9;background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:18px;}
+        .btn-admin{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
+        .btn-admin:hover{background:rgba(255,255,255,0.3);}
+        .header-contact{font-size:11px;opacity:0.75;margin-top:4px;}
 
-        /* ===== Main Tabs ===== */
-        .main-tabs {
-            max-width:1400px; margin:0 auto; padding:16px 30px 0;
-            display:flex; gap:4px; border-bottom:2px solid var(--border);
-        }
-        .main-tab {
-            padding:12px 28px; border:none; background:none; cursor:pointer;
-            font-size:15px; font-weight:600; color:var(--text-light);
-            border-bottom:3px solid transparent; margin-bottom:-2px;
-            transition:all 0.2s; border-radius:10px 10px 0 0;
-        }
-        .main-tab:hover { color:var(--primary); background:var(--primary-light); }
-        .main-tab.active {
-            color:var(--primary); border-bottom-color:var(--primary);
-            background:var(--primary-light);
-        }
+        /* School info bar */
+        .school-info{max-width:960px;margin:0 auto;padding:12px 24px;}
+        .school-info-inner{background:var(--card-bg);border-radius:var(--radius-sm);padding:14px 20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-light);}
+        .school-info-inner span{display:flex;align-items:center;gap:4px;}
 
-        /* ===== Page Container ===== */
-        .page { display:none; max-width:1400px; margin:0 auto; padding:20px 30px 40px; }
-        .page.active { display:block; }
+        /* Main Tabs */
+        .main-tabs{max-width:960px;margin:0 auto;padding:8px 24px 0;display:flex;gap:4px;border-bottom:2px solid var(--border);}
+        .main-tab{padding:11px 24px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;}
+        .main-tab:hover{color:var(--primary);background:var(--primary-light);}
+        .main-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-light);}
 
-        /* ===== LINKS PAGE ===== */
-        .search-bar {
-            background:var(--card-bg); border-radius:var(--radius); padding:4px;
-            display:flex; align-items:center; box-shadow:var(--shadow);
-            border:2px solid transparent; transition:border-color 0.2s; margin-bottom:20px;
-        }
-        .search-bar:focus-within { border-color:var(--primary); }
-        .search-bar input {
-            flex:1; border:none; outline:none; padding:12px 18px;
-            font-size:15px; background:none; color:var(--text);
-        }
-        .search-icon { padding:10px 16px; color:var(--text-light); font-size:18px; }
+        /* Pages */
+        .page{display:none;max-width:960px;margin:0 auto;padding:20px 24px 50px;}
+        .page.active{display:block;}
 
-        .stats-row {
-            display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-            gap:14px; margin-bottom:20px;
-        }
-        .stat-card {
-            background:var(--card-bg); border-radius:var(--radius-sm); padding:16px;
-            display:flex; align-items:center; gap:12px;
-            box-shadow:0 2px 10px rgba(0,0,0,0.04); transition:all 0.2s;
-        }
-        .stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
-        .stat-icon {
-            width:44px; height:44px; border-radius:11px;
-            display:flex; align-items:center; justify-content:center; font-size:20px;
-        }
-        .stat-icon.blue { background:#E8F0FE; }
-        .stat-icon.green { background:#E6F9ED; }
-        .stat-icon.orange { background:#FFF3E0; }
-        .stat-icon.purple { background:#F3E8FF; }
-        .stat-info h3 { font-size:20px; font-weight:700; }
-        .stat-info p { font-size:12px; color:var(--text-light); }
+        /* ===== HOME PAGE - Notion Style ===== */
+        .search-bar{background:var(--card-bg);border-radius:var(--radius);padding:4px;display:flex;align-items:center;box-shadow:var(--shadow);border:2px solid transparent;transition:border-color .2s;margin-bottom:20px;}
+        .search-bar:focus-within{border-color:var(--primary);}
+        .search-bar input{flex:1;border:none;outline:none;padding:11px 16px;font-size:14px;background:none;color:var(--text);}
+        .search-icon{padding:8px 14px;color:var(--text-light);font-size:16px;}
+        .search-hint{font-size:11px;color:var(--text-light);padding:0 14px;}
 
-        .category-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px; }
-        .category-tab {
-            padding:8px 18px; border-radius:22px; border:none; cursor:pointer;
-            font-size:13px; font-weight:600; transition:all 0.2s;
-            background:var(--card-bg); color:var(--text-light);
-            box-shadow:0 2px 6px rgba(0,0,0,0.04);
-        }
-        .category-tab:hover { background:var(--primary-light); color:var(--primary); }
-        .category-tab.active {
-            background:var(--primary); color:white;
-            box-shadow:0 3px 10px rgba(74,144,217,0.3);
-        }
+        /* Section blocks - Notion style */
+        .section-block{margin-bottom:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--card-bg);box-shadow:0 1px 4px rgba(0,0,0,0.03);}
+        .section-header{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;user-select:none;}
+        .section-header:hover{filter:brightness(0.97);}
+        .section-header-left{display:flex;align-items:center;gap:10px;}
+        .section-header h3{font-size:16px;font-weight:700;color:var(--text);}
+        .section-header .section-icon{font-size:18px;}
+        .section-toggle{font-size:12px;color:var(--text-light);transition:transform .2s;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+        .section-toggle:hover{background:rgba(0,0,0,0.05);}
+        .section-block.collapsed .section-body{display:none;}
+        .section-block.collapsed .section-toggle{transform:rotate(-90deg);}
 
-        .links-grid {
-            display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:18px;
-        }
-        .link-card {
-            background:var(--card-bg); border-radius:var(--radius); padding:22px;
-            box-shadow:0 2px 10px rgba(0,0,0,0.04); transition:all 0.3s;
-            cursor:pointer; border:2px solid transparent;
-            text-decoration:none; color:inherit; display:block; position:relative;
-        }
-        .link-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-hover); border-color:var(--primary-light); }
-        .link-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; }
-        .link-card-icon {
-            width:46px; height:46px; border-radius:12px;
-            display:flex; align-items:center; justify-content:center; font-size:22px;
-        }
-        .link-card-actions { display:none; gap:4px; }
-        .admin-mode .link-card-actions { display:flex; }
-        .link-card-actions button {
-            width:30px; height:30px; border-radius:7px; border:none; cursor:pointer;
-            display:flex; align-items:center; justify-content:center; font-size:13px; transition:all 0.2s;
-        }
-        .btn-edit-card { background:#E8F0FE; color:var(--primary); }
-        .btn-delete-card { background:#FFE8E8; color:var(--accent); }
-        .link-card h3 { font-size:16px; font-weight:700; margin-bottom:5px; }
-        .link-card p { font-size:12px; color:var(--text-light); line-height:1.5; margin-bottom:12px; }
-        .link-card-footer { display:flex; align-items:center; justify-content:space-between; }
-        .link-card-category { font-size:11px; padding:3px 10px; border-radius:18px; font-weight:600; }
-        .link-card-arrow {
-            width:26px; height:26px; border-radius:50%; background:var(--bg);
-            display:flex; align-items:center; justify-content:center;
-            font-size:13px; color:var(--text-light); transition:all 0.2s;
-        }
-        .link-card:hover .link-card-arrow { background:var(--primary); color:white; }
+        .section-body{padding:0 20px 14px;}
+        .section-item{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:8px;transition:background .15s;position:relative;}
+        .section-item:hover{background:var(--bg);}
+        .section-item-icon{font-size:15px;margin-top:2px;flex-shrink:0;width:22px;text-align:center;}
+        .section-item-content{flex:1;min-width:0;}
+        .section-item-text{font-size:14px;color:var(--text);text-decoration:none;display:block;line-height:1.5;}
+        .section-item-text.has-link{color:var(--text);cursor:pointer;}
+        .section-item-text.has-link:hover{color:var(--primary);text-decoration:underline;}
+        .section-item-text.bold{font-weight:700;}
+        .section-item-desc{font-size:12px;color:var(--text-light);margin-top:1px;line-height:1.4;}
+        .section-item-actions{display:none;gap:4px;align-items:center;flex-shrink:0;}
+        .admin-mode .section-item-actions{display:flex;}
+        .item-action-btn{width:26px;height:26px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:transparent;color:var(--text-light);}
+        .item-action-btn:hover{background:var(--primary-light);color:var(--primary);}
+        .item-action-btn.delete:hover{background:#FFE8E8;color:var(--accent);}
 
-        .cat-school { background:#E8F0FE; color:#2B6CB0; }
-        .cat-admin { background:#E6F9ED; color:#276749; }
-        .cat-class { background:#FFF3E0; color:#C05621; }
-        .cat-resource { background:#F3E8FF; color:#6B46C1; }
-        .cat-community { background:#FFF0F0; color:#C53030; }
-        .cat-etc { background:#F0FFF4; color:#2F855A; }
+        /* Section admin buttons */
+        .section-admin-actions{display:none;gap:4px;align-items:center;}
+        .admin-mode .section-admin-actions{display:flex;}
 
-        .add-card {
-            background:var(--card-bg); border:3px dashed var(--border);
-            border-radius:var(--radius); padding:36px 22px; display:none;
-            flex-direction:column; align-items:center; justify-content:center;
-            gap:10px; cursor:pointer; transition:all 0.2s; color:var(--text-light); min-height:180px;
-        }
-        .admin-mode .add-card { display:flex; }
-        .add-card:hover { border-color:var(--primary); color:var(--primary); background:var(--primary-light); }
-        .add-card-icon {
-            width:50px; height:50px; border-radius:50%; background:var(--bg);
-            display:flex; align-items:center; justify-content:center; font-size:26px; transition:all 0.2s;
-        }
-        .add-card:hover .add-card-icon { background:var(--primary); color:white; }
+        .add-item-btn{width:100%;padding:8px;border:2px dashed var(--border);border-radius:8px;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);transition:all .15s;margin-top:6px;display:none;}
+        .admin-mode .add-item-btn{display:block;}
+        .add-item-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+
+        .add-section-btn{width:100%;padding:14px;border:2px dashed var(--border);border-radius:var(--radius);background:var(--card-bg);cursor:pointer;font-size:14px;font-weight:600;color:var(--text-light);transition:all .15s;display:none;text-align:center;margin-top:8px;}
+        .admin-mode .add-section-btn{display:block;}
+        .add-section-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+
+        /* Callout box */
+        .callout{padding:12px 16px;border-radius:var(--radius-sm);display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:13px;line-height:1.6;}
+        .callout.gray{background:#F5F5F5;border:1px solid #E0E0E0;}
+        .callout.yellow{background:#FFF8E1;border:1px solid #FFE082;}
+        .callout.blue{background:#E3F2FD;border:1px solid #90CAF9;}
+        .callout.green{background:#E8F5E9;border:1px solid #A5D6A7;}
+        .callout-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+
+        /* Health room callout */
+        .health-callout{background:#E8F5E9;border:1px solid #A5D6A7;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;color:#2E7D32;display:flex;align-items:center;gap:8px;margin-bottom:6px;}
 
         /* ===== TRAINING PAGE ===== */
-        .training-header {
-            background:var(--card-bg); border-radius:var(--radius); padding:24px;
-            box-shadow:var(--shadow); margin-bottom:20px;
-        }
-        .training-header h2 {
-            font-size:20px; font-weight:700; margin-bottom:4px;
-            display:flex; align-items:center; gap:10px;
-        }
-        .training-header p { font-size:13px; color:var(--text-light); }
+        .training-header{background:var(--card-bg);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:18px;}
+        .training-header h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+        .training-header p{font-size:12px;color:var(--text-light);}
+        .training-sub-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+        .training-sub-tab{padding:9px 20px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);transition:all .2s;}
+        .training-sub-tab:hover{border-color:var(--primary);color:var(--primary);}
+        .training-sub-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
 
-        .training-sub-tabs {
-            display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;
-        }
-        .training-sub-tab {
-            padding:10px 22px; border-radius:var(--radius-sm); border:2px solid var(--border);
-            background:var(--card-bg); cursor:pointer; font-size:14px; font-weight:600;
-            color:var(--text-light); transition:all 0.2s;
-        }
-        .training-sub-tab:hover { border-color:var(--primary); color:var(--primary); }
-        .training-sub-tab.active {
-            background:var(--primary); color:white; border-color:var(--primary);
-        }
+        .table-wrapper{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+        .table-scroll{overflow-x:auto;}
+        table{width:100%;border-collapse:collapse;font-size:12px;}
+        thead th{background:linear-gradient(135deg,var(--primary) 0%,#6C5CE7 100%);color:white;padding:12px 10px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:10;}
+        tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+        tbody tr:hover{background:var(--primary-light);}
+        tbody td{padding:10px;vertical-align:middle;}
+        tbody tr.completed-row{background:#F0FFF4;}
+        tbody tr.completed-row td{color:var(--success-dark);}
 
-        /* Training Checklist Table */
-        .table-wrapper {
-            background:var(--card-bg); border-radius:var(--radius);
-            box-shadow:var(--shadow); overflow:hidden;
-        }
-        .table-scroll { overflow-x:auto; }
-        table {
-            width:100%; border-collapse:collapse; font-size:13px;
-        }
-        thead th {
-            background:linear-gradient(135deg, var(--primary) 0%, #6C5CE7 100%);
-            color:white; padding:14px 12px; text-align:left; font-weight:600;
-            white-space:nowrap; position:sticky; top:0; z-index:10;
-        }
-        tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
-        tbody tr:hover { background:var(--primary-light); }
-        tbody td { padding:12px; vertical-align:middle; }
-        tbody tr.completed-row { background:#F0FFF4; }
-        tbody tr.completed-row td { color:var(--success-dark); }
+        .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap;}
+        .badge-online{background:#E8F0FE;color:#2B6CB0;}
+        .badge-submit{background:#FFF3E0;color:#C05621;}
+        .badge-self{background:#E6F9ED;color:#276749;}
+        .badge-group{background:#F3E8FF;color:#6B46C1;}
+        .badge-possible{background:#E6F9ED;color:#276749;}
+        .badge-impossible{background:#FFF0F0;color:#C53030;}
+        .badge-teacher{background:#E8F0FE;color:#2B6CB0;}
+        .badge-all{background:#F3E8FF;color:#6B46C1;}
 
-        .badge {
-            display:inline-block; padding:3px 10px; border-radius:12px;
-            font-size:11px; font-weight:600; white-space:nowrap;
-        }
-        .badge-online { background:#E8F0FE; color:#2B6CB0; }
-        .badge-submit { background:#FFF3E0; color:#C05621; }
-        .badge-self { background:#E6F9ED; color:#276749; }
-        .badge-group { background:#F3E8FF; color:#6B46C1; }
-        .badge-possible { background:#E6F9ED; color:#276749; }
-        .badge-impossible { background:#FFF0F0; color:#C53030; }
-        .badge-teacher { background:#E8F0FE; color:#2B6CB0; }
-        .badge-all { background:#F3E8FF; color:#6B46C1; }
+        .completion-toggle{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+        .completion-toggle.done{background:var(--success);border-color:var(--success);color:white;}
+        .completion-toggle:hover{transform:scale(1.1);}
 
-        .completion-toggle {
-            width:36px; height:36px; border-radius:50%; border:2px solid var(--border);
-            background:white; cursor:pointer; font-size:16px;
-            display:flex; align-items:center; justify-content:center; transition:all 0.2s;
-        }
-        .completion-toggle.done {
-            background:var(--success); border-color:var(--success); color:white;
-        }
-        .completion-toggle:hover { transform:scale(1.1); }
+        .progress-section{display:flex;align-items:center;gap:14px;margin-bottom:18px;background:var(--card-bg);border-radius:var(--radius-sm);padding:14px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.04);}
+        .progress-bar-bg{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden;}
+        .progress-bar-fill{height:100%;border-radius:5px;transition:width .5s ease;background:linear-gradient(90deg,var(--success) 0%,#69DB7C 100%);}
+        .progress-text{font-size:13px;font-weight:700;white-space:nowrap;}
+        .progress-label{font-size:12px;color:var(--text-light);white-space:nowrap;}
 
-        /* Progress bar */
-        .progress-section {
-            display:flex; align-items:center; gap:16px; margin-bottom:20px;
-            background:var(--card-bg); border-radius:var(--radius-sm); padding:16px 20px;
-            box-shadow:0 2px 10px rgba(0,0,0,0.04);
-        }
-        .progress-bar-bg {
-            flex:1; height:12px; background:var(--border); border-radius:6px; overflow:hidden;
-        }
-        .progress-bar-fill {
-            height:100%; border-radius:6px; transition:width 0.5s ease;
-            background:linear-gradient(90deg, var(--success) 0%, #69DB7C 100%);
-        }
-        .progress-text { font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; }
-        .progress-label { font-size:13px; color:var(--text-light); white-space:nowrap; }
+        .filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+        .filter-label{font-size:12px;font-weight:600;color:var(--text-light);margin-right:4px;}
+        .filter-chip{padding:5px 12px;border-radius:16px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;font-weight:600;color:var(--text-light);transition:all .2s;}
+        .filter-chip:hover{border-color:var(--primary);color:var(--primary);}
+        .filter-chip.active{background:var(--primary);color:white;border-color:var(--primary);}
 
-        /* Registration Table */
-        .reg-table-header {
-            background:var(--card-bg); border-radius:var(--radius); padding:20px;
-            box-shadow:var(--shadow); margin-bottom:16px;
-            display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
-        }
-        .reg-table-header h3 { font-size:17px; font-weight:700; }
-        .reg-select {
-            padding:10px 16px; border:2px solid var(--border); border-radius:var(--radius-sm);
-            font-size:14px; background:white; color:var(--text); min-width:300px;
-            cursor:pointer;
-        }
-        .reg-select:focus { outline:none; border-color:var(--primary); }
+        .reg-table-header{background:var(--card-bg);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+        .reg-table-header h3{font-size:16px;font-weight:700;}
+        .reg-select{padding:9px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:white;color:var(--text);min-width:280px;cursor:pointer;}
+        .reg-select:focus{outline:none;border-color:var(--primary);}
+        .reg-input{padding:5px 8px;border:1.5px solid var(--border);border-radius:5px;font-size:11px;width:100%;transition:border-color .2s;}
+        .reg-input:focus{outline:none;border-color:var(--primary);}
+        .check-cell{display:flex;align-items:center;justify-content:center;}
+        .check-box{width:22px;height:22px;border-radius:5px;border:2px solid var(--border);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s;}
+        .check-box.checked{background:var(--success);border-color:var(--success);color:white;}
+        .check-box:hover{transform:scale(1.1);border-color:var(--primary);}
 
-        .reg-input {
-            padding:6px 10px; border:1.5px solid var(--border); border-radius:6px;
-            font-size:12px; width:100%; transition:border-color 0.2s;
-        }
-        .reg-input:focus { outline:none; border-color:var(--primary); }
+        /* ===== LINKS PAGE ===== */
+        .links-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+        .link-card{background:var(--card-bg);border-radius:var(--radius);padding:20px;box-shadow:0 1px 6px rgba(0,0,0,0.04);transition:all .3s;cursor:pointer;border:2px solid transparent;text-decoration:none;color:inherit;display:block;}
+        .link-card:hover{transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,0,0,0.1);border-color:var(--primary-light);}
+        .link-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+        .link-card-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+        .link-card-actions{display:none;gap:4px;}
+        .admin-mode .link-card-actions{display:flex;}
+        .link-card-actions button{width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s;}
+        .btn-edit-card{background:#E8F0FE;color:var(--primary);}
+        .btn-delete-card{background:#FFE8E8;color:var(--accent);}
+        .link-card h3{font-size:15px;font-weight:700;margin-bottom:4px;}
+        .link-card p{font-size:11px;color:var(--text-light);line-height:1.5;margin-bottom:10px;}
+        .link-card-footer{display:flex;align-items:center;justify-content:space-between;}
+        .link-card-category{font-size:10px;padding:2px 8px;border-radius:14px;font-weight:600;}
+        .link-card-arrow{width:24px;height:24px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-light);transition:all .2s;}
+        .link-card:hover .link-card-arrow{background:var(--primary);color:white;}
+        .cat-school{background:#E8F0FE;color:#2B6CB0;} .cat-admin{background:#E6F9ED;color:#276749;}
+        .cat-class{background:#FFF3E0;color:#C05621;} .cat-resource{background:#F3E8FF;color:#6B46C1;}
+        .cat-community{background:#FFF0F0;color:#C53030;} .cat-etc{background:#F0FFF4;color:#2F855A;}
+        .add-card{background:var(--card-bg);border:3px dashed var(--border);border-radius:var(--radius);padding:32px 20px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;color:var(--text-light);min-height:160px;}
+        .admin-mode .add-card{display:flex;}
+        .add-card:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+        .add-card-icon{width:44px;height:44px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;transition:all .2s;}
+        .add-card:hover .add-card-icon{background:var(--primary);color:white;}
 
-        .check-cell {
-            display:flex; align-items:center; justify-content:center;
-        }
-        .check-box {
-            width:24px; height:24px; border-radius:6px; border:2px solid var(--border);
-            background:white; cursor:pointer; display:flex; align-items:center;
-            justify-content:center; font-size:14px; transition:all 0.2s;
-        }
-        .check-box.checked {
-            background:var(--success); border-color:var(--success); color:white;
-        }
-        .check-box:hover { transform:scale(1.1); border-color:var(--primary); }
-
-        /* Filter chips in training */
-        .filter-row {
-            display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center;
-        }
-        .filter-label { font-size:13px; font-weight:600; color:var(--text-light); margin-right:4px; }
-        .filter-chip {
-            padding:6px 14px; border-radius:18px; border:1.5px solid var(--border);
-            background:white; cursor:pointer; font-size:12px; font-weight:600;
-            color:var(--text-light); transition:all 0.2s;
-        }
-        .filter-chip:hover { border-color:var(--primary); color:var(--primary); }
-        .filter-chip.active { background:var(--primary); color:white; border-color:var(--primary); }
+        .category-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+        .category-tab{padding:7px 16px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;background:var(--card-bg);color:var(--text-light);box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+        .category-tab:hover{background:var(--primary-light);color:var(--primary);}
+        .category-tab.active{background:var(--primary);color:white;}
+        .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;}
+        .stat-card{background:var(--card-bg);border-radius:var(--radius-sm);padding:14px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+        .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+        .stat-icon.blue{background:#E8F0FE;} .stat-icon.green{background:#E6F9ED;} .stat-icon.orange{background:#FFF3E0;} .stat-icon.purple{background:#F3E8FF;}
+        .stat-info h3{font-size:18px;font-weight:700;} .stat-info p{font-size:11px;color:var(--text-light);}
 
         /* ===== Modal ===== */
-        .modal-overlay {
-            display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
-            z-index:200; align-items:center; justify-content:center;
-            backdrop-filter:blur(4px); padding:20px;
-        }
-        .modal-overlay.active { display:flex; }
-        .modal {
-            background:var(--card-bg); border-radius:var(--radius);
-            width:100%; max-width:540px; max-height:90vh; overflow-y:auto;
-            box-shadow:0 20px 60px rgba(0,0,0,0.2); animation:modalIn 0.3s ease;
-        }
-        @keyframes modalIn { from{opacity:0;transform:translateY(20px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
-        .modal-header {
-            padding:22px 26px 14px; display:flex; align-items:center;
-            justify-content:space-between; border-bottom:1px solid var(--border);
-        }
-        .modal-header h2 { font-size:18px; font-weight:700; }
-        .btn-close-modal {
-            width:34px; height:34px; border-radius:9px; border:none;
-            background:var(--bg); cursor:pointer; font-size:16px;
-            color:var(--text-light); display:flex; align-items:center;
-            justify-content:center; transition:all 0.2s;
-        }
-        .btn-close-modal:hover { background:#FFE8E8; color:var(--accent); }
-        .modal-body { padding:22px 26px; }
-        .modal-footer { padding:14px 26px 22px; display:flex; gap:10px; justify-content:flex-end; }
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px;}
+        .modal-overlay.active{display:flex;}
+        .modal{background:var(--card-bg);border-radius:var(--radius);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:modalIn .3s ease;}
+        @keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .modal-header{padding:20px 24px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+        .modal-header h2{font-size:17px;font-weight:700;}
+        .btn-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg);cursor:pointer;font-size:15px;color:var(--text-light);display:flex;align-items:center;justify-content:center;transition:all .2s;}
+        .btn-close:hover{background:#FFE8E8;color:var(--accent);}
+        .modal-body{padding:20px 24px;}
+        .modal-footer{padding:12px 24px 20px;display:flex;gap:8px;justify-content:flex-end;}
+        .form-group{margin-bottom:16px;}
+        .form-group label{display:block;font-size:12px;font-weight:600;margin-bottom:5px;}
+        .form-group input,.form-group textarea,.form-group select{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);transition:border-color .2s;font-family:inherit;}
+        .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--primary);}
+        .form-group textarea{resize:vertical;min-height:60px;}
+        .icon-picker{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:5px;}
+        .icon-option{width:36px;height:36px;border-radius:8px;border:2px solid var(--border);background:var(--bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+        .icon-option:hover{border-color:var(--primary);background:var(--primary-light);}
+        .icon-option.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 2px rgba(74,144,217,0.2);}
 
-        .form-group { margin-bottom:18px; }
-        .form-group label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
-        .form-group input, .form-group textarea, .form-group select {
-            width:100%; padding:10px 14px; border:2px solid var(--border);
-            border-radius:var(--radius-sm); font-size:14px; color:var(--text);
-            transition:border-color 0.2s; font-family:inherit;
-        }
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
-            outline:none; border-color:var(--primary);
-        }
-        .form-group textarea { resize:vertical; min-height:70px; }
+        .btn{padding:9px 22px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+        .btn-primary{background:var(--primary);color:white;} .btn-primary:hover{background:var(--primary-dark);}
+        .btn-secondary{background:var(--bg);color:var(--text);} .btn-secondary:hover{background:var(--border);}
+        .btn-danger{background:var(--accent);color:white;} .btn-danger:hover{background:#FF5252;}
+        .btn-success{background:var(--success);color:white;} .btn-success:hover{background:var(--success-dark);}
 
-        .icon-picker { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin-top:6px; }
-        .icon-option {
-            width:40px; height:40px; border-radius:9px; border:2px solid var(--border);
-            background:var(--bg); cursor:pointer; font-size:18px;
-            display:flex; align-items:center; justify-content:center; transition:all 0.2s;
-        }
-        .icon-option:hover { border-color:var(--primary); background:var(--primary-light); }
-        .icon-option.selected { border-color:var(--primary); background:var(--primary-light); box-shadow:0 0 0 3px rgba(74,144,217,0.2); }
+        .import-export-section{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+        .import-export-section .btn{flex:1;text-align:center;font-size:12px;}
+        .category-list{display:flex;flex-direction:column;gap:6px;}
+        .category-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-radius:8px;}
+        .category-item input{flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;}
+        .category-item input:focus{outline:none;border-color:var(--primary);}
+        .btn-del-cat{width:28px;height:28px;border-radius:6px;border:none;background:#FFE8E8;color:var(--accent);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+        .btn-add-cat{width:100%;padding:8px;border:2px dashed var(--border);border-radius:8px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-light);transition:all .15s;margin-top:4px;}
+        .btn-add-cat:hover{border-color:var(--primary);color:var(--primary);}
 
-        .btn {
-            padding:10px 24px; border-radius:var(--radius-sm); border:none;
-            cursor:pointer; font-size:14px; font-weight:600; transition:all 0.2s;
-        }
-        .btn-primary { background:var(--primary); color:white; }
-        .btn-primary:hover { background:var(--primary-dark); }
-        .btn-secondary { background:var(--bg); color:var(--text); }
-        .btn-secondary:hover { background:var(--border); }
-        .btn-danger { background:var(--accent); color:white; }
-        .btn-danger:hover { background:var(--accent-hover); }
-        .btn-success { background:var(--success); color:white; }
-        .btn-success:hover { background:var(--success-dark); }
+        .toast-container{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:6px;}
+        .toast{background:var(--text);color:white;padding:10px 18px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards;display:flex;align-items:center;gap:6px;}
+        .toast.success{background:#2F855A;} .toast.error{background:#C53030;}
+        @keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(10px)}}
+        .confirm-dialog{text-align:center;padding:14px 0;} .confirm-dialog p{font-size:14px;margin-bottom:5px;} .confirm-dialog .sub{font-size:12px;color:var(--text-light);}
+        .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-light);}
 
-        .category-list { display:flex; flex-direction:column; gap:8px; }
-        .category-item {
-            display:flex; align-items:center; gap:10px; padding:10px 14px;
-            background:var(--bg); border-radius:var(--radius-sm);
+        @media(max-width:768px){
+            .header-inner{flex-direction:column;gap:8px;text-align:center;padding:14px 16px;}
+            .header-right{width:100%;justify-content:center;}
+            .page,.school-info,.main-tabs{padding-left:12px;padding-right:12px;}
+            .links-grid{grid-template-columns:1fr;}
+            .stats-row{grid-template-columns:repeat(2,1fr);}
+            .main-tab{padding:9px 16px;font-size:12px;}
+            .reg-select{min-width:100%;}
+            .reg-table-header{flex-direction:column;}
+            .school-info-inner{flex-direction:column;align-items:flex-start;}
         }
-        .category-item input {
-            flex:1; padding:7px 10px; border:2px solid var(--border);
-            border-radius:7px; font-size:13px;
-        }
-        .category-item input:focus { outline:none; border-color:var(--primary); }
-        .category-item .btn-delete-cat {
-            width:32px; height:32px; border-radius:7px; border:none;
-            background:#FFE8E8; color:var(--accent); cursor:pointer; font-size:15px;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .btn-add-category {
-            width:100%; padding:10px; border:2px dashed var(--border);
-            border-radius:var(--radius-sm); background:none; cursor:pointer;
-            font-size:13px; font-weight:600; color:var(--text-light); transition:all 0.2s; margin-top:6px;
-        }
-        .btn-add-category:hover { border-color:var(--primary); color:var(--primary); }
-
-        .import-export-section {
-            display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);
-        }
-        .import-export-section .btn { flex:1; text-align:center; font-size:13px; }
-
-        /* Toast */
-        .toast-container { position:fixed; bottom:24px; right:24px; z-index:300; display:flex; flex-direction:column; gap:8px; }
-        .toast {
-            background:var(--text); color:white; padding:12px 20px; border-radius:var(--radius-sm);
-            font-size:13px; font-weight:500; box-shadow:0 8px 30px rgba(0,0,0,0.2);
-            animation:toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
-            display:flex; align-items:center; gap:8px;
-        }
-        .toast.success { background:#2F855A; }
-        .toast.error { background:#C53030; }
-        @keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes toastOut { from{opacity:1} to{opacity:0;transform:translateY(10px)} }
-
-        .confirm-dialog { text-align:center; padding:16px 0; }
-        .confirm-dialog p { font-size:15px; margin-bottom:6px; }
-        .confirm-dialog .sub { font-size:13px; color:var(--text-light); }
-
-        .empty-state {
-            grid-column:1/-1; text-align:center; padding:50px 20px; color:var(--text-light);
-        }
-        .empty-state-icon { font-size:44px; margin-bottom:14px; }
-        .empty-state h3 { font-size:17px; margin-bottom:6px; color:var(--text); }
-
-        /* Responsive */
-        @media (max-width:768px) {
-            .header-inner { flex-direction:column; gap:10px; text-align:center; padding:14px 18px; }
-            .header-right { width:100%; justify-content:center; }
-            .page { padding:16px; }
-            .links-grid { grid-template-columns:1fr; }
-            .stats-row { grid-template-columns:repeat(2,1fr); }
-            .main-tabs { padding:12px 16px 0; }
-            .main-tab { padding:10px 18px; font-size:13px; }
-            .reg-select { min-width:100%; }
-            .reg-table-header { flex-direction:column; }
-            .icon-picker { grid-template-columns:repeat(6,1fr); }
-        }
-        @media (max-width:480px) {
-            .stats-row { grid-template-columns:1fr; }
-        }
-        @media print {
-            .header { position:relative; }
-            .btn-admin,.add-card,.link-card-actions,.main-tabs,.filter-row { display:none!important; }
-        }
+        @media print{.header{position:relative;}.btn-admin,.add-card,.link-card-actions,.main-tabs,.add-item-btn,.add-section-btn,.section-admin-actions,.item-action-btn,.filter-row{display:none!important;}}
     </style>
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
         <div class="header-inner">
             <div class="header-left">
                 <div class="school-icon">🏫</div>
                 <div class="header-title">
-                    <h1>백암초등학교 온라인 교무실</h1>
-                    <p>교육 자료 &middot; 업무 링크 &middot; 연수 관리를 한곳에서</p>
+                    <h1>2026 백암초 온라인 교무실</h1>
+                    <p>교직원 전용 &middot; 업무 자료 &middot; 연수 관리</p>
                 </div>
             </div>
             <div class="header-right">
                 <span class="header-date" id="currentDate"></span>
-                <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리 모드</button>
+                <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
             </div>
         </div>
     </header>
 
-    <!-- Main Navigation Tabs -->
-    <div class="main-tabs">
-        <button class="main-tab active" onclick="switchPage('links',this)">📎 링크 관리</button>
-        <button class="main-tab" onclick="switchPage('training',this)">📋 연수 관리</button>
+    <div class="school-info">
+        <div class="school-info-inner">
+            <span>📞 031-332-4612</span>
+            <span>📍 경기 용인시 처인구 백암면 백원로 501</span>
+            <span>🌐 <a href="https://packam-e.goeyi.kr/" target="_blank" style="color:var(--primary);">https://packam-e.goeyi.kr/</a></span>
+        </div>
     </div>
 
-    <!-- ==================== LINKS PAGE ==================== -->
-    <div class="page active" id="page-links">
+    <div class="main-tabs">
+        <button class="main-tab active" onclick="switchPage('home',this)">🏠 교무실 홈</button>
+        <button class="main-tab" onclick="switchPage('training',this)">📋 연수 관리</button>
+        <button class="main-tab" onclick="switchPage('links',this)">🔗 링크 모음</button>
+    </div>
+
+    <!-- ===== HOME PAGE ===== -->
+    <div class="page active" id="page-home">
         <div class="search-bar">
             <span class="search-icon">🔍</span>
-            <input type="text" id="searchInput" placeholder="링크 이름, 설명, 카테고리로 검색..." oninput="renderLinks()">
+            <input type="text" id="homeSearch" placeholder="필요한 내용 검색 (Ctrl+F)" oninput="filterSections()">
+            <span class="search-hint">Ctrl+P</span>
         </div>
-        <div class="stats-row" id="statsRow">
-            <div class="stat-card"><div class="stat-icon blue">📎</div><div class="stat-info"><h3 id="statTotal">0</h3><p>전체 링크</p></div></div>
-            <div class="stat-card"><div class="stat-icon green">📂</div><div class="stat-info"><h3 id="statCategories">0</h3><p>카테고리</p></div></div>
-            <div class="stat-card"><div class="stat-icon orange">⭐</div><div class="stat-info"><h3 id="statFavorites">0</h3><p>즐겨찾기</p></div></div>
-            <div class="stat-card"><div class="stat-icon purple">📅</div><div class="stat-info"><h3 id="statRecent">0</h3><p>최근 추가</p></div></div>
+
+        <div class="health-callout">
+            <span>✅</span> <b>보건실 이용 안내</b> : 보건실 위치 및 내선번호는 교직원 DB를 참고해 주세요.
         </div>
-        <div class="category-tabs" id="categoryTabs"></div>
-        <div class="links-grid" id="linksGrid"></div>
+
+        <div id="sectionsContainer"></div>
+
+        <button class="add-section-btn" onclick="openAddSection()">+ 새 섹션 추가</button>
     </div>
 
-    <!-- ==================== TRAINING PAGE ==================== -->
+    <!-- ===== TRAINING PAGE ===== -->
     <div class="page" id="page-training">
         <div class="training-header">
             <h2>🔔 교직원 필수 연수 목록 일원화</h2>
             <p>담당선생님들께서 연수목록과 등록부를 점검하여 수정, 보완해주세요 &mdash; 법정의무교육과정 (중앙교육연수원)</p>
         </div>
-
         <div class="training-sub-tabs">
             <button class="training-sub-tab active" onclick="switchTrainingTab('checklist',this)">📝 필수 연수 체크리스트</button>
             <button class="training-sub-tab" onclick="switchTrainingTab('register',this)">📋 연수 등록부</button>
         </div>
-
-        <!-- Checklist Sub-page -->
         <div id="training-checklist">
             <div class="progress-section" id="trainingProgress"></div>
             <div class="filter-row">
@@ -509,512 +320,526 @@
                 <button class="filter-chip" onclick="setTrainingFilter('incomplete',this)">미이수</button>
                 <button class="filter-chip" onclick="setTrainingFilter('complete',this)">이수완료</button>
             </div>
-            <div class="table-wrapper">
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width:40px">순</th>
-                                <th>연수명</th>
-                                <th>자체연수</th>
-                                <th>연수 방법</th>
-                                <th>이수 주기</th>
-                                <th>대상자</th>
-                                <th>이수시간</th>
-                                <th>실시일</th>
-                                <th>업무부서</th>
-                                <th>담당자</th>
-                                <th style="width:60px">완료</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trainingTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="table-wrapper"><div class="table-scroll">
+                <table><thead><tr>
+                    <th style="width:36px">순</th><th>연수명</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:50px">완료</th>
+                </tr></thead><tbody id="trainingTableBody"></tbody></table>
+            </div></div>
         </div>
-
-        <!-- Register Sub-page -->
         <div id="training-register" style="display:none">
             <div class="reg-table-header">
                 <h3>📋 교직원 연수 등록부</h3>
-                <select class="reg-select" id="regTrainingSelect" onchange="renderRegisterTable()">
-                </select>
+                <select class="reg-select" id="regTrainingSelect" onchange="renderRegisterTable()"></select>
             </div>
             <div class="progress-section" id="regProgress"></div>
-            <div class="table-wrapper">
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th style="width:40px">순</th>
-                                <th>직위</th>
-                                <th>성명</th>
-                                <th>연수명</th>
-                                <th>연수기관</th>
-                                <th>이수번호</th>
-                                <th style="width:70px">이수확인</th>
-                            </tr>
-                        </thead>
-                        <tbody id="regTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="table-wrapper"><div class="table-scroll">
+                <table><thead><tr>
+                    <th style="width:36px">순</th><th>직위</th><th>성명</th><th>연수명</th><th>연수기관</th><th>이수번호</th><th style="width:60px">이수확인</th>
+                </tr></thead><tbody id="regTableBody"></tbody></table>
+            </div></div>
         </div>
     </div>
 
-    <!-- Toast Container -->
+    <!-- ===== LINKS PAGE ===== -->
+    <div class="page" id="page-links">
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="링크 이름, 설명으로 검색..." oninput="renderLinks()">
+        </div>
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-icon blue">📎</div><div class="stat-info"><h3 id="statTotal">0</h3><p>전체 링크</p></div></div>
+            <div class="stat-card"><div class="stat-icon green">📂</div><div class="stat-info"><h3 id="statCategories">0</h3><p>카테고리</p></div></div>
+            <div class="stat-card"><div class="stat-icon orange">⭐</div><div class="stat-info"><h3 id="statFavorites">0</h3><p>즐겨찾기</p></div></div>
+            <div class="stat-card"><div class="stat-icon purple">📅</div><div class="stat-info"><h3 id="statRecent">0</h3><p>최근 추가</p></div></div>
+        </div>
+        <div class="category-tabs" id="categoryTabs"></div>
+        <div class="links-grid" id="linksGrid"></div>
+    </div>
+
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Add/Edit Link Modal -->
-    <div class="modal-overlay" id="linkModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2 id="modalTitle">새 링크 추가</h2>
-                <button class="btn-close-modal" onclick="closeModal('linkModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="editingLinkId">
-                <div class="form-group"><label>링크 이름 *</label><input type="text" id="linkName" placeholder="예: 나이스 교육정보시스템"></div>
-                <div class="form-group"><label>URL 주소 *</label><input type="url" id="linkUrl" placeholder="https://example.com"></div>
-                <div class="form-group"><label>설명</label><textarea id="linkDesc" placeholder="이 링크에 대한 간단한 설명"></textarea></div>
-                <div class="form-group"><label>카테고리 *</label><select id="linkCategory"></select></div>
-                <div class="form-group"><label>아이콘 선택</label><div class="icon-picker" id="iconPicker"></div></div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('linkModal')">취소</button>
-                <button class="btn btn-primary" onclick="saveLink()">저장</button>
-            </div>
+    <!-- Link Modal -->
+    <div class="modal-overlay" id="linkModal"><div class="modal">
+        <div class="modal-header"><h2 id="linkModalTitle">새 링크 추가</h2><button class="btn-close" onclick="closeModal('linkModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editingLinkId">
+            <div class="form-group"><label>링크 이름 *</label><input type="text" id="linkName" placeholder="예: 나이스"></div>
+            <div class="form-group"><label>URL *</label><input type="url" id="linkUrl" placeholder="https://"></div>
+            <div class="form-group"><label>설명</label><textarea id="linkDesc" placeholder="간단한 설명"></textarea></div>
+            <div class="form-group"><label>카테고리</label><select id="linkCategory"></select></div>
+            <div class="form-group"><label>아이콘</label><div class="icon-picker" id="iconPicker"></div></div>
         </div>
-    </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('linkModal')">취소</button><button class="btn btn-primary" onclick="saveLink()">저장</button></div>
+    </div></div>
 
-    <!-- Category Manager Modal -->
-    <div class="modal-overlay" id="categoryModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>카테고리 관리</h2>
-                <button class="btn-close-modal" onclick="closeModal('categoryModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="category-list" id="categoryList"></div>
-                <button class="btn-add-category" onclick="addCategoryField()">+ 새 카테고리 추가</button>
-                <div class="import-export-section">
-                    <button class="btn btn-secondary" onclick="exportAllData()">📥 전체 내보내기</button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 전체 가져오기</button>
-                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAllData(event)">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('categoryModal')">취소</button>
-                <button class="btn btn-primary" onclick="saveCategories()">저장</button>
-            </div>
+    <!-- Section Item Modal -->
+    <div class="modal-overlay" id="itemModal"><div class="modal">
+        <div class="modal-header"><h2 id="itemModalTitle">항목 추가</h2><button class="btn-close" onclick="closeModal('itemModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editingSectionId">
+            <input type="hidden" id="editingItemId">
+            <div class="form-group"><label>텍스트 *</label><input type="text" id="itemText" placeholder="항목 이름"></div>
+            <div class="form-group"><label>설명 (선택)</label><input type="text" id="itemDescription" placeholder="부가 설명"></div>
+            <div class="form-group"><label>링크 URL (선택)</label><input type="url" id="itemUrl" placeholder="https://"></div>
+            <div class="form-group"><label>아이콘</label><input type="text" id="itemIcon" placeholder="이모지 입력" maxlength="4" style="width:60px"></div>
+            <div class="form-group"><label><input type="checkbox" id="itemBold"> 굵게 표시</label></div>
         </div>
-    </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('itemModal')">취소</button><button class="btn btn-primary" onclick="saveItem()">저장</button></div>
+    </div></div>
 
-    <!-- Confirm Delete Modal -->
-    <div class="modal-overlay" id="confirmModal">
-        <div class="modal" style="max-width:400px;">
-            <div class="modal-header">
-                <h2>삭제 확인</h2>
-                <button class="btn-close-modal" onclick="closeModal('confirmModal')">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="confirm-dialog">
-                    <p id="confirmMessage">이 항목을 삭제하시겠습니까?</p>
-                    <p class="sub">이 작업은 되돌릴 수 없습니다.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn">삭제</button>
+    <!-- Section Modal -->
+    <div class="modal-overlay" id="sectionModal"><div class="modal">
+        <div class="modal-header"><h2 id="sectionModalTitle">섹션 추가</h2><button class="btn-close" onclick="closeModal('sectionModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editingSectionEditId">
+            <div class="form-group"><label>섹션 제목 *</label><input type="text" id="sectionTitle" placeholder="예: 공지사항"></div>
+            <div class="form-group"><label>아이콘</label><input type="text" id="sectionIcon" placeholder="이모지 입력" maxlength="4" style="width:60px" value="📌"></div>
+            <div class="form-group"><label>배경색</label>
+                <select id="sectionColor">
+                    <option value="#FFF8E1">노랑</option><option value="#E3F2FD">파랑</option>
+                    <option value="#E8F5E9">초록</option><option value="#FFF0F0">분홍</option>
+                    <option value="#F3E5F5">보라</option><option value="#E0F7FA">하늘</option>
+                    <option value="#FFFFFF">흰색</option>
+                </select>
             </div>
         </div>
-    </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('sectionModal')">취소</button><button class="btn btn-primary" onclick="saveSection()">저장</button></div>
+    </div></div>
+
+    <!-- Category Modal -->
+    <div class="modal-overlay" id="categoryModal"><div class="modal">
+        <div class="modal-header"><h2>카테고리 관리</h2><button class="btn-close" onclick="closeModal('categoryModal')">✕</button></div>
+        <div class="modal-body">
+            <div class="category-list" id="categoryList"></div>
+            <button class="btn-add-cat" onclick="addCategoryField()">+ 새 카테고리</button>
+            <div class="import-export-section">
+                <button class="btn btn-secondary" onclick="exportAllData()">📥 전체 내보내기</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📤 가져오기</button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAllData(event)">
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('categoryModal')">취소</button><button class="btn btn-primary" onclick="saveCategories()">저장</button></div>
+    </div></div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal"><div class="modal" style="max-width:380px;">
+        <div class="modal-header"><h2>삭제 확인</h2><button class="btn-close" onclick="closeModal('confirmModal')">✕</button></div>
+        <div class="modal-body"><div class="confirm-dialog"><p id="confirmMessage">삭제하시겠습니까?</p><p class="sub">이 작업은 되돌릴 수 없습니다.</p></div></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button><button class="btn btn-danger" id="confirmDeleteBtn">삭제</button></div>
+    </div></div>
 
 <script>
-// ===== CONFIG =====
-const ICONS = ['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
-const CATEGORY_CSS = ['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
+const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
+const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
+const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
 
-// ===== STATE =====
-let categories = [], links = [], trainings = [], staff = [], trainingRecords = {};
-let isAdmin = false, activeCategory = 'all', selectedIcon = '📎';
-let trainingFilter = 'all';
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[];
+let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 
-// ===== API HELPERS =====
-async function api(method, url, body) {
-    const opts = { method, headers: {'Content-Type':'application/json'} };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    return res.json();
-}
+async function api(m,u,b){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);return(await fetch(u,o)).json();}
 
-// ===== INIT =====
-async function init() {
-    [categories, links, trainings, staff, trainingRecords] = await Promise.all([
-        api('GET','/api/categories'),
-        api('GET','/api/links'),
-        api('GET','/api/trainings'),
-        api('GET','/api/staff'),
-        api('GET','/api/training-records')
+async function init(){
+    [categories,links,trainings,staff,trainingRecords,sections]=await Promise.all([
+        api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
+        api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections')
     ]);
-    updateDate();
-    renderCategoryTabs();
-    renderLinks();
-    updateStats();
-    setupIconPicker();
-    renderTrainingChecklist();
-    populateRegSelect();
+    updateDate();renderSections();renderCategoryTabs();renderLinks();updateStats();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();
 }
 
-function updateDate() {
-    const now = new Date();
-    document.getElementById('currentDate').textContent =
-        now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+function updateDate(){
+    document.getElementById('currentDate').textContent=
+        new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
 }
 
-// ===== PAGE SWITCH =====
-function switchPage(page, btn) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('page-'+page).classList.add('active');
-    btn.classList.add('active');
+function switchPage(p,btn){
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.main-tab').forEach(x=>x.classList.remove('active'));
+    document.getElementById('page-'+p).classList.add('active');btn.classList.add('active');
 }
 
-// ===== ADMIN MODE =====
-function toggleAdmin() {
-    isAdmin = !isAdmin;
-    document.body.classList.toggle('admin-mode', isAdmin);
-    const btn = document.getElementById('btnAdmin');
-    btn.textContent = isAdmin ? '✅ 관리 모드 ON' : '🔧 관리 모드';
-    btn.style.background = isAdmin ? 'rgba(81,207,102,0.3)' : 'rgba(255,255,255,0.2)';
-    if (isAdmin) showToast('관리 모드가 활성화되었습니다','success');
-    renderLinks();
+function toggleAdmin(){
+    isAdmin=!isAdmin;document.body.classList.toggle('admin-mode',isAdmin);
+    const b=document.getElementById('btnAdmin');
+    b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
+    b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
+    if(isAdmin)showToast('관리 모드 활성화','success');
+    renderSections();renderLinks();
 }
 
-// ===== LINKS =====
-function renderCategoryTabs() {
-    let html = `<button class="category-tab ${activeCategory==='all'?'active':''}" onclick="setCategory('all')">전체</button>`;
-    categories.forEach(c => {
-        html += `<button class="category-tab ${activeCategory===c.id?'active':''}" onclick="setCategory('${c.id}')">${c.name}</button>`;
-    });
-    if (isAdmin) html += `<button class="category-tab" onclick="openCategoryManager()" style="border:2px dashed var(--border);background:transparent;">⚙️ 관리</button>`;
-    document.getElementById('categoryTabs').innerHTML = html;
-}
-
-function setCategory(id) { activeCategory=id; renderCategoryTabs(); renderLinks(); }
-
-function renderLinks() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    let filtered = links.filter(l => {
-        const mc = activeCategory==='all' || l.category===activeCategory;
-        const ms = !search || l.name.toLowerCase().includes(search) ||
-            (l.description||'').toLowerCase().includes(search) || getCategoryName(l.category).toLowerCase().includes(search);
-        return mc && ms;
-    });
-    filtered.sort((a,b) => { if(a.favorite&&!b.favorite)return-1; if(!a.favorite&&b.favorite)return 1; return a.name.localeCompare(b.name,'ko'); });
-
-    let html = '';
-    if(!filtered.length && !isAdmin) {
-        html = `<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>검색 결과가 없습니다</h3><p>다른 검색어를 입력하거나 카테고리를 변경해 보세요.</p></div>`;
-    } else {
-        filtered.forEach(l => {
-            const cat = categories.find(c=>c.id===l.category);
-            const cls = cat?cat.cssClass:'cat-etc';
-            const name = cat?cat.name:'기타';
-            html += `<a class="link-card" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" onclick="${isAdmin?'event.preventDefault()':''}">
-                <div class="link-card-header"><div class="link-card-icon ${cls}">${l.favorite?'⭐':l.icon}</div>
-                <div class="link-card-actions"><button class="btn-edit-card" onclick="event.preventDefault();event.stopPropagation();editLink('${l.id}')" title="수정">✏️</button>
-                <button class="btn-delete-card" onclick="event.preventDefault();event.stopPropagation();confirmDeleteLink('${l.id}')" title="삭제">🗑️</button></div></div>
-                <h3>${esc(l.name)}</h3><p>${esc(l.description||'')}</p>
-                <div class="link-card-footer"><span class="link-card-category ${cls}">${name}</span><div class="link-card-arrow">→</div></div></a>`;
-        });
-    }
-    html += `<div class="add-card" onclick="openAddLink()"><div class="add-card-icon">+</div><span>새 링크 추가</span></div>`;
-    document.getElementById('linksGrid').innerHTML = html;
-    renderCategoryTabs();
-}
-
-function updateStats() {
-    document.getElementById('statTotal').textContent = links.length;
-    document.getElementById('statCategories').textContent = categories.length;
-    document.getElementById('statFavorites').textContent = links.filter(l=>l.favorite).length;
-    const wk = new Date(); wk.setDate(wk.getDate()-7);
-    document.getElementById('statRecent').textContent = links.filter(l=>new Date(l.createdAt)>=wk).length;
-}
-
-function setupIconPicker() {
-    document.getElementById('iconPicker').innerHTML = ICONS.map(i =>
-        `<button type="button" class="icon-option ${i===selectedIcon?'selected':''}" onclick="selectIcon('${i}',this)">${i}</button>`
-    ).join('');
-}
-function selectIcon(i,el) { selectedIcon=i; document.querySelectorAll('.icon-option').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); }
-
-function openAddLink() {
-    document.getElementById('modalTitle').textContent='새 링크 추가';
-    document.getElementById('editingLinkId').value='';
-    document.getElementById('linkName').value='';
-    document.getElementById('linkUrl').value='';
-    document.getElementById('linkDesc').value='';
-    selectedIcon='📎';
-    populateCategorySelect();
-    setupIconPicker();
-    openModal('linkModal');
-}
-
-function editLink(id) {
-    const l=links.find(x=>x.id===id); if(!l)return;
-    document.getElementById('modalTitle').textContent='링크 수정';
-    document.getElementById('editingLinkId').value=id;
-    document.getElementById('linkName').value=l.name;
-    document.getElementById('linkUrl').value=l.url;
-    document.getElementById('linkDesc').value=l.description||'';
-    selectedIcon=l.icon;
-    populateCategorySelect(l.category);
-    setupIconPicker();
-    openModal('linkModal');
-}
-
-function populateCategorySelect(sel) {
-    document.getElementById('linkCategory').innerHTML = categories.map(c =>
-        `<option value="${c.id}" ${c.id===sel?'selected':''}>${c.name}</option>`).join('');
-}
-
-async function saveLink() {
-    const name=document.getElementById('linkName').value.trim();
-    const url=document.getElementById('linkUrl').value.trim();
-    const desc=document.getElementById('linkDesc').value.trim();
-    const cat=document.getElementById('linkCategory').value;
-    const editId=document.getElementById('editingLinkId').value;
-    if(!name||!url){showToast('이름과 URL은 필수입니다','error');return;}
-    if(!url.startsWith('http://')&&!url.startsWith('https://')){showToast('URL은 http:// 또는 https://로 시작해야 합니다','error');return;}
-    if(editId) {
-        const i=links.findIndex(l=>l.id===editId);
-        if(i!==-1) { links[i]={...links[i],name,url,description:desc,category:cat,icon:selectedIcon}; showToast('링크가 수정되었습니다','success'); }
-    } else {
-        links.push({id:'l'+Date.now(),name,url,description:desc,category:cat,icon:selectedIcon,favorite:false,createdAt:new Date().toISOString().split('T')[0]});
-        showToast('새 링크가 추가되었습니다','success');
-    }
-    await api('POST','/api/links',links);
-    renderLinks(); updateStats(); closeModal('linkModal');
-}
-
-function confirmDeleteLink(id) {
-    const l=links.find(x=>x.id===id); if(!l)return;
-    document.getElementById('confirmMessage').textContent=`"${l.name}" 링크를 삭제하시겠습니까?`;
-    document.getElementById('confirmDeleteBtn').onclick=()=>deleteLink(id);
-    openModal('confirmModal');
-}
-async function deleteLink(id) {
-    links=links.filter(l=>l.id!==id);
-    await api('POST','/api/links',links);
-    renderLinks(); updateStats(); closeModal('confirmModal');
-    showToast('링크가 삭제되었습니다','success');
-}
-
-// Category Manager
-function openCategoryManager() {
-    document.getElementById('categoryList').innerHTML = categories.map((c,i) =>
-        `<div class="category-item"><span style="cursor:grab;color:var(--text-light);font-size:16px">⠿</span>
-        <input type="text" value="${esc(c.name)}" data-id="${c.id}" data-index="${i}">
-        <button class="btn-delete-cat" onclick="this.closest('.category-item').remove()" title="삭제">✕</button></div>`
-    ).join('');
-    openModal('categoryModal');
-}
-function addCategoryField() {
-    const cont=document.getElementById('categoryList');
-    const id='cat_'+Date.now();
-    const css=CATEGORY_CSS[categories.length%CATEGORY_CSS.length];
-    const d=document.createElement('div'); d.className='category-item';
-    d.innerHTML=`<span style="cursor:grab;color:var(--text-light);font-size:16px">⠿</span>
-        <input type="text" value="" data-id="${id}" data-css="${css}" placeholder="새 카테고리 이름">
-        <button class="btn-delete-cat" onclick="this.closest('.category-item').remove()" title="삭제">✕</button>`;
-    cont.appendChild(d);
-}
-async function saveCategories() {
-    const inputs=document.querySelectorAll('#categoryList input');
-    const newCats=[];
-    inputs.forEach(inp => {
-        const name=inp.value.trim(); if(!name)return;
-        const id=inp.dataset.id;
-        const existing=categories.find(c=>c.id===id);
-        newCats.push({id,name,cssClass:existing?existing.cssClass:(inp.dataset.css||'cat-etc')});
-    });
-    categories=newCats;
-    await api('POST','/api/categories',categories);
-    renderCategoryTabs(); renderLinks(); updateStats(); closeModal('categoryModal');
-    showToast('카테고리가 저장되었습니다','success');
-}
-
-// ===== TRAINING CHECKLIST =====
-function renderTrainingChecklist() {
-    const tbody = document.getElementById('trainingTableBody');
-    let filtered = trainings;
-
-    if (trainingFilter === '교원') filtered = trainings.filter(t => t.target === '교원');
-    else if (trainingFilter === '교직원') filtered = trainings.filter(t => t.target === '교직원');
-    else if (trainingFilter === 'complete') filtered = trainings.filter(t => trainingRecords[t.id]?.completed);
-    else if (trainingFilter === 'incomplete') filtered = trainings.filter(t => !trainingRecords[t.id]?.completed);
-
-    const total = trainings.length;
-    const done = trainings.filter(t => trainingRecords[t.id]?.completed).length;
-    const pct = total ? Math.round(done/total*100) : 0;
-
-    document.getElementById('trainingProgress').innerHTML = `
-        <span class="progress-label">전체 이수 현황</span>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-        <span class="progress-text">${done}/${total} (${pct}%)</span>
-    `;
-
-    tbody.innerHTML = filtered.map(t => {
-        const isDone = trainingRecords[t.id]?.completed;
-        const methodBadge = t.method.includes('온라인') ? 'badge-online' :
-            t.method.includes('이수증') ? 'badge-submit' :
-            t.method.includes('자체') ? 'badge-self' : 'badge-group';
-        const targetBadge = t.target === '교원' ? 'badge-teacher' : 'badge-all';
-        const selfBadge = t.selfTraining ? 'badge-possible' : 'badge-impossible';
-
-        return `<tr class="${isDone?'completed-row':''}">
-            <td style="text-align:center;font-weight:600">${t.no}</td>
-            <td style="font-weight:600;max-width:280px">${esc(t.name)}</td>
-            <td><span class="badge ${selfBadge}">${t.selfTraining?'가능':'불가'}</span></td>
-            <td><span class="badge ${methodBadge}">${esc(t.method)}</span></td>
-            <td>${esc(t.cycle)}</td>
-            <td><span class="badge ${targetBadge}">${esc(t.target)}</span></td>
-            <td>${esc(t.hours)}</td>
-            <td>${esc(t.date||'-')}</td>
-            <td>${esc(t.department)}</td>
-            <td>${esc(t.manager)}</td>
-            <td><div class="check-cell"><button class="completion-toggle ${isDone?'done':''}" onclick="toggleTrainingComplete('${t.id}')">${isDone?'✓':''}</button></div></td>
-        </tr>`;
+// ===== SECTIONS (Home Page - Notion Style) =====
+function renderSections(){
+    const c=document.getElementById('sectionsContainer');
+    const search=document.getElementById('homeSearch').value.toLowerCase();
+    const sorted=[...sections].sort((a,b)=>a.order-b.order);
+    c.innerHTML=sorted.map(sec=>{
+        let items=sec.items||[];
+        if(search){
+            items=items.filter(it=>it.text.toLowerCase().includes(search)||(it.description||'').toLowerCase().includes(search));
+            if(!items.length)return'';
+        }
+        const borderColor=sec.borderColor||COLOR_BORDERS[sec.color]||'#E0E0E0';
+        return `<div class="section-block" id="sec-${sec.id}">
+            <div class="section-header" style="background:${sec.color};border-left:4px solid ${borderColor};" onclick="toggleSection('${sec.id}')">
+                <div class="section-header-left">
+                    <span class="section-icon">${sec.icon||'📌'}</span>
+                    <h3>${esc(sec.title)}</h3>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <div class="section-admin-actions">
+                        <button class="item-action-btn" onclick="event.stopPropagation();editSection('${sec.id}')" title="수정">✏️</button>
+                        <button class="item-action-btn delete" onclick="event.stopPropagation();confirmDeleteSection('${sec.id}')" title="삭제">🗑️</button>
+                    </div>
+                    <span class="section-toggle">▼</span>
+                </div>
+            </div>
+            <div class="section-body">
+                ${items.map(it=>{
+                    const hasLink=it.url&&it.url.trim();
+                    const linkAttr=hasLink?`href="${esc(it.url)}" target="_blank" rel="noopener noreferrer"`:'';
+                    const tag=hasLink?'a':'span';
+                    const cls=`section-item-text${hasLink?' has-link':''}${it.bold?' bold':''}`;
+                    return `<div class="section-item">
+                        <span class="section-item-icon">${it.icon||'•'}</span>
+                        <div class="section-item-content">
+                            <${tag} class="${cls}" ${linkAttr}>${esc(it.text)}</${tag}>
+                            ${it.description?`<div class="section-item-desc">${esc(it.description)}</div>`:''}
+                        </div>
+                        <div class="section-item-actions">
+                            <button class="item-action-btn" onclick="editItem('${sec.id}','${it.id}')" title="수정">✏️</button>
+                            <button class="item-action-btn delete" onclick="confirmDeleteItem('${sec.id}','${it.id}')" title="삭제">🗑️</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+                <button class="add-item-btn" onclick="openAddItem('${sec.id}')">+ 항목 추가</button>
+            </div>
+        </div>`;
     }).join('');
 }
 
-function setTrainingFilter(f, btn) {
-    trainingFilter = f;
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
+function filterSections(){renderSections();}
+function toggleSection(id){document.getElementById('sec-'+id)?.classList.toggle('collapsed');}
+
+function openAddItem(secId){
+    document.getElementById('itemModalTitle').textContent='항목 추가';
+    document.getElementById('editingSectionId').value=secId;
+    document.getElementById('editingItemId').value='';
+    document.getElementById('itemText').value='';
+    document.getElementById('itemDescription').value='';
+    document.getElementById('itemUrl').value='';
+    document.getElementById('itemIcon').value='';
+    document.getElementById('itemBold').checked=false;
+    openModal('itemModal');
+}
+
+function editItem(secId,itemId){
+    const sec=sections.find(s=>s.id===secId); if(!sec)return;
+    const it=sec.items.find(i=>i.id===itemId); if(!it)return;
+    document.getElementById('itemModalTitle').textContent='항목 수정';
+    document.getElementById('editingSectionId').value=secId;
+    document.getElementById('editingItemId').value=itemId;
+    document.getElementById('itemText').value=it.text;
+    document.getElementById('itemDescription').value=it.description||'';
+    document.getElementById('itemUrl').value=it.url||'';
+    document.getElementById('itemIcon').value=it.icon||'';
+    document.getElementById('itemBold').checked=it.bold||false;
+    openModal('itemModal');
+}
+
+async function saveItem(){
+    const secId=document.getElementById('editingSectionId').value;
+    const itemId=document.getElementById('editingItemId').value;
+    const text=document.getElementById('itemText').value.trim();
+    if(!text){showToast('텍스트를 입력하세요','error');return;}
+    const data={
+        text,
+        description:document.getElementById('itemDescription').value.trim(),
+        url:document.getElementById('itemUrl').value.trim(),
+        icon:document.getElementById('itemIcon').value.trim()||'•',
+        bold:document.getElementById('itemBold').checked
+    };
+    const sec=sections.find(s=>s.id===secId);
+    if(itemId){
+        const idx=sec.items.findIndex(i=>i.id===itemId);
+        if(idx!==-1)sec.items[idx]={...sec.items[idx],...data};
+    } else {
+        data.id='item_'+Date.now();
+        sec.items.push(data);
+    }
+    await api('POST','/api/sections',sections);
+    renderSections();closeModal('itemModal');
+    showToast(itemId?'항목이 수정되었습니다':'항목이 추가되었습니다','success');
+}
+
+function confirmDeleteItem(secId,itemId){
+    const sec=sections.find(s=>s.id===secId);
+    const it=sec?.items.find(i=>i.id===itemId);
+    if(!it)return;
+    document.getElementById('confirmMessage').textContent=`"${it.text}" 항목을 삭제하시겠습니까?`;
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        sec.items=sec.items.filter(i=>i.id!==itemId);
+        await api('POST','/api/sections',sections);
+        renderSections();closeModal('confirmModal');showToast('삭제되었습니다','success');
+    };
+    openModal('confirmModal');
+}
+
+function openAddSection(){
+    document.getElementById('sectionModalTitle').textContent='새 섹션 추가';
+    document.getElementById('editingSectionEditId').value='';
+    document.getElementById('sectionTitle').value='';
+    document.getElementById('sectionIcon').value='📌';
+    document.getElementById('sectionColor').value='#FFF8E1';
+    openModal('sectionModal');
+}
+
+function editSection(id){
+    const sec=sections.find(s=>s.id===id); if(!sec)return;
+    document.getElementById('sectionModalTitle').textContent='섹션 수정';
+    document.getElementById('editingSectionEditId').value=id;
+    document.getElementById('sectionTitle').value=sec.title;
+    document.getElementById('sectionIcon').value=sec.icon;
+    document.getElementById('sectionColor').value=sec.color;
+    openModal('sectionModal');
+}
+
+async function saveSection(){
+    const id=document.getElementById('editingSectionEditId').value;
+    const title=document.getElementById('sectionTitle').value.trim();
+    if(!title){showToast('제목을 입력하세요','error');return;}
+    const color=document.getElementById('sectionColor').value;
+    const icon=document.getElementById('sectionIcon').value.trim()||'📌';
+    const borderColor=COLOR_BORDERS[color]||'#E0E0E0';
+    if(id){
+        const sec=sections.find(s=>s.id===id);
+        if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;}
+    } else {
+        sections.push({id:'sec_'+Date.now(),title,icon,color,borderColor,order:sections.length,items:[]});
+    }
+    await api('POST','/api/sections',sections);
+    renderSections();closeModal('sectionModal');
+    showToast(id?'섹션이 수정되었습니다':'섹션이 추가되었습니다','success');
+}
+
+function confirmDeleteSection(id){
+    const sec=sections.find(s=>s.id===id); if(!sec)return;
+    document.getElementById('confirmMessage').textContent=`"${sec.title}" 섹션 전체를 삭제하시겠습니까?`;
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        sections=sections.filter(s=>s.id!==id);
+        await api('POST','/api/sections',sections);
+        renderSections();closeModal('confirmModal');showToast('섹션이 삭제되었습니다','success');
+    };
+    openModal('confirmModal');
+}
+
+// ===== LINKS PAGE =====
+function renderCategoryTabs(){
+    let h=`<button class="category-tab ${activeCategory==='all'?'active':''}" onclick="setCategory('all')">전체</button>`;
+    categories.forEach(c=>{h+=`<button class="category-tab ${activeCategory===c.id?'active':''}" onclick="setCategory('${c.id}')">${c.name}</button>`;});
+    if(isAdmin)h+=`<button class="category-tab" onclick="openCategoryManager()" style="border:2px dashed var(--border);background:transparent;">⚙️</button>`;
+    document.getElementById('categoryTabs').innerHTML=h;
+}
+function setCategory(id){activeCategory=id;renderCategoryTabs();renderLinks();}
+
+function renderLinks(){
+    const s=document.getElementById('searchInput').value.toLowerCase();
+    let f=links.filter(l=>{
+        const mc=activeCategory==='all'||l.category===activeCategory;
+        const ms=!s||l.name.toLowerCase().includes(s)||(l.description||'').toLowerCase().includes(s);
+        return mc&&ms;
+    });
+    f.sort((a,b)=>{if(a.favorite&&!b.favorite)return-1;if(!a.favorite&&b.favorite)return 1;return a.name.localeCompare(b.name,'ko');});
+    let h='';
+    f.forEach(l=>{
+        const cat=categories.find(c=>c.id===l.category);const cls=cat?cat.cssClass:'cat-etc';const nm=cat?cat.name:'기타';
+        h+=`<a class="link-card" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" onclick="${isAdmin?'event.preventDefault()':''}">
+            <div class="link-card-header"><div class="link-card-icon ${cls}">${l.favorite?'⭐':l.icon}</div>
+            <div class="link-card-actions"><button class="btn-edit-card" onclick="event.preventDefault();event.stopPropagation();editLink('${l.id}')">✏️</button>
+            <button class="btn-delete-card" onclick="event.preventDefault();event.stopPropagation();confirmDeleteLink('${l.id}')">🗑️</button></div></div>
+            <h3>${esc(l.name)}</h3><p>${esc(l.description||'')}</p>
+            <div class="link-card-footer"><span class="link-card-category ${cls}">${nm}</span><div class="link-card-arrow">→</div></div></a>`;
+    });
+    h+=`<div class="add-card" onclick="openAddLink()"><div class="add-card-icon">+</div><span>새 링크 추가</span></div>`;
+    document.getElementById('linksGrid').innerHTML=h;renderCategoryTabs();
+}
+
+function updateStats(){
+    document.getElementById('statTotal').textContent=links.length;
+    document.getElementById('statCategories').textContent=categories.length;
+    document.getElementById('statFavorites').textContent=links.filter(l=>l.favorite).length;
+    const wk=new Date();wk.setDate(wk.getDate()-7);
+    document.getElementById('statRecent').textContent=links.filter(l=>new Date(l.createdAt)>=wk).length;
+}
+
+function setupIconPicker(){
+    document.getElementById('iconPicker').innerHTML=ICONS.map(i=>
+        `<button type="button" class="icon-option ${i===selectedIcon?'selected':''}" onclick="selectIcon('${i}',this)">${i}</button>`).join('');
+}
+function selectIcon(i,el){selectedIcon=i;document.querySelectorAll('.icon-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');}
+
+function openAddLink(){
+    document.getElementById('linkModalTitle').textContent='새 링크 추가';
+    document.getElementById('editingLinkId').value='';
+    document.getElementById('linkName').value='';document.getElementById('linkUrl').value='';
+    document.getElementById('linkDesc').value='';selectedIcon='📎';
+    populateCategorySelect();setupIconPicker();openModal('linkModal');
+}
+function editLink(id){
+    const l=links.find(x=>x.id===id);if(!l)return;
+    document.getElementById('linkModalTitle').textContent='링크 수정';
+    document.getElementById('editingLinkId').value=id;
+    document.getElementById('linkName').value=l.name;document.getElementById('linkUrl').value=l.url;
+    document.getElementById('linkDesc').value=l.description||'';selectedIcon=l.icon;
+    populateCategorySelect(l.category);setupIconPicker();openModal('linkModal');
+}
+function populateCategorySelect(sel){
+    document.getElementById('linkCategory').innerHTML=categories.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${c.name}</option>`).join('');
+}
+async function saveLink(){
+    const nm=document.getElementById('linkName').value.trim();
+    const url=document.getElementById('linkUrl').value.trim();
+    const desc=document.getElementById('linkDesc').value.trim();
+    const cat=document.getElementById('linkCategory').value;
+    const eid=document.getElementById('editingLinkId').value;
+    if(!nm||!url){showToast('이름과 URL 필수','error');return;}
+    if(!url.startsWith('http://')&&!url.startsWith('https://')){showToast('URL은 http(s)://로 시작','error');return;}
+    if(eid){const i=links.findIndex(l=>l.id===eid);if(i!==-1)links[i]={...links[i],name:nm,url,description:desc,category:cat,icon:selectedIcon};}
+    else links.push({id:'l'+Date.now(),name:nm,url,description:desc,category:cat,icon:selectedIcon,favorite:false,createdAt:new Date().toISOString().split('T')[0]});
+    await api('POST','/api/links',links);renderLinks();updateStats();closeModal('linkModal');showToast('저장됨','success');
+}
+function confirmDeleteLink(id){
+    const l=links.find(x=>x.id===id);if(!l)return;
+    document.getElementById('confirmMessage').textContent=`"${l.name}" 삭제?`;
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{links=links.filter(x=>x.id!==id);await api('POST','/api/links',links);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제됨','success');};
+    openModal('confirmModal');
+}
+
+function openCategoryManager(){
+    document.getElementById('categoryList').innerHTML=categories.map(c=>
+        `<div class="category-item"><input type="text" value="${esc(c.name)}" data-id="${c.id}"><button class="btn-del-cat" onclick="this.closest('.category-item').remove()">✕</button></div>`).join('');
+    openModal('categoryModal');
+}
+function addCategoryField(){
+    const d=document.createElement('div');d.className='category-item';
+    d.innerHTML=`<input type="text" data-id="cat_${Date.now()}" placeholder="새 카테고리"><button class="btn-del-cat" onclick="this.closest('.category-item').remove()">✕</button>`;
+    document.getElementById('categoryList').appendChild(d);
+}
+async function saveCategories(){
+    const nc=[];document.querySelectorAll('#categoryList input').forEach(inp=>{
+        const nm=inp.value.trim();if(!nm)return;
+        const id=inp.dataset.id;const ex=categories.find(c=>c.id===id);
+        nc.push({id,name:nm,cssClass:ex?ex.cssClass:CATEGORY_CSS[nc.length%CATEGORY_CSS.length]});
+    });
+    categories=nc;await api('POST','/api/categories',categories);
+    renderCategoryTabs();renderLinks();updateStats();closeModal('categoryModal');showToast('저장됨','success');
+}
+
+// ===== TRAINING =====
+function renderTrainingChecklist(){
+    const tbody=document.getElementById('trainingTableBody');
+    let f=trainings;
+    if(trainingFilter==='교원')f=trainings.filter(t=>t.target==='교원');
+    else if(trainingFilter==='교직원')f=trainings.filter(t=>t.target==='교직원');
+    else if(trainingFilter==='complete')f=trainings.filter(t=>trainingRecords[t.id]?.completed);
+    else if(trainingFilter==='incomplete')f=trainings.filter(t=>!trainingRecords[t.id]?.completed);
+    const total=trainings.length,done=trainings.filter(t=>trainingRecords[t.id]?.completed).length;
+    const pct=total?Math.round(done/total*100):0;
+    document.getElementById('trainingProgress').innerHTML=`<span class="progress-label">전체 이수 현황</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span class="progress-text">${done}/${total} (${pct}%)</span>`;
+    tbody.innerHTML=f.map(t=>{
+        const d=trainingRecords[t.id]?.completed;
+        const mb=t.method.includes('온라인')?'badge-online':t.method.includes('이수증')?'badge-submit':t.method.includes('자체')?'badge-self':'badge-group';
+        return `<tr class="${d?'completed-row':''}">
+            <td style="text-align:center;font-weight:600">${t.no}</td>
+            <td style="font-weight:600;max-width:260px">${esc(t.name)}</td>
+            <td><span class="badge ${t.selfTraining?'badge-possible':'badge-impossible'}">${t.selfTraining?'가능':'불가'}</span></td>
+            <td><span class="badge ${mb}">${esc(t.method)}</span></td>
+            <td>${esc(t.cycle)}</td>
+            <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
+            <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
+            <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
+            <td><div class="check-cell"><button class="completion-toggle ${d?'done':''}" onclick="toggleTrainingComplete('${t.id}')">${d?'✓':''}</button></div></td>
+        </tr>`;
+    }).join('');
+}
+function setTrainingFilter(f,btn){trainingFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderTrainingChecklist();}
+async function toggleTrainingComplete(tid){
+    if(!trainingRecords[tid])trainingRecords[tid]={};
+    trainingRecords[tid].completed=!trainingRecords[tid].completed;
+    await api('PATCH',`/api/training-records/${tid}/global`,{completed:trainingRecords[tid].completed});
     renderTrainingChecklist();
 }
 
-async function toggleTrainingComplete(tid) {
-    if (!trainingRecords[tid]) trainingRecords[tid] = {};
-    trainingRecords[tid].completed = !trainingRecords[tid].completed;
-    await api('PATCH', `/api/training-records/${tid}/global`, { completed: trainingRecords[tid].completed });
-    renderTrainingChecklist();
+function switchTrainingTab(tab,btn){
+    document.querySelectorAll('.training-sub-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+    document.getElementById('training-checklist').style.display=tab==='checklist'?'block':'none';
+    document.getElementById('training-register').style.display=tab==='register'?'block':'none';
+    if(tab==='register')renderRegisterTable();
 }
-
-// ===== TRAINING REGISTER =====
-function populateRegSelect() {
-    const sel = document.getElementById('regTrainingSelect');
-    sel.innerHTML = trainings.map(t =>
-        `<option value="${t.id}">${t.no}. ${t.name}</option>`
-    ).join('');
+function populateRegSelect(){
+    document.getElementById('regTrainingSelect').innerHTML=trainings.map(t=>`<option value="${t.id}">${t.no}. ${t.name}</option>`).join('');
     renderRegisterTable();
 }
-
-function switchTrainingTab(tab, btn) {
-    document.querySelectorAll('.training-sub-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('training-checklist').style.display = tab === 'checklist' ? 'block' : 'none';
-    document.getElementById('training-register').style.display = tab === 'register' ? 'block' : 'none';
-    if (tab === 'register') renderRegisterTable();
-}
-
-function renderRegisterTable() {
-    const tid = document.getElementById('regTrainingSelect').value;
-    const training = trainings.find(t => t.id === tid);
-    if (!training) return;
-
-    const records = trainingRecords[tid] || {};
-    const tbody = document.getElementById('regTableBody');
-
-    let doneCount = 0;
-    const rows = staff.map(s => {
-        const rec = records[s.id] || {};
-        const checked = rec.confirmed || false;
-        if (checked) doneCount++;
-        return `<tr class="${checked?'completed-row':''}">
-            <td style="text-align:center">${s.no}</td>
-            <td>${esc(s.position)}</td>
-            <td style="font-weight:600">${esc(s.name)}</td>
-            <td>${esc(training.name)}</td>
-            <td><input class="reg-input" value="${esc(rec.institution||'')}" onchange="updateRegRecord('${tid}','${s.id}','institution',this.value)" placeholder="연수기관"></td>
-            <td><input class="reg-input" value="${esc(rec.certNo||'')}" onchange="updateRegRecord('${tid}','${s.id}','certNo',this.value)" placeholder="이수번호"></td>
-            <td><div class="check-cell"><button class="check-box ${checked?'checked':''}" onclick="toggleRegConfirm('${tid}','${s.id}')">${checked?'✓':''}</button></div></td>
+function renderRegisterTable(){
+    const tid=document.getElementById('regTrainingSelect').value;
+    const tr=trainings.find(t=>t.id===tid);if(!tr)return;
+    const rec=trainingRecords[tid]||{};let dc=0;
+    const rows=staff.map(s=>{
+        const r=rec[s.id]||{};const chk=r.confirmed||false;if(chk)dc++;
+        return `<tr class="${chk?'completed-row':''}">
+            <td style="text-align:center">${s.no}</td><td>${esc(s.position)}</td><td style="font-weight:600">${esc(s.name)}</td>
+            <td>${esc(tr.name)}</td>
+            <td><input class="reg-input" value="${esc(r.institution||'')}" onchange="updateRegRecord('${tid}','${s.id}','institution',this.value)" placeholder="연수기관"></td>
+            <td><input class="reg-input" value="${esc(r.certNo||'')}" onchange="updateRegRecord('${tid}','${s.id}','certNo',this.value)" placeholder="이수번호"></td>
+            <td><div class="check-cell"><button class="check-box ${chk?'checked':''}" onclick="toggleRegConfirm('${tid}','${s.id}')">${chk?'✓':''}</button></div></td>
         </tr>`;
     });
-
-    const pct = staff.length ? Math.round(doneCount/staff.length*100) : 0;
-    document.getElementById('regProgress').innerHTML = `
-        <span class="progress-label">${esc(training.name)}</span>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-        <span class="progress-text">${doneCount}/${staff.length} (${pct}%)</span>
-    `;
-
-    tbody.innerHTML = rows.join('');
+    const p=staff.length?Math.round(dc/staff.length*100):0;
+    document.getElementById('regProgress').innerHTML=`<span class="progress-label">${esc(tr.name)}</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${p}%"></div></div><span class="progress-text">${dc}/${staff.length} (${p}%)</span>`;
+    document.getElementById('regTableBody').innerHTML=rows.join('');
 }
-
-async function updateRegRecord(tid, sid, field, value) {
-    if (!trainingRecords[tid]) trainingRecords[tid] = {};
-    if (!trainingRecords[tid][sid]) trainingRecords[tid][sid] = {};
-    trainingRecords[tid][sid][field] = value;
-    await api('PATCH', `/api/training-records/${tid}/${sid}`, trainingRecords[tid][sid]);
+async function updateRegRecord(tid,sid,field,val){
+    if(!trainingRecords[tid])trainingRecords[tid]={};
+    if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
+    trainingRecords[tid][sid][field]=val;
+    await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
 }
-
-async function toggleRegConfirm(tid, sid) {
-    if (!trainingRecords[tid]) trainingRecords[tid] = {};
-    if (!trainingRecords[tid][sid]) trainingRecords[tid][sid] = {};
-    trainingRecords[tid][sid].confirmed = !trainingRecords[tid][sid].confirmed;
-    await api('PATCH', `/api/training-records/${tid}/${sid}`, trainingRecords[tid][sid]);
+async function toggleRegConfirm(tid,sid){
+    if(!trainingRecords[tid])trainingRecords[tid]={};
+    if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
+    trainingRecords[tid][sid].confirmed=!trainingRecords[tid][sid].confirmed;
+    await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
     renderRegisterTable();
 }
 
-// ===== IMPORT / EXPORT =====
-async function exportAllData() {
-    const data = await api('GET','/api/export');
-    const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download=`백암초_교무실_백업_${new Date().toISOString().split('T')[0]}.json`;
-    a.click(); URL.revokeObjectURL(url);
-    showToast('전체 데이터가 내보내기되었습니다','success');
+// ===== IMPORT/EXPORT =====
+async function exportAllData(){
+    const d=await api('GET','/api/export');
+    const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+    const u=URL.createObjectURL(b);const a=document.createElement('a');
+    a.href=u;a.download=`백암초_백업_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();URL.revokeObjectURL(u);showToast('내보내기 완료','success');
 }
-
-async function importAllData(event) {
-    const file = event.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            await api('POST','/api/import',data);
-            showToast('데이터를 성공적으로 가져왔습니다','success');
-            setTimeout(()=>location.reload(),500);
-        } catch { showToast('파일 형식이 올바르지 않습니다','error'); }
-    };
-    reader.readAsText(file);
-    event.target.value='';
+async function importAllData(e){
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();r.onload=async function(ev){
+        try{await api('POST','/api/import',JSON.parse(ev.target.result));showToast('가져오기 완료','success');setTimeout(()=>location.reload(),500);}
+        catch{showToast('파일 형식 오류','error');}
+    };r.readAsText(f);e.target.value='';
 }
 
 // ===== MODAL =====
-function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow='hidden'; }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow=''; }
+function openModal(id){document.getElementById(id).classList.add('active');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){e.target.classList.remove('active');document.body.style.overflow='';}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>{m.classList.remove('active');document.body.style.overflow='';});});
 
-// ===== TOAST =====
-function showToast(msg,type='') {
-    const c=document.getElementById('toastContainer');
-    const t=document.createElement('div'); t.className=`toast ${type}`;
-    const icon = type==='success'?'✅':type==='error'?'❌':'ℹ️';
-    t.innerHTML=`${icon} ${msg}`; c.appendChild(t);
-    setTimeout(()=>t.remove(),3000);
+function showToast(msg,type=''){
+    const c=document.getElementById('toastContainer');const t=document.createElement('div');
+    t.className=`toast ${type}`;t.innerHTML=`${type==='success'?'✅':type==='error'?'❌':'ℹ️'} ${msg}`;
+    c.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 
-// ===== UTILS =====
-function esc(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
-function getCategoryName(id) { const c=categories.find(x=>x.id===id); return c?c.name:'기타'; }
-
-// ===== START =====
 init();
 </script>
 </body>

@@ -44,6 +44,9 @@ function initDefaults() {
     if (!readJSON('training-records.json')) {
         writeJSON('training-records.json', {});
     }
+    if (!readJSON('sections.json')) {
+        writeJSON('sections.json', require('./defaults/sections.json'));
+    }
 }
 
 // ===== API Routes =====
@@ -108,11 +111,22 @@ app.patch('/api/training-records/:trainingId/:staffId', (req, res) => {
     res.json({ success: true });
 });
 
+// Sections
+app.get('/api/sections', (req, res) => {
+    res.json(readJSON('sections.json') || []);
+});
+
+app.post('/api/sections', (req, res) => {
+    writeJSON('sections.json', req.body);
+    res.json({ success: true });
+});
+
 // Export all data
 app.get('/api/export', (req, res) => {
     const data = {
         links: readJSON('links.json'),
         categories: readJSON('categories.json'),
+        sections: readJSON('sections.json'),
         trainings: readJSON('trainings.json'),
         staff: readJSON('staff.json'),
         trainingRecords: readJSON('training-records.json'),
@@ -123,9 +137,10 @@ app.get('/api/export', (req, res) => {
 
 // Import all data
 app.post('/api/import', (req, res) => {
-    const { links, categories, trainings, staff, trainingRecords } = req.body;
+    const { links, categories, sections, trainings, staff, trainingRecords } = req.body;
     if (links) writeJSON('links.json', links);
     if (categories) writeJSON('categories.json', categories);
+    if (sections) writeJSON('sections.json', sections);
     if (trainings) writeJSON('trainings.json', trainings);
     if (staff) writeJSON('staff.json', staff);
     if (trainingRecords) writeJSON('training-records.json', trainingRecords);

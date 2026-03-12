@@ -1,0 +1,178 @@
+[
+    {
+        "id": "sec-notice",
+        "title": "공지사항",
+        "icon": "📌",
+        "color": "#FFF8E1",
+        "borderColor": "#FFD54F",
+        "order": 0,
+        "items": [
+            { "id": "n1", "text": "2026학년도 백암초등학교 온라인 교무실(내부용)입니다.", "description": "교직원 전용 페이지로, 모든 업무 자료와 링크를 포함합니다.", "icon": "📢", "url": "", "bold": true },
+            { "id": "n2", "text": "업무분장표", "description": "백암초 교직원 DB 참조", "icon": "📋", "url": "" },
+            { "id": "n3", "text": "시정표", "description": "시정표 페이지 링크 추가 필요", "icon": "⏰", "url": "" },
+            { "id": "n4", "text": "전담/특별실 시간표", "description": "시간표 페이지 링크 추가 필요", "icon": "🗓️", "url": "" },
+            { "id": "n5", "text": "전결규정/복무/겸직", "description": "전결규정 페이지 링크 추가 필요", "icon": "📜", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-quicklinks",
+        "title": "빠른 링크",
+        "icon": "🔗",
+        "color": "#E3F2FD",
+        "borderColor": "#90CAF9",
+        "order": 1,
+        "items": [
+            { "id": "q1", "text": "우리학교 도서검색", "icon": "📚", "url": "" },
+            { "id": "q2", "text": "JT스쿨메신저", "icon": "💬", "url": "" },
+            { "id": "q3", "text": "e알리미", "icon": "📱", "url": "" },
+            { "id": "q4", "text": "디지털원패스 포털", "icon": "🔑", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-research",
+        "title": "연구학교 운영",
+        "icon": "🔬",
+        "color": "#E3F2FD",
+        "borderColor": "#90CAF9",
+        "order": 2,
+        "items": [
+            { "id": "r1", "text": "백암초 연구학교/혁신학교 운영 자료", "icon": "✨", "url": "", "bold": true },
+            { "id": "r2", "text": "디지털 튜터 시간표", "description": "링크 추가 필요", "icon": "🤖", "url": "" },
+            { "id": "r3", "text": "에듀테크 계정(교사용)", "description": "링크 추가 필요", "icon": "🆔", "url": "" },
+            { "id": "r4", "text": "마이크로러닝", "description": "링크 추가 필요", "icon": "🔄", "url": "" },
+            { "id": "r5", "text": "홍보분과", "description": "링크 추가 필요", "icon": "📰", "url": "" },
+            { "id": "r6", "text": "수업사례 패들렛", "description": "링크 추가 필요", "icon": "💎", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-research-resources",
+        "title": "연구학교 자료모음",
+        "icon": "📂",
+        "color": "#E3F2FD",
+        "borderColor": "#90CAF9",
+        "order": 3,
+        "items": [
+            { "id": "rr1", "text": "디지털 연수 자료", "icon": "💻", "url": "" },
+            { "id": "rr2", "text": "디지털원패스/AIDT", "icon": "🔑", "url": "" },
+            { "id": "rr3", "text": "하이러닝 안내 및 자료", "icon": "📖", "url": "" },
+            { "id": "rr4", "text": "똑똑수학탐험대 안내", "icon": "🧮", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-info",
+        "title": "정보코너",
+        "icon": "💡",
+        "color": "#FFF0F0",
+        "borderColor": "#FFCDD2",
+        "order": 4,
+        "items": [
+            { "id": "i1", "text": "출결 자료", "description": "출석 서류 모으는 방법, 출결 양식, 나이스 활용 체험학습 신청", "icon": "📋", "url": "" },
+            { "id": "i2", "text": "학교 비밀번호 안내", "description": "각종 시스템 접속 정보", "icon": "🔐", "url": "" },
+            { "id": "i3", "text": "가정통신문 발송 방법", "description": "e알리미 활용 안내", "icon": "📮", "url": "" },
+            { "id": "i4", "text": "각종 양식", "description": "상장, 공문서 양식 등", "icon": "📝", "url": "" },
+            { "id": "i5", "text": "예산/행정", "description": "여비규정, 예산 관련 자료", "icon": "💰", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-apply",
+        "title": "신청페이지",
+        "icon": "📝",
+        "color": "#FFF0F0",
+        "borderColor": "#FFCDD2",
+        "order": 5,
+        "items": [
+            { "id": "a1", "text": "유지보수 신청", "description": "링크 추가 필요", "icon": "🔧", "url": "" },
+            { "id": "a2", "text": "컴퓨터실/음악실 사용 신청", "description": "링크 추가 필요", "icon": "🖥️", "url": "" },
+            { "id": "a3", "text": "과학준비물 사용 신청", "description": "링크 추가 필요", "icon": "🧪", "url": "" },
+            { "id": "a4", "text": "과제카드 신청", "icon": "📇", "url": "" },
+            { "id": "a5", "text": "Wee클래스 상담", "icon": "💚", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-training",
+        "title": "연수 이수",
+        "icon": "🎓",
+        "color": "#E8F5E9",
+        "borderColor": "#A5D6A7",
+        "order": 6,
+        "items": [
+            { "id": "tr1", "text": "교직원 연수 자료", "icon": "📚", "url": "" },
+            { "id": "tr2", "text": "연수별 이수표시 시트 링크", "description": "추가 필요", "icon": "✅", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-principal",
+        "title": "교장선생님 나눔터",
+        "icon": "👨‍🏫",
+        "color": "#E8F5E9",
+        "borderColor": "#A5D6A7",
+        "order": 7,
+        "items": [
+            { "id": "p1", "text": "백암일보", "description": "교장선생님 소식 나눔", "icon": "📰", "url": "" },
+            { "id": "p2", "text": "서논술형평가 도우미", "description": "링크 추가 필요", "icon": "✏️", "url": "" },
+            { "id": "p3", "text": "마이크로러닝 연수자료", "description": "링크 추가 필요", "icon": "🎓", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-sports",
+        "title": "체육/생활부",
+        "icon": "⚽",
+        "color": "#F3E5F5",
+        "borderColor": "#CE93D8",
+        "order": 8,
+        "items": [
+            { "id": "sp1", "text": "안전공제회 매뉴얼", "description": "사이트(www.schoolsafe.or.kr) 백암초 로그인 ID/비번 [입력 필요]", "icon": "🛡️", "url": "https://www.schoolsafe.or.kr" },
+            { "id": "sp2", "text": "교육활동 보호", "description": "교원의 학생생활지도 고시 해설서", "icon": "📘", "url": "" },
+            { "id": "sp3", "text": "학교폭력", "description": "학교폭력 관련 자료", "icon": "🚨", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-it",
+        "title": "미래/과학부",
+        "icon": "🖥️",
+        "color": "#E0F7FA",
+        "borderColor": "#80DEEA",
+        "order": 9,
+        "items": [
+            { "id": "it1", "text": "학생 구글 계정", "description": "링크 추가 필요", "icon": "👤", "url": "" },
+            { "id": "it2", "text": "MS오피스/한글 설치", "icon": "💿", "url": "" },
+            { "id": "it3", "text": "사이버보안진단", "icon": "🔒", "url": "" },
+            { "id": "it4", "text": "태블릿 펜 고장/분실접수", "icon": "📱", "url": "" },
+            { "id": "it5", "text": "와이파이 초기화 됐을 때", "icon": "📶", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-academic",
+        "title": "교무/연구부",
+        "icon": "📖",
+        "color": "#FFF8E1",
+        "borderColor": "#FFD54F",
+        "order": 10,
+        "items": [
+            { "id": "ac1", "text": "교과서 출판사 / 저자", "icon": "📕", "url": "" },
+            { "id": "ac2", "text": "학교운영위원회", "icon": "🏛️", "url": "" },
+            { "id": "ac3", "text": "인사관리위원회", "icon": "👥", "url": "" },
+            { "id": "ac4", "text": "경조사회/교직원회", "icon": "🎊", "url": "" },
+            { "id": "ac5", "text": "성적처리", "icon": "📊", "url": "" },
+            { "id": "ac6", "text": "각종 운영계획", "icon": "📋", "url": "" },
+            { "id": "ac7", "text": "선택형교육(방과후)", "icon": "🎨", "url": "" }
+        ]
+    },
+    {
+        "id": "sec-tips",
+        "title": "꿀팁모음",
+        "icon": "🍯",
+        "color": "#FFF8E1",
+        "borderColor": "#FFD54F",
+        "order": 11,
+        "items": [
+            { "id": "tp1", "text": "공문서 작성 가이드", "icon": "📝", "url": "", "bold": true },
+            { "id": "tp2", "text": "생기부 작성", "icon": "📝", "url": "" },
+            { "id": "tp3", "text": "생기부 작성(백암초ver)", "icon": "💯", "url": "" },
+            { "id": "tp4", "text": "에듀테크 자료모음", "icon": "💻", "url": "" },
+            { "id": "tp5", "text": "수업도구 모음", "icon": "🔧", "url": "" },
+            { "id": "tp6", "text": "업무도구 모음", "icon": "🛠️", "url": "" },
+            { "id": "tp7", "text": "수업자료 모음", "icon": "📂", "url": "" }
+        ]
+    }
+]
