@@ -230,11 +230,11 @@
         .btn-add-cat{width:100%;padding:8px;border:2px dashed var(--border);border-radius:8px;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-light);transition:all .15s;margin-top:4px;}
         .btn-add-cat:hover{border-color:var(--primary);color:var(--primary);}
 
-        .toast-container{position:fixed;bottom:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:6px;}
-        .toast{background:var(--text);color:white;padding:10px 18px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.2);animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards;display:flex;align-items:center;gap:6px;}
-        .toast.success{background:#2F855A;} .toast.error{background:#C53030;}
-        @keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(10px)}}
+        .toast-container{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;}
+        .toast{background:var(--text);color:white;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,0.25);animation:toastIn .3s ease,toastOut .4s ease 1.8s forwards;display:flex;align-items:center;gap:10px;white-space:nowrap;}
+        .toast.success{background:linear-gradient(135deg,#2F855A,#38A169);} .toast.error{background:linear-gradient(135deg,#C53030,#E53E3E);}
+        @keyframes toastIn{from{opacity:0;transform:translateY(-20px) scale(0.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-10px) scale(0.95)}}
         .confirm-dialog{text-align:center;padding:14px 0;} .confirm-dialog p{font-size:14px;margin-bottom:5px;} .confirm-dialog .sub{font-size:12px;color:var(--text-light);}
         .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-light);}
 
@@ -568,7 +568,7 @@ async function saveItem(){
     }
     await api('POST','/api/sections',sections);
     renderSections();closeModal('itemModal');
-    showToast(itemId?'항목이 수정되었습니다':'항목이 추가되었습니다','success');
+    showToast('저장 완료','success');
 }
 
 function confirmDeleteItem(secId,itemId){
@@ -579,7 +579,7 @@ function confirmDeleteItem(secId,itemId){
     document.getElementById('confirmDeleteBtn').onclick=async()=>{
         sec.items=sec.items.filter(i=>i.id!==itemId);
         await api('POST','/api/sections',sections);
-        renderSections();closeModal('confirmModal');showToast('삭제되었습니다','success');
+        renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
 }
@@ -618,7 +618,7 @@ async function saveSection(){
     }
     await api('POST','/api/sections',sections);
     renderSections();closeModal('sectionModal');
-    showToast(id?'섹션이 수정되었습니다':'섹션이 추가되었습니다','success');
+    showToast('저장 완료','success');
 }
 
 function confirmDeleteSection(id){
@@ -627,7 +627,7 @@ function confirmDeleteSection(id){
     document.getElementById('confirmDeleteBtn').onclick=async()=>{
         sections=sections.filter(s=>s.id!==id);
         await api('POST','/api/sections',sections);
-        renderSections();closeModal('confirmModal');showToast('섹션이 삭제되었습니다','success');
+        renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
 }
@@ -705,12 +705,12 @@ async function saveLink(){
     if(!url.startsWith('http://')&&!url.startsWith('https://')){showToast('URL은 http(s)://로 시작','error');return;}
     if(eid){const i=links.findIndex(l=>l.id===eid);if(i!==-1)links[i]={...links[i],name:nm,url,description:desc,category:cat,icon:selectedIcon};}
     else links.push({id:'l'+Date.now(),name:nm,url,description:desc,category:cat,icon:selectedIcon,favorite:false,createdAt:new Date().toISOString().split('T')[0]});
-    await api('POST','/api/links',links);renderLinks();updateStats();closeModal('linkModal');showToast('저장됨','success');
+    await api('POST','/api/links',links);renderLinks();updateStats();closeModal('linkModal');showToast('저장 완료','success');
 }
 function confirmDeleteLink(id){
     const l=links.find(x=>x.id===id);if(!l)return;
     document.getElementById('confirmMessage').textContent=`"${l.name}" 삭제?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{links=links.filter(x=>x.id!==id);await api('POST','/api/links',links);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제됨','success');};
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{links=links.filter(x=>x.id!==id);await api('POST','/api/links',links);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제 완료','success');};
     openModal('confirmModal');
 }
 
@@ -731,7 +731,7 @@ async function saveCategories(){
         nc.push({id,name:nm,cssClass:ex?ex.cssClass:CATEGORY_CSS[nc.length%CATEGORY_CSS.length]});
     });
     categories=nc;await api('POST','/api/categories',categories);
-    renderCategoryTabs();renderLinks();updateStats();closeModal('categoryModal');showToast('저장됨','success');
+    renderCategoryTabs();renderLinks();updateStats();closeModal('categoryModal');showToast('저장 완료','success');
 }
 
 // ===== TRAINING =====
