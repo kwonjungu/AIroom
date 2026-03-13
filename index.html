@@ -364,13 +364,11 @@
                 <button class="filter-chip active" onclick="setTrainingFilter('all',this)">전체</button>
                 <button class="filter-chip" onclick="setTrainingFilter('교원',this)">교원</button>
                 <button class="filter-chip" onclick="setTrainingFilter('교직원',this)">교직원</button>
-                <button class="filter-chip" onclick="setTrainingFilter('incomplete',this)">미이수</button>
-                <button class="filter-chip" onclick="setTrainingFilter('complete',this)">이수완료</button>
                 <button class="filter-chip admin-link-edit-btn" onclick="openAddTraining()" style="margin-left:auto;background:var(--primary);color:white;border-color:var(--primary);">＋ 연수 추가</button>
             </div>
             <div class="table-wrapper"><div class="table-scroll">
                 <table><thead><tr>
-                    <th style="width:36px">순</th><th>연수명 (클릭→등록부)</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:90px">참가링크</th><th style="width:50px">완료</th><th class="admin-link-edit-btn" style="width:60px">관리</th>
+                    <th style="width:36px">순</th><th>연수명 (클릭→등록부)</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:90px">참가링크</th><th class="admin-link-edit-btn" style="width:60px">관리</th>
                 </tr></thead><tbody id="trainingTableBody"></tbody></table>
             </div></div>
         </div>
@@ -1117,17 +1115,12 @@ function renderTrainingChecklist(){
     let f=trainings;
     if(trainingFilter==='교원')f=trainings.filter(t=>t.target==='교원');
     else if(trainingFilter==='교직원')f=trainings.filter(t=>t.target==='교직원');
-    else if(trainingFilter==='complete')f=trainings.filter(t=>trainingRecords[t.id]?.completed);
-    else if(trainingFilter==='incomplete')f=trainings.filter(t=>!trainingRecords[t.id]?.completed);
-    const total=trainings.length,done=trainings.filter(t=>trainingRecords[t.id]?.completed).length;
-    const pct=total?Math.round(done/total*100):0;
-    document.getElementById('trainingProgress').innerHTML=`<span class="progress-label">전체 이수 현황</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span class="progress-text">${done}/${total} (${pct}%)</span>`;
+    document.getElementById('trainingProgress').innerHTML=`<span class="progress-label">전체 연수</span><span class="progress-text">${trainings.length}건</span>`;
     tbody.innerHTML=f.map(t=>{
-        const d=trainingRecords[t.id]?.completed;
         const mb=t.method.includes('온라인')?'badge-online':t.method.includes('이수증')?'badge-submit':t.method.includes('자체')?'badge-self':'badge-group';
         const linkBtn=t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener noreferrer" class="training-link-btn">🔗 바로가기</a> `:'';
         const adminBtns=isAdmin?`<td><div style="display:flex;gap:2px;"><button class="item-action-btn" onclick="openEditTraining('${t.id}')" title="수정">✏️</button><button class="item-action-btn delete" onclick="confirmDeleteTraining('${t.id}')" title="삭제">🗑️</button></div></td>`:'<td class="admin-link-edit-btn"></td>';
-        return `<tr class="${d?'completed-row':''}">
+        return `<tr>
             <td style="text-align:center;font-weight:600">${t.no}</td>
             <td class="training-name-clickable" onclick="openTrainingRegModal('${t.id}')" title="클릭하여 등록부 보기">${esc(t.name)} <span style="font-size:10px;opacity:0.6">📋</span></td>
             <td><span class="badge ${t.selfTraining?'badge-possible':'badge-impossible'}">${t.selfTraining?'가능':'불가'}</span></td>
@@ -1137,7 +1130,6 @@ function renderTrainingChecklist(){
             <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
             <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
             <td style="white-space:nowrap">${linkBtn}${isAdmin?`<button class="item-action-btn" onclick="editTrainingLink('${t.id}')" title="링크 수정" style="font-size:11px;">✏️</button>`:''}</td>
-            <td><div class="check-cell"><button class="completion-toggle ${d?'done':''}" onclick="toggleTrainingComplete('${t.id}')">${d?'✓':''}</button></div></td>
             ${adminBtns}
         </tr>`;
     }).join('');
