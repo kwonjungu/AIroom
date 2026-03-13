@@ -68,8 +68,10 @@
         .section-item-icon{font-size:15px;margin-top:2px;flex-shrink:0;width:22px;text-align:center;}
         .section-item-content{flex:1;min-width:0;}
         .section-item-text{font-size:14px;color:var(--text);text-decoration:none;display:block;line-height:1.5;}
-        .section-item-text.has-link{color:var(--text);cursor:pointer;}
-        .section-item-text.has-link:hover{color:var(--primary);text-decoration:underline;}
+        .section-item-text.has-link{color:var(--primary);cursor:pointer;font-weight:500;}
+        .section-item-text.has-link:hover{color:var(--primary-dark);text-decoration:underline;}
+        .section-item.has-link-item{background:linear-gradient(135deg,#f0f7ff 0%,#e8f4fd 100%);border-left:3px solid var(--primary);margin-left:-12px;padding-left:21px;}
+        .section-item.has-link-item:hover{background:linear-gradient(135deg,#e0efff 0%,#d0e8fa 100%);}
         .section-item-text.bold{font-weight:700;}
         .section-item-desc{font-size:12px;color:var(--text-light);margin-top:1px;line-height:1.4;}
         .section-item-actions{display:none;gap:4px;align-items:center;flex-shrink:0;}
@@ -368,6 +370,7 @@
             <div class="header-right">
                 <span class="header-date" id="currentDate"></span>
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
+                <button class="btn-admin" id="btnChangePw" onclick="openSetPasswordModal()" style="display:none;font-size:11px;padding:6px 10px;">🔑 비밀번호</button>
             </div>
         </div>
     </header>
@@ -580,10 +583,19 @@
     </div></div>
 
     <!-- Confirm Modal -->
-    <div class="modal-overlay" id="confirmModal"><div class="modal" style="max-width:380px;">
-        <div class="modal-header"><h2>삭제 확인</h2><button class="btn-close" onclick="closeModal('confirmModal')">✕</button></div>
-        <div class="modal-body"><div class="confirm-dialog"><p id="confirmMessage">삭제하시겠습니까?</p><p class="sub">이 작업은 되돌릴 수 없습니다.</p></div></div>
-        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button><button class="btn btn-danger" id="confirmDeleteBtn">삭제</button></div>
+    <div class="modal-overlay" id="confirmModal"><div class="modal" style="max-width:400px;">
+        <div class="modal-header"><h2>⚠️ 확인</h2><button class="btn-close" onclick="closeModal('confirmModal')">✕</button></div>
+        <div class="modal-body">
+            <div class="confirm-dialog">
+                <p id="confirmMessage" style="font-size:15px;font-weight:600;margin-bottom:8px;">삭제하시겠습니까?</p>
+                <p class="sub" style="color:var(--accent);">이 작업은 되돌릴 수 없습니다.</p>
+                <div style="margin-top:14px;">
+                    <label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;text-align:left;">관리 비밀번호 입력</label>
+                    <input type="password" id="confirmPassword" placeholder="비밀번호를 입력하세요" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;text-align:center;" onkeydown="if(event.key==='Enter')document.getElementById('confirmDeleteBtn').click()">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button><button class="btn btn-danger" id="confirmDeleteBtn" onclick="executeConfirmAction()">확인</button></div>
     </div></div>
 
     <!-- Training Add/Edit Modal -->
@@ -688,8 +700,12 @@ let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
     {id:'home',title:'교무실 홈',icon:'🏠',type:'builtin',order:1},
-    {id:'training',title:'연수 관리',icon:'📋',type:'builtin',order:2},
-    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:3}
+    {id:'tab_gyomu',title:'교무기획부',icon:'📋',type:'custom',order:2},
+    {id:'tab_insung',title:'인성체육부',icon:'💪',type:'custom',order:3},
+    {id:'tab_curriculum',title:'교육과정부',icon:'📖',type:'custom',order:4},
+    {id:'tab_sujeong',title:'수정분교',icon:'🏫',type:'custom',order:5},
+    {id:'training',title:'연수 관리',icon:'📋',type:'builtin',order:6},
+    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:7}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -778,7 +794,7 @@ async function init(){
         const backup=loadFromLocal();
         if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];tabsConfig=backup.tabsConfig||[];}
     }
-    initTabsConfig();
+    await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
     setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderCustomPages();
     if(!sections.length){
@@ -1005,11 +1021,34 @@ function submitScheduleAdd(){
     closeModal('scheduleAddModal');
 }
 
+// ===== 관리 비밀번호 =====
+const ADMIN_PW_KEY='airoom_admin_pw';
+function getAdminPassword(){return localStorage.getItem(ADMIN_PW_KEY)||'1234';}
+function setAdminPassword(pw){localStorage.setItem(ADMIN_PW_KEY,pw);}
+function verifyAdminPassword(input){return input===getAdminPassword();}
+// 확인 모달에 비밀번호 검증 래퍼
+function wrapConfirmWithPassword(originalFn){
+    return async function(){
+        const pw=document.getElementById('confirmPassword').value;
+        if(!verifyAdminPassword(pw)){showToast('비밀번호가 틀렸습니다','error');document.getElementById('confirmPassword').value='';document.getElementById('confirmPassword').focus();return;}
+        await originalFn();
+    };
+}
+function openSetPasswordModal(){
+    const newPw=prompt('새 관리 비밀번호를 설정하세요:');
+    if(newPw&&newPw.trim()){setAdminPassword(newPw.trim());showToast('비밀번호가 변경되었습니다','success');}
+}
+
 function toggleAdmin(){
+    if(!isAdmin){
+        const pw=prompt('관리 비밀번호를 입력하세요:');
+        if(!pw||!verifyAdminPassword(pw)){showToast('비밀번호가 틀렸습니다','error');return;}
+    }
     isAdmin=!isAdmin;document.body.classList.toggle('admin-mode',isAdmin);
     const b=document.getElementById('btnAdmin');
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
+    document.getElementById('btnChangePw').style.display=isAdmin?'inline-block':'none';
     if(isAdmin)showToast('관리 모드 활성화','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();
 }
@@ -1052,7 +1091,7 @@ function renderSections(){
                     const cls=`section-item-text${hasLink?' has-link':''}${it.bold?' bold':''}`;
                     const fileHtml=it.fileName?`<a class="section-item-file" onclick="downloadFile('${sec.id}','${it.id}')" title="클릭하여 미리보기">📎 ${esc(it.fileName)} <span class="file-size">(${esc(it.fileSize||'')})</span></a>`:'';
                     const personBoxHtml=it.person?`<div class="person-box"><span class="person-box-name">👤 ${esc(it.person)}</span>${it.personExt?`<span class="person-box-ext">☎ ${esc(it.personExt)}</span>`:''}</div>`:'';
-                    return `<div class="section-item">
+                    return `<div class="section-item${hasLink?' has-link-item':''}">
                         <span class="section-item-icon">${it.icon||'•'}</span>
                         <div class="section-item-content">
                             <${tag} class="${cls}" ${linkAttr}>${esc(it.text)}</${tag}>
@@ -1128,19 +1167,14 @@ function openFilePreview(url,fileName,fileType){
     const dlBtn=document.getElementById('filePreviewDownloadBtn');
     title.textContent='📎 '+fileName;
     dlBtn.href=url;dlBtn.download=fileName;
-    // URL이 Firebase URL이면 새 탭에서 다운로드
     if(url.startsWith('http')){dlBtn.onclick=function(e){e.preventDefault();window.open(url,'_blank');};}
     else{dlBtn.onclick=null;}
     const ext=fileName.split('.').pop().toLowerCase();
     const isImage=['jpg','jpeg','png','gif','bmp','webp','svg'].includes(ext);
-    const isPdf=ext==='pdf';
     if(isImage){
         body.innerHTML=`<img src="${url}" alt="${esc(fileName)}" style="max-width:100%;max-height:100%;object-fit:contain;">`;
-    }else if(isPdf){
-        body.innerHTML=`<div class="pdf-pages-container" id="pdfPagesContainer"><p style="color:var(--text-light);">PDF 로딩 중...</p></div>`;
-        renderPdfPreview(url);
     }else{
-        const iconMap={'doc':'📄','docx':'📄','xls':'📊','xlsx':'📊','ppt':'📽️','pptx':'📽️','hwp':'📝','hwpx':'📝','zip':'🗜️','txt':'📃'};
+        const iconMap={'pdf':'📕','doc':'📄','docx':'📄','xls':'📊','xlsx':'📊','ppt':'📽️','pptx':'📽️','hwp':'📝','hwpx':'📝','zip':'🗜️','txt':'📃'};
         const icon=iconMap[ext]||'📎';
         body.innerHTML=`<div class="file-no-preview">
             <div class="file-icon">${icon}</div>
@@ -1293,7 +1327,7 @@ function confirmDeleteItem(secId,itemId){
     const it=sec?.items.find(i=>i.id===itemId);
     if(!it)return;
     document.getElementById('confirmMessage').textContent=`"${it.text}" 항목을 삭제하시겠습니까?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+    _pendingConfirmAction=async()=>{
         if(it.filePath)await deleteFromFirebase(it.filePath);
         sec.items=sec.items.filter(i=>i.id!==itemId);
         await api('POST','/api/sections',sections);
@@ -1358,7 +1392,7 @@ async function saveSection(){
 function confirmDeleteSection(id){
     const sec=sections.find(s=>s.id===id); if(!sec)return;
     document.getElementById('confirmMessage').textContent=`"${sec.title}" 섹션 전체를 삭제하시겠습니까?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+    _pendingConfirmAction=async()=>{
         sections=sections.filter(s=>s.id!==id);
         await api('POST','/api/sections',sections);
         renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
@@ -1444,7 +1478,7 @@ async function saveLink(){
 function confirmDeleteLink(id){
     const l=links.find(x=>x.id===id);if(!l)return;
     document.getElementById('confirmMessage').textContent=`"${l.name}" 삭제?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{links=links.filter(x=>x.id!==id);await api('POST','/api/links',links);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제 완료','success');};
+    _pendingConfirmAction=async()=>{links=links.filter(x=>x.id!==id);await api('POST','/api/links',links);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제 완료','success');};
     openModal('confirmModal');
 }
 
@@ -1884,7 +1918,7 @@ async function saveTraining(){
 function confirmDeleteTraining(tid){
     const t=trainings.find(x=>x.id===tid);if(!t)return;
     document.getElementById('confirmMessage').textContent=`"${t.name}" 연수를 삭제하시겠습니까?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+    _pendingConfirmAction=async()=>{
         trainings=trainings.filter(x=>x.id!==tid);
         await api('POST','/api/trainings',trainings);
         populateRegSelect();renderTrainingChecklist();closeModal('confirmModal');closeModal('trainingEditModal');showToast('삭제 완료','success');
@@ -1928,7 +1962,16 @@ async function importAllData(e){
 }
 
 // ===== MODAL =====
-function openModal(id){document.getElementById(id).classList.add('active');document.body.style.overflow='hidden';}
+let _pendingConfirmAction=null;
+function openModal(id){
+    document.getElementById(id).classList.add('active');document.body.style.overflow='hidden';
+    if(id==='confirmModal'){const pwInput=document.getElementById('confirmPassword');if(pwInput){pwInput.value='';setTimeout(()=>pwInput.focus(),100);}}
+}
+function executeConfirmAction(){
+    const pw=document.getElementById('confirmPassword');
+    if(pw&&!verifyAdminPassword(pw.value)){showToast('비밀번호가 틀렸습니다','error');pw.value='';pw.focus();return;}
+    if(_pendingConfirmAction)_pendingConfirmAction();
+}
 function closeModal(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){e.target.classList.remove('active');document.body.style.overflow='';}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>{m.classList.remove('active');document.body.style.overflow='';});});
@@ -1941,14 +1984,22 @@ function showToast(msg,type=''){
 function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 
 // ===== TAB MANAGEMENT =====
-function initTabsConfig(){
+async function initTabsConfig(){
     if(!tabsConfig||!tabsConfig.length){
-        tabsConfig=DEFAULT_TABS.map(t=>({...t}));
+        // 서버 defaults에서 로드 시도
+        const defaultTabs=await api('GET','/api/tabs');
+        if(defaultTabs&&defaultTabs.length){
+            tabsConfig=defaultTabs;
+        } else {
+            tabsConfig=DEFAULT_TABS.map(t=>({...t}));
+            await api('POST','/api/tabs',tabsConfig);
+        }
     }
-    // 기존 빌트인 탭이 빠져있으면 추가
-    DEFAULT_TABS.forEach(dt=>{
-        if(!tabsConfig.find(t=>t.id===dt.id)){
-            tabsConfig.push({...dt,order:tabsConfig.length});
+    // 빌트인 탭이 빠져있으면 추가
+    ['schedule','home','training','links'].forEach(bid=>{
+        if(!tabsConfig.find(t=>t.id===bid)){
+            const dt=DEFAULT_TABS.find(d=>d.id===bid);
+            if(dt)tabsConfig.push({...dt,order:tabsConfig.length});
         }
     });
     // order 정렬 보정
@@ -2033,7 +2084,7 @@ async function saveTab(){
 function confirmDeleteTab(tabId){
     const tab=tabsConfig.find(t=>t.id===tabId);if(!tab||tab.type==='builtin')return;
     document.getElementById('confirmMessage').textContent=`"${tab.title}" 탭을 삭제하시겠습니까? 탭의 모든 섹션도 함께 삭제됩니다.`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+    _pendingConfirmAction=async()=>{
         tabsConfig=tabsConfig.filter(t=>t.id!==tabId);
         // 삭제된 탭의 페이지 제거
         const page=document.getElementById('page-'+tabId);
@@ -2113,7 +2164,7 @@ function renderCustomTabContent(tab,page){
                     const cls=`section-item-text${hasLink?' has-link':''}${it.bold?' bold':''}`;
                     const fileHtml=it.fileName?`<a class="section-item-file" onclick="downloadCustomFile('${tab.id}','${sec.id}','${it.id}')" title="클릭하여 미리보기">📎 ${esc(it.fileName)} <span class="file-size">(${esc(it.fileSize||'')})</span></a>`:'';
                     const personBoxHtml=it.person?`<div class="person-box"><span class="person-box-name">👤 ${esc(it.person)}</span>${it.personExt?`<span class="person-box-ext">☎ ${esc(it.personExt)}</span>`:''}</div>`:'';
-                    return `<div class="section-item">
+                    return `<div class="section-item${hasLink?' has-link-item':''}">
                         <span class="section-item-icon">${it.icon||'•'}</span>
                         <div class="section-item-content">
                             <${tag} class="${cls}" ${linkAttr}>${esc(it.text)}</${tag}>
@@ -2174,7 +2225,7 @@ function confirmDeleteCustomSection(tabId,secId){
     const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
     const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
     document.getElementById('confirmMessage').textContent=`"${sec.title}" 섹션을 삭제하시겠습니까?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+    _pendingConfirmAction=async()=>{
         tab.sections=tab.sections.filter(s=>s.id!==secId);
         await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
         closeModal('confirmModal');showToast('삭제 완료','success');
@@ -2239,7 +2290,7 @@ function confirmDeleteCustomItem(tabId,secId,itemId){
     const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
     const it=sec.items.find(i=>i.id===itemId);if(!it)return;
     document.getElementById('confirmMessage').textContent=`"${it.text}" 항목을 삭제하시겠습니까?`;
-    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+    _pendingConfirmAction=async()=>{
         if(it.filePath)await deleteFromFirebase(it.filePath);
         sec.items=sec.items.filter(i=>i.id!==itemId);
         await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
