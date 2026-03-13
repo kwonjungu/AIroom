@@ -251,7 +251,7 @@
 
         .toast-container{position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;}
         .toast{background:var(--text);color:white;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,0.25);animation:toastIn .3s ease,toastOut .4s ease 1.8s forwards;display:flex;align-items:center;gap:10px;white-space:nowrap;}
-        .toast.success{background:linear-gradient(135deg,#2F855A,#38A169);} .toast.error{background:linear-gradient(135deg,#C53030,#E53E3E);}
+        .toast.success{background:linear-gradient(135deg,#2F855A,#38A169);} .toast.error{background:linear-gradient(135deg,#C53030,#E53E3E);} .toast.info{background:linear-gradient(135deg,#2B6CB0,#4A90D9);}
         @keyframes toastIn{from{opacity:0;transform:translateY(-20px) scale(0.9)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-10px) scale(0.95)}}
         .confirm-dialog{text-align:center;padding:14px 0;} .confirm-dialog p{font-size:14px;margin-bottom:5px;} .confirm-dialog .sub{font-size:12px;color:var(--text-light);}
@@ -335,15 +335,73 @@
         .cal-picker-today-btn:hover{background:var(--primary);color:white;}
 
         @media(max-width:768px){
-            .header-inner{flex-direction:column;gap:8px;text-align:center;padding:14px 16px;}
-            .header-right{width:100%;justify-content:center;}
-            .page,.school-info,.main-tabs{padding-left:12px;padding-right:12px;}
+            .header-inner{flex-direction:column;gap:6px;text-align:center;padding:12px 14px;}
+            .header-title h1{font-size:18px;}
+            .school-icon{width:40px;height:40px;font-size:22px;}
+            .header-right{width:100%;justify-content:center;gap:6px;}
+            .header-date{font-size:11px;padding:4px 10px;}
+            .btn-admin{padding:6px 12px;font-size:11px;}
+            .page{padding:12px 10px 40px;}
+            .school-info{padding:8px 10px;}
+            .school-info-inner{flex-direction:column;align-items:flex-start;padding:10px 14px;font-size:12px;}
+            .main-tabs-wrapper{padding:6px 10px 0;}
+            .main-tabs{padding-left:10px;padding-right:10px;gap:2px;}
+            .main-tab{padding:8px 12px;font-size:11px;}
+            .tab-add-btn{padding:7px 10px;font-size:11px;}
             .links-grid{grid-template-columns:1fr;}
             .stats-row{grid-template-columns:repeat(2,1fr);}
-            .main-tab{padding:9px 16px;font-size:12px;}
             .reg-select{min-width:100%;}
-            .reg-table-header{flex-direction:column;}
-            .school-info-inner{flex-direction:column;align-items:flex-start;}
+            .reg-table-header{flex-direction:column;padding:14px;}
+            /* Schedule mobile */
+            .schedule-view-tabs{gap:3px;}
+            .schedule-view-tab{padding:7px 14px;font-size:12px;}
+            .schedule-nav{gap:8px;}
+            .schedule-nav-title{font-size:15px;}
+            .schedule-table td{padding:4px 3px;font-size:11px;}
+            .schedule-table th{padding:8px 4px;font-size:11px;}
+            .schedule-day-num{font-size:12px;}
+            .schedule-item{font-size:10px;padding:2px 4px;}
+            .schedule-add-btn{font-size:10px;padding:1px 4px;}
+            .date-strip-item{min-width:44px;height:56px;}
+            .date-strip-day{font-size:15px;}
+            /* Training mobile */
+            .training-header{padding:14px;}
+            .training-header h2{font-size:15px;}
+            .training-sub-tabs{gap:4px;}
+            .training-sub-tab{padding:7px 14px;font-size:12px;}
+            .progress-section{flex-wrap:wrap;padding:10px 14px;gap:8px;}
+            thead th{padding:8px 6px;font-size:11px;}
+            tbody td{padding:6px 5px;font-size:11px;}
+            .filter-row{gap:4px;}
+            .filter-chip{padding:4px 8px;font-size:10px;}
+            /* Section mobile */
+            .section-header{padding:10px 14px;}
+            .section-header h3{font-size:14px;}
+            .section-body{padding:0 12px 10px;}
+            .section-item{padding:6px 8px;gap:8px;}
+            .section-item-text{font-size:13px;}
+            /* Modal mobile */
+            .modal{max-width:95vw!important;max-height:85vh;margin:20px auto;}
+            .modal-header{padding:14px 16px;}
+            .modal-body{padding:14px 16px;}
+            .modal-footer{padding:10px 16px 14px;}
+            /* Calendar picker mobile */
+            .cal-picker{width:290px;padding:16px;}
+            .cal-picker-day{width:32px;height:32px;font-size:12px;}
+            /* Link cards mobile */
+            .link-card{padding:14px;}
+            .link-card-icon{width:36px;height:36px;font-size:18px;}
+            .link-card h3{font-size:14px;}
+        }
+        @media(max-width:400px){
+            .header-title h1{font-size:16px;}
+            .main-tab{padding:7px 8px;font-size:10px;}
+            .schedule-table td{padding:3px 2px;font-size:10px;min-height:auto;}
+            .schedule-day-num{font-size:11px;margin-bottom:2px;}
+            .schedule-item{font-size:9px;padding:1px 3px;margin-bottom:2px;}
+            .date-strip-item{min-width:38px;height:48px;}
+            .date-strip-day{font-size:13px;}
+            .date-strip-dow,.date-strip-month{font-size:8px;}
         }
         @media print{.header{position:relative;}.btn-admin,.add-card,.link-card-actions,.main-tabs,.add-item-btn,.add-section-btn,.section-admin-actions,.item-action-btn,.filter-row{display:none!important;}}
 
@@ -790,13 +848,17 @@ async function api(m,u,b){
         const o={method:m,headers:{'Content-Type':'application/json'}};
         if(b)o.body=JSON.stringify(b);
         const r=await fetch(u,o);
-        if(!r.ok)throw new Error(r.status);
+        if(!r.ok){
+            const errText=await r.text().catch(()=>'');
+            throw new Error(`서버 오류 (${r.status}): ${errText}`);
+        }
         const data=await r.json();
-        // 쓰기 성공 시 자동 localStorage 백업
         if(m!=='GET')setTimeout(saveToLocal,100);
         return data;
     }catch(e){
         console.error('API 오류:',m,u,e);
+        if(m!=='GET')showToast('서버 저장 실패 (로컬 백업 중)','error');
+        setTimeout(saveToLocal,100);
         return null;
     }
 }
@@ -937,7 +999,7 @@ function renderMonthView(el,titleEl){
         html+=`<td class="other-month"><div class="schedule-day-num">${i-endDay}</div></td>`;
     }
     html+='</tr></tbody></table>';
-    el.innerHTML=html;
+    el.innerHTML='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'+html+'</div>';
 }
 
 function renderWeekView(el,titleEl){
@@ -970,7 +1032,7 @@ function renderWeekView(el,titleEl){
         html+='</td>';
     }
     html+='</tr></tbody></table>';
-    el.innerHTML=html;
+    el.innerHTML='<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'+html+'</div>';
 }
 
 function renderDayView(el,titleEl){
@@ -1413,8 +1475,9 @@ async function saveItem(){
                 const url=await uploadToFirebase(pendingFile.rawFile,storagePath);
                 data.fileName=pendingFile.name;data.fileSize=pendingFile.size;
                 data.fileUrl=url;data.filePath=storagePath;data.fileType=pendingFile.type;
-                delete data.fileData; // base64 제거
+                delete data.fileData;
                 if(!itemId)data.id=iid;
+                showToast('파일 업로드 완료','success');
             }catch(e){showToast('파일 업로드 실패: '+e.message,'error');return;}
         } else {
             // Firebase 미연결 시 base64 폴백
@@ -1449,14 +1512,16 @@ async function saveItem(){
         if(!data.id)data.id='item_'+Date.now();
         sec.items.push(data);
     }
+    let result;
     if(isCustom){
-        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        result=await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
     } else {
-        await api('POST','/api/sections',sections);renderSections();
+        result=await api('POST','/api/sections',sections);renderSections();
     }
     pendingFile=null;
     closeModal('itemModal');
-    showToast('저장 완료','success');
+    if(result)showToast('저장 완료','success');
+    else showToast('저장 중 오류가 발생했습니다','error');
 }
 
 function confirmDeleteItem(secId,itemId){

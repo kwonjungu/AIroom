@@ -77,7 +77,13 @@ async function writeData(filename, data) {
     const key = KV_KEYS[filename];
     // Upstash Redis 연결 시: Redis에 저장
     if (redis && key) {
-        try { await redis.set(key, JSON.stringify(data)); } catch (e) { console.error('Redis 쓰기 실패:', e.message); }
+        try {
+            await redis.set(key, JSON.stringify(data));
+        } catch (e) {
+            console.error('Redis 쓰기 실패:', e.message);
+            // Vercel에서 Redis 실패 시 에러 전파
+            if (IS_VERCEL) throw new Error('Redis 쓰기 실패: ' + e.message);
+        }
     }
     // 로컬이면 파일에도 저장
     if (!IS_VERCEL) writeFile(filename, data);
@@ -147,6 +153,15 @@ app.post('/api/import', async (req, res) => {
         await Promise.all(writes);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Health check
+app.get('/api/health', async (req, res) => {
+    const status = { server: true, redis: false, timestamp: new Date().toISOString() };
+    if (redis) {
+        try { await redis.ping(); status.redis = true; } catch (e) { status.redis = false; }
+    }
+    res.json(status);
 });
 
 // Firebase config (환경변수에서 클라이언트로 전달)
