@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>백암초등학교 온라인 교무실</title>
+    <title>AI 아이들 백암초등학교 교무실</title>
     <style>
         :root {
             --primary:#4A90D9; --primary-dark:#357ABD; --primary-light:#E8F0FE;
@@ -17,12 +17,12 @@
 
         /* Header */
         .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);}
-        .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;}
-        .header-left{display:flex;align-items:center;gap:14px;}
+        .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:center;position:relative;}
+        .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
         .header-title h1{font-size:21px;font-weight:700;}
         .header-title p{font-size:11px;opacity:0.85;margin-top:2px;}
-        .header-right{display:flex;align-items:center;gap:10px;}
+        .header-right{display:flex;align-items:center;gap:10px;position:absolute;right:24px;}
         .header-date{font-size:12px;opacity:0.9;background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:18px;}
         .btn-admin{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
         .btn-admin:hover{background:rgba(255,255,255,0.3);}
@@ -255,6 +255,45 @@
         .confirm-dialog{text-align:center;padding:14px 0;} .confirm-dialog p{font-size:14px;margin-bottom:5px;} .confirm-dialog .sub{font-size:12px;color:var(--text-light);}
         .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-light);}
 
+        /* Schedule */
+        .schedule-view-tabs{display:flex;gap:4px;margin-bottom:16px;}
+        .schedule-view-tab{padding:8px 18px;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;border-radius:8px;color:var(--text-light);transition:all .2s;}
+        .schedule-view-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
+        .schedule-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+        .schedule-nav-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--card-bg);border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+        .schedule-nav-btn:hover{background:var(--primary-light);}
+        .schedule-nav-title{font-size:18px;font-weight:700;}
+        .schedule-nav-today{padding:6px 14px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;}
+        .schedule-nav-today:hover{background:var(--primary-light);}
+        .schedule-table{width:100%;border-collapse:collapse;background:var(--card-bg);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+        .schedule-table th{background:var(--primary);color:white;padding:10px 8px;font-size:13px;font-weight:600;text-align:center;}
+        .schedule-table td{border:1px solid var(--border);padding:8px;vertical-align:top;min-height:80px;font-size:13px;}
+        .schedule-table td.today{background:#FFF8E1;}
+        .schedule-table td.other-month{color:#ccc;background:#fafafa;}
+        .schedule-day-num{font-weight:700;font-size:14px;margin-bottom:4px;}
+        .schedule-day-num.sun{color:#e53935;}
+        .schedule-day-num.sat{color:#1565c0;}
+        .schedule-item{background:var(--primary-light);border-left:3px solid var(--primary);padding:3px 6px;margin-bottom:3px;border-radius:4px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;}
+        .schedule-item:hover{background:#d0e2f7;}
+        .schedule-item .del-btn{display:none;background:none;border:none;cursor:pointer;font-size:10px;color:#e53935;padding:0 2px;}
+        .schedule-item:hover .del-btn{display:inline;}
+        .schedule-add-btn{background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:11px;color:var(--text-light);cursor:pointer;width:100%;text-align:left;margin-top:2px;}
+        .schedule-add-btn:hover{background:var(--primary-light);color:var(--primary);}
+        .week-table td{height:100px;}
+        .day-detail-card{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+        .day-detail-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+        .day-detail-item:last-child{border-bottom:none;}
+        .day-detail-input{flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;outline:none;}
+        .day-detail-input:focus{border-color:var(--primary);}
+        .day-detail-manager{width:80px;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px;text-align:center;outline:none;}
+        .day-detail-manager:focus{border-color:var(--primary);}
+        .sch-emoji-btn{width:34px;height:34px;border:2px solid var(--border);border-radius:8px;background:var(--card-bg);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+        .sch-emoji-btn:hover{border-color:var(--primary);background:var(--primary-light);}
+        .sch-emoji-btn.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 2px rgba(74,144,217,0.3);}
+        .schedule-item-emoji{margin-right:3px;}
+        .day-detail-emoji{width:40px;border:1px solid var(--border);border-radius:8px;padding:6px;font-size:18px;text-align:center;cursor:pointer;position:relative;}
+        .emoji-dropdown{position:absolute;z-index:50;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:220px;}
+
         @media(max-width:768px){
             .header-inner{flex-direction:column;gap:8px;text-align:center;padding:14px 16px;}
             .header-right{width:100%;justify-content:center;}
@@ -304,8 +343,7 @@
             <div class="header-left">
                 <div class="school-icon">🏫</div>
                 <div class="header-title">
-                    <h1>2026 백암초 온라인 교무실</h1>
-                    <p>교직원 전용 &middot; 업무 자료 &middot; 연수 관리</p>
+                    <h1>AI 아이들 백암초등학교 교무실</h1>
                 </div>
             </div>
             <div class="header-right">
@@ -324,13 +362,30 @@
     </div>
 
     <div class="main-tabs">
-        <button class="main-tab active" onclick="switchPage('home',this)">🏠 교무실 홈</button>
+        <button class="main-tab active" onclick="switchPage('schedule',this)">📅 학교 일정</button>
+        <button class="main-tab" onclick="switchPage('home',this)">🏠 교무실 홈</button>
         <button class="main-tab" onclick="switchPage('training',this)">📋 연수 관리</button>
         <button class="main-tab" onclick="switchPage('links',this)">🔗 링크 모음</button>
     </div>
 
+    <!-- ===== SCHEDULE PAGE ===== -->
+    <div class="page active" id="page-schedule">
+        <div class="schedule-view-tabs">
+            <button class="schedule-view-tab" onclick="setScheduleView('day',this)">일간</button>
+            <button class="schedule-view-tab" onclick="setScheduleView('week',this)">주간</button>
+            <button class="schedule-view-tab active" onclick="setScheduleView('month',this)">월간</button>
+        </div>
+        <div class="schedule-nav">
+            <button class="schedule-nav-btn" onclick="scheduleNav(-1)">◀</button>
+            <span class="schedule-nav-title" id="scheduleTitle"></span>
+            <button class="schedule-nav-btn" onclick="scheduleNav(1)">▶</button>
+            <button class="schedule-nav-today" onclick="scheduleToday()">오늘</button>
+        </div>
+        <div id="scheduleContent"></div>
+    </div>
+
     <!-- ===== HOME PAGE ===== -->
-    <div class="page active" id="page-home">
+    <div class="page" id="page-home">
         <div class="search-bar">
             <span class="search-icon">🔍</span>
             <input type="text" id="homeSearch" placeholder="필요한 내용 검색 (Ctrl+F)" oninput="filterSections()">
@@ -364,13 +419,11 @@
                 <button class="filter-chip active" onclick="setTrainingFilter('all',this)">전체</button>
                 <button class="filter-chip" onclick="setTrainingFilter('교원',this)">교원</button>
                 <button class="filter-chip" onclick="setTrainingFilter('교직원',this)">교직원</button>
-                <button class="filter-chip" onclick="setTrainingFilter('incomplete',this)">미이수</button>
-                <button class="filter-chip" onclick="setTrainingFilter('complete',this)">이수완료</button>
                 <button class="filter-chip admin-link-edit-btn" onclick="openAddTraining()" style="margin-left:auto;background:var(--primary);color:white;border-color:var(--primary);">＋ 연수 추가</button>
             </div>
             <div class="table-wrapper"><div class="table-scroll">
                 <table><thead><tr>
-                    <th style="width:36px">순</th><th>연수명 (클릭→등록부)</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:90px">참가링크</th><th style="width:50px">완료</th><th class="admin-link-edit-btn" style="width:60px">관리</th>
+                    <th style="width:36px">순</th><th>연수명 (클릭→등록부)</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:90px">참가링크</th><th class="admin-link-edit-btn" style="width:60px">관리</th>
                 </tr></thead><tbody id="trainingTableBody"></tbody></table>
             </div></div>
         </div>
@@ -578,13 +631,31 @@
         <div class="modal-body" id="filePreviewModalBody" style="flex:1;overflow:auto;padding:0;display:flex;align-items:center;justify-content:center;background:#f0f0f0;"></div>
     </div></div>
 
+    <!-- Schedule Add Modal -->
+    <div class="modal-overlay" id="scheduleAddModal"><div class="modal" style="max-width:440px;">
+        <div class="modal-header"><h2>📅 일정 추가</h2><button class="btn-close" onclick="closeModal('scheduleAddModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="scheduleAddDate">
+            <div class="form-group"><label>날짜</label><div id="scheduleAddDateLabel" style="font-weight:600;font-size:15px;"></div></div>
+            <div class="form-group"><label>이모티콘</label>
+                <div id="scheduleEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+            </div>
+            <div class="form-group"><label>내용</label><input type="text" id="scheduleAddText" placeholder="일정 내용 입력"></div>
+            <div class="form-group"><label>담당자</label><input type="text" id="scheduleAddManager" placeholder="담당자 (선택)"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('scheduleAddModal')">취소</button><button class="btn btn-primary" onclick="submitScheduleAdd()">추가</button></div>
+    </div></div>
+
 <script>
 const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
+const SCH_EMOJIS=['','📌','⭐','🔔','📢','🎯','📝','💡','🏫','👨‍🏫','📅','⏰','🎓','📋','💻','📞','🏆','🔗','✅','⚠️','❗','🎉','🤝','📊','🏃','🎵','🎨','📖','🧪','🌿'];
+let selectedSchEmoji='';
 const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[];
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
+let scheduleView='month',scheduleDate=new Date();
 let pendingFile=null; // {name, size, data(base64), type}
 const MAX_FILE_SIZE=5*1024*1024; // 5MB limit per file
 
@@ -615,7 +686,7 @@ async function deleteFromFirebase(path){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,ts:Date.now()};
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -645,10 +716,11 @@ async function init(){
     try{
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
-            api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections')
+            api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
+            api('GET','/api/schedules')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
-        staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];
+        staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -667,7 +739,7 @@ async function init(){
         if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];}
     }
     updateDate();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -682,6 +754,211 @@ function switchPage(p,btn){
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.main-tab').forEach(x=>x.classList.remove('active'));
     document.getElementById('page-'+p).classList.add('active');btn.classList.add('active');
+    if(p==='schedule')renderSchedule();
+}
+
+// ===== SCHEDULE =====
+function setScheduleView(v,btn){
+    scheduleView=v;
+    document.querySelectorAll('.schedule-view-tab').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    renderSchedule();
+}
+function scheduleNav(dir){
+    if(scheduleView==='month')scheduleDate.setMonth(scheduleDate.getMonth()+dir);
+    else if(scheduleView==='week')scheduleDate.setDate(scheduleDate.getDate()+dir*7);
+    else scheduleDate.setDate(scheduleDate.getDate()+dir);
+    renderSchedule();
+}
+function scheduleToday(){scheduleDate=new Date();renderSchedule();}
+function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function getScheduleItems(dateStr){return schedules.filter(s=>s.date===dateStr);}
+function todayStr(){return fmtDate(new Date());}
+
+async function addScheduleItem(dateStr,text,manager,emoji){
+    if(!text.trim())return;
+    schedules.push({id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||'',emoji:emoji||''});
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();renderSchedule();
+}
+async function deleteScheduleItem(id){
+    schedules=schedules.filter(s=>s.id!==id);
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();renderSchedule();
+}
+async function updateScheduleItem(id,field,val){
+    const item=schedules.find(s=>s.id===id);if(!item)return;
+    item[field]=val;
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();
+}
+
+function renderSchedule(){
+    const el=document.getElementById('scheduleContent');
+    const title=document.getElementById('scheduleTitle');
+    if(scheduleView==='month')renderMonthView(el,title);
+    else if(scheduleView==='week')renderWeekView(el,title);
+    else renderDayView(el,title);
+}
+
+function renderMonthView(el,titleEl){
+    const y=scheduleDate.getFullYear(),m=scheduleDate.getMonth();
+    titleEl.textContent=`${y}년 ${m+1}월`;
+    const first=new Date(y,m,1),last=new Date(y,m+1,0);
+    const startDay=first.getDay(); // 0=sun
+    const today=todayStr();
+    let html='<table class="schedule-table"><thead><tr>';
+    ['일','월','화','수','목','금','토'].forEach((d,i)=>html+=`<th style="${i===0?'color:#ffcdd2':i===6?'color:#bbdefb':''}">${d}</th>`);
+    html+='</tr></thead><tbody><tr>';
+    // prev month padding
+    const prevLast=new Date(y,m,0).getDate();
+    for(let i=0;i<startDay;i++){
+        const pd=prevLast-startDay+1+i;
+        const ds=fmtDate(new Date(y,m-1,pd));
+        html+=`<td class="other-month"><div class="schedule-day-num">${pd}</div></td>`;
+    }
+    for(let d=1;d<=last.getDate();d++){
+        const ds=fmtDate(new Date(y,m,d));
+        const dow=(startDay+d-1)%7;
+        const isToday=ds===today?'today':'';
+        const items=getScheduleItems(ds);
+        html+=`<td class="${isToday}" style="width:14.28%">`;
+        html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}</div>`;
+        items.forEach(it=>{
+            html+=`<div class="schedule-item" title="${esc(it.manager||'')}">`
+                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
+                +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
+                +`</div>`;
+        });
+        html+=`<button class="schedule-add-btn" onclick="promptScheduleAdd('${ds}')">+</button>`;
+        html+='</td>';
+        if(dow===6&&d<last.getDate())html+='</tr><tr>';
+    }
+    // next month padding
+    const endDay=(startDay+last.getDate()-1)%7;
+    for(let i=endDay+1;i<7;i++){
+        html+=`<td class="other-month"><div class="schedule-day-num">${i-endDay}</div></td>`;
+    }
+    html+='</tr></tbody></table>';
+    el.innerHTML=html;
+}
+
+function renderWeekView(el,titleEl){
+    const d=new Date(scheduleDate);
+    const day=d.getDay();
+    const sun=new Date(d);sun.setDate(d.getDate()-day);
+    const sat=new Date(sun);sat.setDate(sun.getDate()+6);
+    titleEl.textContent=`${sun.getMonth()+1}/${sun.getDate()} ~ ${sat.getMonth()+1}/${sat.getDate()}`;
+    const today=todayStr();
+    let html='<table class="schedule-table week-table"><thead><tr>';
+    const dayNames=['일','월','화','수','목','금','토'];
+    for(let i=0;i<7;i++){
+        const dd=new Date(sun);dd.setDate(sun.getDate()+i);
+        html+=`<th style="${i===0?'color:#ffcdd2':i===6?'color:#bbdefb':''}">${dayNames[i]}<br>${dd.getMonth()+1}.${dd.getDate()}</th>`;
+    }
+    html+='</tr></thead><tbody><tr>';
+    for(let i=0;i<7;i++){
+        const dd=new Date(sun);dd.setDate(sun.getDate()+i);
+        const ds=fmtDate(dd);
+        const isToday=ds===today?'today':'';
+        const items=getScheduleItems(ds);
+        html+=`<td class="${isToday}">`;
+        items.forEach(it=>{
+            html+=`<div class="schedule-item" title="${esc(it.manager||'')}">`
+                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
+                +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
+                +`</div>`;
+        });
+        html+=`<button class="schedule-add-btn" onclick="promptScheduleAdd('${ds}')">+</button>`;
+        html+='</td>';
+    }
+    html+='</tr></tbody></table>';
+    el.innerHTML=html;
+}
+
+function renderDayView(el,titleEl){
+    const ds=fmtDate(scheduleDate);
+    const dayNames=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    titleEl.textContent=`${scheduleDate.getFullYear()}년 ${scheduleDate.getMonth()+1}월 ${scheduleDate.getDate()}일 (${dayNames[scheduleDate.getDay()]})`;
+    const items=getScheduleItems(ds);
+    let html='<div class="day-detail-card">';
+    if(items.length===0) html+='<div style="text-align:center;padding:30px;color:var(--text-light);">등록된 일정이 없습니다.</div>';
+    items.forEach(it=>{
+        html+=`<div class="day-detail-item">
+            <button class="day-detail-emoji" onclick="toggleEmojiDropdown(this,'${it.id}')">${it.emoji||'😀'}</button>
+            <input class="day-detail-input" value="${esc(it.text)}" onchange="updateScheduleItem('${it.id}','text',this.value)">
+            <input class="day-detail-manager" value="${esc(it.manager||'')}" placeholder="담당자" onchange="updateScheduleItem('${it.id}','manager',this.value)">
+            <button class="item-action-btn delete" onclick="deleteScheduleItem('${it.id}')" style="font-size:14px;">🗑️</button>
+        </div>`;
+    });
+    html+=`<div class="day-detail-item" style="border-bottom:none;">
+        <button class="day-detail-emoji" id="newSchEmojiBtn" onclick="toggleNewEmojiDropdown(this)">😀</button>
+        <input class="day-detail-input" id="newScheduleText" placeholder="새 일정 입력 후 Enter" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
+        <input class="day-detail-manager" id="newScheduleManager" placeholder="담당자" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
+        <button class="item-action-btn" onclick="submitDayAdd('${ds}')" style="font-size:14px;">➕</button>
+    </div>`;
+    html+='</div>';
+    el.innerHTML=html;
+}
+
+function promptScheduleAdd(dateStr){
+    selectedSchEmoji='';
+    document.getElementById('scheduleAddDate').value=dateStr;
+    const [y,m,d]=dateStr.split('-');
+    const dt=new Date(+y,+m-1,+d);
+    const dayNames=['일','월','화','수','목','금','토'];
+    document.getElementById('scheduleAddDateLabel').textContent=`${+m}월 ${+d}일 (${dayNames[dt.getDay()]})`;
+    document.getElementById('scheduleAddText').value='';
+    document.getElementById('scheduleAddManager').value='';
+    document.getElementById('scheduleEmojiPicker').innerHTML=SCH_EMOJIS.map(e=>
+        `<button type="button" class="sch-emoji-btn ${e===''?'selected':''}" onclick="selectSchEmoji('${e}',this)">${e||'없음'}</button>`
+    ).join('');
+    openModal('scheduleAddModal');
+    setTimeout(()=>document.getElementById('scheduleAddText').focus(),100);
+}
+function selectSchEmoji(e,el){
+    selectedSchEmoji=e;
+    document.querySelectorAll('#scheduleEmojiPicker .sch-emoji-btn').forEach(b=>b.classList.remove('selected'));
+    el.classList.add('selected');
+}
+let newDayEmoji='';
+function toggleEmojiDropdown(btn,itemId){
+    closeAllEmojiDropdowns();
+    const dd=document.createElement('div');dd.className='emoji-dropdown';
+    SCH_EMOJIS.forEach(e=>{
+        const b=document.createElement('button');b.type='button';b.className='sch-emoji-btn';
+        b.textContent=e||'없음';b.onclick=()=>{
+            updateScheduleItem(itemId,'emoji',e);btn.textContent=e||'😀';dd.remove();
+        };
+        dd.appendChild(b);
+    });
+    btn.style.position='relative';btn.appendChild(dd);
+}
+function toggleNewEmojiDropdown(btn){
+    closeAllEmojiDropdowns();
+    const dd=document.createElement('div');dd.className='emoji-dropdown';
+    SCH_EMOJIS.forEach(e=>{
+        const b=document.createElement('button');b.type='button';b.className='sch-emoji-btn';
+        b.textContent=e||'없음';b.onclick=()=>{newDayEmoji=e;btn.textContent=e||'😀';dd.remove();};
+        dd.appendChild(b);
+    });
+    btn.style.position='relative';btn.appendChild(dd);
+}
+function closeAllEmojiDropdowns(){document.querySelectorAll('.emoji-dropdown').forEach(d=>d.remove());}
+document.addEventListener('click',e=>{if(!e.target.closest('.day-detail-emoji')&&!e.target.closest('.emoji-dropdown'))closeAllEmojiDropdowns();});
+function submitDayAdd(ds){
+    const text=document.getElementById('newScheduleText').value;
+    const manager=document.getElementById('newScheduleManager').value;
+    addScheduleItem(ds,text,manager,newDayEmoji);
+    newDayEmoji='';
+}
+function submitScheduleAdd(){
+    const dateStr=document.getElementById('scheduleAddDate').value;
+    const text=document.getElementById('scheduleAddText').value;
+    const manager=document.getElementById('scheduleAddManager').value;
+    if(!text.trim()){showToast('내용을 입력하세요','error');return;}
+    addScheduleItem(dateStr,text,manager,selectedSchEmoji);
+    closeModal('scheduleAddModal');
 }
 
 function toggleAdmin(){
@@ -953,6 +1230,7 @@ function confirmDeleteItem(secId,itemId){
     if(!it)return;
     document.getElementById('confirmMessage').textContent=`"${it.text}" 항목을 삭제하시겠습니까?`;
     document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        if(it.filePath)await deleteFromFirebase(it.filePath);
         sec.items=sec.items.filter(i=>i.id!==itemId);
         await api('POST','/api/sections',sections);
         renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
@@ -1116,17 +1394,12 @@ function renderTrainingChecklist(){
     let f=trainings;
     if(trainingFilter==='교원')f=trainings.filter(t=>t.target==='교원');
     else if(trainingFilter==='교직원')f=trainings.filter(t=>t.target==='교직원');
-    else if(trainingFilter==='complete')f=trainings.filter(t=>trainingRecords[t.id]?.completed);
-    else if(trainingFilter==='incomplete')f=trainings.filter(t=>!trainingRecords[t.id]?.completed);
-    const total=trainings.length,done=trainings.filter(t=>trainingRecords[t.id]?.completed).length;
-    const pct=total?Math.round(done/total*100):0;
-    document.getElementById('trainingProgress').innerHTML=`<span class="progress-label">전체 이수 현황</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span class="progress-text">${done}/${total} (${pct}%)</span>`;
+    document.getElementById('trainingProgress').innerHTML=`<span class="progress-label">전체 연수</span><span class="progress-text">${trainings.length}건</span>`;
     tbody.innerHTML=f.map(t=>{
-        const d=trainingRecords[t.id]?.completed;
         const mb=t.method.includes('온라인')?'badge-online':t.method.includes('이수증')?'badge-submit':t.method.includes('자체')?'badge-self':'badge-group';
         const linkBtn=t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener noreferrer" class="training-link-btn">🔗 바로가기</a> `:'';
         const adminBtns=isAdmin?`<td><div style="display:flex;gap:2px;"><button class="item-action-btn" onclick="openEditTraining('${t.id}')" title="수정">✏️</button><button class="item-action-btn delete" onclick="confirmDeleteTraining('${t.id}')" title="삭제">🗑️</button></div></td>`:'<td class="admin-link-edit-btn"></td>';
-        return `<tr class="${d?'completed-row':''}">
+        return `<tr>
             <td style="text-align:center;font-weight:600">${t.no}</td>
             <td class="training-name-clickable" onclick="openTrainingRegModal('${t.id}')" title="클릭하여 등록부 보기">${esc(t.name)} <span style="font-size:10px;opacity:0.6">📋</span></td>
             <td><span class="badge ${t.selfTraining?'badge-possible':'badge-impossible'}">${t.selfTraining?'가능':'불가'}</span></td>
@@ -1135,8 +1408,7 @@ function renderTrainingChecklist(){
             <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
             <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
             <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
-            <td style="white-space:nowrap">${linkBtn}</td>
-            <td><div class="check-cell"><button class="completion-toggle ${d?'done':''}" onclick="toggleTrainingComplete('${t.id}')">${d?'✓':''}</button></div></td>
+            <td style="white-space:nowrap">${linkBtn}${isAdmin?`<button class="item-action-btn" onclick="editTrainingLink('${t.id}')" title="링크 수정" style="font-size:11px;">✏️</button>`:''}</td>
             ${adminBtns}
         </tr>`;
     }).join('');
@@ -1193,7 +1465,7 @@ function renderRegisterTable(){
             <td><div class="check-cell" style="flex-direction:column;gap:3px;">
                 <input type="file" class="cert-input-hidden" id="certInput_${tid}_${s.id}" accept=".pdf,.jpg,.jpeg,.png,.hwp,.hwpx" onchange="uploadCertFile('${tid}','${s.id}',this)">
                 <button class="cert-btn ${hasCert?'has-cert':''}" onclick="document.getElementById('certInput_${tid}_${s.id}').click()">${hasCert?'📎 보기':'📎 첨부'}</button>
-                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇ 다운</button>`:''}
+                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇ 다운</button><button class="cert-btn" onclick="deleteCertFile('${tid}','${s.id}')" style="font-size:10px;color:#e53935;">🗑 삭제</button>`:''}
             </div></td>
         </tr>`;
     });
@@ -1242,6 +1514,17 @@ function downloadCertFile(tid,sid){
     const r=trainingRecords[tid]?.[sid];if(!r)return;
     const url=r.certFileUrl||r.certFileData;
     if(url)openFilePreview(url,r.certFileName||'이수증','');
+}
+async function deleteCertFile(tid,sid){
+    if(!confirm('이 이수증 파일을 삭제하시겠습니까?'))return;
+    const r=trainingRecords[tid]?.[sid];if(!r)return;
+    try{
+        if(r.certFilePath)await deleteFromFirebase(r.certFilePath);
+        delete r.certFileName;delete r.certFileSize;delete r.certFileUrl;delete r.certFilePath;delete r.certFileData;
+        await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
+        renderRegisterTable();renderTrainingRegModalContent(tid);
+        showToast('이수증 삭제 완료','success');
+    }catch(e){console.error('삭제 실패:',e);showToast('삭제 실패: '+e.message,'error');}
 }
 
 // ===== 엑셀(CSV) 내보내기 =====
@@ -1377,7 +1660,7 @@ function renderTrainingRegModalContent(tid){
                 <button class="check-box ${chk?'checked':''}" onclick="toggleStaffCheck('${tid}','${s.id}')" style="flex-shrink:0">${chk?'✓':''}</button>
                 <input type="file" class="cert-input-hidden" id="certModalInput_${tid}_${s.id}" accept=".pdf,.jpg,.jpeg,.png,.hwp,.hwpx" onchange="uploadCertFile('${tid}','${s.id}',this)">
                 <button class="cert-btn ${hasCert?'has-cert':''}" onclick="document.getElementById('certModalInput_${tid}_${s.id}').click()" style="font-size:10px;">${hasCert?'📎'+esc(r.certFileName.slice(0,8))+'…':'📎 이수증'}</button>
-                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇</button>`:''}
+                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇</button><button class="cert-btn" onclick="deleteCertFile('${tid}','${s.id}')" style="font-size:10px;color:#e53935;">🗑</button>`:''}
             </div></td>
         </tr>`;
     });
