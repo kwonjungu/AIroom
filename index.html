@@ -331,6 +331,25 @@
         .training-link-btn:hover{background:var(--primary-dark);}
         .admin-link-edit-btn{display:none;}
         .admin-mode .admin-link-edit-btn{display:inline-flex;}
+
+        /* Tab admin controls */
+        .main-tabs-wrapper{max-width:960px;margin:0 auto;padding:8px 24px 0;}
+        .main-tab-wrap{position:relative;display:inline-flex;align-items:center;}
+        .tab-move-btns{display:none;position:absolute;top:-18px;left:50%;transform:translateX(-50%);gap:1px;z-index:10;}
+        .admin-mode .tab-move-btns{display:flex;}
+        .tab-move-btn{width:18px;height:18px;border-radius:4px;border:1px solid var(--border);background:white;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
+        .tab-move-btn:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
+        .tab-add-btn{padding:11px 16px;border:2px dashed var(--border);background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;display:none;border-radius:10px 10px 0 0;transition:all .2s;}
+        .admin-mode .tab-add-btn{display:block;}
+        .tab-add-btn:hover{color:var(--primary);background:var(--primary-light);border-color:var(--primary);}
+        .tab-delete-btn{display:none;width:16px;height:16px;border-radius:50%;border:none;background:#FFE8E8;color:var(--accent);cursor:pointer;font-size:9px;position:absolute;top:-8px;right:-8px;align-items:center;justify-content:center;z-index:10;line-height:1;}
+        .admin-mode .tab-delete-btn.custom-only{display:flex;}
+
+        /* Section move buttons */
+        .section-move-btns{display:none;gap:2px;align-items:center;}
+        .admin-mode .section-move-btns{display:flex;}
+        .section-move-btn{width:26px;height:26px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:transparent;color:var(--text-light);}
+        .section-move-btn:hover{background:var(--primary-light);color:var(--primary);}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
@@ -361,11 +380,8 @@
         </div>
     </div>
 
-    <div class="main-tabs">
-        <button class="main-tab active" onclick="switchPage('schedule',this)">📅 학교 일정</button>
-        <button class="main-tab" onclick="switchPage('home',this)">🏠 교무실 홈</button>
-        <button class="main-tab" onclick="switchPage('training',this)">📋 연수 관리</button>
-        <button class="main-tab" onclick="switchPage('links',this)">🔗 링크 모음</button>
+    <div class="main-tabs-wrapper">
+        <div class="main-tabs" id="mainTabs"></div>
     </div>
 
     <!-- ===== SCHEDULE PAGE ===== -->
@@ -474,6 +490,9 @@
         <div class="category-tabs" id="categoryTabs"></div>
         <div class="links-grid" id="linksGrid"></div>
     </div>
+
+    <!-- Custom Tab Pages Container -->
+    <div id="customPagesContainer"></div>
 
     <div class="toast-container" id="toastContainer"></div>
 
@@ -646,6 +665,17 @@
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('scheduleAddModal')">취소</button><button class="btn btn-primary" onclick="submitScheduleAdd()">추가</button></div>
     </div></div>
 
+    <!-- Tab Add/Edit Modal -->
+    <div class="modal-overlay" id="tabModal"><div class="modal" style="max-width:440px;">
+        <div class="modal-header"><h2 id="tabModalTitle">새 탭 추가</h2><button class="btn-close" onclick="closeModal('tabModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editingTabId">
+            <div class="form-group"><label>탭 이름 *</label><input type="text" id="tabName" placeholder="예: 학년별 자료"></div>
+            <div class="form-group"><label>아이콘 (이모지)</label><input type="text" id="tabIcon" placeholder="이모지 입력" maxlength="4" style="width:60px" value="📂"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('tabModal')">취소</button><button class="btn btn-primary" onclick="saveTab()">저장</button></div>
+    </div></div>
+
 <script>
 const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
 const SCH_EMOJIS=['','📌','⭐','🔔','📢','🎯','📝','💡','🏫','👨‍🏫','📅','⏰','🎓','📋','💻','📞','🏆','🔗','✅','⚠️','❗','🎉','🤝','📊','🏃','🎵','🎨','📖','🧪','🌿'];
@@ -654,6 +684,14 @@ const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-com
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
 
 let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[];
+let tabsConfig=[];
+const DEFAULT_TABS=[
+    {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
+    {id:'home',title:'교무실 홈',icon:'🏠',type:'builtin',order:1},
+    {id:'training',title:'연수 관리',icon:'📋',type:'builtin',order:2},
+    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:3}
+];
+let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let scheduleView='month',scheduleDate=new Date();
 let pendingFile=null; // {name, size, data(base64), type}
@@ -686,7 +724,7 @@ async function deleteFromFirebase(path){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,ts:Date.now()};
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -717,10 +755,11 @@ async function init(){
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
-            api('GET','/api/schedules')
+            api('GET','/api/schedules'),api('GET','/api/tabs')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
+        tabsConfig=results[7]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -730,16 +769,18 @@ async function init(){
             if(isEmptyData(staff)&&!isEmptyData(backup.staff)){staff=backup.staff;api('POST','/api/staff',staff);}
             if(isEmptyData(trainingRecords)&&!isEmptyData(backup.trainingRecords)){trainingRecords=backup.trainingRecords;api('POST','/api/training-records',trainingRecords);}
             if(isEmptyData(sections)&&!isEmptyData(backup.sections)){sections=backup.sections;api('POST','/api/sections',sections);}
+            if(isEmptyData(tabsConfig)&&!isEmptyData(backup.tabsConfig)){tabsConfig=backup.tabsConfig;api('POST','/api/tabs',tabsConfig);}
         }
         saveToLocal();
     }catch(e){
         console.error('초기화 오류:',e);
         // 서버 완전 실패 시 localStorage에서 복원
         const backup=loadFromLocal();
-        if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];}
+        if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];tabsConfig=backup.tabsConfig||[];}
     }
-    updateDate();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();
+    initTabsConfig();
+    updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderCustomPages();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -753,7 +794,10 @@ function updateDate(){
 function switchPage(p,btn){
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.main-tab').forEach(x=>x.classList.remove('active'));
-    document.getElementById('page-'+p).classList.add('active');btn.classList.add('active');
+    const page=document.getElementById('page-'+p);
+    if(page)page.classList.add('active');
+    if(btn)btn.classList.add('active');
+    activeTabId=p;
     if(p==='schedule')renderSchedule();
 }
 
@@ -967,7 +1011,7 @@ function toggleAdmin(){
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
-    renderSections();renderLinks();
+    renderTabs();renderSections();renderLinks();renderCustomPages();
 }
 
 // ===== SECTIONS (Home Page - Notion Style) =====
@@ -989,6 +1033,10 @@ function renderSections(){
                     <h3>${esc(sec.title)}</h3>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
+                    <div class="section-move-btns">
+                        <button class="section-move-btn" onclick="event.stopPropagation();moveSection('${sec.id}',-1)" title="위로">▲</button>
+                        <button class="section-move-btn" onclick="event.stopPropagation();moveSection('${sec.id}',1)" title="아래로">▼</button>
+                    </div>
                     <div class="section-admin-actions">
                         <button class="item-action-btn" onclick="event.stopPropagation();editSection('${sec.id}')" title="수정">✏️</button>
                         <button class="item-action-btn delete" onclick="event.stopPropagation();confirmDeleteSection('${sec.id}')" title="삭제">🗑️</button>
@@ -1168,7 +1216,7 @@ function editItem(secId,itemId){
 }
 
 async function saveItem(){
-    const secId=document.getElementById('editingSectionId').value;
+    const rawSecId=document.getElementById('editingSectionId').value;
     const itemId=document.getElementById('editingItemId').value;
     const text=document.getElementById('itemText').value.trim();
     if(!text){showToast('텍스트를 입력하세요','error');return;}
@@ -1181,6 +1229,9 @@ async function saveItem(){
         icon:document.getElementById('itemIcon').value.trim()||'•',
         bold:document.getElementById('itemBold').checked
     };
+    // Determine if this is a custom tab item
+    const isCustom=rawSecId.startsWith('CUSTOM:');
+    const secId=isCustom?rawSecId.split(':')[2]:rawSecId;
     // Handle file - Firebase Storage 업로드
     if(pendingFile&&!pendingFile.removed){
         if(firebaseStorage&&pendingFile.rawFile){
@@ -1202,7 +1253,16 @@ async function saveItem(){
     } else if(pendingFile&&pendingFile.removed){
         data.fileName='';data.fileSize='';data.fileData='';data.fileType='';data.fileUrl='';data.filePath='';
     }
-    const sec=sections.find(s=>s.id===secId);
+    // Find the correct section (home page or custom tab)
+    let sec;
+    if(isCustom){
+        const tabId=rawSecId.split(':')[1];
+        const tab=tabsConfig.find(t=>t.id===tabId);
+        sec=tab?(tab.sections||[]).find(s=>s.id===secId):null;
+    } else {
+        sec=sections.find(s=>s.id===secId);
+    }
+    if(!sec){showToast('섹션을 찾을 수 없습니다','error');return;}
     if(itemId){
         const idx=sec.items.findIndex(i=>i.id===itemId);
         if(idx!==-1){
@@ -1218,9 +1278,13 @@ async function saveItem(){
         if(!data.id)data.id='item_'+Date.now();
         sec.items.push(data);
     }
-    await api('POST','/api/sections',sections);
+    if(isCustom){
+        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+    } else {
+        await api('POST','/api/sections',sections);renderSections();
+    }
     pendingFile=null;
-    renderSections();closeModal('itemModal');
+    closeModal('itemModal');
     showToast('저장 완료','success');
 }
 
@@ -1258,14 +1322,30 @@ function editSection(id){
 }
 
 async function saveSection(){
-    const id=document.getElementById('editingSectionEditId').value;
+    const rawId=document.getElementById('editingSectionEditId').value;
     const title=document.getElementById('sectionTitle').value.trim();
     if(!title){showToast('제목을 입력하세요','error');return;}
     const color=document.getElementById('sectionColor').value;
     const icon=document.getElementById('sectionIcon').value.trim()||'📌';
     const borderColor=COLOR_BORDERS[color]||'#E0E0E0';
-    if(id){
-        const sec=sections.find(s=>s.id===id);
+    // Custom tab section handling
+    if(rawId.startsWith('CUSTOM:')){
+        const parts=rawId.split(':');
+        const tabId=parts[1];const secId=parts[2]||'';
+        const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+        if(!tab.sections)tab.sections=[];
+        if(secId){
+            const sec=tab.sections.find(s=>s.id===secId);
+            if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;}
+        } else {
+            tab.sections.push({id:'csec_'+Date.now(),title,icon,color,borderColor,order:tab.sections.length,items:[]});
+        }
+        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        closeModal('sectionModal');showToast('저장 완료','success');return;
+    }
+    // Home page section handling
+    if(rawId){
+        const sec=sections.find(s=>s.id===rawId);
         if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;}
     } else {
         sections.push({id:'sec_'+Date.now(),title,icon,color,borderColor,order:sections.length,items:[]});
@@ -1859,6 +1939,333 @@ function showToast(msg,type=''){
     c.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
 function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+// ===== TAB MANAGEMENT =====
+function initTabsConfig(){
+    if(!tabsConfig||!tabsConfig.length){
+        tabsConfig=DEFAULT_TABS.map(t=>({...t}));
+    }
+    // 기존 빌트인 탭이 빠져있으면 추가
+    DEFAULT_TABS.forEach(dt=>{
+        if(!tabsConfig.find(t=>t.id===dt.id)){
+            tabsConfig.push({...dt,order:tabsConfig.length});
+        }
+    });
+    // order 정렬 보정
+    tabsConfig.sort((a,b)=>a.order-b.order);
+    tabsConfig.forEach((t,i)=>t.order=i);
+}
+
+function renderTabs(){
+    const container=document.getElementById('mainTabs');
+    const sorted=[...tabsConfig].sort((a,b)=>a.order-b.order);
+    let html='';
+    sorted.forEach((tab,idx)=>{
+        const isActive=tab.id===activeTabId;
+        const isCustom=tab.type==='custom';
+        html+=`<div class="main-tab-wrap">`;
+        html+=`<div class="tab-move-btns">`;
+        if(idx>0) html+=`<button class="tab-move-btn" onclick="event.stopPropagation();moveTab('${tab.id}',-1)" title="왼쪽">◀</button>`;
+        if(idx<sorted.length-1) html+=`<button class="tab-move-btn" onclick="event.stopPropagation();moveTab('${tab.id}',1)" title="오른쪽">▶</button>`;
+        html+=`</div>`;
+        if(isCustom) html+=`<button class="tab-delete-btn custom-only" onclick="event.stopPropagation();confirmDeleteTab('${tab.id}')" title="탭 삭제">✕</button>`;
+        html+=`<button class="main-tab${isActive?' active':''}" onclick="switchPage('${tab.id}',this)">${tab.icon} ${esc(tab.title)}</button>`;
+        html+=`</div>`;
+    });
+    html+=`<button class="tab-add-btn" onclick="openAddTab()">+ 탭 추가</button>`;
+    container.innerHTML=html;
+}
+
+async function moveTab(tabId,dir){
+    const sorted=[...tabsConfig].sort((a,b)=>a.order-b.order);
+    const idx=sorted.findIndex(t=>t.id===tabId);
+    if(idx<0)return;
+    const newIdx=idx+dir;
+    if(newIdx<0||newIdx>=sorted.length)return;
+    // swap orders
+    const tmp=sorted[idx].order;
+    sorted[idx].order=sorted[newIdx].order;
+    sorted[newIdx].order=tmp;
+    await api('POST','/api/tabs',tabsConfig);
+    saveToLocal();renderTabs();
+}
+
+function openAddTab(){
+    document.getElementById('tabModalTitle').textContent='새 탭 추가';
+    document.getElementById('editingTabId').value='';
+    document.getElementById('tabName').value='';
+    document.getElementById('tabIcon').value='📂';
+    openModal('tabModal');
+}
+
+function openEditTab(tabId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    document.getElementById('tabModalTitle').textContent='탭 수정';
+    document.getElementById('editingTabId').value=tabId;
+    document.getElementById('tabName').value=tab.title;
+    document.getElementById('tabIcon').value=tab.icon;
+    openModal('tabModal');
+}
+
+async function saveTab(){
+    const id=document.getElementById('editingTabId').value;
+    const title=document.getElementById('tabName').value.trim();
+    if(!title){showToast('탭 이름을 입력하세요','error');return;}
+    const icon=document.getElementById('tabIcon').value.trim()||'📂';
+    if(id){
+        const tab=tabsConfig.find(t=>t.id===id);
+        if(tab){tab.title=title;tab.icon=icon;}
+    } else {
+        const newId='tab_'+Date.now();
+        tabsConfig.push({id:newId,title,icon,type:'custom',order:tabsConfig.length,sections:[]});
+        activeTabId=newId;
+    }
+    await api('POST','/api/tabs',tabsConfig);
+    saveToLocal();renderTabs();renderCustomPages();closeModal('tabModal');
+    showToast('저장 완료','success');
+    // 새 탭이면 해당 탭으로 이동
+    if(!id){
+        const btn=document.querySelector(`.main-tab-wrap .main-tab.active`);
+        switchPage(activeTabId,document.querySelector(`.main-tab[onclick*="'${activeTabId}'"]`));
+    }
+}
+
+function confirmDeleteTab(tabId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab||tab.type==='builtin')return;
+    document.getElementById('confirmMessage').textContent=`"${tab.title}" 탭을 삭제하시겠습니까? 탭의 모든 섹션도 함께 삭제됩니다.`;
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        tabsConfig=tabsConfig.filter(t=>t.id!==tabId);
+        // 삭제된 탭의 페이지 제거
+        const page=document.getElementById('page-'+tabId);
+        if(page)page.remove();
+        // 첫번째 탭으로 이동
+        if(activeTabId===tabId){
+            const sorted=[...tabsConfig].sort((a,b)=>a.order-b.order);
+            activeTabId=sorted[0]?.id||'schedule';
+        }
+        await api('POST','/api/tabs',tabsConfig);
+        saveToLocal();renderTabs();renderCustomPages();
+        switchPage(activeTabId,document.querySelector(`.main-tab[onclick*="'${activeTabId}'"]`));
+        closeModal('confirmModal');showToast('탭 삭제 완료','success');
+    };
+    openModal('confirmModal');
+}
+
+// ===== CUSTOM TAB PAGES =====
+function renderCustomPages(){
+    const container=document.getElementById('customPagesContainer');
+    const customTabs=tabsConfig.filter(t=>t.type==='custom');
+    // 기존 커스텀 페이지 중 더이상 없는 것 제거
+    container.querySelectorAll('.page[data-custom-tab]').forEach(p=>{
+        if(!customTabs.find(t=>t.id===p.dataset.customTab))p.remove();
+    });
+    customTabs.forEach(tab=>{
+        let page=document.getElementById('page-'+tab.id);
+        if(!page){
+            page=document.createElement('div');
+            page.className='page';
+            page.id='page-'+tab.id;
+            page.dataset.customTab=tab.id;
+            page.style.maxWidth='960px';page.style.margin='0 auto';page.style.padding='20px 24px 50px';
+            container.appendChild(page);
+        }
+        if(activeTabId===tab.id)page.classList.add('active');
+        else page.classList.remove('active');
+        renderCustomTabContent(tab,page);
+    });
+}
+
+function renderCustomTabContent(tab,page){
+    const secs=tab.sections||[];
+    const sorted=[...secs].sort((a,b)=>a.order-b.order);
+    let html=`<div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="필요한 내용 검색 (Ctrl+F)" oninput="filterCustomSections('${tab.id}',this.value)">
+        <span class="search-hint">Ctrl+P</span>
+    </div>`;
+    html+=`<div id="customSections-${tab.id}">`;
+    html+=sorted.map(sec=>{
+        const items=sec.items||[];
+        const borderColor=sec.borderColor||COLOR_BORDERS[sec.color]||'#E0E0E0';
+        return `<div class="section-block" id="csec-${sec.id}">
+            <div class="section-header" style="background:${sec.color};border-left:4px solid ${borderColor};" onclick="toggleCustomSection('${sec.id}')">
+                <div class="section-header-left">
+                    <span class="section-icon">${sec.icon||'📌'}</span>
+                    <h3>${esc(sec.title)}</h3>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <div class="section-move-btns">
+                        <button class="section-move-btn" onclick="event.stopPropagation();moveCustomSection('${tab.id}','${sec.id}',-1)" title="위로">▲</button>
+                        <button class="section-move-btn" onclick="event.stopPropagation();moveCustomSection('${tab.id}','${sec.id}',1)" title="아래로">▼</button>
+                    </div>
+                    <div class="section-admin-actions">
+                        <button class="item-action-btn" onclick="event.stopPropagation();editCustomSection('${tab.id}','${sec.id}')" title="수정">✏️</button>
+                        <button class="item-action-btn delete" onclick="event.stopPropagation();confirmDeleteCustomSection('${tab.id}','${sec.id}')" title="삭제">🗑️</button>
+                    </div>
+                    <span class="section-toggle">▼</span>
+                </div>
+            </div>
+            <div class="section-body">
+                ${items.map(it=>{
+                    const hasLink=it.url&&it.url.trim();
+                    const linkAttr=hasLink?`href="${esc(it.url)}" target="_blank" rel="noopener noreferrer"`:'';
+                    const tag=hasLink?'a':'span';
+                    const cls=`section-item-text${hasLink?' has-link':''}${it.bold?' bold':''}`;
+                    const fileHtml=it.fileName?`<a class="section-item-file" onclick="downloadCustomFile('${tab.id}','${sec.id}','${it.id}')" title="클릭하여 미리보기">📎 ${esc(it.fileName)} <span class="file-size">(${esc(it.fileSize||'')})</span></a>`:'';
+                    const personBoxHtml=it.person?`<div class="person-box"><span class="person-box-name">👤 ${esc(it.person)}</span>${it.personExt?`<span class="person-box-ext">☎ ${esc(it.personExt)}</span>`:''}</div>`:'';
+                    return `<div class="section-item">
+                        <span class="section-item-icon">${it.icon||'•'}</span>
+                        <div class="section-item-content">
+                            <${tag} class="${cls}" ${linkAttr}>${esc(it.text)}</${tag}>
+                            ${it.description?`<div class="section-item-desc">${esc(it.description)}</div>`:''}
+                            ${fileHtml?`<div style="margin-top:3px;">${fileHtml}</div>`:''}
+                        </div>
+                        ${personBoxHtml}
+                        <div class="section-item-actions">
+                            <button class="item-action-btn" onclick="editCustomItem('${tab.id}','${sec.id}','${it.id}')" title="수정">✏️</button>
+                            <button class="item-action-btn delete" onclick="confirmDeleteCustomItem('${tab.id}','${sec.id}','${it.id}')" title="삭제">🗑️</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+                <button class="add-item-btn" onclick="openAddCustomItem('${tab.id}','${sec.id}')">+ 항목 추가</button>
+            </div>
+        </div>`;
+    }).join('');
+    html+=`</div>`;
+    html+=`<button class="add-section-btn" onclick="openAddCustomSection('${tab.id}')">+ 새 섹션 추가</button>`;
+    page.innerHTML=html;
+}
+
+function filterCustomSections(tabId,query){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    const page=document.getElementById('page-'+tabId);if(!page)return;
+    const q=query.toLowerCase();
+    if(!q){renderCustomTabContent(tab,page);return;}
+    const filtered={...tab,sections:(tab.sections||[]).map(s=>({...s,items:(s.items||[]).filter(it=>
+        it.text.toLowerCase().includes(q)||(it.description||'').toLowerCase().includes(q)||(it.person||'').toLowerCase().includes(q)
+    )})).filter(s=>s.items.length>0)};
+    renderCustomTabContent(filtered,page);
+}
+
+function toggleCustomSection(secId){document.getElementById('csec-'+secId)?.classList.toggle('collapsed');}
+
+// Custom section CRUD
+function openAddCustomSection(tabId){
+    document.getElementById('sectionModalTitle').textContent='새 섹션 추가';
+    document.getElementById('editingSectionEditId').value='CUSTOM:'+tabId;
+    document.getElementById('sectionTitle').value='';
+    document.getElementById('sectionIcon').value='📌';
+    document.getElementById('sectionColor').value='#FFF8E1';
+    openModal('sectionModal');
+}
+
+function editCustomSection(tabId,secId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
+    document.getElementById('sectionModalTitle').textContent='섹션 수정';
+    document.getElementById('editingSectionEditId').value='CUSTOM:'+tabId+':'+secId;
+    document.getElementById('sectionTitle').value=sec.title;
+    document.getElementById('sectionIcon').value=sec.icon;
+    document.getElementById('sectionColor').value=sec.color;
+    openModal('sectionModal');
+}
+
+function confirmDeleteCustomSection(tabId,secId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
+    document.getElementById('confirmMessage').textContent=`"${sec.title}" 섹션을 삭제하시겠습니까?`;
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        tab.sections=tab.sections.filter(s=>s.id!==secId);
+        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        closeModal('confirmModal');showToast('삭제 완료','success');
+    };
+    openModal('confirmModal');
+}
+
+async function moveCustomSection(tabId,secId,dir){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab||!tab.sections)return;
+    const sorted=[...tab.sections].sort((a,b)=>a.order-b.order);
+    const idx=sorted.findIndex(s=>s.id===secId);
+    if(idx<0)return;
+    const newIdx=idx+dir;
+    if(newIdx<0||newIdx>=sorted.length)return;
+    const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
+    await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+}
+
+// Custom item CRUD
+function openAddCustomItem(tabId,secId){
+    document.getElementById('itemModalTitle').textContent='항목 추가';
+    document.getElementById('editingSectionId').value='CUSTOM:'+tabId+':'+secId;
+    document.getElementById('editingItemId').value='';
+    document.getElementById('itemText').value='';
+    document.getElementById('itemDescription').value='';
+    document.getElementById('itemPerson').value='';
+    document.getElementById('itemPersonExt').value='';
+    document.getElementById('itemUrl').value='';
+    document.getElementById('itemIcon').value='';
+    document.getElementById('itemBold').checked=false;
+    resetFileUI();
+    openModal('itemModal');
+}
+
+function editCustomItem(tabId,secId,itemId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
+    const it=sec.items.find(i=>i.id===itemId);if(!it)return;
+    document.getElementById('itemModalTitle').textContent='항목 수정';
+    document.getElementById('editingSectionId').value='CUSTOM:'+tabId+':'+secId;
+    document.getElementById('editingItemId').value=itemId;
+    document.getElementById('itemText').value=it.text;
+    document.getElementById('itemDescription').value=it.description||'';
+    document.getElementById('itemPerson').value=it.person||'';
+    document.getElementById('itemPersonExt').value=it.personExt||'';
+    document.getElementById('itemUrl').value=it.url||'';
+    document.getElementById('itemIcon').value=it.icon||'';
+    document.getElementById('itemBold').checked=it.bold||false;
+    resetFileUI();
+    if(it.fileName){
+        pendingFile=null;
+        document.getElementById('filePreviewName').textContent=it.fileName;
+        document.getElementById('filePreviewSize').textContent=it.fileSize||'';
+        document.getElementById('filePreview').style.display='flex';
+        document.getElementById('fileUploadArea').style.display='none';
+    }
+    openModal('itemModal');
+}
+
+function confirmDeleteCustomItem(tabId,secId,itemId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
+    const it=sec.items.find(i=>i.id===itemId);if(!it)return;
+    document.getElementById('confirmMessage').textContent=`"${it.text}" 항목을 삭제하시겠습니까?`;
+    document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        if(it.filePath)await deleteFromFirebase(it.filePath);
+        sec.items=sec.items.filter(i=>i.id!==itemId);
+        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        closeModal('confirmModal');showToast('삭제 완료','success');
+    };
+    openModal('confirmModal');
+}
+
+function downloadCustomFile(tabId,secId,itemId){
+    const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
+    const sec=(tab.sections||[]).find(s=>s.id===secId);if(!sec)return;
+    const it=sec.items.find(i=>i.id===itemId);if(!it)return;
+    const url=it.fileUrl||it.fileData;
+    if(url)openFilePreview(url,it.fileName,it.fileType);
+}
+
+// ===== SECTION MOVE (Home page) =====
+async function moveSection(secId,dir){
+    const sorted=[...sections].sort((a,b)=>a.order-b.order);
+    const idx=sorted.findIndex(s=>s.id===secId);
+    if(idx<0)return;
+    const newIdx=idx+dir;
+    if(newIdx<0||newIdx>=sorted.length)return;
+    const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
+    await api('POST','/api/sections',sections);saveToLocal();renderSections();
+}
 
 init();
 </script>
