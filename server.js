@@ -55,6 +55,41 @@ app.post('/api/training-records', (req, res) => { writeJSON('training-records.js
 app.get('/api/sections', (req, res) => res.json(readJSON('sections.json') || []));
 app.post('/api/sections', (req, res) => { writeJSON('sections.json', req.body); res.json({ success: true }); });
 
+// Training record patch
+app.patch('/api/training-records/:trainingId/:staffId', (req, res) => {
+    const records = readJSON('training-records.json') || {};
+    const { trainingId, staffId } = req.params;
+    if (!records[trainingId]) records[trainingId] = {};
+    records[trainingId][staffId] = req.body;
+    writeJSON('training-records.json', records);
+    res.json({ success: true });
+});
+
+// Export
+app.get('/api/export', (req, res) => {
+    res.json({
+        links: readJSON('links.json'),
+        categories: readJSON('categories.json'),
+        sections: readJSON('sections.json'),
+        trainings: readJSON('trainings.json'),
+        staff: readJSON('staff.json'),
+        trainingRecords: readJSON('training-records.json'),
+        exportedAt: new Date().toISOString()
+    });
+});
+
+// Import
+app.post('/api/import', (req, res) => {
+    const { links, categories, sections, trainings, staff, trainingRecords } = req.body;
+    if (links) writeJSON('links.json', links);
+    if (categories) writeJSON('categories.json', categories);
+    if (sections) writeJSON('sections.json', sections);
+    if (trainings) writeJSON('trainings.json', trainings);
+    if (staff) writeJSON('staff.json', staff);
+    if (trainingRecords) writeJSON('training-records.json', trainingRecords);
+    res.json({ success: true });
+});
+
 // 메인 페이지
 app.get('/', (req, res) => {
     res.sendFile(path.join(process.cwd(), 'index.html'));

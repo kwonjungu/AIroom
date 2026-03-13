@@ -469,15 +469,35 @@ let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let pendingFile=null; // {name, size, data(base64), type}
 const MAX_FILE_SIZE=2*1024*1024; // 2MB limit for Vercel free tier
 
-async function api(m,u,b){const o={method:m,headers:{'Content-Type':'application/json'}};if(b)o.body=JSON.stringify(b);return(await fetch(u,o)).json();}
+async function api(m,u,b){
+    try{
+        const o={method:m,headers:{'Content-Type':'application/json'}};
+        if(b)o.body=JSON.stringify(b);
+        const r=await fetch(u,o);
+        if(!r.ok)throw new Error(r.status);
+        return await r.json();
+    }catch(e){
+        console.error('API 오류:',m,u,e);
+        return null;
+    }
+}
 
 async function init(){
-    [categories,links,trainings,staff,trainingRecords,sections]=await Promise.all([
-        api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
-        api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections')
-    ]);
+    try{
+        const results=await Promise.all([
+            api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
+            api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections')
+        ]);
+        categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
+        staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];
+    }catch(e){
+        console.error('초기화 오류:',e);
+    }
     updateDate();renderSections();renderCategoryTabs();renderLinks();updateStats();
     setupIconPicker();renderTrainingChecklist();populateRegSelect();
+    if(!sections.length){
+        document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
+    }
 }
 
 function updateDate(){
