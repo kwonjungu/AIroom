@@ -30,18 +30,23 @@
 
         /* Banner */
         .banner{max-width:960px;margin:0 auto;padding:8px 24px 0;position:relative;}
-        .banner-inner{border-radius:var(--radius);overflow:hidden;position:relative;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:120px;cursor:default;}
-        .banner-inner.has-image{background-size:cover;background-position:center;background-repeat:no-repeat;}
-        .banner-inner.no-image{display:flex;align-items:center;justify-content:center;min-height:100px;}
-        .banner-inner.no-image .banner-placeholder{color:rgba(255,255,255,0.6);font-size:13px;text-align:center;}
-        .banner-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:var(--radius);cursor:pointer;transition:opacity .2s;}
+        .banner-inner{border-radius:var(--radius);overflow:hidden;position:relative;background:white;min-height:60px;cursor:default;border:1px solid var(--border);}
+        .banner-inner.has-image{background-size:cover;background-position:center;background-repeat:no-repeat;min-height:120px;border:none;}
+        .banner-inner.no-image{display:none;align-items:center;justify-content:center;min-height:60px;}
+        .admin-mode .banner-inner.no-image{display:flex;}
+        .banner-inner.no-image .banner-placeholder{color:var(--primary);font-size:13px;text-align:center;font-weight:500;}
+        .banner-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.05);border-radius:var(--radius);cursor:pointer;transition:opacity .2s;}
+        .banner-inner.has-image .banner-overlay{background:rgba(0,0,0,0.4);}
         .admin-mode .banner-overlay{display:flex;}
-        .banner-overlay:hover{background:rgba(0,0,0,0.55);}
-        .banner-overlay-content{color:white;text-align:center;font-size:13px;font-weight:600;}
-        .banner-overlay-content .banner-icon{font-size:28px;margin-bottom:6px;}
+        .banner-overlay:hover{background:rgba(0,0,0,0.1);}
+        .banner-inner.has-image .banner-overlay:hover{background:rgba(0,0,0,0.55);}
+        .banner-overlay-content{color:var(--primary);text-align:center;font-size:13px;font-weight:600;}
+        .banner-inner.has-image .banner-overlay-content{color:white;}
+        .banner-overlay-content .banner-icon{font-size:24px;margin-bottom:4px;}
         .banner-overlay input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
-        .banner-remove-btn{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.5);color:white;border:none;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;transition:all .15s;z-index:2;}
-        .banner-remove-btn:hover{background:rgba(220,53,69,0.8);}
+        .banner-remove-btn{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--border);color:var(--text-light);border:none;cursor:pointer;font-size:12px;display:none;align-items:center;justify-content:center;transition:all .15s;z-index:2;}
+        .banner-inner.has-image .banner-remove-btn{background:rgba(0,0,0,0.5);color:white;}
+        .banner-remove-btn:hover{background:var(--accent);color:white;}
         .admin-mode .banner-remove-btn{display:flex;}
 
         /* School info bar */
