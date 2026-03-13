@@ -296,6 +296,44 @@
         .day-detail-emoji{width:40px;border:1px solid var(--border);border-radius:8px;padding:6px;font-size:18px;text-align:center;cursor:pointer;position:relative;}
         .emoji-dropdown{position:absolute;z-index:50;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.12);padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:220px;}
 
+        /* Skyscanner-style date picker */
+        .schedule-nav-title{cursor:pointer;position:relative;user-select:none;}
+        .schedule-nav-title:hover{color:var(--primary);}
+        .schedule-date-strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:8px 0;margin-bottom:12px;}
+        .schedule-date-strip::-webkit-scrollbar{display:none;}
+        .date-strip-item{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;height:64px;border-radius:12px;border:1.5px solid var(--border);background:var(--card-bg);cursor:pointer;transition:all .2s;flex-shrink:0;padding:4px 8px;}
+        .date-strip-item:hover{border-color:var(--primary);background:var(--primary-light);}
+        .date-strip-item.active{background:var(--primary);border-color:var(--primary);color:white;}
+        .date-strip-item.today:not(.active){border-color:var(--primary);box-shadow:0 0 0 2px rgba(74,144,217,0.2);}
+        .date-strip-item.has-events:not(.active)::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);position:absolute;bottom:4px;}
+        .date-strip-item{position:relative;}
+        .date-strip-dow{font-size:10px;font-weight:600;opacity:0.7;}
+        .date-strip-day{font-size:18px;font-weight:700;line-height:1.2;}
+        .date-strip-month{font-size:9px;opacity:0.6;}
+        .date-strip-item.active .date-strip-dow,.date-strip-item.active .date-strip-day,.date-strip-item.active .date-strip-month{opacity:1;color:white;}
+        .date-strip-item.sun .date-strip-dow,.date-strip-item.sun .date-strip-day{color:#e53935;}
+        .date-strip-item.sat .date-strip-dow,.date-strip-item.sat .date-strip-day{color:#1565c0;}
+        .date-strip-item.active.sun .date-strip-dow,.date-strip-item.active.sun .date-strip-day,.date-strip-item.active.sat .date-strip-dow,.date-strip-item.active.sat .date-strip-day{color:white;}
+
+        .cal-picker-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.3);display:flex;align-items:flex-start;justify-content:center;padding-top:120px;}
+        .cal-picker{background:var(--card-bg);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.15);padding:20px;width:320px;max-width:90vw;}
+        .cal-picker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+        .cal-picker-title{font-size:16px;font-weight:700;}
+        .cal-picker-nav{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:white;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+        .cal-picker-nav:hover{background:var(--primary-light);border-color:var(--primary);}
+        .cal-picker-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;}
+        .cal-picker-dow{font-size:11px;font-weight:600;color:var(--text-light);padding:4px 0;}
+        .cal-picker-day{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all .15s;margin:0 auto;border:none;background:none;color:var(--text);}
+        .cal-picker-day:hover{background:var(--primary-light);}
+        .cal-picker-day.today{border:2px solid var(--primary);font-weight:700;}
+        .cal-picker-day.selected{background:var(--primary);color:white;font-weight:700;}
+        .cal-picker-day.other{color:#ccc;}
+        .cal-picker-day.sun{color:#e53935;}
+        .cal-picker-day.sat{color:#1565c0;}
+        .cal-picker-day.selected{color:white;}
+        .cal-picker-today-btn{width:100%;padding:8px;margin-top:10px;border:1px solid var(--primary);background:white;color:var(--primary);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;}
+        .cal-picker-today-btn:hover{background:var(--primary);color:white;}
+
         @media(max-width:768px){
             .header-inner{flex-direction:column;gap:8px;text-align:center;padding:14px 16px;}
             .header-right{width:100%;justify-content:center;}
@@ -397,10 +435,11 @@
         </div>
         <div class="schedule-nav">
             <button class="schedule-nav-btn" onclick="scheduleNav(-1)">◀</button>
-            <span class="schedule-nav-title" id="scheduleTitle"></span>
+            <span class="schedule-nav-title" id="scheduleTitle" onclick="openCalendarPicker()"></span>
             <button class="schedule-nav-btn" onclick="scheduleNav(1)">▶</button>
             <button class="schedule-nav-today" onclick="scheduleToday()">오늘</button>
         </div>
+        <div id="dateStrip"></div>
         <div id="scheduleContent"></div>
     </div>
 
@@ -856,6 +895,7 @@ function renderSchedule(){
     if(scheduleView==='month')renderMonthView(el,title);
     else if(scheduleView==='week')renderWeekView(el,title);
     else renderDayView(el,title);
+    renderDateStrip();
 }
 
 function renderMonthView(el,titleEl){
@@ -1016,6 +1056,129 @@ function submitScheduleAdd(){
     if(!text.trim()){showToast('내용을 입력하세요','error');return;}
     addScheduleItem(dateStr,text,manager,selectedSchEmoji);
     closeModal('scheduleAddModal');
+}
+
+// ===== SKYSCANNER-STYLE DATE PICKER =====
+function renderDateStrip(){
+    const strip=document.getElementById('dateStrip');
+    if(scheduleView==='month'){strip.innerHTML='';return;}
+    const today=todayStr();
+    const ds=fmtDate(scheduleDate);
+    const dayNamesShort=['일','월','화','수','목','금','토'];
+    let dates=[];
+    if(scheduleView==='day'){
+        // Show 15 days centered on current date
+        for(let i=-7;i<=7;i++){
+            const d=new Date(scheduleDate);d.setDate(d.getDate()+i);
+            dates.push(d);
+        }
+    } else {
+        // Week view: show 3 weeks
+        const d=new Date(scheduleDate);
+        const day=d.getDay();
+        const sun=new Date(d);sun.setDate(d.getDate()-day-7);
+        for(let i=0;i<21;i++){
+            const dd=new Date(sun);dd.setDate(sun.getDate()+i);
+            dates.push(dd);
+        }
+    }
+    let html='<div class="schedule-date-strip">';
+    dates.forEach(d=>{
+        const dStr=fmtDate(d);
+        const dow=d.getDay();
+        const isActive=dStr===ds;
+        const isToday=dStr===today;
+        const hasEvents=getScheduleItems(dStr).length>0;
+        const cls=['date-strip-item'];
+        if(isActive)cls.push('active');
+        if(isToday)cls.push('today');
+        if(hasEvents)cls.push('has-events');
+        if(dow===0)cls.push('sun');
+        if(dow===6)cls.push('sat');
+        html+=`<div class="${cls.join(' ')}" onclick="goToDate('${dStr}')">
+            <span class="date-strip-dow">${dayNamesShort[dow]}</span>
+            <span class="date-strip-day">${d.getDate()}</span>
+            <span class="date-strip-month">${d.getMonth()+1}월</span>
+        </div>`;
+    });
+    html+='</div>';
+    strip.innerHTML=html;
+    // Scroll active date to center
+    setTimeout(()=>{
+        const active=strip.querySelector('.date-strip-item.active');
+        if(active)active.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    },50);
+}
+
+function goToDate(dateStr){
+    const [y,m,d]=dateStr.split('-').map(Number);
+    scheduleDate=new Date(y,m-1,d);
+    renderSchedule();
+}
+
+function openCalendarPicker(){
+    if(document.querySelector('.cal-picker-overlay'))return;
+    const overlay=document.createElement('div');
+    overlay.className='cal-picker-overlay';
+    overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+    const picker=document.createElement('div');
+    picker.className='cal-picker';
+    overlay.appendChild(picker);
+    document.body.appendChild(overlay);
+    renderCalendarPicker(picker,new Date(scheduleDate));
+}
+
+function renderCalendarPicker(picker,viewDate){
+    const y=viewDate.getFullYear(),m=viewDate.getMonth();
+    const today=todayStr();
+    const selected=fmtDate(scheduleDate);
+    const first=new Date(y,m,1),last=new Date(y,m+1,0);
+    const startDay=first.getDay();
+    const dayNamesShort=['일','월','화','수','목','금','토'];
+    let html=`<div class="cal-picker-header">
+        <button class="cal-picker-nav" onclick="calPickerNav(this,-1)">&lt;</button>
+        <span class="cal-picker-title">${y}년 ${m+1}월</span>
+        <button class="cal-picker-nav" onclick="calPickerNav(this,1)">&gt;</button>
+    </div>`;
+    html+='<div class="cal-picker-grid">';
+    dayNamesShort.forEach((d,i)=>html+=`<div class="cal-picker-dow" style="${i===0?'color:#e53935':i===6?'color:#1565c0':''}">${d}</div>`);
+    // prev month padding
+    const prevLast=new Date(y,m,0).getDate();
+    for(let i=0;i<startDay;i++){
+        const pd=prevLast-startDay+1+i;
+        html+=`<button class="cal-picker-day other" onclick="calPickerSelect(this,'${fmtDate(new Date(y,m-1,pd))}')">${pd}</button>`;
+    }
+    for(let d=1;d<=last.getDate();d++){
+        const ds=fmtDate(new Date(y,m,d));
+        const dow=(startDay+d-1)%7;
+        const cls=['cal-picker-day'];
+        if(ds===today)cls.push('today');
+        if(ds===selected)cls.push('selected');
+        if(dow===0)cls.push('sun');
+        if(dow===6)cls.push('sat');
+        html+=`<button class="${cls.join(' ')}" onclick="calPickerSelect(this,'${ds}')">${d}</button>`;
+    }
+    const endDay=(startDay+last.getDate()-1)%7;
+    for(let i=1;i<7-endDay;i++){
+        html+=`<button class="cal-picker-day other" onclick="calPickerSelect(this,'${fmtDate(new Date(y,m+1,i))}')">${i}</button>`;
+    }
+    html+='</div>';
+    html+=`<button class="cal-picker-today-btn" onclick="calPickerSelect(this,'${today}')">오늘로 이동</button>`;
+    picker.innerHTML=html;
+    picker._viewDate=viewDate;
+}
+
+function calPickerNav(btn,dir){
+    const picker=btn.closest('.cal-picker');
+    const vd=picker._viewDate||new Date(scheduleDate);
+    vd.setMonth(vd.getMonth()+dir);
+    renderCalendarPicker(picker,vd);
+}
+
+function calPickerSelect(btn,dateStr){
+    const overlay=btn.closest('.cal-picker-overlay');
+    if(overlay)overlay.remove();
+    goToDate(dateStr);
 }
 
 function toggleAdmin(){
