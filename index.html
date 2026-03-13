@@ -1136,7 +1136,7 @@ function renderTrainingChecklist(){
             <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
             <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
             <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
-            <td style="white-space:nowrap">${linkBtn}</td>
+            <td style="white-space:nowrap">${linkBtn}${isAdmin?`<button class="item-action-btn" onclick="editTrainingLink('${t.id}')" title="링크 수정" style="font-size:11px;">✏️</button>`:''}</td>
             <td><div class="check-cell"><button class="completion-toggle ${d?'done':''}" onclick="toggleTrainingComplete('${t.id}')">${d?'✓':''}</button></div></td>
             ${adminBtns}
         </tr>`;
