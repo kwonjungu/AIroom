@@ -28,6 +28,22 @@
         .btn-admin:hover{background:rgba(255,255,255,0.3);}
         .header-contact{font-size:11px;opacity:0.75;margin-top:4px;}
 
+        /* Banner */
+        .banner{max-width:960px;margin:0 auto;padding:8px 24px 0;position:relative;}
+        .banner-inner{border-radius:var(--radius);overflow:hidden;position:relative;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:120px;cursor:default;}
+        .banner-inner.has-image{background-size:cover;background-position:center;background-repeat:no-repeat;}
+        .banner-inner.no-image{display:flex;align-items:center;justify-content:center;min-height:100px;}
+        .banner-inner.no-image .banner-placeholder{color:rgba(255,255,255,0.6);font-size:13px;text-align:center;}
+        .banner-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:var(--radius);cursor:pointer;transition:opacity .2s;}
+        .admin-mode .banner-overlay{display:flex;}
+        .banner-overlay:hover{background:rgba(0,0,0,0.55);}
+        .banner-overlay-content{color:white;text-align:center;font-size:13px;font-weight:600;}
+        .banner-overlay-content .banner-icon{font-size:28px;margin-bottom:6px;}
+        .banner-overlay input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+        .banner-remove-btn{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.5);color:white;border:none;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;transition:all .15s;z-index:2;}
+        .banner-remove-btn:hover{background:rgba(220,53,69,0.8);}
+        .admin-mode .banner-remove-btn{display:flex;}
+
         /* School info bar */
         .school-info{max-width:960px;margin:0 auto;padding:12px 24px;}
         .school-info-inner{background:var(--card-bg);border-radius:var(--radius-sm);padding:14px 20px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-light);}
@@ -341,6 +357,8 @@
             .header-right{width:100%;justify-content:center;gap:6px;}
             .header-date{font-size:11px;padding:4px 10px;}
             .btn-admin{padding:6px 12px;font-size:11px;}
+            .banner{padding:6px 10px 0;}
+            .banner-inner{min-height:80px;border-radius:10px;}
             .page{padding:12px 10px 40px;}
             .school-info{padding:8px 10px;}
             .school-info-inner{flex-direction:column;align-items:flex-start;padding:10px 14px;font-size:12px;}
@@ -471,6 +489,20 @@
             </div>
         </div>
     </header>
+
+    <div class="banner" id="bannerSection">
+        <div class="banner-inner no-image" id="bannerInner">
+            <div class="banner-placeholder">관리 모드에서 배너 이미지를 설정하세요</div>
+            <button class="banner-remove-btn" onclick="removeBanner()" title="배너 삭제">✕</button>
+            <div class="banner-overlay" onclick="document.getElementById('bannerFileInput').click()">
+                <div class="banner-overlay-content">
+                    <div class="banner-icon">📷</div>
+                    <div>배너 이미지 변경</div>
+                </div>
+                <input type="file" id="bannerFileInput" accept="image/*" onchange="handleBannerUpload(event)">
+            </div>
+        </div>
+    </div>
 
     <div class="school-info">
         <div class="school-info-inner">
@@ -830,6 +862,83 @@ async function deleteFromFirebase(path){
     try{await firebaseStorage.ref().child(path).delete();}catch(e){}
 }
 
+// ===== 배너 이미지 =====
+let bannerData=null; // {url, path}
+function loadBanner(){
+    const saved=localStorage.getItem('bannerData');
+    if(saved){
+        try{bannerData=JSON.parse(saved);applyBanner();}catch(e){}
+    }
+    // 서버에서도 로드 시도
+    api('GET','/api/settings').then(s=>{
+        if(s&&s.banner&&s.banner.url){
+            bannerData=s.banner;
+            localStorage.setItem('bannerData',JSON.stringify(bannerData));
+            applyBanner();
+        }
+    }).catch(()=>{});
+}
+function applyBanner(){
+    const el=document.getElementById('bannerInner');
+    if(bannerData&&bannerData.url){
+        el.classList.remove('no-image');
+        el.classList.add('has-image');
+        el.style.backgroundImage=`url('${bannerData.url}')`;
+        el.querySelector('.banner-placeholder').style.display='none';
+    } else {
+        el.classList.add('no-image');
+        el.classList.remove('has-image');
+        el.style.backgroundImage='';
+        el.querySelector('.banner-placeholder').style.display='';
+    }
+}
+async function handleBannerUpload(e){
+    const file=e.target.files[0];if(!file)return;
+    if(!file.type.startsWith('image/')){showToast('이미지 파일만 업로드 가능합니다','error');return;}
+    if(file.size>10*1024*1024){showToast('파일 크기 초과! 최대 10MB','error');return;}
+    if(firebaseStorage){
+        try{
+            showToast('배너 업로드 중...','info');
+            const storagePath=`banner/${Date.now()}_${file.name}`;
+            const url=await uploadToFirebase(file,storagePath);
+            // 기존 배너 삭제
+            if(bannerData&&bannerData.path)await deleteFromFirebase(bannerData.path);
+            bannerData={url,path:storagePath};
+            await saveBannerSettings();
+            applyBanner();
+            showToast('배너 이미지 설정 완료','success');
+        }catch(err){showToast('배너 업로드 실패: '+err.message,'error');}
+    } else {
+        // Firebase 미연결 시 base64 폴백
+        const reader=new FileReader();
+        reader.onload=async function(ev){
+            bannerData={url:ev.target.result,path:''};
+            await saveBannerSettings();
+            applyBanner();
+            showToast('배너 이미지 설정 완료','success');
+        };
+        reader.readAsDataURL(file);
+    }
+    e.target.value='';
+}
+async function removeBanner(){
+    if(!bannerData||!bannerData.url)return;
+    if(!confirm('배너 이미지를 삭제하시겠습니까?'))return;
+    if(bannerData.path)await deleteFromFirebase(bannerData.path);
+    bannerData=null;
+    localStorage.removeItem('bannerData');
+    await saveBannerSettings();
+    applyBanner();
+    showToast('배너 삭제 완료','success');
+}
+async function saveBannerSettings(){
+    const settings=(await api('GET','/api/settings'))||{};
+    settings.banner=bannerData||{};
+    await api('POST','/api/settings',settings);
+    if(bannerData)localStorage.setItem('bannerData',JSON.stringify(bannerData));
+    else localStorage.removeItem('bannerData');
+}
+
 // localStorage 백업 (Vercel 콜드스타트 시 데이터 보존)
 const LS_KEY='airoom_backup';
 function saveToLocal(){
@@ -865,6 +974,7 @@ async function api(m,u,b){
 
 async function init(){
     initFirebase(); // Firebase Storage 비동기 초기화 (병렬)
+    loadBanner(); // 배너 이미지 로드
     try{
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
