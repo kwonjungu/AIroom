@@ -269,6 +269,11 @@
         @media print{.header{position:relative;}.btn-admin,.add-card,.link-card-actions,.main-tabs,.add-item-btn,.add-section-btn,.section-admin-actions,.item-action-btn,.filter-row{display:none!important;}}
 
         .cert-btn{font-size:11px;padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;color:var(--text-light);transition:all .15s;white-space:nowrap;}
+        #filePreviewModalBody img{max-width:100%;max-height:100%;object-fit:contain;}
+        #filePreviewModalBody iframe{width:100%;height:100%;border:none;}
+        .file-no-preview{text-align:center;padding:40px;color:var(--text-light);}
+        .file-no-preview .file-icon{font-size:64px;margin-bottom:16px;}
+        .file-no-preview .file-name{font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;}
         .cert-btn:hover{border-color:var(--primary);color:var(--primary);}
         .cert-btn.has-cert{background:#E6F9ED;border-color:#68D391;color:#276749;}
         .cert-input-hidden{display:none;}
@@ -441,10 +446,10 @@
             </div>
             <div class="form-group"><label>링크 URL (선택)</label><input type="url" id="itemUrl" placeholder="https://"></div>
             <div class="form-group">
-                <label>📎 첨부파일 (최대 2MB)</label>
+                <label>📎 첨부파일 (최대 5MB)</label>
                 <div class="file-upload-area" id="fileUploadArea">
                     <input type="file" id="itemFileInput" onchange="handleFileSelect(event)" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.jpg,.jpeg,.png,.gif,.zip">
-                    <div id="fileUploadLabel">📁 클릭하여 파일 선택<br><span style="font-size:11px;color:var(--text-light)">PDF, 문서, 이미지, HWP 등 (최대 3MB)</span></div>
+                    <div id="fileUploadLabel">📁 클릭하여 파일 선택<br><span style="font-size:11px;color:var(--text-light)">PDF, 문서, 이미지, HWP 등 (최대 5MB)</span></div>
                 </div>
                 <div class="file-preview" id="filePreview" style="display:none">
                     <span>📎</span>
@@ -452,7 +457,7 @@
                     <span class="file-preview-size" id="filePreviewSize"></span>
                     <button class="btn-remove-file" onclick="removeFile()" type="button">✕</button>
                 </div>
-                <div class="file-upload-info">Vercel 무료 서버 제한: 파일당 최대 3MB</div>
+                <div class="file-upload-info">Firebase Storage: 파일당 최대 5MB</div>
             </div>
             <div class="form-group" style="display:flex;gap:12px;align-items:center;">
                 <div><label>아이콘</label><input type="text" id="itemIcon" placeholder="이모지" maxlength="4" style="width:60px"></div>
@@ -553,6 +558,18 @@
             <div class="form-group"><label>참가 링크 URL</label><input type="url" id="trainingLinkUrl" placeholder="https://"></div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('trainingLinkModal')">취소</button><button class="btn btn-primary" onclick="saveTrainingLink()">저장</button></div>
+    </div></div>
+
+    <!-- 파일 미리보기 모달 -->
+    <div class="modal-overlay" id="filePreviewModal"><div class="modal" style="max-width:900px;height:85vh;">
+        <div class="modal-header">
+            <h2 id="filePreviewModalTitle">📎 파일 미리보기</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <a id="filePreviewDownloadBtn" class="btn btn-primary" style="font-size:12px;padding:6px 14px;text-decoration:none;" download>⬇ 다운로드</a>
+                <button class="btn-close" onclick="closeModal('filePreviewModal')">✕</button>
+            </div>
+        </div>
+        <div class="modal-body" id="filePreviewModalBody" style="flex:1;overflow:auto;padding:0;display:flex;align-items:center;justify-content:center;background:#f0f0f0;"></div>
     </div></div>
 
 <script>
@@ -702,7 +719,7 @@ function renderSections(){
                     const linkAttr=hasLink?`href="${esc(it.url)}" target="_blank" rel="noopener noreferrer"`:'';
                     const tag=hasLink?'a':'span';
                     const cls=`section-item-text${hasLink?' has-link':''}${it.bold?' bold':''}`;
-                    const fileHtml=it.fileName?`<a class="section-item-file" onclick="downloadFile('${sec.id}','${it.id}')" title="파일 다운로드">📎 ${esc(it.fileName)} <span class="file-size">(${esc(it.fileSize||'')})</span></a>`:'';
+                    const fileHtml=it.fileName?`<a class="section-item-file" onclick="downloadFile('${sec.id}','${it.id}')" title="클릭하여 미리보기">📎 ${esc(it.fileName)} <span class="file-size">(${esc(it.fileSize||'')})</span></a>`:'';
                     const personBoxHtml=it.person?`<div class="person-box"><span class="person-box-name">👤 ${esc(it.person)}</span>${it.personExt?`<span class="person-box-ext">☎ ${esc(it.personExt)}</span>`:''}</div>`:'';
                     return `<div class="section-item">
                         <span class="section-item-icon">${it.icon||'•'}</span>
@@ -738,12 +755,13 @@ function resetFileUI(){
 function handleFileSelect(e){
     const file=e.target.files[0];if(!file)return;
     if(file.size>MAX_FILE_SIZE){
-        showToast(`파일 크기 초과! 최대 2MB (현재: ${formatFileSize(file.size)})`,'error');
+        showToast(`파일 크기 초과! 최대 5MB (현재: ${formatFileSize(file.size)})`,'error');
         e.target.value='';return;
     }
+    // Firebase에 업로드할 원본 파일 보관 + 미리보기용 base64
     const reader=new FileReader();
     reader.onload=function(ev){
-        pendingFile={name:file.name,size:formatFileSize(file.size),data:ev.target.result,type:file.type};
+        pendingFile={name:file.name,size:formatFileSize(file.size),data:ev.target.result,type:file.type,rawFile:file};
         document.getElementById('filePreviewName').textContent=file.name;
         document.getElementById('filePreviewSize').textContent=pendingFile.size;
         document.getElementById('filePreview').style.display='flex';
@@ -766,9 +784,44 @@ function formatFileSize(bytes){
 
 function downloadFile(secId,itemId){
     const sec=sections.find(s=>s.id===secId);if(!sec)return;
-    const it=sec.items.find(i=>i.id===itemId);if(!it||!it.fileData)return;
-    const a=document.createElement('a');
-    a.href=it.fileData;a.download=it.fileName;a.click();
+    const it=sec.items.find(i=>i.id===itemId);if(!it)return;
+    // Firebase URL 또는 base64 미리보기
+    const url=it.fileUrl||it.fileData;
+    if(url)openFilePreview(url,it.fileName,it.fileType);
+}
+
+// ===== 파일 미리보기 모달 =====
+function openFilePreview(url,fileName,fileType){
+    const body=document.getElementById('filePreviewModalBody');
+    const title=document.getElementById('filePreviewModalTitle');
+    const dlBtn=document.getElementById('filePreviewDownloadBtn');
+    title.textContent='📎 '+fileName;
+    dlBtn.href=url;dlBtn.download=fileName;
+    // URL이 Firebase URL이면 새 탭에서 다운로드
+    if(url.startsWith('http')){dlBtn.onclick=function(e){e.preventDefault();window.open(url,'_blank');};}
+    else{dlBtn.onclick=null;}
+    const ext=fileName.split('.').pop().toLowerCase();
+    const isImage=['jpg','jpeg','png','gif','bmp','webp','svg'].includes(ext);
+    const isPdf=ext==='pdf';
+    if(isImage){
+        body.innerHTML=`<img src="${url}" alt="${esc(fileName)}" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+    }else if(isPdf){
+        if(url.startsWith('http')){
+            body.innerHTML=`<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+        }else{
+            body.innerHTML=`<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+        }
+    }else{
+        const iconMap={'doc':'📄','docx':'📄','xls':'📊','xlsx':'📊','ppt':'📽️','pptx':'📽️','hwp':'📝','hwpx':'📝','zip':'🗜️','txt':'📃'};
+        const icon=iconMap[ext]||'📎';
+        body.innerHTML=`<div class="file-no-preview">
+            <div class="file-icon">${icon}</div>
+            <div class="file-name">${esc(fileName)}</div>
+            <p style="margin-bottom:16px;">이 파일 형식은 미리보기를 지원하지 않습니다.</p>
+            <a href="${url}" ${url.startsWith('http')?'target="_blank"':''} download="${esc(fileName)}" class="btn btn-primary" style="text-decoration:none;">⬇ 파일 다운로드</a>
+        </div>`;
+    }
+    openModal('filePreviewModal');
 }
 
 function openAddItem(secId){
@@ -824,29 +877,41 @@ async function saveItem(){
         icon:document.getElementById('itemIcon').value.trim()||'•',
         bold:document.getElementById('itemBold').checked
     };
-    // Handle file
+    // Handle file - Firebase Storage 업로드
     if(pendingFile&&!pendingFile.removed){
-        data.fileName=pendingFile.name;
-        data.fileSize=pendingFile.size;
-        data.fileData=pendingFile.data;
-        data.fileType=pendingFile.type;
+        if(firebaseStorage&&pendingFile.rawFile){
+            try{
+                showToast('파일 업로드 중...','info');
+                const iid=itemId||'item_'+Date.now();
+                const storagePath=`sections/${secId}/${iid}/${pendingFile.name}`;
+                const url=await uploadToFirebase(pendingFile.rawFile,storagePath);
+                data.fileName=pendingFile.name;data.fileSize=pendingFile.size;
+                data.fileUrl=url;data.filePath=storagePath;data.fileType=pendingFile.type;
+                delete data.fileData; // base64 제거
+                if(!itemId)data.id=iid;
+            }catch(e){showToast('파일 업로드 실패: '+e.message,'error');return;}
+        } else {
+            // Firebase 미연결 시 base64 폴백
+            data.fileName=pendingFile.name;data.fileSize=pendingFile.size;
+            data.fileData=pendingFile.data;data.fileType=pendingFile.type;
+        }
     } else if(pendingFile&&pendingFile.removed){
-        data.fileName='';data.fileSize='';data.fileData='';data.fileType='';
+        data.fileName='';data.fileSize='';data.fileData='';data.fileType='';data.fileUrl='';data.filePath='';
     }
     const sec=sections.find(s=>s.id===secId);
     if(itemId){
         const idx=sec.items.findIndex(i=>i.id===itemId);
         if(idx!==-1){
             const existing=sec.items[idx];
-            // Keep existing file if no new file action
             if(!pendingFile){
                 data.fileName=existing.fileName;data.fileSize=existing.fileSize;
                 data.fileData=existing.fileData;data.fileType=existing.fileType;
+                data.fileUrl=existing.fileUrl;data.filePath=existing.filePath;
             }
             sec.items[idx]={...existing,...data};
         }
     } else {
-        data.id='item_'+Date.now();
+        if(!data.id)data.id='item_'+Date.now();
         sec.items.push(data);
     }
     await api('POST','/api/sections',sections);
@@ -1147,10 +1212,9 @@ async function uploadCertFile(tid,sid,input){
     }
 }
 function downloadCertFile(tid,sid){
-    const r=trainingRecords[tid]?.[sid];
-    // Firebase URL 우선, 기존 base64 폴백
-    if(r?.certFileUrl){window.open(r.certFileUrl,'_blank');return;}
-    if(r?.certFileData){const a=document.createElement('a');a.href=r.certFileData;a.download=r.certFileName;a.click();}
+    const r=trainingRecords[tid]?.[sid];if(!r)return;
+    const url=r.certFileUrl||r.certFileData;
+    if(url)openFilePreview(url,r.certFileName||'이수증','');
 }
 
 // ===== 일괄 이수 현황 출력 =====
