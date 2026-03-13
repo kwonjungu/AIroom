@@ -375,6 +375,8 @@
                 <h3>📋 교직원 연수 등록부</h3>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <select class="reg-select" id="regTrainingSelect" onchange="renderRegisterTable()"></select>
+                    <button class="btn btn-secondary" onclick="exportRegisterExcel()" style="white-space:nowrap;font-size:12px;">📥 엑셀 저장</button>
+                    <button class="btn btn-secondary" onclick="exportAllRegisterExcel()" style="white-space:nowrap;font-size:12px;">📥 전체 엑셀</button>
                     <button class="btn btn-secondary" onclick="printAllTrainingStatus()" style="white-space:nowrap;font-size:12px;">🖨️ 일괄 출력</button>
                 </div>
             </div>
@@ -1215,6 +1217,76 @@ function downloadCertFile(tid,sid){
     const r=trainingRecords[tid]?.[sid];if(!r)return;
     const url=r.certFileUrl||r.certFileData;
     if(url)openFilePreview(url,r.certFileName||'이수증','');
+}
+
+// ===== 엑셀(CSV) 내보내기 =====
+function toCSV(rows){
+    return rows.map(r=>r.map(c=>{
+        const s=String(c==null?'':c).replace(/"/g,'""');
+        return /[",\n\r]/.test(s)?`"${s}"`:s;
+    }).join(',')).join('\n');
+}
+function downloadCSV(csv,filename){
+    const bom='\uFEFF'; // UTF-8 BOM for Excel 한글 호환
+    const blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+// 선택된 연수 1개 → 엑셀 저장
+function exportRegisterExcel(){
+    const tid=document.getElementById('regTrainingSelect').value;
+    const tr=trainings.find(t=>t.id===tid);if(!tr)return;
+    const rec=trainingRecords[tid]||{};
+    const rows=[['순','직위','성명','연수명','연수기관','이수번호','이수확인']];
+    staff.forEach((s,i)=>{
+        const r=rec[s.id]||{};
+        rows.push([i+1,s.position,s.name,tr.name,r.institution||'',r.certNo||'',r.confirmed?'O':'']);
+    });
+    downloadCSV(toCSV(rows),`연수등록부_${tr.name}.csv`);
+    showToast('엑셀 저장 완료','success');
+}
+
+// 전체 연수 → 엑셀 저장 (교직원별 이수 현황 매트릭스)
+function exportAllRegisterExcel(){
+    // 시트1: 이수 현황 매트릭스
+    const header=['순','직위','성명',...trainings.map(t=>t.no+'. '+t.name),'이수 합계'];
+    const rows=[header];
+    staff.forEach((s,i)=>{
+        const row=[i+1,s.position,s.name];
+        let cnt=0;
+        trainings.forEach(t=>{
+            const chk=trainingRecords[t.id]?.[s.id]?.confirmed;
+            row.push(chk?'O':'');
+            if(chk)cnt++;
+        });
+        row.push(cnt+'/'+trainings.length);
+        rows.push(row);
+    });
+    // 합계 행
+    const totalRow=['','','이수자 수'];
+    trainings.forEach(t=>{
+        const cnt=staff.filter(s=>trainingRecords[t.id]?.[s.id]?.confirmed).length;
+        totalRow.push(cnt+'/'+staff.length);
+    });
+    totalRow.push('');
+    rows.push(totalRow);
+
+    // 시트2: 연수별 상세 (빈 행 구분)
+    rows.push([]);rows.push(['=== 연수별 상세 등록부 ===']);
+    trainings.forEach(t=>{
+        rows.push([]);
+        rows.push([`[${t.no}] ${t.name}`]);
+        rows.push(['순','직위','성명','연수기관','이수번호','이수확인']);
+        const rec=trainingRecords[t.id]||{};
+        staff.forEach((s,i)=>{
+            const r=rec[s.id]||{};
+            rows.push([i+1,s.position,s.name,r.institution||'',r.certNo||'',r.confirmed?'O':'']);
+        });
+    });
+
+    downloadCSV(toCSV(rows),`교직원_연수_이수현황_전체.csv`);
+    showToast('전체 엑셀 저장 완료','success');
 }
 
 // ===== 일괄 이수 현황 출력 =====
