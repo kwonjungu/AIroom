@@ -5,15 +5,21 @@ const path = require('path');
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
-const HAS_KV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+const HAS_REDIS = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ===== Vercel KV (Redis) =====
-let kv = null;
-if (HAS_KV) {
-    try { kv = require('@vercel/kv').kv; } catch (e) { console.warn('KV 로드 실패:', e.message); }
+// ===== Upstash Redis =====
+let redis = null;
+if (HAS_REDIS) {
+    try {
+        const { Redis } = require('@upstash/redis');
+        redis = new Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN
+        });
+    } catch (e) { console.warn('Redis 로드 실패:', e.message); }
 }
 
 // KV 키 이름 (파일명 → KV 키)
@@ -47,17 +53,17 @@ function writeFile(filename, data) {
 // ===== 통합 읽기/쓰기 (KV 우선 → 파일 폴백) =====
 async function readData(filename) {
     const key = KV_KEYS[filename];
-    // Vercel + KV 연결 시: KV에서 읽기
-    if (kv && key) {
+    // Upstash Redis 연결 시: Redis에서 읽기
+    if (redis && key) {
         try {
-            const data = await kv.get(key);
+            const data = await redis.get(key);
             if (data !== null && data !== undefined) return data;
-            // KV 비어있으면 defaults에서 초기 데이터 로드 후 KV에 저장
+            // Redis 비어있으면 defaults에서 초기 데이터 로드 후 Redis에 저장
             const defaults = readFile(filename);
-            if (defaults) { await kv.set(key, defaults); return defaults; }
+            if (defaults) { await redis.set(key, JSON.stringify(defaults)); return defaults; }
             return null;
         } catch (e) {
-            console.error('KV 읽기 실패:', e.message);
+            console.error('Redis 읽기 실패:', e.message);
             return readFile(filename);
         }
     }
@@ -67,9 +73,9 @@ async function readData(filename) {
 
 async function writeData(filename, data) {
     const key = KV_KEYS[filename];
-    // Vercel + KV 연결 시: KV에 저장
-    if (kv && key) {
-        try { await kv.set(key, data); } catch (e) { console.error('KV 쓰기 실패:', e.message); }
+    // Upstash Redis 연결 시: Redis에 저장
+    if (redis && key) {
+        try { await redis.set(key, JSON.stringify(data)); } catch (e) { console.error('Redis 쓰기 실패:', e.message); }
     }
     // 로컬이면 파일에도 저장
     if (!IS_VERCEL) writeFile(filename, data);
