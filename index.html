@@ -35,7 +35,7 @@
 
         /* Main Tabs */
         .main-tabs{max-width:960px;margin:0 auto;padding:8px 24px 0;display:flex;gap:4px;border-bottom:2px solid var(--border);}
-        .main-tab{padding:11px 24px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;}
+        .main-tab{padding:11px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;white-space:nowrap;flex-shrink:0;}
         .main-tab:hover{color:var(--primary);background:var(--primary-light);}
         .main-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-light);}
 
@@ -336,15 +336,17 @@
 
         /* Tab admin controls */
         .main-tabs-wrapper{max-width:960px;margin:0 auto;padding:8px 24px 0;}
-        .main-tab-wrap{position:relative;display:inline-flex;align-items:center;}
-        .tab-move-btns{display:none;position:absolute;top:-18px;left:50%;transform:translateX(-50%);gap:1px;z-index:10;}
+        .main-tabs{overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;}
+        .main-tab-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0;}
+        .tab-move-btns{display:none;gap:1px;align-items:center;margin-right:2px;}
         .admin-mode .tab-move-btns{display:flex;}
-        .tab-move-btn{width:18px;height:18px;border-radius:4px;border:1px solid var(--border);background:white;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;}
+        .tab-move-btn{width:20px;height:20px;border-radius:4px;border:1px solid var(--border);background:white;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;flex-shrink:0;}
         .tab-move-btn:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
-        .tab-add-btn{padding:11px 16px;border:2px dashed var(--border);background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;display:none;border-radius:10px 10px 0 0;transition:all .2s;}
+        .tab-add-btn{padding:9px 14px;border:2px dashed var(--border);background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;display:none;border-radius:10px 10px 0 0;transition:all .2s;white-space:nowrap;flex-shrink:0;}
         .admin-mode .tab-add-btn{display:block;}
         .tab-add-btn:hover{color:var(--primary);background:var(--primary-light);border-color:var(--primary);}
-        .tab-delete-btn{display:none;width:16px;height:16px;border-radius:50%;border:none;background:#FFE8E8;color:var(--accent);cursor:pointer;font-size:9px;position:absolute;top:-8px;right:-8px;align-items:center;justify-content:center;z-index:10;line-height:1;}
+        .tab-delete-btn{display:none;width:18px;height:18px;border-radius:50%;border:1px solid #ffcdd2;background:#FFE8E8;color:var(--accent);cursor:pointer;font-size:10px;align-items:center;justify-content:center;flex-shrink:0;margin-left:-4px;margin-right:4px;line-height:1;transition:all .15s;}
+        .tab-delete-btn:hover{background:var(--accent);color:white;}
         .admin-mode .tab-delete-btn.custom-only{display:flex;}
 
         /* Section move buttons */
@@ -1022,7 +1024,7 @@ function toggleAdmin(){
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
-    renderTabs();renderSections();renderLinks();renderCustomPages();
+    renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
 }
 
 // ===== SECTIONS (Home Page - Notion Style) =====
@@ -1488,16 +1490,16 @@ function renderTrainingChecklist(){
         if(isAdmin){
             return `<tr>
                 <td style="text-align:center;font-weight:600">${t.no}</td>
-                <td><input class="reg-input" value="${esc(t.name)}" onchange="updateTrainingField('${t.id}','name',this.value)" style="font-weight:600;min-width:150px;"></td>
-                <td><label style="cursor:pointer;font-size:11px;"><input type="checkbox" ${t.selfTraining?'checked':''} onchange="updateTrainingField('${t.id}','selfTraining',this.checked)"> 가능</label></td>
-                <td><input class="reg-input" value="${esc(t.method)}" onchange="updateTrainingField('${t.id}','method',this.value)" style="min-width:80px;"></td>
-                <td><input class="reg-input" value="${esc(t.cycle)}" onchange="updateTrainingField('${t.id}','cycle',this.value)" style="width:50px;"></td>
-                <td><select class="reg-input" onchange="updateTrainingField('${t.id}','target',this.value)" style="width:70px;"><option value="교원" ${t.target==='교원'?'selected':''}>교원</option><option value="교직원" ${t.target==='교직원'?'selected':''}>교직원</option></select></td>
-                <td><input class="reg-input" value="${esc(t.hours)}" onchange="updateTrainingField('${t.id}','hours',this.value)" style="width:60px;"></td>
-                <td><input class="reg-input" value="${esc(t.date||'')}" onchange="updateTrainingField('${t.id}','date',this.value)" style="width:70px;"></td>
-                <td><input class="reg-input" value="${esc(t.department)}" onchange="updateTrainingField('${t.id}','department',this.value)" style="width:70px;"></td>
-                <td><input class="reg-input" value="${esc(t.manager)}" onchange="updateTrainingField('${t.id}','manager',this.value)" style="width:60px;"></td>
-                <td style="white-space:nowrap">${linkBtn}<button class="item-action-btn" onclick="editTrainingLink('${t.id}')" title="링크 수정" style="font-size:11px;">✏️</button></td>
+                <td><input class="reg-input" value="${esc(t.name)}" onchange="updateTrainingField('${t.id}','name',this.value)" style="font-weight:600;min-width:140px;" placeholder="연수명"></td>
+                <td><label style="cursor:pointer;font-size:11px;white-space:nowrap;"><input type="checkbox" ${t.selfTraining?'checked':''} onchange="updateTrainingField('${t.id}','selfTraining',this.checked)"> 가능</label></td>
+                <td><input class="reg-input" value="${esc(t.method)}" onchange="updateTrainingField('${t.id}','method',this.value)" style="min-width:70px;" placeholder="연수방법"></td>
+                <td><input class="reg-input" value="${esc(t.cycle)}" onchange="updateTrainingField('${t.id}','cycle',this.value)" style="width:45px;" placeholder="주기"></td>
+                <td><select class="reg-input" onchange="updateTrainingField('${t.id}','target',this.value)" style="width:65px;padding:4px;"><option value="교원" ${t.target==='교원'?'selected':''}>교원</option><option value="교직원" ${t.target==='교직원'?'selected':''}>교직원</option></select></td>
+                <td><input class="reg-input" value="${esc(t.hours)}" onchange="updateTrainingField('${t.id}','hours',this.value)" style="width:55px;" placeholder="시간"></td>
+                <td><input type="date" class="reg-input" value="${esc(t.dateISO||'')}" onchange="updateTrainingDate('${t.id}',this.value)" style="width:120px;padding:3px 4px;font-size:11px;" title="${esc(t.date||'날짜 선택')}"></td>
+                <td><input class="reg-input" value="${esc(t.department)}" onchange="updateTrainingField('${t.id}','department',this.value)" style="width:65px;" placeholder="부서"></td>
+                <td><input class="reg-input" value="${esc(t.manager)}" onchange="updateTrainingField('${t.id}','manager',this.value)" style="width:55px;" placeholder="담당자"></td>
+                <td><input class="reg-input" value="${esc(t.link||'')}" onchange="updateTrainingField('${t.id}','link',this.value)" placeholder="https://" style="min-width:80px;font-size:10px;"></td>
                 ${adminBtns}
             </tr>`;
         }
@@ -1518,6 +1520,16 @@ function renderTrainingChecklist(){
 async function updateTrainingField(tid,field,val){
     const t=trainings.find(x=>x.id===tid);if(!t)return;
     t[field]=val;
+    await api('POST','/api/trainings',trainings);saveToLocal();
+}
+async function updateTrainingDate(tid,isoVal){
+    const t=trainings.find(x=>x.id===tid);if(!t)return;
+    t.dateISO=isoVal;
+    if(isoVal){
+        const d=new Date(isoVal);
+        const dayNames=['일','월','화','수','목','금','토'];
+        t.date=`${d.getMonth()+1}.${d.getDate()}.(${dayNames[d.getDay()]})`;
+    } else { t.date=''; }
     await api('POST','/api/trainings',trainings);saveToLocal();
 }
 function setTrainingFilter(f,btn){trainingFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderTrainingChecklist();}
@@ -1974,17 +1986,28 @@ async function initTabsConfig(){
     if(!tabsConfig||!tabsConfig.length){
         tabsConfig=DEFAULT_TABS.map(t=>({...t}));
     }
-    // defaults에서 부서탭 데이터 병합 (없는 탭만 추가)
+    // defaults에서 부서탭 데이터 병합
     let needsSave=false;
-    const defaultFullTabs=await api('GET','/api/tabs');
-    if(defaultFullTabs&&defaultFullTabs.length){
-        defaultFullTabs.forEach(dt=>{
-            if(!tabsConfig.find(t=>t.id===dt.id)){
-                tabsConfig.push({...dt,order:tabsConfig.length});
-                needsSave=true;
+    try{
+        const resp=await fetch('/defaults/tabs.json');
+        if(resp.ok){
+            const defaultFullTabs=await resp.json();
+            if(defaultFullTabs&&defaultFullTabs.length){
+                defaultFullTabs.forEach(dt=>{
+                    const existing=tabsConfig.find(t=>t.id===dt.id);
+                    if(!existing&&dt.type==='custom'){
+                        // 새 부서탭 추가
+                        tabsConfig.push({...dt,order:tabsConfig.length});
+                        needsSave=true;
+                    } else if(existing&&dt.sections&&(!existing.sections||!existing.sections.length)){
+                        // 기존 탭에 섹션 데이터 없으면 defaults에서 복사
+                        existing.sections=dt.sections;
+                        needsSave=true;
+                    }
+                });
             }
-        });
-    }
+        }
+    }catch(e){}
     // 빌트인 탭이 빠져있으면 추가
     DEFAULT_TABS.forEach(dt=>{
         if(!tabsConfig.find(t=>t.id===dt.id)){
@@ -1996,6 +2019,11 @@ async function initTabsConfig(){
     tabsConfig.sort((a,b)=>a.order-b.order);
     tabsConfig.forEach((t,i)=>t.order=i);
     if(needsSave) await api('POST','/api/tabs',tabsConfig);
+    // 교무실 홈 섹션 정리 (부서별 섹션 제거)
+    const deptSectionIds=['sec-sports','sec-it','sec-academic'];
+    const oldLen=sections.length;
+    sections=sections.filter(s=>!deptSectionIds.includes(s.id));
+    if(sections.length<oldLen) await api('POST','/api/sections',sections);
 }
 
 function renderTabs(){
@@ -2010,8 +2038,8 @@ function renderTabs(){
         if(idx>0) html+=`<button class="tab-move-btn" onclick="event.stopPropagation();moveTab('${tab.id}',-1)" title="왼쪽">◀</button>`;
         if(idx<sorted.length-1) html+=`<button class="tab-move-btn" onclick="event.stopPropagation();moveTab('${tab.id}',1)" title="오른쪽">▶</button>`;
         html+=`</div>`;
-        if(isCustom) html+=`<button class="tab-delete-btn custom-only" onclick="event.stopPropagation();confirmDeleteTab('${tab.id}')" title="탭 삭제">✕</button>`;
         html+=`<button class="main-tab${isActive?' active':''}" onclick="switchPage('${tab.id}',this)">${tab.icon} ${esc(tab.title)}</button>`;
+        if(isCustom) html+=`<button class="tab-delete-btn custom-only" onclick="event.stopPropagation();confirmDeleteTab('${tab.id}')" title="탭 삭제">✕</button>`;
         html+=`</div>`;
     });
     html+=`<button class="tab-add-btn" onclick="openAddTab()">+ 탭 추가</button>`;
