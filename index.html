@@ -16,7 +16,13 @@
         body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
         /* Header */
-        .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);}
+        .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);background-size:cover;background-position:center;position:relative;}
+        .header.has-bg-image::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.35);}
+        .header.has-bg-image .header-inner{position:relative;z-index:1;}
+        .header-bg-btn{position:absolute;bottom:8px;right:24px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.3);color:white;cursor:pointer;font-size:11px;font-weight:600;display:none;align-items:center;gap:4px;transition:all .15s;z-index:2;}
+        .header-bg-btn:hover{background:rgba(0,0,0,0.5);}
+        .admin-mode .header-bg-btn{display:inline-flex;}
+        .header-bg-btn input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
         .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:center;position:relative;}
         .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
@@ -27,27 +33,6 @@
         .btn-admin{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
         .btn-admin:hover{background:rgba(255,255,255,0.3);}
         .header-contact{font-size:11px;opacity:0.75;margin-top:4px;}
-
-        /* Banner */
-        .banner{max-width:960px;margin:0 auto;padding:8px 24px 0;position:relative;}
-        .banner-inner{border-radius:var(--radius);overflow:hidden;position:relative;background:white;min-height:60px;cursor:default;border:1px solid var(--border);}
-        .banner-inner.has-image{background-size:cover;background-position:center;background-repeat:no-repeat;min-height:120px;border:none;}
-        .banner-inner.no-image{display:none;align-items:center;justify-content:center;min-height:60px;}
-        .admin-mode .banner-inner.no-image{display:flex;}
-        .banner-inner.no-image .banner-placeholder{color:var(--primary);font-size:13px;text-align:center;font-weight:500;}
-        .banner-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.05);border-radius:var(--radius);cursor:pointer;transition:opacity .2s;}
-        .banner-inner.has-image .banner-overlay{background:rgba(0,0,0,0.4);}
-        .admin-mode .banner-overlay{display:flex;}
-        .banner-overlay:hover{background:rgba(0,0,0,0.1);}
-        .banner-inner.has-image .banner-overlay:hover{background:rgba(0,0,0,0.55);}
-        .banner-overlay-content{color:var(--primary);text-align:center;font-size:13px;font-weight:600;}
-        .banner-inner.has-image .banner-overlay-content{color:white;}
-        .banner-overlay-content .banner-icon{font-size:24px;margin-bottom:4px;}
-        .banner-overlay input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
-        .banner-remove-btn{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--border);color:var(--text-light);border:none;cursor:pointer;font-size:12px;display:none;align-items:center;justify-content:center;transition:all .15s;z-index:2;}
-        .banner-inner.has-image .banner-remove-btn{background:rgba(0,0,0,0.5);color:white;}
-        .banner-remove-btn:hover{background:var(--accent);color:white;}
-        .admin-mode .banner-remove-btn{display:flex;}
 
         /* School info bar */
         .school-info{max-width:960px;margin:0 auto;padding:12px 24px;}
@@ -362,8 +347,7 @@
             .header-right{width:100%;justify-content:center;gap:6px;}
             .header-date{font-size:11px;padding:4px 10px;}
             .btn-admin{padding:6px 12px;font-size:11px;}
-            .banner{padding:6px 10px 0;}
-            .banner-inner{min-height:80px;border-radius:10px;}
+            .header-bg-btn{right:12px;bottom:6px;font-size:10px;padding:4px 8px;}
             .page{padding:12px 10px 40px;}
             .school-info{padding:8px 10px;}
             .school-info-inner{flex-direction:column;align-items:flex-start;padding:10px 14px;font-size:12px;}
@@ -493,21 +477,8 @@
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
             </div>
         </div>
+        <label class="header-bg-btn" title="헤더 배경 이미지 변경">📷 배경 변경<input type="file" accept="image/*" onchange="handleBannerUpload(event)"></label>
     </header>
-
-    <div class="banner" id="bannerSection">
-        <div class="banner-inner no-image" id="bannerInner">
-            <div class="banner-placeholder">관리 모드에서 배너 이미지를 설정하세요</div>
-            <button class="banner-remove-btn" onclick="removeBanner()" title="배너 삭제">✕</button>
-            <div class="banner-overlay" onclick="document.getElementById('bannerFileInput').click()">
-                <div class="banner-overlay-content">
-                    <div class="banner-icon">📷</div>
-                    <div>배너 이미지 변경</div>
-                </div>
-                <input type="file" id="bannerFileInput" accept="image/*" onchange="handleBannerUpload(event)">
-            </div>
-        </div>
-    </div>
 
     <div class="school-info">
         <div class="school-info-inner">
@@ -884,17 +855,13 @@ function loadBanner(){
     }).catch(()=>{});
 }
 function applyBanner(){
-    const el=document.getElementById('bannerInner');
+    const header=document.querySelector('.header');
     if(bannerData&&bannerData.url){
-        el.classList.remove('no-image');
-        el.classList.add('has-image');
-        el.style.backgroundImage=`url('${bannerData.url}')`;
-        el.querySelector('.banner-placeholder').style.display='none';
+        header.classList.add('has-bg-image');
+        header.style.backgroundImage=`url('${bannerData.url}')`;
     } else {
-        el.classList.add('no-image');
-        el.classList.remove('has-image');
-        el.style.backgroundImage='';
-        el.querySelector('.banner-placeholder').style.display='';
+        header.classList.remove('has-bg-image');
+        header.style.backgroundImage='';
     }
 }
 async function handleBannerUpload(e){
