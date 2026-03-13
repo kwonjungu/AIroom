@@ -563,13 +563,29 @@ let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let pendingFile=null; // {name, size, data(base64), type}
 const MAX_FILE_SIZE=3*1024*1024; // 3MB limit for Vercel free tier
 
+// localStorage 백업 (Vercel 콜드스타트 시 데이터 보존)
+const LS_KEY='airoom_backup';
+function saveToLocal(){
+    try{
+        const d={categories,links,trainings,staff,trainingRecords,sections,ts:Date.now()};
+        localStorage.setItem(LS_KEY,JSON.stringify(d));
+    }catch(e){console.warn('localStorage 저장 실패:',e);}
+}
+function loadFromLocal(){
+    try{const s=localStorage.getItem(LS_KEY);return s?JSON.parse(s):null;}catch(e){return null;}
+}
+function isEmptyData(d){return !d||((Array.isArray(d)&&d.length===0)||(typeof d==='object'&&Object.keys(d).length===0));}
+
 async function api(m,u,b){
     try{
         const o={method:m,headers:{'Content-Type':'application/json'}};
         if(b)o.body=JSON.stringify(b);
         const r=await fetch(u,o);
         if(!r.ok)throw new Error(r.status);
-        return await r.json();
+        const data=await r.json();
+        // 쓰기 성공 시 자동 localStorage 백업
+        if(m!=='GET')setTimeout(saveToLocal,100);
+        return data;
     }catch(e){
         console.error('API 오류:',m,u,e);
         return null;
@@ -584,8 +600,22 @@ async function init(){
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];
+        // 서버 데이터가 비었으면 localStorage 백업에서 복원
+        const backup=loadFromLocal();
+        if(backup){
+            if(isEmptyData(categories)&&!isEmptyData(backup.categories)){categories=backup.categories;api('POST','/api/categories',categories);}
+            if(isEmptyData(links)&&!isEmptyData(backup.links)){links=backup.links;api('POST','/api/links',links);}
+            if(isEmptyData(trainings)&&!isEmptyData(backup.trainings)){trainings=backup.trainings;api('POST','/api/trainings',trainings);}
+            if(isEmptyData(staff)&&!isEmptyData(backup.staff)){staff=backup.staff;api('POST','/api/staff',staff);}
+            if(isEmptyData(trainingRecords)&&!isEmptyData(backup.trainingRecords)){trainingRecords=backup.trainingRecords;api('POST','/api/training-records',trainingRecords);}
+            if(isEmptyData(sections)&&!isEmptyData(backup.sections)){sections=backup.sections;api('POST','/api/sections',sections);}
+        }
+        saveToLocal();
     }catch(e){
         console.error('초기화 오류:',e);
+        // 서버 완전 실패 시 localStorage에서 복원
+        const backup=loadFromLocal();
+        if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];}
     }
     updateDate();renderSections();renderCategoryTabs();renderLinks();updateStats();
     setupIconPicker();renderTrainingChecklist();populateRegSelect();

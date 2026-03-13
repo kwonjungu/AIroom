@@ -3,36 +3,38 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const DATA_DIR = '/tmp'; // Vercel에서 유일하게 허용된 임시 공간
+const IS_VERCEL = !!process.env.VERCEL;
+const LOCAL_DATA_DIR = path.join(__dirname, 'data');
+const TMP_DIR = '/tmp';
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 안전하게 JSON 읽기 함수
+// 안전하게 JSON 읽기: Vercel=/tmp→data→defaults, 로컬=data→defaults
 function readJSON(filename) {
     try {
-        const tmpPath = path.join(DATA_DIR, filename);
-        if (fs.existsSync(tmpPath)) {
-            return JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
+        if (IS_VERCEL) {
+            const tmpPath = path.join(TMP_DIR, filename);
+            if (fs.existsSync(tmpPath)) return JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
         }
-        
+        const dataPath = path.join(LOCAL_DATA_DIR, filename);
+        if (fs.existsSync(dataPath)) return JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
         const defaultPath = path.join(__dirname, 'defaults', filename);
-        if (fs.existsSync(defaultPath)) {
-            return JSON.parse(fs.readFileSync(defaultPath, 'utf-8'));
-        }
+        if (fs.existsSync(defaultPath)) return JSON.parse(fs.readFileSync(defaultPath, 'utf-8'));
         return null;
-    } catch (e) {
-        return null;
-    }
+    } catch (e) { return null; }
 }
 
-// 안전하게 JSON 쓰기 함수
+// 안전하게 JSON 쓰기: 로컬=data/, Vercel=/tmp
 function writeJSON(filename, data) {
-    try {
-        const filepath = path.join(DATA_DIR, filename);
-        fs.writeFileSync(filepath, JSON.stringify(data, null, 2), 'utf-8');
-    } catch (e) {
-        console.error('쓰기 실패:', e.message);
+    const json = JSON.stringify(data, null, 2);
+    if (IS_VERCEL) {
+        try { fs.writeFileSync(path.join(TMP_DIR, filename), json, 'utf-8'); } catch (e) { console.error('쓰기 실패:', e.message); }
+    } else {
+        try {
+            if (!fs.existsSync(LOCAL_DATA_DIR)) fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+            fs.writeFileSync(path.join(LOCAL_DATA_DIR, filename), json, 'utf-8');
+        } catch (e) { console.error('쓰기 실패:', e.message); }
     }
 }
 
