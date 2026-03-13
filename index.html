@@ -268,6 +268,16 @@
         }
         @media print{.header{position:relative;}.btn-admin,.add-card,.link-card-actions,.main-tabs,.add-item-btn,.add-section-btn,.section-admin-actions,.item-action-btn,.filter-row{display:none!important;}}
 
+        .cert-btn{font-size:11px;padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;color:var(--text-light);transition:all .15s;white-space:nowrap;}
+        .cert-btn:hover{border-color:var(--primary);color:var(--primary);}
+        .cert-btn.has-cert{background:#E6F9ED;border-color:#68D391;color:#276749;}
+        .cert-input-hidden{display:none;}
+        @media print{
+            .no-print{display:none!important;}
+            body{background:white;}
+            .print-section{page-break-after:always;}
+            .print-section:last-child{page-break-after:auto;}
+        }
         /* Training name clickable */
         .training-name-clickable{font-weight:600;max-width:260px;cursor:pointer;color:var(--primary);transition:color .15s;}
         .training-name-clickable:hover{text-decoration:underline;color:var(--primary-dark);}
@@ -356,12 +366,15 @@
         <div id="training-register" style="display:none">
             <div class="reg-table-header">
                 <h3>📋 교직원 연수 등록부</h3>
-                <select class="reg-select" id="regTrainingSelect" onchange="renderRegisterTable()"></select>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <select class="reg-select" id="regTrainingSelect" onchange="renderRegisterTable()"></select>
+                    <button class="btn btn-secondary" onclick="printAllTrainingStatus()" style="white-space:nowrap;font-size:12px;">🖨️ 일괄 출력</button>
+                </div>
             </div>
             <div class="progress-section" id="regProgress"></div>
             <div class="table-wrapper"><div class="table-scroll">
                 <table><thead><tr>
-                    <th style="width:36px">순</th><th>직위</th><th>성명</th><th>연수명</th><th>연수기관</th><th>이수번호</th><th style="width:60px">이수확인</th>
+                    <th style="width:36px">순</th><th>직위</th><th>성명</th><th>연수기관 / 이수번호</th><th style="width:70px">이수확인</th><th style="width:70px">이수증</th>
                 </tr></thead><tbody id="regTableBody"></tbody></table>
             </div></div>
         </div>
@@ -1004,14 +1017,36 @@ function renderRegisterTable(){
     const tid=document.getElementById('regTrainingSelect').value;
     const tr=trainings.find(t=>t.id===tid);if(!tr)return;
     const rec=trainingRecords[tid]||{};let dc=0;
-    const rows=staff.map(s=>{
+    // 이수기관+이수번호 기준 정렬
+    const sorted=[...staff].sort((a,b)=>{
+        const ra=rec[a.id]||{},rb=rec[b.id]||{};
+        const ia=(ra.institution||'').trim(),ib=(rb.institution||'').trim();
+        const na=(ra.certNo||'').trim(),nb=(rb.certNo||'').trim();
+        if(ia!==ib)return ia.localeCompare(ib,'ko');
+        return na.localeCompare(nb,'ko');
+    });
+    const rows=sorted.map(s=>{
         const r=rec[s.id]||{};const chk=r.confirmed||false;if(chk)dc++;
+        const instCert=r.institution||r.certNo
+            ?`<div style="font-size:11px;color:var(--text-light)">${r.institution?`(${esc(r.institution)}) `:''}</div><div style="font-weight:600">${esc(r.certNo||'')}</div>`
+            :'';
+        const hasCert=!!(r.certFileName);
         return `<tr class="${chk?'completed-row':''}">
             <td style="text-align:center">${s.no}</td><td>${esc(s.position)}</td><td style="font-weight:600">${esc(s.name)}</td>
-            <td>${esc(tr.name)}</td>
-            <td><input class="reg-input" value="${esc(r.institution||'')}" onchange="updateRegRecord('${tid}','${s.id}','institution',this.value)" placeholder="연수기관"></td>
-            <td><input class="reg-input" value="${esc(r.certNo||'')}" onchange="updateRegRecord('${tid}','${s.id}','certNo',this.value)" placeholder="이수번호"></td>
+            <td>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <div style="flex:1">
+                        <input class="reg-input" value="${esc(r.institution||'')}" onchange="updateRegRecord('${tid}','${s.id}','institution',this.value)" placeholder="연수기관" style="margin-bottom:3px;">
+                        <input class="reg-input" value="${esc(r.certNo||'')}" onchange="updateRegRecord('${tid}','${s.id}','certNo',this.value)" placeholder="이수번호">
+                    </div>
+                </div>
+            </td>
             <td><div class="check-cell"><button class="check-box ${chk?'checked':''}" onclick="toggleRegConfirm('${tid}','${s.id}')">${chk?'✓':''}</button></div></td>
+            <td><div class="check-cell" style="flex-direction:column;gap:3px;">
+                <input type="file" class="cert-input-hidden" id="certInput_${tid}_${s.id}" accept=".pdf,.jpg,.jpeg,.png,.hwp,.hwpx" onchange="uploadCertFile('${tid}','${s.id}',this)">
+                <button class="cert-btn ${hasCert?'has-cert':''}" onclick="document.getElementById('certInput_${tid}_${s.id}').click()">${hasCert?'📎 보기':'📎 첨부'}</button>
+                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇ 다운</button>`:''}
+            </div></td>
         </tr>`;
     });
     const p=staff.length?Math.round(dc/staff.length*100):0;
@@ -1032,6 +1067,70 @@ async function toggleRegConfirm(tid,sid){
     renderRegisterTable();
 }
 
+// ===== 이수증 업로드/다운로드 =====
+async function uploadCertFile(tid,sid,input){
+    const file=input.files[0];if(!file)return;
+    if(file.size>3*1024*1024){showToast('파일 크기 초과! 최대 3MB','error');input.value='';return;}
+    const reader=new FileReader();
+    reader.onload=async function(ev){
+        if(!trainingRecords[tid])trainingRecords[tid]={};
+        if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
+        trainingRecords[tid][sid].certFileName=file.name;
+        trainingRecords[tid][sid].certFileSize=formatFileSize(file.size);
+        trainingRecords[tid][sid].certFileData=ev.target.result;
+        await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
+        renderRegisterTable();showToast('이수증 업로드 완료','success');
+    };
+    reader.readAsDataURL(file);
+}
+function downloadCertFile(tid,sid){
+    const r=trainingRecords[tid]?.[sid];
+    if(!r?.certFileData)return;
+    const a=document.createElement('a');a.href=r.certFileData;a.download=r.certFileName;a.click();
+}
+
+// ===== 일괄 이수 현황 출력 =====
+function printAllTrainingStatus(){
+    const printWin=window.open('','_blank','width=1100,height=800');
+    const rows=staff.map((s,si)=>{
+        const cells=trainings.map(t=>{
+            const chk=trainingRecords[t.id]?.[s.id]?.confirmed;
+            return `<td style="text-align:center;background:${chk?'#E6F9ED':'#FFF0F0'};color:${chk?'#276749':'#C53030'};font-size:13px;">${chk?'✓':'✗'}</td>`;
+        }).join('');
+        return `<tr><td style="text-align:center">${si+1}</td><td>${esc(s.position)}</td><td style="font-weight:600">${esc(s.name)}</td>${cells}</tr>`;
+    }).join('');
+    const headers=trainings.map(t=>`<th style="writing-mode:vertical-rl;text-orientation:mixed;white-space:nowrap;font-size:10px;padding:8px 4px;min-width:28px;background:linear-gradient(135deg,#4A90D9,#6C5CE7);color:white;">${esc(t.no)+'. '+esc(t.name)}</th>`).join('');
+    const totalCols=trainings.length;
+    printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>교직원 연수 이수 현황</title>
+    <style>
+        body{font-family:'Malgun Gothic',sans-serif;padding:20px;font-size:11px;}
+        h2{margin-bottom:6px;}p{color:#666;margin-bottom:14px;font-size:11px;}
+        table{border-collapse:collapse;width:100%;}
+        th,td{border:1px solid #ccc;padding:5px 6px;vertical-align:middle;}
+        thead th{background:#4A90D9;color:white;text-align:center;}
+        thead tr:first-child th{background:linear-gradient(135deg,#4A90D9,#6C5CE7);}
+        .total-row{font-weight:700;background:#F7F8FA;}
+    </style></head><body>
+    <h2>📋 백암초등학교 교직원 연수 이수 현황</h2>
+    <p>출력일: ${new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})} &nbsp;|&nbsp; 총 ${trainings.length}개 연수 &nbsp;|&nbsp; 총 ${staff.length}명</p>
+    <table>
+        <thead>
+            <tr><th style="min-width:30px">순</th><th style="min-width:60px">직위</th><th style="min-width:70px">성명</th>${headers}</tr>
+        </thead>
+        <tbody>
+            ${rows}
+            <tr class="total-row">
+                <td colspan="3" style="text-align:center">이수자 수</td>
+                ${trainings.map(t=>{const cnt=staff.filter(s=>trainingRecords[t.id]?.[s.id]?.confirmed).length;return`<td style="text-align:center;font-size:11px;">${cnt}/${staff.length}</td>`;}).join('')}
+            </tr>
+        </tbody>
+    </table>
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`);
+    printWin.document.close();
+}
+
 // ===== 연수 등록부 팝업 모달 =====
 function openTrainingRegModal(tid){
     const t=trainings.find(x=>x.id===tid);if(!t)return;
@@ -1045,10 +1144,16 @@ function renderTrainingRegModalContent(tid){
     let dc=0;
     const rows=staff.map(s=>{
         const r=rec[s.id]||{};const chk=r.confirmed||false;if(chk)dc++;
+        const hasCert=!!(r.certFileName);
         return `<tr class="${chk?'completed-row':''}">
             <td style="text-align:center">${s.no}</td><td>${esc(s.position)}</td>
             <td style="font-weight:600">${esc(s.name)}</td>
-            <td><div class="check-cell"><button class="check-box ${chk?'checked':''}" onclick="toggleStaffCheck('${tid}','${s.id}')">${chk?'✓':''}</button></div></td>
+            <td><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+                <button class="check-box ${chk?'checked':''}" onclick="toggleStaffCheck('${tid}','${s.id}')" style="flex-shrink:0">${chk?'✓':''}</button>
+                <input type="file" class="cert-input-hidden" id="certModalInput_${tid}_${s.id}" accept=".pdf,.jpg,.jpeg,.png,.hwp,.hwpx" onchange="uploadCertFile('${tid}','${s.id}',this)">
+                <button class="cert-btn ${hasCert?'has-cert':''}" onclick="document.getElementById('certModalInput_${tid}_${s.id}').click()" style="font-size:10px;">${hasCert?'📎'+esc(r.certFileName.slice(0,8))+'…':'📎 이수증'}</button>
+                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇</button>`:''}
+            </div></td>
         </tr>`;
     });
     const p=staff.length?Math.round(dc/staff.length*100):0;
@@ -1065,7 +1170,7 @@ function renderTrainingRegModalContent(tid){
         <p style="font-size:12px;color:var(--text-light);margin-bottom:10px;">✅ 본인 이름 옆 체크박스를 클릭하여 이수 확인하세요.</p>
         <div class="table-wrapper"><div class="table-scroll">
             <table><thead><tr>
-                <th style="width:36px">순</th><th>직위</th><th>성명</th><th style="width:60px">이수확인</th>
+                <th style="width:36px">순</th><th>직위</th><th>성명</th><th>이수확인 / 이수증</th>
             </tr></thead><tbody>${rows.join('')}</tbody></table>
         </div></div>`;
 }
