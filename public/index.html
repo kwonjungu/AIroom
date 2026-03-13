@@ -370,7 +370,6 @@
             <div class="header-right">
                 <span class="header-date" id="currentDate"></span>
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
-                <button class="btn-admin" id="btnChangePw" onclick="openSetPasswordModal()" style="display:none;font-size:11px;padding:6px 10px;">🔑 비밀번호</button>
             </div>
         </div>
     </header>
@@ -589,10 +588,6 @@
             <div class="confirm-dialog">
                 <p id="confirmMessage" style="font-size:15px;font-weight:600;margin-bottom:8px;">삭제하시겠습니까?</p>
                 <p class="sub" style="color:var(--accent);">이 작업은 되돌릴 수 없습니다.</p>
-                <div style="margin-top:14px;">
-                    <label style="font-size:12px;font-weight:600;color:var(--text-light);display:block;margin-bottom:4px;text-align:left;">관리 비밀번호 입력</label>
-                    <input type="password" id="confirmPassword" placeholder="비밀번호를 입력하세요" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;text-align:center;" onkeydown="if(event.key==='Enter')document.getElementById('confirmDeleteBtn').click()">
-                </div>
             </div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button><button class="btn btn-danger" id="confirmDeleteBtn" onclick="executeConfirmAction()">확인</button></div>
@@ -1021,34 +1016,11 @@ function submitScheduleAdd(){
     closeModal('scheduleAddModal');
 }
 
-// ===== 관리 비밀번호 =====
-const ADMIN_PW_KEY='airoom_admin_pw';
-function getAdminPassword(){return localStorage.getItem(ADMIN_PW_KEY)||'1234';}
-function setAdminPassword(pw){localStorage.setItem(ADMIN_PW_KEY,pw);}
-function verifyAdminPassword(input){return input===getAdminPassword();}
-// 확인 모달에 비밀번호 검증 래퍼
-function wrapConfirmWithPassword(originalFn){
-    return async function(){
-        const pw=document.getElementById('confirmPassword').value;
-        if(!verifyAdminPassword(pw)){showToast('비밀번호가 틀렸습니다','error');document.getElementById('confirmPassword').value='';document.getElementById('confirmPassword').focus();return;}
-        await originalFn();
-    };
-}
-function openSetPasswordModal(){
-    const newPw=prompt('새 관리 비밀번호를 설정하세요:');
-    if(newPw&&newPw.trim()){setAdminPassword(newPw.trim());showToast('비밀번호가 변경되었습니다','success');}
-}
-
 function toggleAdmin(){
-    if(!isAdmin){
-        const pw=prompt('관리 비밀번호를 입력하세요:');
-        if(!pw||!verifyAdminPassword(pw)){showToast('비밀번호가 틀렸습니다','error');return;}
-    }
     isAdmin=!isAdmin;document.body.classList.toggle('admin-mode',isAdmin);
     const b=document.getElementById('btnAdmin');
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
-    document.getElementById('btnChangePw').style.display=isAdmin?'inline-block':'none';
     if(isAdmin)showToast('관리 모드 활성화','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();
 }
@@ -1513,6 +1485,22 @@ function renderTrainingChecklist(){
         const mb=t.method.includes('온라인')?'badge-online':t.method.includes('이수증')?'badge-submit':t.method.includes('자체')?'badge-self':'badge-group';
         const linkBtn=t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener noreferrer" class="training-link-btn">🔗 바로가기</a> `:'';
         const adminBtns=isAdmin?`<td><div style="display:flex;gap:2px;"><button class="item-action-btn" onclick="openEditTraining('${t.id}')" title="수정">✏️</button><button class="item-action-btn delete" onclick="confirmDeleteTraining('${t.id}')" title="삭제">🗑️</button></div></td>`:'<td class="admin-link-edit-btn"></td>';
+        if(isAdmin){
+            return `<tr>
+                <td style="text-align:center;font-weight:600">${t.no}</td>
+                <td><input class="reg-input" value="${esc(t.name)}" onchange="updateTrainingField('${t.id}','name',this.value)" style="font-weight:600;min-width:150px;"></td>
+                <td><label style="cursor:pointer;font-size:11px;"><input type="checkbox" ${t.selfTraining?'checked':''} onchange="updateTrainingField('${t.id}','selfTraining',this.checked)"> 가능</label></td>
+                <td><input class="reg-input" value="${esc(t.method)}" onchange="updateTrainingField('${t.id}','method',this.value)" style="min-width:80px;"></td>
+                <td><input class="reg-input" value="${esc(t.cycle)}" onchange="updateTrainingField('${t.id}','cycle',this.value)" style="width:50px;"></td>
+                <td><select class="reg-input" onchange="updateTrainingField('${t.id}','target',this.value)" style="width:70px;"><option value="교원" ${t.target==='교원'?'selected':''}>교원</option><option value="교직원" ${t.target==='교직원'?'selected':''}>교직원</option></select></td>
+                <td><input class="reg-input" value="${esc(t.hours)}" onchange="updateTrainingField('${t.id}','hours',this.value)" style="width:60px;"></td>
+                <td><input class="reg-input" value="${esc(t.date||'')}" onchange="updateTrainingField('${t.id}','date',this.value)" style="width:70px;"></td>
+                <td><input class="reg-input" value="${esc(t.department)}" onchange="updateTrainingField('${t.id}','department',this.value)" style="width:70px;"></td>
+                <td><input class="reg-input" value="${esc(t.manager)}" onchange="updateTrainingField('${t.id}','manager',this.value)" style="width:60px;"></td>
+                <td style="white-space:nowrap">${linkBtn}<button class="item-action-btn" onclick="editTrainingLink('${t.id}')" title="링크 수정" style="font-size:11px;">✏️</button></td>
+                ${adminBtns}
+            </tr>`;
+        }
         return `<tr>
             <td style="text-align:center;font-weight:600">${t.no}</td>
             <td class="training-name-clickable" onclick="openTrainingRegModal('${t.id}')" title="클릭하여 등록부 보기">${esc(t.name)} <span style="font-size:10px;opacity:0.6">📋</span></td>
@@ -1522,10 +1510,15 @@ function renderTrainingChecklist(){
             <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
             <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
             <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
-            <td style="white-space:nowrap">${linkBtn}${isAdmin?`<button class="item-action-btn" onclick="editTrainingLink('${t.id}')" title="링크 수정" style="font-size:11px;">✏️</button>`:''}</td>
-            ${adminBtns}
+            <td style="white-space:nowrap">${linkBtn}</td>
+            <td class="admin-link-edit-btn"></td>
         </tr>`;
     }).join('');
+}
+async function updateTrainingField(tid,field,val){
+    const t=trainings.find(x=>x.id===tid);if(!t)return;
+    t[field]=val;
+    await api('POST','/api/trainings',trainings);saveToLocal();
 }
 function setTrainingFilter(f,btn){trainingFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderTrainingChecklist();}
 async function toggleTrainingComplete(tid){
@@ -1963,15 +1956,8 @@ async function importAllData(e){
 
 // ===== MODAL =====
 let _pendingConfirmAction=null;
-function openModal(id){
-    document.getElementById(id).classList.add('active');document.body.style.overflow='hidden';
-    if(id==='confirmModal'){const pwInput=document.getElementById('confirmPassword');if(pwInput){pwInput.value='';setTimeout(()=>pwInput.focus(),100);}}
-}
-function executeConfirmAction(){
-    const pw=document.getElementById('confirmPassword');
-    if(pw&&!verifyAdminPassword(pw.value)){showToast('비밀번호가 틀렸습니다','error');pw.value='';pw.focus();return;}
-    if(_pendingConfirmAction)_pendingConfirmAction();
-}
+function openModal(id){document.getElementById(id).classList.add('active');document.body.style.overflow='hidden';}
+function executeConfirmAction(){if(_pendingConfirmAction)_pendingConfirmAction();}
 function closeModal(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){e.target.classList.remove('active');document.body.style.overflow='';}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>{m.classList.remove('active');document.body.style.overflow='';});});
@@ -1986,25 +1972,30 @@ function esc(t){const d=document.createElement('div');d.textContent=t;return d.i
 // ===== TAB MANAGEMENT =====
 async function initTabsConfig(){
     if(!tabsConfig||!tabsConfig.length){
-        // 서버 defaults에서 로드 시도
-        const defaultTabs=await api('GET','/api/tabs');
-        if(defaultTabs&&defaultTabs.length){
-            tabsConfig=defaultTabs;
-        } else {
-            tabsConfig=DEFAULT_TABS.map(t=>({...t}));
-            await api('POST','/api/tabs',tabsConfig);
-        }
+        tabsConfig=DEFAULT_TABS.map(t=>({...t}));
+    }
+    // defaults에서 부서탭 데이터 병합 (없는 탭만 추가)
+    let needsSave=false;
+    const defaultFullTabs=await api('GET','/api/tabs');
+    if(defaultFullTabs&&defaultFullTabs.length){
+        defaultFullTabs.forEach(dt=>{
+            if(!tabsConfig.find(t=>t.id===dt.id)){
+                tabsConfig.push({...dt,order:tabsConfig.length});
+                needsSave=true;
+            }
+        });
     }
     // 빌트인 탭이 빠져있으면 추가
-    ['schedule','home','training','links'].forEach(bid=>{
-        if(!tabsConfig.find(t=>t.id===bid)){
-            const dt=DEFAULT_TABS.find(d=>d.id===bid);
-            if(dt)tabsConfig.push({...dt,order:tabsConfig.length});
+    DEFAULT_TABS.forEach(dt=>{
+        if(!tabsConfig.find(t=>t.id===dt.id)){
+            tabsConfig.push({...dt,order:tabsConfig.length});
+            needsSave=true;
         }
     });
     // order 정렬 보정
     tabsConfig.sort((a,b)=>a.order-b.order);
     tabsConfig.forEach((t,i)=>t.order=i);
+    if(needsSave) await api('POST','/api/tabs',tabsConfig);
 }
 
 function renderTabs(){
