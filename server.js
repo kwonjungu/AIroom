@@ -6,7 +6,7 @@ const app = express();
 const DATA_DIR = '/tmp'; // Vercel에서 유일하게 허용된 임시 공간
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(process.cwd(), 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 안전하게 JSON 읽기 함수
 function readJSON(filename) {
@@ -16,7 +16,7 @@ function readJSON(filename) {
             return JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
         }
         
-        const defaultPath = path.join(process.cwd(), 'defaults', filename);
+        const defaultPath = path.join(__dirname, 'defaults', filename);
         if (fs.existsSync(defaultPath)) {
             return JSON.parse(fs.readFileSync(defaultPath, 'utf-8'));
         }
@@ -92,7 +92,7 @@ app.post('/api/import', (req, res) => {
 
 // 메인 페이지
 app.get('/', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Vercel용 내보내기 (중요: app.listen이 없어야 함)
