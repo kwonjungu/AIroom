@@ -953,6 +953,7 @@ function confirmDeleteItem(secId,itemId){
     if(!it)return;
     document.getElementById('confirmMessage').textContent=`"${it.text}" 항목을 삭제하시겠습니까?`;
     document.getElementById('confirmDeleteBtn').onclick=async()=>{
+        if(it.filePath)await deleteFromFirebase(it.filePath);
         sec.items=sec.items.filter(i=>i.id!==itemId);
         await api('POST','/api/sections',sections);
         renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
@@ -1193,7 +1194,7 @@ function renderRegisterTable(){
             <td><div class="check-cell" style="flex-direction:column;gap:3px;">
                 <input type="file" class="cert-input-hidden" id="certInput_${tid}_${s.id}" accept=".pdf,.jpg,.jpeg,.png,.hwp,.hwpx" onchange="uploadCertFile('${tid}','${s.id}',this)">
                 <button class="cert-btn ${hasCert?'has-cert':''}" onclick="document.getElementById('certInput_${tid}_${s.id}').click()">${hasCert?'📎 보기':'📎 첨부'}</button>
-                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇ 다운</button>`:''}
+                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇ 다운</button><button class="cert-btn" onclick="deleteCertFile('${tid}','${s.id}')" style="font-size:10px;color:#e53935;">🗑 삭제</button>`:''}
             </div></td>
         </tr>`;
     });
@@ -1242,6 +1243,17 @@ function downloadCertFile(tid,sid){
     const r=trainingRecords[tid]?.[sid];if(!r)return;
     const url=r.certFileUrl||r.certFileData;
     if(url)openFilePreview(url,r.certFileName||'이수증','');
+}
+async function deleteCertFile(tid,sid){
+    if(!confirm('이 이수증 파일을 삭제하시겠습니까?'))return;
+    const r=trainingRecords[tid]?.[sid];if(!r)return;
+    try{
+        if(r.certFilePath)await deleteFromFirebase(r.certFilePath);
+        delete r.certFileName;delete r.certFileSize;delete r.certFileUrl;delete r.certFilePath;delete r.certFileData;
+        await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
+        renderRegisterTable();renderTrainingRegModalContent(tid);
+        showToast('이수증 삭제 완료','success');
+    }catch(e){console.error('삭제 실패:',e);showToast('삭제 실패: '+e.message,'error');}
 }
 
 // ===== 엑셀(CSV) 내보내기 =====
@@ -1377,7 +1389,7 @@ function renderTrainingRegModalContent(tid){
                 <button class="check-box ${chk?'checked':''}" onclick="toggleStaffCheck('${tid}','${s.id}')" style="flex-shrink:0">${chk?'✓':''}</button>
                 <input type="file" class="cert-input-hidden" id="certModalInput_${tid}_${s.id}" accept=".pdf,.jpg,.jpeg,.png,.hwp,.hwpx" onchange="uploadCertFile('${tid}','${s.id}',this)">
                 <button class="cert-btn ${hasCert?'has-cert':''}" onclick="document.getElementById('certModalInput_${tid}_${s.id}').click()" style="font-size:10px;">${hasCert?'📎'+esc(r.certFileName.slice(0,8))+'…':'📎 이수증'}</button>
-                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇</button>`:''}
+                ${hasCert?`<button class="cert-btn" onclick="downloadCertFile('${tid}','${s.id}')" style="font-size:10px;">⬇</button><button class="cert-btn" onclick="deleteCertFile('${tid}','${s.id}')" style="font-size:10px;color:#e53935;">🗑</button>`:''}
             </div></td>
         </tr>`;
     });
