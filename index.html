@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>백암초등학교 온라인 교무실</title>
+    <title>AI 아이들 백암초등학교 교무실</title>
     <style>
         :root {
             --primary:#4A90D9; --primary-dark:#357ABD; --primary-light:#E8F0FE;
@@ -17,12 +17,12 @@
 
         /* Header */
         .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);}
-        .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;}
-        .header-left{display:flex;align-items:center;gap:14px;}
+        .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:center;position:relative;}
+        .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
         .header-title h1{font-size:21px;font-weight:700;}
         .header-title p{font-size:11px;opacity:0.85;margin-top:2px;}
-        .header-right{display:flex;align-items:center;gap:10px;}
+        .header-right{display:flex;align-items:center;gap:10px;position:absolute;right:24px;}
         .header-date{font-size:12px;opacity:0.9;background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:18px;}
         .btn-admin{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
         .btn-admin:hover{background:rgba(255,255,255,0.3);}
@@ -255,6 +255,39 @@
         .confirm-dialog{text-align:center;padding:14px 0;} .confirm-dialog p{font-size:14px;margin-bottom:5px;} .confirm-dialog .sub{font-size:12px;color:var(--text-light);}
         .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-light);}
 
+        /* Schedule */
+        .schedule-view-tabs{display:flex;gap:4px;margin-bottom:16px;}
+        .schedule-view-tab{padding:8px 18px;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;border-radius:8px;color:var(--text-light);transition:all .2s;}
+        .schedule-view-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
+        .schedule-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+        .schedule-nav-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--card-bg);border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+        .schedule-nav-btn:hover{background:var(--primary-light);}
+        .schedule-nav-title{font-size:18px;font-weight:700;}
+        .schedule-nav-today{padding:6px 14px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;}
+        .schedule-nav-today:hover{background:var(--primary-light);}
+        .schedule-table{width:100%;border-collapse:collapse;background:var(--card-bg);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+        .schedule-table th{background:var(--primary);color:white;padding:10px 8px;font-size:13px;font-weight:600;text-align:center;}
+        .schedule-table td{border:1px solid var(--border);padding:8px;vertical-align:top;min-height:80px;font-size:13px;}
+        .schedule-table td.today{background:#FFF8E1;}
+        .schedule-table td.other-month{color:#ccc;background:#fafafa;}
+        .schedule-day-num{font-weight:700;font-size:14px;margin-bottom:4px;}
+        .schedule-day-num.sun{color:#e53935;}
+        .schedule-day-num.sat{color:#1565c0;}
+        .schedule-item{background:var(--primary-light);border-left:3px solid var(--primary);padding:3px 6px;margin-bottom:3px;border-radius:4px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;}
+        .schedule-item:hover{background:#d0e2f7;}
+        .schedule-item .del-btn{display:none;background:none;border:none;cursor:pointer;font-size:10px;color:#e53935;padding:0 2px;}
+        .schedule-item:hover .del-btn{display:inline;}
+        .schedule-add-btn{background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:11px;color:var(--text-light);cursor:pointer;width:100%;text-align:left;margin-top:2px;}
+        .schedule-add-btn:hover{background:var(--primary-light);color:var(--primary);}
+        .week-table td{height:100px;}
+        .day-detail-card{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+        .day-detail-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+        .day-detail-item:last-child{border-bottom:none;}
+        .day-detail-input{flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;outline:none;}
+        .day-detail-input:focus{border-color:var(--primary);}
+        .day-detail-manager{width:80px;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:13px;text-align:center;outline:none;}
+        .day-detail-manager:focus{border-color:var(--primary);}
+
         @media(max-width:768px){
             .header-inner{flex-direction:column;gap:8px;text-align:center;padding:14px 16px;}
             .header-right{width:100%;justify-content:center;}
@@ -304,8 +337,7 @@
             <div class="header-left">
                 <div class="school-icon">🏫</div>
                 <div class="header-title">
-                    <h1>2026 백암초 온라인 교무실</h1>
-                    <p>교직원 전용 &middot; 업무 자료 &middot; 연수 관리</p>
+                    <h1>AI 아이들 백암초등학교 교무실</h1>
                 </div>
             </div>
             <div class="header-right">
@@ -324,13 +356,30 @@
     </div>
 
     <div class="main-tabs">
-        <button class="main-tab active" onclick="switchPage('home',this)">🏠 교무실 홈</button>
+        <button class="main-tab active" onclick="switchPage('schedule',this)">📅 학교 일정</button>
+        <button class="main-tab" onclick="switchPage('home',this)">🏠 교무실 홈</button>
         <button class="main-tab" onclick="switchPage('training',this)">📋 연수 관리</button>
         <button class="main-tab" onclick="switchPage('links',this)">🔗 링크 모음</button>
     </div>
 
+    <!-- ===== SCHEDULE PAGE ===== -->
+    <div class="page active" id="page-schedule">
+        <div class="schedule-view-tabs">
+            <button class="schedule-view-tab" onclick="setScheduleView('day',this)">일간</button>
+            <button class="schedule-view-tab" onclick="setScheduleView('week',this)">주간</button>
+            <button class="schedule-view-tab active" onclick="setScheduleView('month',this)">월간</button>
+        </div>
+        <div class="schedule-nav">
+            <button class="schedule-nav-btn" onclick="scheduleNav(-1)">◀</button>
+            <span class="schedule-nav-title" id="scheduleTitle"></span>
+            <button class="schedule-nav-btn" onclick="scheduleNav(1)">▶</button>
+            <button class="schedule-nav-today" onclick="scheduleToday()">오늘</button>
+        </div>
+        <div id="scheduleContent"></div>
+    </div>
+
     <!-- ===== HOME PAGE ===== -->
-    <div class="page active" id="page-home">
+    <div class="page" id="page-home">
         <div class="search-bar">
             <span class="search-icon">🔍</span>
             <input type="text" id="homeSearch" placeholder="필요한 내용 검색 (Ctrl+F)" oninput="filterSections()">
@@ -581,8 +630,9 @@ const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','
 const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[];
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
+let scheduleView='month',scheduleDate=new Date();
 let pendingFile=null; // {name, size, data(base64), type}
 const MAX_FILE_SIZE=5*1024*1024; // 5MB limit per file
 
@@ -613,7 +663,7 @@ async function deleteFromFirebase(path){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,ts:Date.now()};
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -643,10 +693,11 @@ async function init(){
     try{
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
-            api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections')
+            api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
+            api('GET','/api/schedules')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
-        staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];
+        staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -665,7 +716,7 @@ async function init(){
         if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];}
     }
     updateDate();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -680,6 +731,157 @@ function switchPage(p,btn){
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.main-tab').forEach(x=>x.classList.remove('active'));
     document.getElementById('page-'+p).classList.add('active');btn.classList.add('active');
+    if(p==='schedule')renderSchedule();
+}
+
+// ===== SCHEDULE =====
+function setScheduleView(v,btn){
+    scheduleView=v;
+    document.querySelectorAll('.schedule-view-tab').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    renderSchedule();
+}
+function scheduleNav(dir){
+    if(scheduleView==='month')scheduleDate.setMonth(scheduleDate.getMonth()+dir);
+    else if(scheduleView==='week')scheduleDate.setDate(scheduleDate.getDate()+dir*7);
+    else scheduleDate.setDate(scheduleDate.getDate()+dir);
+    renderSchedule();
+}
+function scheduleToday(){scheduleDate=new Date();renderSchedule();}
+function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function getScheduleItems(dateStr){return schedules.filter(s=>s.date===dateStr);}
+function todayStr(){return fmtDate(new Date());}
+
+async function addScheduleItem(dateStr,text,manager){
+    if(!text.trim())return;
+    schedules.push({id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||''});
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();renderSchedule();
+}
+async function deleteScheduleItem(id){
+    schedules=schedules.filter(s=>s.id!==id);
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();renderSchedule();
+}
+async function updateScheduleItem(id,field,val){
+    const item=schedules.find(s=>s.id===id);if(!item)return;
+    item[field]=val;
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();
+}
+
+function renderSchedule(){
+    const el=document.getElementById('scheduleContent');
+    const title=document.getElementById('scheduleTitle');
+    if(scheduleView==='month')renderMonthView(el,title);
+    else if(scheduleView==='week')renderWeekView(el,title);
+    else renderDayView(el,title);
+}
+
+function renderMonthView(el,titleEl){
+    const y=scheduleDate.getFullYear(),m=scheduleDate.getMonth();
+    titleEl.textContent=`${y}년 ${m+1}월`;
+    const first=new Date(y,m,1),last=new Date(y,m+1,0);
+    const startDay=first.getDay(); // 0=sun
+    const today=todayStr();
+    let html='<table class="schedule-table"><thead><tr>';
+    ['일','월','화','수','목','금','토'].forEach((d,i)=>html+=`<th style="${i===0?'color:#ffcdd2':i===6?'color:#bbdefb':''}">${d}</th>`);
+    html+='</tr></thead><tbody><tr>';
+    // prev month padding
+    const prevLast=new Date(y,m,0).getDate();
+    for(let i=0;i<startDay;i++){
+        const pd=prevLast-startDay+1+i;
+        const ds=fmtDate(new Date(y,m-1,pd));
+        html+=`<td class="other-month"><div class="schedule-day-num">${pd}</div></td>`;
+    }
+    for(let d=1;d<=last.getDate();d++){
+        const ds=fmtDate(new Date(y,m,d));
+        const dow=(startDay+d-1)%7;
+        const isToday=ds===today?'today':'';
+        const items=getScheduleItems(ds);
+        html+=`<td class="${isToday}" style="width:14.28%">`;
+        html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}</div>`;
+        items.forEach(it=>{
+            html+=`<div class="schedule-item" title="${esc(it.manager||'')}">`
+                +`<span>${esc(it.text)}</span>`
+                +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
+                +`</div>`;
+        });
+        html+=`<button class="schedule-add-btn" onclick="promptScheduleAdd('${ds}')">+</button>`;
+        html+='</td>';
+        if(dow===6&&d<last.getDate())html+='</tr><tr>';
+    }
+    // next month padding
+    const endDay=(startDay+last.getDate()-1)%7;
+    for(let i=endDay+1;i<7;i++){
+        html+=`<td class="other-month"><div class="schedule-day-num">${i-endDay}</div></td>`;
+    }
+    html+='</tr></tbody></table>';
+    el.innerHTML=html;
+}
+
+function renderWeekView(el,titleEl){
+    const d=new Date(scheduleDate);
+    const day=d.getDay();
+    const sun=new Date(d);sun.setDate(d.getDate()-day);
+    const sat=new Date(sun);sat.setDate(sun.getDate()+6);
+    titleEl.textContent=`${sun.getMonth()+1}/${sun.getDate()} ~ ${sat.getMonth()+1}/${sat.getDate()}`;
+    const today=todayStr();
+    let html='<table class="schedule-table week-table"><thead><tr>';
+    const dayNames=['일','월','화','수','목','금','토'];
+    for(let i=0;i<7;i++){
+        const dd=new Date(sun);dd.setDate(sun.getDate()+i);
+        html+=`<th style="${i===0?'color:#ffcdd2':i===6?'color:#bbdefb':''}">${dayNames[i]}<br>${dd.getMonth()+1}.${dd.getDate()}</th>`;
+    }
+    html+='</tr></thead><tbody><tr>';
+    for(let i=0;i<7;i++){
+        const dd=new Date(sun);dd.setDate(sun.getDate()+i);
+        const ds=fmtDate(dd);
+        const isToday=ds===today?'today':'';
+        const items=getScheduleItems(ds);
+        html+=`<td class="${isToday}">`;
+        items.forEach(it=>{
+            html+=`<div class="schedule-item" title="${esc(it.manager||'')}">`
+                +`<span>${esc(it.text)}</span>`
+                +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
+                +`</div>`;
+        });
+        html+=`<button class="schedule-add-btn" onclick="promptScheduleAdd('${ds}')">+</button>`;
+        html+='</td>';
+    }
+    html+='</tr></tbody></table>';
+    el.innerHTML=html;
+}
+
+function renderDayView(el,titleEl){
+    const ds=fmtDate(scheduleDate);
+    const dayNames=['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    titleEl.textContent=`${scheduleDate.getFullYear()}년 ${scheduleDate.getMonth()+1}월 ${scheduleDate.getDate()}일 (${dayNames[scheduleDate.getDay()]})`;
+    const items=getScheduleItems(ds);
+    let html='<div class="day-detail-card">';
+    if(items.length===0) html+='<div style="text-align:center;padding:30px;color:var(--text-light);">등록된 일정이 없습니다.</div>';
+    items.forEach(it=>{
+        html+=`<div class="day-detail-item">
+            <input class="day-detail-input" value="${esc(it.text)}" onchange="updateScheduleItem('${it.id}','text',this.value)">
+            <input class="day-detail-manager" value="${esc(it.manager||'')}" placeholder="담당자" onchange="updateScheduleItem('${it.id}','manager',this.value)">
+            <button class="item-action-btn delete" onclick="deleteScheduleItem('${it.id}')" style="font-size:14px;">🗑️</button>
+        </div>`;
+    });
+    html+=`<div class="day-detail-item" style="border-bottom:none;">
+        <input class="day-detail-input" id="newScheduleText" placeholder="새 일정 입력 후 Enter" onkeydown="if(event.key==='Enter'){addScheduleItem('${ds}',this.value,document.getElementById('newScheduleManager').value);this.value='';document.getElementById('newScheduleManager').value='';}">
+        <input class="day-detail-manager" id="newScheduleManager" placeholder="담당자" onkeydown="if(event.key==='Enter'){addScheduleItem('${ds}',document.getElementById('newScheduleText').value,this.value);document.getElementById('newScheduleText').value='';this.value='';}">
+        <button class="item-action-btn" onclick="addScheduleItem('${ds}',document.getElementById('newScheduleText').value,document.getElementById('newScheduleManager').value);document.getElementById('newScheduleText').value='';document.getElementById('newScheduleManager').value='';" style="font-size:14px;">➕</button>
+    </div>`;
+    html+='</div>';
+    el.innerHTML=html;
+}
+
+function promptScheduleAdd(dateStr){
+    const text=prompt('일정 내용을 입력하세요:');
+    if(text){
+        const manager=prompt('담당자 (빈칸 가능):');
+        addScheduleItem(dateStr,text,manager||'');
+    }
 }
 
 function toggleAdmin(){

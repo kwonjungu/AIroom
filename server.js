@@ -29,7 +29,8 @@ const KV_KEYS = {
     'trainings.json': 'trainings',
     'staff.json': 'staff',
     'training-records.json': 'training-records',
-    'sections.json': 'sections'
+    'sections.json': 'sections',
+    'schedules.json': 'schedules'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -89,7 +90,8 @@ const DATA_ROUTES = [
     { path: 'trainings', file: 'trainings.json', fallback: [] },
     { path: 'staff', file: 'staff.json', fallback: [] },
     { path: 'training-records', file: 'training-records.json', fallback: {} },
-    { path: 'sections', file: 'sections.json', fallback: [] }
+    { path: 'sections', file: 'sections.json', fallback: [] },
+    { path: 'schedules', file: 'schedules.json', fallback: [] }
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
@@ -118,18 +120,19 @@ app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
 // Export (전체 데이터 내보내기)
 app.get('/api/export', async (req, res) => {
     try {
-        const [links, categories, sections, trainings, staff, trainingRecords] = await Promise.all([
+        const [links, categories, sections, trainings, staff, trainingRecords, schedules] = await Promise.all([
             readData('links.json'), readData('categories.json'), readData('sections.json'),
-            readData('trainings.json'), readData('staff.json'), readData('training-records.json')
+            readData('trainings.json'), readData('staff.json'), readData('training-records.json'),
+            readData('schedules.json')
         ]);
-        res.json({ links, categories, sections, trainings, staff, trainingRecords, exportedAt: new Date().toISOString() });
+        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, exportedAt: new Date().toISOString() });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Import (전체 데이터 가져오기)
 app.post('/api/import', async (req, res) => {
     try {
-        const { links, categories, sections, trainings, staff, trainingRecords } = req.body;
+        const { links, categories, sections, trainings, staff, trainingRecords, schedules } = req.body;
         const writes = [];
         if (links) writes.push(writeData('links.json', links));
         if (categories) writes.push(writeData('categories.json', categories));
@@ -137,6 +140,7 @@ app.post('/api/import', async (req, res) => {
         if (trainings) writes.push(writeData('trainings.json', trainings));
         if (staff) writes.push(writeData('staff.json', staff));
         if (trainingRecords) writes.push(writeData('training-records.json', trainingRecords));
+        if (schedules) writes.push(writeData('schedules.json', schedules));
         await Promise.all(writes);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
