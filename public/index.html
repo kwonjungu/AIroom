@@ -79,6 +79,9 @@
         .item-action-btn.delete:hover{background:#FFE8E8;color:var(--accent);}
 
         .section-item-person{font-size:11px;color:#2B6CB0;background:#E8F0FE;padding:1px 8px;border-radius:10px;display:inline-block;margin-top:2px;}
+        .person-box{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#EBF4FF;border:1px solid #BEE3F8;border-radius:10px;padding:6px 12px;min-width:70px;flex-shrink:0;text-align:center;line-height:1.4;}
+        .person-box-name{font-size:12px;font-weight:700;color:#2B6CB0;white-space:nowrap;}
+        .person-box-ext{font-size:11px;color:#4A5568;white-space:nowrap;}
         .section-item-file{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--primary);background:var(--primary-light);padding:3px 10px;border-radius:8px;margin-top:4px;text-decoration:none;cursor:pointer;transition:all .15s;border:1px solid transparent;}
         .section-item-file:hover{border-color:var(--primary);background:#D0E3FF;}
         .section-item-file .file-size{color:var(--text-light);font-size:10px;}
@@ -417,7 +420,10 @@
             <input type="hidden" id="editingItemId">
             <div class="form-group"><label>텍스트 *</label><input type="text" id="itemText" placeholder="항목 이름"></div>
             <div class="form-group"><label>설명 (선택)</label><input type="text" id="itemDescription" placeholder="부가 설명"></div>
-            <div class="form-group"><label>담당자 (선택)</label><input type="text" id="itemPerson" placeholder="예: 김철수 선생님"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div class="form-group"><label>담당자 이름 (선택)</label><input type="text" id="itemPerson" placeholder="예: 김철수"></div>
+                <div class="form-group"><label>내선번호 (선택)</label><input type="text" id="itemPersonExt" placeholder="예: 201"></div>
+            </div>
             <div class="form-group"><label>링크 URL (선택)</label><input type="url" id="itemUrl" placeholder="https://"></div>
             <div class="form-group">
                 <label>📎 첨부파일 (최대 2MB)</label>
@@ -603,7 +609,7 @@ function renderSections(){
     c.innerHTML=sorted.map(sec=>{
         let items=sec.items||[];
         if(search){
-            items=items.filter(it=>it.text.toLowerCase().includes(search)||(it.description||'').toLowerCase().includes(search)||(it.person||'').toLowerCase().includes(search));
+            items=items.filter(it=>it.text.toLowerCase().includes(search)||(it.description||'').toLowerCase().includes(search)||(it.person||'').toLowerCase().includes(search)||(it.personExt||'').includes(search));
             if(!items.length)return'';
         }
         const borderColor=sec.borderColor||COLOR_BORDERS[sec.color]||'#E0E0E0';
@@ -627,15 +633,16 @@ function renderSections(){
                     const linkAttr=hasLink?`href="${esc(it.url)}" target="_blank" rel="noopener noreferrer"`:'';
                     const tag=hasLink?'a':'span';
                     const cls=`section-item-text${hasLink?' has-link':''}${it.bold?' bold':''}`;
-                    const personHtml=it.person?`<span class="section-item-person">👤 ${esc(it.person)}</span>`:'';
                     const fileHtml=it.fileName?`<a class="section-item-file" onclick="downloadFile('${sec.id}','${it.id}')" title="파일 다운로드">📎 ${esc(it.fileName)} <span class="file-size">(${esc(it.fileSize||'')})</span></a>`:'';
+                    const personBoxHtml=it.person?`<div class="person-box"><span class="person-box-name">👤 ${esc(it.person)}</span>${it.personExt?`<span class="person-box-ext">☎ ${esc(it.personExt)}</span>`:''}</div>`:'';
                     return `<div class="section-item">
                         <span class="section-item-icon">${it.icon||'•'}</span>
                         <div class="section-item-content">
                             <${tag} class="${cls}" ${linkAttr}>${esc(it.text)}</${tag}>
                             ${it.description?`<div class="section-item-desc">${esc(it.description)}</div>`:''}
-                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${personHtml}${fileHtml}</div>
+                            ${fileHtml?`<div style="margin-top:3px;">${fileHtml}</div>`:''}
                         </div>
+                        ${personBoxHtml}
                         <div class="section-item-actions">
                             <button class="item-action-btn" onclick="editItem('${sec.id}','${it.id}')" title="수정">✏️</button>
                             <button class="item-action-btn delete" onclick="confirmDeleteItem('${sec.id}','${it.id}')" title="삭제">🗑️</button>
@@ -702,6 +709,7 @@ function openAddItem(secId){
     document.getElementById('itemText').value='';
     document.getElementById('itemDescription').value='';
     document.getElementById('itemPerson').value='';
+    document.getElementById('itemPersonExt').value='';
     document.getElementById('itemUrl').value='';
     document.getElementById('itemIcon').value='';
     document.getElementById('itemBold').checked=false;
@@ -718,6 +726,7 @@ function editItem(secId,itemId){
     document.getElementById('itemText').value=it.text;
     document.getElementById('itemDescription').value=it.description||'';
     document.getElementById('itemPerson').value=it.person||'';
+    document.getElementById('itemPersonExt').value=it.personExt||'';
     document.getElementById('itemUrl').value=it.url||'';
     document.getElementById('itemIcon').value=it.icon||'';
     document.getElementById('itemBold').checked=it.bold||false;
@@ -741,6 +750,7 @@ async function saveItem(){
         text,
         description:document.getElementById('itemDescription').value.trim(),
         person:document.getElementById('itemPerson').value.trim(),
+        personExt:document.getElementById('itemPersonExt').value.trim(),
         url:document.getElementById('itemUrl').value.trim(),
         icon:document.getElementById('itemIcon').value.trim()||'•',
         bold:document.getElementById('itemBold').checked
