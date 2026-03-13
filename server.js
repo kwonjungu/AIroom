@@ -5,18 +5,30 @@ const path = require('path');
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
-const TMP_DIR = '/tmp';
+const HAS_KV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 안전하게 JSON 읽기: Vercel=/tmp→data→defaults, 로컬=data→defaults
-function readJSON(filename) {
+// ===== Vercel KV (Redis) =====
+let kv = null;
+if (HAS_KV) {
+    try { kv = require('@vercel/kv').kv; } catch (e) { console.warn('KV 로드 실패:', e.message); }
+}
+
+// KV 키 이름 (파일명 → KV 키)
+const KV_KEYS = {
+    'links.json': 'links',
+    'categories.json': 'categories',
+    'trainings.json': 'trainings',
+    'staff.json': 'staff',
+    'training-records.json': 'training-records',
+    'sections.json': 'sections'
+};
+
+// ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
+function readFile(filename) {
     try {
-        if (IS_VERCEL) {
-            const tmpPath = path.join(TMP_DIR, filename);
-            if (fs.existsSync(tmpPath)) return JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
-        }
         const dataPath = path.join(LOCAL_DATA_DIR, filename);
         if (fs.existsSync(dataPath)) return JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
         const defaultPath = path.join(__dirname, 'defaults', filename);
@@ -25,71 +37,103 @@ function readJSON(filename) {
     } catch (e) { return null; }
 }
 
-// 안전하게 JSON 쓰기: 로컬=data/, Vercel=/tmp
-function writeJSON(filename, data) {
-    const json = JSON.stringify(data, null, 2);
-    if (IS_VERCEL) {
-        try { fs.writeFileSync(path.join(TMP_DIR, filename), json, 'utf-8'); } catch (e) { console.error('쓰기 실패:', e.message); }
-    } else {
-        try {
-            if (!fs.existsSync(LOCAL_DATA_DIR)) fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
-            fs.writeFileSync(path.join(LOCAL_DATA_DIR, filename), json, 'utf-8');
-        } catch (e) { console.error('쓰기 실패:', e.message); }
-    }
+function writeFile(filename, data) {
+    try {
+        if (!fs.existsSync(LOCAL_DATA_DIR)) fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
+        fs.writeFileSync(path.join(LOCAL_DATA_DIR, filename), JSON.stringify(data, null, 2), 'utf-8');
+    } catch (e) { console.error('파일 쓰기 실패:', e.message); }
 }
 
-// API 라우트들
-app.get('/api/links', (req, res) => res.json(readJSON('links.json') || []));
-app.post('/api/links', (req, res) => { writeJSON('links.json', req.body); res.json({ success: true }); });
+// ===== 통합 읽기/쓰기 (KV 우선 → 파일 폴백) =====
+async function readData(filename) {
+    const key = KV_KEYS[filename];
+    // Vercel + KV 연결 시: KV에서 읽기
+    if (kv && key) {
+        try {
+            const data = await kv.get(key);
+            if (data !== null && data !== undefined) return data;
+            // KV 비어있으면 defaults에서 초기 데이터 로드 후 KV에 저장
+            const defaults = readFile(filename);
+            if (defaults) { await kv.set(key, defaults); return defaults; }
+            return null;
+        } catch (e) {
+            console.error('KV 읽기 실패:', e.message);
+            return readFile(filename);
+        }
+    }
+    // 로컬: 파일에서 읽기
+    return readFile(filename);
+}
 
-app.get('/api/categories', (req, res) => res.json(readJSON('categories.json') || []));
-app.post('/api/categories', (req, res) => { writeJSON('categories.json', req.body); res.json({ success: true }); });
+async function writeData(filename, data) {
+    const key = KV_KEYS[filename];
+    // Vercel + KV 연결 시: KV에 저장
+    if (kv && key) {
+        try { await kv.set(key, data); } catch (e) { console.error('KV 쓰기 실패:', e.message); }
+    }
+    // 로컬이면 파일에도 저장
+    if (!IS_VERCEL) writeFile(filename, data);
+}
 
-app.get('/api/trainings', (req, res) => res.json(readJSON('trainings.json') || []));
-app.post('/api/trainings', (req, res) => { writeJSON('trainings.json', req.body); res.json({ success: true }); });
+// ===== API 라우트 =====
+// 각 데이터 타입: GET(읽기), POST(전체 저장)
+const DATA_ROUTES = [
+    { path: 'links', file: 'links.json', fallback: [] },
+    { path: 'categories', file: 'categories.json', fallback: [] },
+    { path: 'trainings', file: 'trainings.json', fallback: [] },
+    { path: 'staff', file: 'staff.json', fallback: [] },
+    { path: 'training-records', file: 'training-records.json', fallback: {} },
+    { path: 'sections', file: 'sections.json', fallback: [] }
+];
 
-app.get('/api/staff', (req, res) => res.json(readJSON('staff.json') || []));
-app.post('/api/staff', (req, res) => { writeJSON('staff.json', req.body); res.json({ success: true }); });
-
-app.get('/api/training-records', (req, res) => res.json(readJSON('training-records.json') || {}));
-app.post('/api/training-records', (req, res) => { writeJSON('training-records.json', req.body); res.json({ success: true }); });
-
-app.get('/api/sections', (req, res) => res.json(readJSON('sections.json') || []));
-app.post('/api/sections', (req, res) => { writeJSON('sections.json', req.body); res.json({ success: true }); });
-
-// Training record patch
-app.patch('/api/training-records/:trainingId/:staffId', (req, res) => {
-    const records = readJSON('training-records.json') || {};
-    const { trainingId, staffId } = req.params;
-    if (!records[trainingId]) records[trainingId] = {};
-    records[trainingId][staffId] = req.body;
-    writeJSON('training-records.json', records);
-    res.json({ success: true });
-});
-
-// Export
-app.get('/api/export', (req, res) => {
-    res.json({
-        links: readJSON('links.json'),
-        categories: readJSON('categories.json'),
-        sections: readJSON('sections.json'),
-        trainings: readJSON('trainings.json'),
-        staff: readJSON('staff.json'),
-        trainingRecords: readJSON('training-records.json'),
-        exportedAt: new Date().toISOString()
+DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
+    app.get(`/api/${p}`, async (req, res) => {
+        try { res.json(await readData(file) || fallback); }
+        catch (e) { res.json(fallback); }
+    });
+    app.post(`/api/${p}`, async (req, res) => {
+        try { await writeData(file, req.body); res.json({ success: true }); }
+        catch (e) { res.status(500).json({ error: e.message }); }
     });
 });
 
-// Import
-app.post('/api/import', (req, res) => {
-    const { links, categories, sections, trainings, staff, trainingRecords } = req.body;
-    if (links) writeJSON('links.json', links);
-    if (categories) writeJSON('categories.json', categories);
-    if (sections) writeJSON('sections.json', sections);
-    if (trainings) writeJSON('trainings.json', trainings);
-    if (staff) writeJSON('staff.json', staff);
-    if (trainingRecords) writeJSON('training-records.json', trainingRecords);
-    res.json({ success: true });
+// Training record PATCH (개별 교직원 기록 수정)
+app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
+    try {
+        const records = await readData('training-records.json') || {};
+        const { trainingId, staffId } = req.params;
+        if (!records[trainingId]) records[trainingId] = {};
+        records[trainingId][staffId] = req.body;
+        await writeData('training-records.json', records);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Export (전체 데이터 내보내기)
+app.get('/api/export', async (req, res) => {
+    try {
+        const [links, categories, sections, trainings, staff, trainingRecords] = await Promise.all([
+            readData('links.json'), readData('categories.json'), readData('sections.json'),
+            readData('trainings.json'), readData('staff.json'), readData('training-records.json')
+        ]);
+        res.json({ links, categories, sections, trainings, staff, trainingRecords, exportedAt: new Date().toISOString() });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Import (전체 데이터 가져오기)
+app.post('/api/import', async (req, res) => {
+    try {
+        const { links, categories, sections, trainings, staff, trainingRecords } = req.body;
+        const writes = [];
+        if (links) writes.push(writeData('links.json', links));
+        if (categories) writes.push(writeData('categories.json', categories));
+        if (sections) writes.push(writeData('sections.json', sections));
+        if (trainings) writes.push(writeData('trainings.json', trainings));
+        if (staff) writes.push(writeData('staff.json', staff));
+        if (trainingRecords) writes.push(writeData('training-records.json', trainingRecords));
+        await Promise.all(writes);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // 메인 페이지
