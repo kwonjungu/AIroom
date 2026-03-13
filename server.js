@@ -5,7 +5,10 @@ const path = require('path');
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
-const HAS_REDIS = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+// Upstash 직접 or Vercel 마켓플레이스(KV_REST_API_*) 둘 다 지원
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+const HAS_REDIS = !!(REDIS_URL && REDIS_TOKEN);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -15,10 +18,7 @@ let redis = null;
 if (HAS_REDIS) {
     try {
         const { Redis } = require('@upstash/redis');
-        redis = new Redis({
-            url: process.env.UPSTASH_REDIS_REST_URL,
-            token: process.env.UPSTASH_REDIS_REST_TOKEN
-        });
+        redis = new Redis({ url: REDIS_URL, token: REDIS_TOKEN });
     } catch (e) { console.warn('Redis 로드 실패:', e.message); }
 }
 
