@@ -142,6 +142,20 @@ app.post('/api/import', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Firebase config (환경변수에서 클라이언트로 전달)
+app.get('/api/firebase-config', (req, res) => {
+    const cfg = {
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID
+    };
+    if (!cfg.apiKey) return res.json({});
+    res.json(cfg);
+});
+
 // 메인 페이지
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));

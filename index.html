@@ -286,6 +286,8 @@
         .admin-link-edit-btn{display:none;}
         .admin-mode .admin-link-edit-btn{display:inline-flex;}
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head>
 <body>
     <header class="header">
@@ -561,7 +563,30 @@ const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7'
 let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[];
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let pendingFile=null; // {name, size, data(base64), type}
-const MAX_FILE_SIZE=3*1024*1024; // 3MB limit for Vercel free tier
+const MAX_FILE_SIZE=5*1024*1024; // 5MB limit per file
+
+// ===== Firebase Storage 초기화 =====
+let firebaseStorage=null;
+async function initFirebase(){
+    try{
+        const cfg=await fetch('/api/firebase-config').then(r=>r.json());
+        if(cfg&&cfg.apiKey){
+            const app=firebase.initializeApp(cfg);
+            firebaseStorage=firebase.storage();
+            console.log('Firebase Storage 연결 완료');
+        }
+    }catch(e){console.warn('Firebase 미연결 (파일 업로드 제한됨)');}
+}
+async function uploadToFirebase(file,path){
+    if(!firebaseStorage)throw new Error('Firebase 미연결');
+    const ref=firebaseStorage.ref().child(path);
+    await ref.put(file);
+    return await ref.getDownloadURL();
+}
+async function deleteFromFirebase(path){
+    if(!firebaseStorage)return;
+    try{await firebaseStorage.ref().child(path).delete();}catch(e){}
+}
 
 // localStorage 백업 (Vercel 콜드스타트 시 데이터 보존)
 const LS_KEY='airoom_backup';
@@ -593,6 +618,7 @@ async function api(m,u,b){
 }
 
 async function init(){
+    initFirebase(); // Firebase Storage 비동기 초기화 (병렬)
     try{
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
@@ -1097,26 +1123,34 @@ async function toggleRegConfirm(tid,sid){
     renderRegisterTable();
 }
 
-// ===== 이수증 업로드/다운로드 =====
+// ===== 이수증 업로드/다운로드 (Firebase Storage) =====
 async function uploadCertFile(tid,sid,input){
     const file=input.files[0];if(!file)return;
-    if(file.size>3*1024*1024){showToast('파일 크기 초과! 최대 3MB','error');input.value='';return;}
-    const reader=new FileReader();
-    reader.onload=async function(ev){
+    if(file.size>5*1024*1024){showToast('파일 크기 초과! 최대 5MB','error');input.value='';return;}
+    if(!firebaseStorage){showToast('Firebase 미연결! 관리자에게 문의하세요.','error');return;}
+    try{
+        showToast('업로드 중...','info');
+        const storagePath=`certs/${tid}/${sid}/${file.name}`;
+        const url=await uploadToFirebase(file,storagePath);
         if(!trainingRecords[tid])trainingRecords[tid]={};
         if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
+        // 기존 base64 데이터 제거, URL만 저장 (Redis 용량 절약)
+        delete trainingRecords[tid][sid].certFileData;
         trainingRecords[tid][sid].certFileName=file.name;
         trainingRecords[tid][sid].certFileSize=formatFileSize(file.size);
-        trainingRecords[tid][sid].certFileData=ev.target.result;
+        trainingRecords[tid][sid].certFileUrl=url;
+        trainingRecords[tid][sid].certFilePath=storagePath;
         await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
         renderRegisterTable();showToast('이수증 업로드 완료','success');
-    };
-    reader.readAsDataURL(file);
+    }catch(e){
+        console.error('업로드 실패:',e);showToast('업로드 실패: '+e.message,'error');
+    }
 }
 function downloadCertFile(tid,sid){
     const r=trainingRecords[tid]?.[sid];
-    if(!r?.certFileData)return;
-    const a=document.createElement('a');a.href=r.certFileData;a.download=r.certFileName;a.click();
+    // Firebase URL 우선, 기존 base64 폴백
+    if(r?.certFileUrl){window.open(r.certFileUrl,'_blank');return;}
+    if(r?.certFileData){const a=document.createElement('a');a.href=r.certFileData;a.download=r.certFileName;a.click();}
 }
 
 // ===== 일괄 이수 현황 출력 =====
