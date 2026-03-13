@@ -331,6 +331,7 @@
         <div class="training-sub-tabs">
             <button class="training-sub-tab active" onclick="switchTrainingTab('checklist',this)">📝 필수 연수 체크리스트</button>
             <button class="training-sub-tab" onclick="switchTrainingTab('register',this)">📋 연수 등록부</button>
+            <button class="training-sub-tab" onclick="switchTrainingTab('mycheck',this)">👤 내 이수 확인</button>
         </div>
         <div id="training-checklist">
             <div class="progress-section" id="trainingProgress"></div>
@@ -359,6 +360,19 @@
                     <th style="width:36px">순</th><th>직위</th><th>성명</th><th>연수명</th><th>연수기관</th><th>이수번호</th><th style="width:60px">이수확인</th>
                 </tr></thead><tbody id="regTableBody"></tbody></table>
             </div></div>
+        </div>
+
+        <!-- 내 이수 확인 탭 -->
+        <div id="training-mycheck" style="display:none">
+            <div class="reg-table-header" style="flex-direction:column;align-items:flex-start;gap:12px;">
+                <h3>👤 내 이수 현황 확인</h3>
+                <div style="display:flex;gap:8px;align-items:center;width:100%;flex-wrap:wrap;">
+                    <input type="text" id="myNameInput" class="reg-select" style="min-width:200px;max-width:280px;" placeholder="이름을 입력하세요 (예: 홍길동)" oninput="renderMyCheck()">
+                    <span id="myCheckStatus" style="font-size:13px;color:var(--text-light)"></span>
+                </div>
+            </div>
+            <div id="myCheckProgress" style="display:none" class="progress-section"></div>
+            <div id="myCheckContent"></div>
         </div>
     </div>
 
@@ -935,7 +949,9 @@ function switchTrainingTab(tab,btn){
     document.querySelectorAll('.training-sub-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
     document.getElementById('training-checklist').style.display=tab==='checklist'?'block':'none';
     document.getElementById('training-register').style.display=tab==='register'?'block':'none';
+    document.getElementById('training-mycheck').style.display=tab==='mycheck'?'block':'none';
     if(tab==='register')renderRegisterTable();
+    if(tab==='mycheck')renderMyCheck();
 }
 function populateRegSelect(){
     document.getElementById('regTrainingSelect').innerHTML=trainings.map(t=>`<option value="${t.id}">${t.no}. ${t.name}</option>`).join('');
@@ -1018,6 +1034,65 @@ async function toggleStaffCheck(tid,sid){
     renderTrainingRegModalContent(tid);
     renderTrainingChecklist();
     renderRegisterTable();
+}
+
+// ===== 내 이수 확인 =====
+function renderMyCheck(){
+    const name=document.getElementById('myNameInput').value.trim();
+    const statusEl=document.getElementById('myCheckStatus');
+    const progressEl=document.getElementById('myCheckProgress');
+    const contentEl=document.getElementById('myCheckContent');
+    if(!name){
+        statusEl.textContent='';progressEl.style.display='none';
+        contentEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">이름을 입력하면 나의 이수 현황이 표시됩니다.</div>';
+        return;
+    }
+    const s=staff.find(x=>x.name===name||x.name.includes(name));
+    if(!s){
+        statusEl.textContent='❌ 교직원 명단에 없는 이름입니다.';statusEl.style.color='var(--accent)';
+        progressEl.style.display='none';
+        contentEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--accent);">명단에서 찾을 수 없습니다. 정확한 이름을 입력해 주세요.</div>';
+        return;
+    }
+    statusEl.textContent=`✅ ${s.position} ${s.name}`;statusEl.style.color='var(--success-dark)';
+    // 대상자 필터 (교원 직위 판단: 교사/교감/교장 등 → 교원, 나머지 → 교직원)
+    const isTeacher=/교사|교감|교장|수석|부장|전문직|상담/.test(s.position);
+    const applicable=trainings.filter(t=>t.target==='교직원'||(t.target==='교원'&&isTeacher));
+    const rec=trainingRecords;
+    let done=0;
+    const rows=applicable.map(t=>{
+        const chk=rec[t.id]?.[s.id]?.confirmed||false;
+        if(chk)done++;
+        const linkBtn=t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener noreferrer" class="training-link-btn" style="font-size:11px;padding:3px 10px;">🔗 참가</a>`:'';
+        return `<tr class="${chk?'completed-row':''}">
+            <td style="text-align:center;font-weight:600">${t.no}</td>
+            <td style="font-weight:600">${esc(t.name)}</td>
+            <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
+            <td>${esc(t.hours)}</td>
+            <td>${linkBtn}</td>
+            <td><div class="check-cell"><button class="check-box ${chk?'checked':''}" onclick="toggleMyCheck('${t.id}','${s.id}')">${chk?'✓':''}</button></div></td>
+        </tr>`;
+    });
+    const p=applicable.length?Math.round(done/applicable.length*100):0;
+    progressEl.style.display='flex';
+    progressEl.innerHTML=`<span class="progress-label">${esc(s.name)} 이수 현황</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${p}%"></div></div><span class="progress-text">${done}/${applicable.length} (${p}%)</span>`;
+    const incomplete=applicable.filter(t=>!rec[t.id]?.[s.id]?.confirmed);
+    const incompleteHtml=incomplete.length===0
+        ?'<div class="callout green" style="margin-bottom:14px;"><span class="callout-icon">🎉</span><span>모든 연수를 이수했습니다!</span></div>'
+        :`<div class="callout yellow" style="margin-bottom:14px;"><span class="callout-icon">⚠️</span><span><b>미이수 ${incomplete.length}건</b>: ${incomplete.map(t=>esc(t.name)).join(', ')}</span></div>`;
+    contentEl.innerHTML=`${incompleteHtml}<div class="table-wrapper"><div class="table-scroll">
+        <table><thead><tr>
+            <th style="width:36px">순</th><th>연수명</th><th>대상</th><th>이수시간</th><th style="width:80px">참가링크</th><th style="width:60px">이수확인</th>
+        </tr></thead><tbody>${rows.join('')}</tbody></table>
+    </div></div>`;
+}
+async function toggleMyCheck(tid,sid){
+    if(!trainingRecords[tid])trainingRecords[tid]={};
+    if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
+    trainingRecords[tid][sid].confirmed=!trainingRecords[tid][sid].confirmed;
+    await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
+    renderMyCheck();
+    renderTrainingChecklist();
 }
 
 // ===== 연수 링크 편집 =====
