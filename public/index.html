@@ -264,6 +264,14 @@
             .school-info-inner{flex-direction:column;align-items:flex-start;}
         }
         @media print{.header{position:relative;}.btn-admin,.add-card,.link-card-actions,.main-tabs,.add-item-btn,.add-section-btn,.section-admin-actions,.item-action-btn,.filter-row{display:none!important;}}
+
+        /* Training name clickable */
+        .training-name-clickable{font-weight:600;max-width:260px;cursor:pointer;color:var(--primary);transition:color .15s;}
+        .training-name-clickable:hover{text-decoration:underline;color:var(--primary-dark);}
+        .training-link-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:white;background:var(--primary);padding:4px 10px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:all .15s;}
+        .training-link-btn:hover{background:var(--primary-dark);}
+        .admin-link-edit-btn{display:none;}
+        .admin-mode .admin-link-edit-btn{display:inline-flex;}
     </style>
 </head>
 <body>
@@ -336,7 +344,7 @@
             </div>
             <div class="table-wrapper"><div class="table-scroll">
                 <table><thead><tr>
-                    <th style="width:36px">순</th><th>연수명</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:50px">완료</th>
+                    <th style="width:36px">순</th><th>연수명 (클릭→등록부)</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th><th style="width:90px">참가링크</th><th style="width:50px">완료</th>
                 </tr></thead><tbody id="trainingTableBody"></tbody></table>
             </div></div>
         </div>
@@ -457,6 +465,27 @@
         <div class="modal-header"><h2>삭제 확인</h2><button class="btn-close" onclick="closeModal('confirmModal')">✕</button></div>
         <div class="modal-body"><div class="confirm-dialog"><p id="confirmMessage">삭제하시겠습니까?</p><p class="sub">이 작업은 되돌릴 수 없습니다.</p></div></div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('confirmModal')">취소</button><button class="btn btn-danger" id="confirmDeleteBtn">삭제</button></div>
+    </div></div>
+
+    <!-- Training Register Modal (연수 등록부 팝업) -->
+    <div class="modal-overlay" id="trainingRegModal"><div class="modal" style="max-width:680px;">
+        <div class="modal-header">
+            <h2 id="trainingRegModalTitle">📋 연수 등록부</h2>
+            <button class="btn-close" onclick="closeModal('trainingRegModal')">✕</button>
+        </div>
+        <div class="modal-body" id="trainingRegModalBody"></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('trainingRegModal')">닫기</button></div>
+    </div></div>
+
+    <!-- Training Link Modal (연수 링크 편집) -->
+    <div class="modal-overlay" id="trainingLinkModal"><div class="modal" style="max-width:420px;">
+        <div class="modal-header"><h2>🔗 연수 참가 링크 수정</h2><button class="btn-close" onclick="closeModal('trainingLinkModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editingTrainingLinkId">
+            <div class="form-group"><label>연수명</label><p id="editingTrainingLinkName" style="font-size:14px;font-weight:600;padding:8px 0;color:var(--text)"></p></div>
+            <div class="form-group"><label>참가 링크 URL</label><input type="url" id="trainingLinkUrl" placeholder="https://"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('trainingLinkModal')">취소</button><button class="btn btn-primary" onclick="saveTrainingLink()">저장</button></div>
     </div></div>
 
 <script>
@@ -878,15 +907,18 @@ function renderTrainingChecklist(){
     tbody.innerHTML=f.map(t=>{
         const d=trainingRecords[t.id]?.completed;
         const mb=t.method.includes('온라인')?'badge-online':t.method.includes('이수증')?'badge-submit':t.method.includes('자체')?'badge-self':'badge-group';
+        const linkBtn=t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener noreferrer" class="training-link-btn">🔗 바로가기</a> `:'';
+        const editBtn=`<button class="item-action-btn admin-link-edit-btn" onclick="editTrainingLink('${t.id}')" title="링크 편집">✏️</button>`;
         return `<tr class="${d?'completed-row':''}">
             <td style="text-align:center;font-weight:600">${t.no}</td>
-            <td style="font-weight:600;max-width:260px">${esc(t.name)}</td>
+            <td class="training-name-clickable" onclick="openTrainingRegModal('${t.id}')" title="클릭하여 등록부 보기">${esc(t.name)} <span style="font-size:10px;opacity:0.6">📋</span></td>
             <td><span class="badge ${t.selfTraining?'badge-possible':'badge-impossible'}">${t.selfTraining?'가능':'불가'}</span></td>
             <td><span class="badge ${mb}">${esc(t.method)}</span></td>
             <td>${esc(t.cycle)}</td>
             <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
             <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
             <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
+            <td style="white-space:nowrap">${linkBtn}${editBtn}</td>
             <td><div class="check-cell"><button class="completion-toggle ${d?'done':''}" onclick="toggleTrainingComplete('${t.id}')">${d?'✓':''}</button></div></td>
         </tr>`;
     }).join('');
@@ -939,6 +971,72 @@ async function toggleRegConfirm(tid,sid){
     trainingRecords[tid][sid].confirmed=!trainingRecords[tid][sid].confirmed;
     await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
     renderRegisterTable();
+}
+
+// ===== 연수 등록부 팝업 모달 =====
+function openTrainingRegModal(tid){
+    const t=trainings.find(x=>x.id===tid);if(!t)return;
+    document.getElementById('trainingRegModalTitle').textContent=`📋 ${t.name}`;
+    renderTrainingRegModalContent(tid);
+    openModal('trainingRegModal');
+}
+function renderTrainingRegModalContent(tid){
+    const t=trainings.find(x=>x.id===tid);if(!t)return;
+    const rec=trainingRecords[tid]||{};
+    let dc=0;
+    const rows=staff.map(s=>{
+        const r=rec[s.id]||{};const chk=r.confirmed||false;if(chk)dc++;
+        return `<tr class="${chk?'completed-row':''}">
+            <td style="text-align:center">${s.no}</td><td>${esc(s.position)}</td>
+            <td style="font-weight:600">${esc(s.name)}</td>
+            <td><div class="check-cell"><button class="check-box ${chk?'checked':''}" onclick="toggleStaffCheck('${tid}','${s.id}')">${chk?'✓':''}</button></div></td>
+        </tr>`;
+    });
+    const p=staff.length?Math.round(dc/staff.length*100):0;
+    const linkHtml=t.link?`<a href="${esc(t.link)}" target="_blank" rel="noopener noreferrer" class="training-link-btn" style="font-size:13px;padding:8px 18px;">🔗 연수 참가 바로가기</a>`:'';
+    document.getElementById('trainingRegModalBody').innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div class="progress-section" style="flex:1;min-width:180px;margin:0;">
+                <span class="progress-label">이수 현황</span>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${p}%"></div></div>
+                <span class="progress-text">${dc}/${staff.length} (${p}%)</span>
+            </div>
+            ${linkHtml}
+        </div>
+        <p style="font-size:12px;color:var(--text-light);margin-bottom:10px;">✅ 본인 이름 옆 체크박스를 클릭하여 이수 확인하세요.</p>
+        <div class="table-wrapper"><div class="table-scroll">
+            <table><thead><tr>
+                <th style="width:36px">순</th><th>직위</th><th>성명</th><th style="width:60px">이수확인</th>
+            </tr></thead><tbody>${rows.join('')}</tbody></table>
+        </div></div>`;
+}
+async function toggleStaffCheck(tid,sid){
+    if(!trainingRecords[tid])trainingRecords[tid]={};
+    if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
+    trainingRecords[tid][sid].confirmed=!trainingRecords[tid][sid].confirmed;
+    await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
+    renderTrainingRegModalContent(tid);
+    renderTrainingChecklist();
+    renderRegisterTable();
+}
+
+// ===== 연수 링크 편집 =====
+function editTrainingLink(tid){
+    const t=trainings.find(x=>x.id===tid);if(!t)return;
+    document.getElementById('editingTrainingLinkId').value=tid;
+    document.getElementById('editingTrainingLinkName').textContent=t.name;
+    document.getElementById('trainingLinkUrl').value=t.link||'';
+    openModal('trainingLinkModal');
+}
+async function saveTrainingLink(){
+    const tid=document.getElementById('editingTrainingLinkId').value;
+    const url=document.getElementById('trainingLinkUrl').value.trim();
+    const t=trainings.find(x=>x.id===tid);if(!t)return;
+    t.link=url;
+    await api('POST','/api/trainings',trainings);
+    closeModal('trainingLinkModal');
+    renderTrainingChecklist();
+    showToast('저장 완료','success');
 }
 
 // ===== IMPORT/EXPORT =====
