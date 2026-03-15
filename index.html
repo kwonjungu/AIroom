@@ -880,6 +880,18 @@
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('scheduleAddModal')">취소</button><button class="btn btn-primary" onclick="submitScheduleAdd()">추가</button></div>
     </div></div>
 
+    <!-- Section Move Modal -->
+    <div class="modal-overlay" id="moveSectionModal"><div class="modal" style="max-width:400px;">
+        <div class="modal-header"><h2>↗️ 섹션 이동</h2><button class="btn-close" onclick="closeModal('moveSectionModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="moveSectionId">
+            <input type="hidden" id="moveSectionFromTab">
+            <p style="margin-bottom:12px;font-size:14px;color:var(--text-light);">이 섹션을 어느 탭으로 이동할까요?</p>
+            <div id="moveSectionTabList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('moveSectionModal')">취소</button></div>
+    </div></div>
+
     <!-- Tab Add/Edit Modal -->
     <div class="modal-overlay" id="tabModal"><div class="modal" style="max-width:440px;">
         <div class="modal-header"><h2 id="tabModalTitle">새 탭 추가</h2><button class="btn-close" onclick="closeModal('tabModal')">✕</button></div>
@@ -1585,6 +1597,7 @@ function renderSections(){
                         <button class="section-move-btn" onclick="event.stopPropagation();moveSection('${sec.id}',1)" title="아래로">▼</button>
                     </div>
                     <div class="section-admin-actions">
+                        <button class="item-action-btn" onclick="event.stopPropagation();openMoveSectionModal('${sec.id}')" title="다른 탭으로 이동">↗️</button>
                         <button class="item-action-btn" onclick="event.stopPropagation();editSection('${sec.id}')" title="수정">✏️</button>
                         <button class="item-action-btn delete" onclick="event.stopPropagation();confirmDeleteSection('${sec.id}')" title="삭제">🗑️</button>
                     </div>
@@ -3070,6 +3083,7 @@ function renderCustomTabContent(tab,page){
                         <button class="section-move-btn" onclick="event.stopPropagation();moveCustomSection('${tab.id}','${sec.id}',1)" title="아래로">▼</button>
                     </div>
                     <div class="section-admin-actions">
+                        <button class="item-action-btn" onclick="event.stopPropagation();openMoveSectionModal('${sec.id}','${tab.id}')" title="다른 탭으로 이동">↗️</button>
                         <button class="item-action-btn" onclick="event.stopPropagation();editCustomSection('${tab.id}','${sec.id}')" title="수정">✏️</button>
                         <button class="item-action-btn delete" onclick="event.stopPropagation();confirmDeleteCustomSection('${tab.id}','${sec.id}')" title="삭제">🗑️</button>
                     </div>
@@ -3162,6 +3176,63 @@ async function moveCustomSection(tabId,secId,dir){
     if(newIdx<0||newIdx>=sorted.length)return;
     const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
     await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+}
+
+// Section move between tabs
+function openMoveSectionModal(secId,fromTabId){
+    document.getElementById('moveSectionId').value=secId;
+    document.getElementById('moveSectionFromTab').value=fromTabId||'home';
+    const listEl=document.getElementById('moveSectionTabList');
+    // 이동 가능한 탭 목록 (교무실 홈 + 커스텀 탭들, 현재 소속 탭 제외)
+    const targets=[];
+    if(fromTabId&&fromTabId!=='home') targets.push({id:'home',title:'교무실 홈',icon:'🏠'});
+    tabsConfig.filter(t=>t.type==='custom'&&t.id!==(fromTabId||'')).forEach(t=>targets.push(t));
+    listEl.innerHTML=targets.map(t=>
+        `<button class="btn" style="text-align:left;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--card-bg);cursor:pointer;font-size:14px;transition:all .15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--card-bg)'" onclick="moveSectionToTab('${t.id}')">${t.icon} ${esc(t.title)}</button>`
+    ).join('');
+    openModal('moveSectionModal');
+}
+
+async function moveSectionToTab(targetTabId){
+    const secId=document.getElementById('moveSectionId').value;
+    const fromTabId=document.getElementById('moveSectionFromTab').value;
+    let sec=null;
+
+    // 소스에서 섹션 제거
+    if(fromTabId==='home'){
+        const idx=sections.findIndex(s=>s.id===secId);
+        if(idx===-1){showToast('섹션을 찾을 수 없습니다','error');return;}
+        sec={...sections[idx]};
+        sections.splice(idx,1);
+        await api('POST','/api/sections',sections);
+    } else {
+        const srcTab=tabsConfig.find(t=>t.id===fromTabId);
+        if(!srcTab||!srcTab.sections){showToast('소스 탭을 찾을 수 없습니다','error');return;}
+        const idx=srcTab.sections.findIndex(s=>s.id===secId);
+        if(idx===-1){showToast('섹션을 찾을 수 없습니다','error');return;}
+        sec={...srcTab.sections[idx]};
+        srcTab.sections.splice(idx,1);
+    }
+
+    // 타겟에 섹션 추가
+    if(targetTabId==='home'){
+        sec.order=sections.length;
+        sections.push(sec);
+        await api('POST','/api/sections',sections);
+    } else {
+        const tgtTab=tabsConfig.find(t=>t.id===targetTabId);
+        if(!tgtTab){showToast('대상 탭을 찾을 수 없습니다','error');return;}
+        if(!tgtTab.sections)tgtTab.sections=[];
+        sec.order=tgtTab.sections.length;
+        tgtTab.sections.push(sec);
+    }
+
+    await api('POST','/api/tabs',tabsConfig);
+    saveToLocal();
+    closeModal('moveSectionModal');
+    renderSections();renderCustomPages();
+    const tgtName=targetTabId==='home'?'교무실 홈':(tabsConfig.find(t=>t.id===targetTabId)?.title||targetTabId);
+    showToast(`"${sec.title}" → ${tgtName} 이동 완료`,'success');
 }
 
 // Custom item CRUD
