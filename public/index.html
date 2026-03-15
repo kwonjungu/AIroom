@@ -718,7 +718,15 @@
                 <div class="file-upload-info">Firebase Storage: 파일당 최대 5MB</div>
             </div>
             <div class="form-group" style="display:flex;gap:12px;align-items:center;">
-                <div><label>아이콘</label><input type="text" id="itemIcon" placeholder="이모지" maxlength="4" style="width:60px"></div>
+                <div><label>아이콘</label>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <input type="text" id="itemIcon" placeholder="이모지" maxlength="4" style="width:60px;font-size:20px;text-align:center;" readonly>
+                        <button type="button" class="btn btn-secondary" onclick="toggleItemEmojiPicker()" style="font-size:11px;padding:4px 8px;">😀</button>
+                    </div>
+                    <div id="itemEmojiPicker" style="display:none;margin-top:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:8px;max-height:180px;overflow-y:auto;position:absolute;z-index:100;">
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;" id="itemEmojiGrid"></div>
+                    </div>
+                </div>
                 <div style="padding-top:18px;"><label><input type="checkbox" id="itemBold"> 굵게 표시</label></div>
             </div>
         </div>
@@ -731,7 +739,15 @@
         <div class="modal-body">
             <input type="hidden" id="editingSectionEditId">
             <div class="form-group"><label>섹션 제목 *</label><input type="text" id="sectionTitle" placeholder="예: 공지사항"></div>
-            <div class="form-group"><label>아이콘</label><input type="text" id="sectionIcon" placeholder="이모지 입력" maxlength="4" style="width:60px" value="📌"></div>
+            <div class="form-group"><label>아이콘</label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <input type="text" id="sectionIcon" placeholder="이모지" maxlength="4" style="width:60px;font-size:20px;text-align:center;" value="📌" readonly>
+                    <button type="button" class="btn btn-secondary" onclick="toggleSectionEmojiPicker()" style="font-size:11px;padding:4px 8px;">😀</button>
+                </div>
+                <div id="sectionEmojiPicker" style="display:none;margin-top:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:8px;max-height:180px;overflow-y:auto;">
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;" id="sectionEmojiGrid"></div>
+                </div>
+            </div>
             <div class="form-group"><label>배경색</label>
                 <select id="sectionColor">
                     <option value="#FFF8E1">노랑</option><option value="#E3F2FD">파랑</option>
@@ -870,7 +886,15 @@
         <div class="modal-body">
             <input type="hidden" id="editingTabId">
             <div class="form-group"><label>탭 이름 *</label><input type="text" id="tabName" placeholder="예: 학년별 자료"></div>
-            <div class="form-group"><label>아이콘 (이모지)</label><input type="text" id="tabIcon" placeholder="이모지 입력" maxlength="4" style="width:60px" value="📂"></div>
+            <div class="form-group"><label>아이콘 (이모지)</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" id="tabIcon" placeholder="이모지 입력" maxlength="4" style="width:60px;font-size:20px;text-align:center;" value="📂" readonly>
+                    <button type="button" class="btn btn-secondary" onclick="toggleTabEmojiPicker()" style="font-size:12px;padding:6px 10px;">😀 선택</button>
+                </div>
+                <div id="tabEmojiPicker" style="display:none;margin-top:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:200px;overflow-y:auto;">
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;" id="tabEmojiGrid"></div>
+                </div>
+            </div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('tabModal')">취소</button><button class="btn btn-primary" onclick="saveTab()">저장</button></div>
     </div></div>
@@ -881,6 +905,29 @@ const SCH_EMOJIS=['','📌','⭐','🔔','📢','🎯','📝','💡','🏫','�
 let selectedSchEmoji='';
 const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
+const ALL_EMOJIS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑','✅','❌','⚠️','❗','❓','🎉','🤝','🏃','🎵','🎨','🧪','🌿','🔑','🛡️','🔧','⚙️','🧩','🗓️','📆','🕐','💬','💭','📣','🔍','🏠','🚗','✈️','🌍','🌈','☀️','🌙','⭕','🔴','🟢','🔵','🟡','🟠','🟣','❤️','💙','💚','💛','🧡','💜','🖤','🤍','😀','😊','😎','🤔','😍','🙏','👍','👎','👋','✋','🤚','🖐️','👏','🙌','💪','🦾','🧠','👀','👁️','🐶','🐱','🐻','🦊','🐼','🦁','🐯','🐸','🐵','🌸','🌺','🌻','🌹','🍀','🌳','🍎','🍊','🍋','🍇','🍉','🍓','🥕','🍕','🎂','☕','🍿','🏀','⚽','🏈','⚾','🎾','🏐','🎮','🎲','🎪','🎭','🎬','🎤','🎸','🎹','🎺','🥁','🎻'];
+
+function buildEmojiGrid(gridId,inputId,pickerId){
+    const grid=document.getElementById(gridId);
+    grid.innerHTML=ALL_EMOJIS.map(e=>
+        `<button type="button" style="width:36px;height:36px;border:1.5px solid var(--border);border-radius:8px;background:var(--card-bg);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all .15s;" onmouseover="this.style.background='var(--primary-light)';this.style.borderColor='var(--primary)'" onmouseout="this.style.background='var(--card-bg)';this.style.borderColor='var(--border)'" onclick="document.getElementById('${inputId}').value='${e}';document.getElementById('${pickerId}').style.display='none'">${e}</button>`
+    ).join('');
+}
+function toggleTabEmojiPicker(){
+    const p=document.getElementById('tabEmojiPicker');
+    if(p.style.display==='none'){buildEmojiGrid('tabEmojiGrid','tabIcon','tabEmojiPicker');p.style.display='block';}
+    else p.style.display='none';
+}
+function toggleItemEmojiPicker(){
+    const p=document.getElementById('itemEmojiPicker');
+    if(p.style.display==='none'){buildEmojiGrid('itemEmojiGrid','itemIcon','itemEmojiPicker');p.style.display='block';}
+    else p.style.display='none';
+}
+function toggleSectionEmojiPicker(){
+    const p=document.getElementById('sectionEmojiPicker');
+    if(p.style.display==='none'){buildEmojiGrid('sectionEmojiGrid','sectionIcon','sectionEmojiPicker');p.style.display='block';}
+    else p.style.display='none';
+}
 
 let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[];
 let tabsConfig=[];
