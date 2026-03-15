@@ -24,19 +24,10 @@
         .admin-mode .header-bg-btn{display:inline-flex;}
         .header-bg-btn input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
 
-        /* Maintenance Mode */
-        .maintenance-overlay{display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center;padding:20px;}
-        .maintenance-overlay.active{display:flex;}
-        .maintenance-overlay .maint-icon{font-size:64px;margin-bottom:20px;}
-        .maintenance-overlay h2{font-size:28px;font-weight:700;margin-bottom:12px;}
-        .maintenance-overlay p{font-size:16px;opacity:0.85;max-width:400px;line-height:1.6;}
-        .maintenance-overlay .maint-admin-btn{margin-top:30px;padding:10px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;cursor:pointer;font-size:13px;font-weight:600;}
-        .maintenance-overlay .maint-admin-btn:hover{background:rgba(255,255,255,0.25);}
-        .btn-maintenance{display:none;background:rgba(255,107,107,0.3);border:1px solid rgba(255,107,107,0.5);color:white;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
-        .btn-maintenance:hover{background:rgba(255,107,107,0.5);}
-        .btn-maintenance.on{background:rgba(255,107,107,0.7);animation:pulse-maint 2s infinite;}
-        .admin-mode .btn-maintenance{display:inline-block;}
-        @keyframes pulse-maint{0%,100%{opacity:1;}50%{opacity:0.7;}}
+        /* Server Status Button */
+        .btn-server-status{display:none;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
+        .btn-server-status:hover{background:rgba(255,255,255,0.3);}
+        .admin-mode .btn-server-status{display:inline-block;}
         .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:center;position:relative;}
         .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
@@ -478,14 +469,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head>
 <body>
-    <!-- 서버 점검 모드 오버레이 -->
-    <div class="maintenance-overlay" id="maintenanceOverlay">
-        <div class="maint-icon">🔧</div>
-        <h2>서버 점검 중입니다</h2>
-        <p>더 나은 서비스를 위해 점검 중입니다.<br>잠시 후 다시 방문해 주세요.</p>
-        <button class="maint-admin-btn" onclick="promptMaintenanceAdmin()">관리자 로그인</button>
-    </div>
-
     <header class="header">
         <div class="header-inner">
             <div class="header-left">
@@ -497,7 +480,7 @@
             <div class="header-right">
                 <span class="header-date" id="currentDate"></span>
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
-                <button class="btn-maintenance" id="btnMaintenance" onclick="toggleMaintenance()">🚧 점검모드</button>
+                <button class="btn-server-status" onclick="showServerStatus()">📊 서버현황</button>
             </div>
         </div>
         <label class="header-bg-btn" title="헤더 배경 이미지 변경">📷 배경 변경<input type="file" accept="image/*" onchange="handleBannerUpload(event)"></label>
@@ -583,6 +566,7 @@
                     <button class="btn btn-secondary" onclick="exportRegisterExcel()" style="white-space:nowrap;font-size:12px;">📥 엑셀 저장</button>
                     <button class="btn btn-secondary" onclick="exportAllRegisterExcel()" style="white-space:nowrap;font-size:12px;">📥 전체 엑셀</button>
                     <button class="btn btn-secondary" onclick="printAllTrainingStatus()" style="white-space:nowrap;font-size:12px;">🖨️ 일괄 출력</button>
+                    <button class="btn btn-secondary admin-link-edit-btn" onclick="openStaffManager()" style="white-space:nowrap;font-size:12px;background:var(--primary);color:white;">👥 인원 관리</button>
                 </div>
             </div>
             <div class="progress-section" id="regProgress"></div>
@@ -773,6 +757,20 @@
             <div class="form-group"><label>참가 링크 URL</label><input type="url" id="trainingLinkUrl" placeholder="https://"></div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('trainingLinkModal')">취소</button><button class="btn btn-primary" onclick="saveTrainingLink()">저장</button></div>
+    </div></div>
+
+    <!-- 교직원 인원 관리 모달 -->
+    <div class="modal-overlay" id="staffModal"><div class="modal" style="max-width:520px;">
+        <div class="modal-header"><h2>👥 교직원 인원 관리</h2><button class="btn-close" onclick="closeModal('staffModal')">✕</button></div>
+        <div class="modal-body">
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+                <input type="text" id="newStaffPosition" class="reg-input" placeholder="직위 (예: 교사)" style="flex:1;">
+                <input type="text" id="newStaffName" class="reg-input" placeholder="성명" style="flex:1;">
+                <button class="btn btn-primary" onclick="addStaffMember()" style="white-space:nowrap;font-size:12px;">추가</button>
+            </div>
+            <div id="staffListContainer" style="max-height:400px;overflow-y:auto;"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('staffModal')">닫기</button></div>
     </div></div>
 
     <!-- 파일 미리보기 모달 -->
@@ -970,7 +968,6 @@ async function api(m,u,b){
 async function init(){
     initFirebase(); // Firebase Storage 비동기 초기화 (병렬)
     loadBanner(); // 배너 이미지 로드
-    loadMaintenance(); // 점검 모드 체크
     try{
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
@@ -1355,64 +1352,100 @@ function toggleAdmin(){
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
-    applyMaintenance();
     renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
 }
 
-// ===== 서버 점검 모드 =====
-let maintenanceMode=false;
-function loadMaintenance(){
-    api('GET','/api/settings').then(s=>{
-        if(s&&s.maintenance){
-            maintenanceMode=true;
-            applyMaintenance();
-        }
-    }).catch(()=>{});
-    // localStorage 빠른 체크
-    if(localStorage.getItem('maintenanceMode')==='true'){
-        maintenanceMode=true;
-        applyMaintenance();
-    }
-}
-function applyMaintenance(){
-    const overlay=document.getElementById('maintenanceOverlay');
-    const btn=document.getElementById('btnMaintenance');
-    if(maintenanceMode&&!isAdmin){
-        overlay.classList.add('active');
-    } else {
-        overlay.classList.remove('active');
-    }
-    if(btn){
-        btn.textContent=maintenanceMode?'🚧 점검 ON':'🚧 점검모드';
-        btn.classList.toggle('on',maintenanceMode);
-    }
-}
-async function toggleMaintenance(){
-    if(!isAdmin)return;
-    if(!maintenanceMode){
-        if(!confirm('서버 점검 모드를 켜시겠습니까?\n일반 사용자에게 점검 화면이 표시됩니다.'))return;
-    }
-    maintenanceMode=!maintenanceMode;
-    localStorage.setItem('maintenanceMode',maintenanceMode);
+// ===== 서버 사용량 확인 =====
+async function showServerStatus(){
+    showToast('서버 현황 조회 중...','info');
     try{
-        const settings=(await api('GET','/api/settings'))||{};
-        settings.maintenance=maintenanceMode;
-        await api('POST','/api/settings',settings);
-    }catch(e){}
-    applyMaintenance();
-    showToast(maintenanceMode?'점검 모드 ON - 일반 사용자에게 점검 화면 표시':'점검 모드 OFF - 정상 운영',maintenanceMode?'error':'success');
-}
-function promptMaintenanceAdmin(){
-    const pw=prompt('관리자 비밀번호를 입력하세요:');
-    if(pw===null)return;
-    // 간단한 관리자 인증 (toggleAdmin과 동일하게 관리모드 진입)
-    isAdmin=true;document.body.classList.add('admin-mode');
-    const b=document.getElementById('btnAdmin');
-    b.textContent='✅ 관리 ON';
-    b.style.background='rgba(81,207,102,0.3)';
-    applyMaintenance(); // 관리자이므로 오버레이 해제
-    showToast('관리 모드로 진입했습니다','success');
-    renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
+        const [health,allData]=await Promise.all([
+            api('GET','/api/health'),
+            api('GET','/api/export')
+        ]);
+        // 각 데이터 크기 계산
+        const sizes={};
+        let totalBytes=0;
+        const dataMap={
+            '홈 섹션':allData.sections,'연수 목록':allData.trainings,
+            '교직원':allData.staff,'연수 기록':allData.trainingRecords,
+            '링크':allData.links,'카테고리':allData.categories,
+            '일정':allData.schedules,'탭 설정':allData.tabs,'설정':allData.settings
+        };
+        for(const[name,data] of Object.entries(dataMap)){
+            const bytes=new Blob([JSON.stringify(data||{})]).size;
+            sizes[name]=bytes;totalBytes+=bytes;
+        }
+        const fmt=(b)=>b<1024?(b+'B'):b<1024*1024?((b/1024).toFixed(1)+'KB'):((b/1024/1024).toFixed(2)+'MB');
+        // Firebase Storage 파일 수 계산
+        let firebaseFiles=0;
+        const rec=allData.trainingRecords||{};
+        Object.values(rec).forEach(tr=>{
+            if(typeof tr==='object'&&tr!==null){
+                Object.values(tr).forEach(sr=>{
+                    if(sr&&sr.certFileUrl)firebaseFiles++;
+                });
+            }
+        });
+        if(allData.settings&&allData.settings.banner&&allData.settings.banner.url)firebaseFiles++;
+
+        const rows=Object.entries(sizes).map(([k,v])=>{
+            const pct=totalBytes?Math.round(v/totalBytes*100):0;
+            return `<tr><td style="font-weight:600">${k}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right;color:var(--text-light)">${pct}%</td></tr>`;
+        }).join('');
+
+        const statusHtml=`
+        <div style="max-width:420px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div style="background:${health.server?'#E6F9ED':'#FFF0F0'};padding:14px;border-radius:10px;text-align:center;">
+                    <div style="font-size:22px;margin-bottom:4px;">${health.server?'✅':'❌'}</div>
+                    <div style="font-size:12px;font-weight:600;">서버</div>
+                    <div style="font-size:11px;color:var(--text-light)">${health.server?'정상':'오류'}</div>
+                </div>
+                <div style="background:${health.redis?'#E6F9ED':'#FFF0F0'};padding:14px;border-radius:10px;text-align:center;">
+                    <div style="font-size:22px;margin-bottom:4px;">${health.redis?'✅':'❌'}</div>
+                    <div style="font-size:12px;font-weight:600;">데이터베이스 (Redis)</div>
+                    <div style="font-size:11px;color:var(--text-light)">${health.redis?'연결됨':'미연결'}</div>
+                </div>
+            </div>
+            <div style="background:var(--primary-light);padding:14px;border-radius:10px;margin-bottom:16px;text-align:center;">
+                <div style="font-size:11px;color:var(--text-light);margin-bottom:4px;">Redis 저장 데이터 (합계)</div>
+                <div style="font-size:24px;font-weight:700;color:var(--primary)">${fmt(totalBytes)}</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:4px;">Firebase Storage 파일: ${firebaseFiles}개</div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                <thead><tr style="border-bottom:2px solid var(--border)">
+                    <th style="text-align:left;padding:6px 4px">항목</th>
+                    <th style="text-align:right;padding:6px 4px">크기</th>
+                    <th style="text-align:right;padding:6px 4px">비율</th>
+                </tr></thead>
+                <tbody>${rows}
+                    <tr style="border-top:2px solid var(--border);font-weight:700;">
+                        <td style="padding:6px 4px">합계</td>
+                        <td style="text-align:right;padding:6px 4px">${fmt(totalBytes)}</td>
+                        <td style="text-align:right;padding:6px 4px">100%</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:14px;padding:10px;background:#FFF8E1;border-radius:8px;font-size:11px;color:#7B6100;">
+                💡 <b>무료 한도:</b> Upstash Redis 10,000 요청/일, 256MB 저장<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Firebase Storage 5GB 저장, 1GB/일 다운로드
+            </div>
+        </div>`;
+
+        // 모달로 표시
+        const overlay=document.createElement('div');
+        overlay.className='modal-overlay active';
+        overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+        overlay.innerHTML=`<div class="modal" style="max-width:460px;">
+            <div class="modal-header"><h2>📊 서버 현황</h2><button class="btn-close" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+            <div class="modal-body">${statusHtml}</div>
+            <div class="modal-footer"><button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">닫기</button></div>
+        </div>`;
+        document.body.appendChild(overlay);
+    }catch(e){
+        showToast('서버 현황 조회 실패: '+e.message,'error');
+    }
 }
 
 // ===== SECTIONS (Home Page - Notion Style) =====
@@ -1995,6 +2028,78 @@ async function toggleRegConfirm(tid,sid){
     trainingRecords[tid][sid].confirmed=!trainingRecords[tid][sid].confirmed;
     await api('PATCH',`/api/training-records/${tid}/${sid}`,trainingRecords[tid][sid]);
     renderRegisterTable();
+}
+
+// ===== 교직원 인원 관리 =====
+function openStaffManager(){
+    renderStaffList();
+    openModal('staffModal');
+}
+function renderStaffList(){
+    const c=document.getElementById('staffListContainer');
+    if(!staff.length){c.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-light);">등록된 교직원이 없습니다.</div>';return;}
+    c.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="border-bottom:2px solid var(--border)">
+            <th style="padding:8px 4px;text-align:center;width:36px">순</th>
+            <th style="padding:8px 4px;text-align:left">직위</th>
+            <th style="padding:8px 4px;text-align:left">성명</th>
+            <th style="padding:8px 4px;text-align:center;width:80px">관리</th>
+        </tr></thead>
+        <tbody>${staff.map((s,i)=>`<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:6px 4px;text-align:center">${i+1}</td>
+            <td style="padding:6px 4px"><input class="reg-input" value="${esc(s.position)}" onchange="updateStaffField('${s.id}','position',this.value)" style="width:100%"></td>
+            <td style="padding:6px 4px"><input class="reg-input" value="${esc(s.name)}" onchange="updateStaffField('${s.id}','name',this.value)" style="width:100%;font-weight:600"></td>
+            <td style="padding:6px 4px;text-align:center">
+                <div style="display:flex;gap:2px;justify-content:center;">
+                    ${i>0?`<button class="item-action-btn" onclick="moveStaff('${s.id}',-1)" title="위로">▲</button>`:''}
+                    ${i<staff.length-1?`<button class="item-action-btn" onclick="moveStaff('${s.id}',1)" title="아래로">▼</button>`:''}
+                    <button class="item-action-btn delete" onclick="deleteStaffMember('${s.id}')" title="삭제">🗑️</button>
+                </div>
+            </td>
+        </tr>`).join('')}</tbody>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-light);text-align:right">총 ${staff.length}명</div>`;
+}
+async function addStaffMember(){
+    const pos=document.getElementById('newStaffPosition').value.trim();
+    const name=document.getElementById('newStaffName').value.trim();
+    if(!name){showToast('성명을 입력하세요','error');return;}
+    const newNo=staff.length?Math.max(...staff.map(s=>s.no||0))+1:1;
+    staff.push({id:'s'+Date.now(),no:newNo,position:pos||'교사',name});
+    await api('POST','/api/staff',staff);saveToLocal();
+    document.getElementById('newStaffPosition').value='';
+    document.getElementById('newStaffName').value='';
+    renderStaffList();renderRegisterTable();populateRegSelect();
+    showToast(`${name} 추가 완료`,'success');
+}
+async function updateStaffField(sid,field,val){
+    const s=staff.find(x=>x.id===sid);if(!s)return;
+    s[field]=val;
+    await api('POST','/api/staff',staff);saveToLocal();
+}
+async function moveStaff(sid,dir){
+    const idx=staff.findIndex(x=>x.id===sid);if(idx<0)return;
+    const newIdx=idx+dir;if(newIdx<0||newIdx>=staff.length)return;
+    [staff[idx],staff[newIdx]]=[staff[newIdx],staff[idx]];
+    staff.forEach((s,i)=>s.no=i+1);
+    await api('POST','/api/staff',staff);saveToLocal();
+    renderStaffList();renderRegisterTable();
+}
+async function deleteStaffMember(sid){
+    const s=staff.find(x=>x.id===sid);if(!s)return;
+    if(!confirm(`"${s.name}" (${s.position})을(를) 삭제하시겠습니까?\n해당 교직원의 모든 이수 기록도 함께 삭제됩니다.`))return;
+    staff=staff.filter(x=>x.id!==sid);
+    staff.forEach((s,i)=>s.no=i+1);
+    // 이수 기록에서도 삭제
+    for(const tid of Object.keys(trainingRecords)){
+        if(trainingRecords[tid]&&trainingRecords[tid][sid]){
+            delete trainingRecords[tid][sid];
+        }
+    }
+    await Promise.all([api('POST','/api/staff',staff),api('POST','/api/training-records',trainingRecords)]);
+    saveToLocal();
+    renderStaffList();renderRegisterTable();populateRegSelect();
+    showToast(`${s.name} 삭제 완료`,'success');
 }
 
 // ===== 이수증 업로드/다운로드 (Firebase Storage) =====
