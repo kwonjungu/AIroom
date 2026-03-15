@@ -434,6 +434,41 @@
             .print-section{page-break-after:always;}
             .print-section:last-child{page-break-after:auto;}
         }
+        /* News (학교 소식) */
+        .news-post{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
+        .news-post.featured{border:2px solid var(--primary);}
+        .news-slider{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;}
+        .news-slider img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s;}
+        .news-slider img.active{opacity:1;}
+        .news-slider-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2;}
+        .news-slider-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.5);cursor:pointer;transition:all .2s;}
+        .news-slider-dot.active{background:white;transform:scale(1.3);}
+        .news-slider-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.4);color:white;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .2s;}
+        .news-slider-nav:hover{background:rgba(0,0,0,0.7);}
+        .news-slider-nav.prev{left:10px;}
+        .news-slider-nav.next{right:10px;}
+        .news-post-body{padding:18px 20px;}
+        .news-post-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+        .news-post-meta{font-size:12px;color:var(--text-light);margin-bottom:12px;display:flex;gap:12px;align-items:center;}
+        .news-post-content{font-size:14px;line-height:1.7;white-space:pre-wrap;}
+        .news-post-compact{display:flex;gap:14px;padding:14px 18px;align-items:center;cursor:pointer;transition:background .15s;}
+        .news-post-compact:hover{background:var(--primary-light);}
+        .news-compact-thumb{width:80px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--border);}
+        .news-compact-info{flex:1;min-width:0;}
+        .news-compact-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .news-compact-meta{font-size:11px;color:var(--text-light);margin-top:3px;}
+        .news-compact-preview{font-size:12px;color:var(--text-light);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .news-add-btn{display:none;width:100%;padding:16px;border:2px dashed var(--border);border-radius:var(--radius);background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-light);transition:all .2s;margin-bottom:16px;}
+        .news-add-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+        .admin-mode .news-add-btn{display:block;}
+        .news-img-upload-area{border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+        .news-img-upload-area:hover{border-color:var(--primary);background:var(--primary-light);}
+        .news-img-upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+        .news-img-preview-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+        .news-img-preview-item{position:relative;width:80px;height:56px;border-radius:8px;overflow:hidden;}
+        .news-img-preview-item img{width:100%;height:100%;object-fit:cover;}
+        .news-img-preview-item .remove-btn{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.6);color:white;border:none;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;}
+
         /* Training name clickable */
         .training-name-clickable{font-weight:600;max-width:260px;cursor:pointer;color:var(--primary);transition:color .15s;}
         .training-name-clickable:hover{text-decoration:underline;color:var(--primary-dark);}
@@ -590,6 +625,35 @@
             <div id="myCheckContent"></div>
         </div>
     </div>
+
+    <!-- ===== NEWS PAGE (학교 소식) ===== -->
+    <div class="page" id="page-news">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <h2 style="font-size:20px;font-weight:700;">📰 학교 소식</h2>
+        </div>
+        <button class="news-add-btn" onclick="openNewsEditor()">📷 새 소식 작성</button>
+        <div id="newsContainer"></div>
+    </div>
+
+    <!-- News Editor Modal -->
+    <div class="modal-overlay" id="newsModal"><div class="modal" style="max-width:600px;">
+        <div class="modal-header"><h2 id="newsModalTitle">📰 새 소식 작성</h2><button class="btn-close" onclick="closeModal('newsModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editingNewsId">
+            <div class="form-group"><label>제목</label><input type="text" id="newsTitle" placeholder="소식 제목을 입력하세요"></div>
+            <div class="form-group">
+                <label>사진 (여러 장 가능, 2MB 초과 시 자동 압축)</label>
+                <div class="news-img-upload-area">
+                    <div>📷 클릭하여 사진 추가</div>
+                    <input type="file" accept="image/*" multiple onchange="handleNewsImages(event)">
+                </div>
+                <div class="news-img-preview-list" id="newsImagePreviews"></div>
+            </div>
+            <div class="form-group"><label>내용</label><textarea id="newsContent" rows="5" placeholder="소식 내용을 입력하세요" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;resize:vertical;font-family:inherit;"></textarea></div>
+            <div class="form-group"><label>작성자</label><input type="text" id="newsAuthor" placeholder="작성자 이름"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('newsModal')">취소</button><button class="btn btn-primary" onclick="saveNews()">저장</button></div>
+    </div></div>
 
     <!-- ===== LINKS PAGE ===== -->
     <div class="page" id="page-links">
@@ -818,7 +882,7 @@ let selectedSchEmoji='';
 const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[];
 let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
@@ -828,7 +892,8 @@ const DEFAULT_TABS=[
     {id:'tab_curriculum',title:'교육과정부',icon:'📖',type:'custom',order:4},
     {id:'tab_sujeong',title:'수정분교',icon:'🏫',type:'custom',order:5},
     {id:'training',title:'연수 관리',icon:'📋',type:'builtin',order:6},
-    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:7}
+    {id:'news',title:'학교 소식',icon:'📰',type:'builtin',order:7},
+    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -972,11 +1037,11 @@ async function init(){
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
-            api('GET','/api/schedules'),api('GET','/api/tabs')
+            api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
-        tabsConfig=results[7]||[];
+        tabsConfig=results[7]||[];newsPosts=results[8]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -997,7 +1062,7 @@ async function init(){
     }
     await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderCustomPages();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -1016,6 +1081,7 @@ function switchPage(p,btn){
     if(btn)btn.classList.add('active');
     activeTabId=p;
     if(p==='schedule')renderSchedule();
+    if(p==='news')renderNews();
 }
 
 // ===== SCHEDULE =====
@@ -2140,6 +2206,298 @@ async function deleteCertFile(tid,sid){
         renderRegisterTable();renderTrainingRegModalContent(tid);
         showToast('이수증 삭제 완료','success');
     }catch(e){console.error('삭제 실패:',e);showToast('삭제 실패: '+e.message,'error');}
+}
+
+// ===== 학교 소식 (News) =====
+let newsImageQueue=[];
+let newsSliderIntervals={};
+
+async function compressImage(file,maxSizeMB=2){
+    return new Promise((resolve)=>{
+        if(file.size<=maxSizeMB*1024*1024){
+            const reader=new FileReader();
+            reader.onload=e=>resolve(e.target.result);
+            reader.readAsDataURL(file);return;
+        }
+        const img=new Image();
+        const url=URL.createObjectURL(file);
+        img.onload=()=>{
+            URL.revokeObjectURL(url);
+            const canvas=document.createElement('canvas');
+            let w=img.width,h=img.height;
+            const maxDim=1920;
+            if(w>maxDim||h>maxDim){
+                if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}
+                else{w=Math.round(w*maxDim/h);h=maxDim;}
+            }
+            canvas.width=w;canvas.height=h;
+            const ctx=canvas.getContext('2d');
+            ctx.drawImage(img,0,0,w,h);
+            let quality=0.8;
+            let result=canvas.toDataURL('image/jpeg',quality);
+            while(result.length>maxSizeMB*1024*1024*1.37&&quality>0.1){
+                quality-=0.1;
+                result=canvas.toDataURL('image/jpeg',quality);
+            }
+            resolve(result);
+        };
+        img.src=url;
+    });
+}
+
+function handleNewsImages(e){
+    const files=Array.from(e.target.files);
+    if(!files.length)return;
+    showToast('이미지 처리 중...','info');
+    Promise.all(files.map(f=>compressImage(f))).then(results=>{
+        newsImageQueue.push(...results);
+        renderNewsImagePreviews();
+        showToast(`${results.length}장 추가됨`,'success');
+    });
+    e.target.value='';
+}
+
+function renderNewsImagePreviews(){
+    document.getElementById('newsImagePreviews').innerHTML=newsImageQueue.map((img,i)=>
+        `<div class="news-img-preview-item">
+            <img src="${img}">
+            <button class="remove-btn" onclick="newsImageQueue.splice(${i},1);renderNewsImagePreviews()">✕</button>
+        </div>`
+    ).join('');
+}
+
+function openNewsEditor(id){
+    newsImageQueue=[];
+    const modal=document.getElementById('newsModal');
+    if(id){
+        const post=newsPosts.find(p=>p.id===id);
+        if(!post)return;
+        document.getElementById('newsModalTitle').textContent='📰 소식 수정';
+        document.getElementById('editingNewsId').value=id;
+        document.getElementById('newsTitle').value=post.title||'';
+        document.getElementById('newsContent').value=post.content||'';
+        document.getElementById('newsAuthor').value=post.author||'';
+        newsImageQueue=[...(post.images||[])];
+    } else {
+        document.getElementById('newsModalTitle').textContent='📰 새 소식 작성';
+        document.getElementById('editingNewsId').value='';
+        document.getElementById('newsTitle').value='';
+        document.getElementById('newsContent').value='';
+        document.getElementById('newsAuthor').value='';
+    }
+    renderNewsImagePreviews();
+    openModal('newsModal');
+}
+
+async function saveNews(){
+    const id=document.getElementById('editingNewsId').value;
+    const title=document.getElementById('newsTitle').value.trim();
+    const content=document.getElementById('newsContent').value.trim();
+    const author=document.getElementById('newsAuthor').value.trim();
+    if(!title){showToast('제목을 입력하세요','error');return;}
+    if(!newsImageQueue.length){showToast('사진을 1장 이상 추가하세요','error');return;}
+
+    showToast('저장 중...','info');
+
+    // Firebase에 이미지 업로드
+    const imageUrls=[];
+    for(let i=0;i<newsImageQueue.length;i++){
+        const imgData=newsImageQueue[i];
+        if(imgData.startsWith('https://')){
+            imageUrls.push(imgData);continue; // 이미 업로드된 URL
+        }
+        if(firebaseStorage){
+            try{
+                const blob=await(await fetch(imgData)).blob();
+                const path=`news/${Date.now()}_${i}.jpg`;
+                const url=await uploadToFirebase(blob,path);
+                imageUrls.push(url);
+            }catch(e){
+                showToast('이미지 업로드 실패: '+e.message,'error');return;
+            }
+        } else {
+            imageUrls.push(imgData); // base64 폴백
+        }
+    }
+
+    if(id){
+        const post=newsPosts.find(p=>p.id===id);
+        if(post){post.title=title;post.content=content;post.author=author;post.images=imageUrls;post.updatedAt=new Date().toISOString();}
+    } else {
+        newsPosts.unshift({
+            id:'news_'+Date.now(),title,content,author,
+            images:imageUrls,
+            createdAt:new Date().toISOString()
+        });
+    }
+    await api('POST','/api/news',newsPosts);saveToLocal();
+    closeModal('newsModal');renderNews();
+    showToast('소식 저장 완료','success');
+}
+
+async function deleteNews(id){
+    if(!confirm('이 소식을 삭제하시겠습니까?'))return;
+    newsPosts=newsPosts.filter(p=>p.id!==id);
+    await api('POST','/api/news',newsPosts);saveToLocal();
+    renderNews();showToast('삭제 완료','success');
+}
+
+function renderNews(){
+    const c=document.getElementById('newsContainer');
+    // 슬라이더 인터벌 정리
+    Object.values(newsSliderIntervals).forEach(clearInterval);
+    newsSliderIntervals={};
+
+    if(!newsPosts.length){
+        c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--text-light);">📭 아직 등록된 소식이 없습니다.</div>';
+        return;
+    }
+
+    const sorted=[...newsPosts].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    const latest=sorted[0];
+    const older=sorted.slice(1);
+
+    let html='';
+    // 최신 게시물 - 풀 버전
+    html+=renderNewsFeatured(latest);
+
+    // 이전 게시물 - 축약 버전
+    if(older.length){
+        html+=`<div style="font-size:13px;font-weight:600;color:var(--text-light);margin:20px 0 10px;padding-left:4px;">이전 소식</div>`;
+        html+=`<div style="background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;">`;
+        older.forEach(p=>{
+            const date=new Date(p.createdAt).toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+            const thumb=p.images&&p.images.length?p.images[0]:'';
+            html+=`<div class="news-post-compact" onclick="expandNewsPost('${p.id}')">
+                ${thumb?`<img class="news-compact-thumb" src="${esc(thumb)}" onerror="this.style.display='none'">`:''}
+                <div class="news-compact-info">
+                    <div class="news-compact-title">${esc(p.title)}</div>
+                    <div class="news-compact-meta">${date} ${p.author?'· '+esc(p.author):''} ${p.images?'· 📷'+p.images.length+'장':''}</div>
+                    <div class="news-compact-preview">${esc((p.content||'').slice(0,60))}</div>
+                </div>
+                ${isAdmin?`<div style="display:flex;gap:4px;flex-shrink:0;" onclick="event.stopPropagation()">
+                    <button class="item-action-btn" onclick="openNewsEditor('${p.id}')" title="수정">✏️</button>
+                    <button class="item-action-btn delete" onclick="deleteNews('${p.id}')" title="삭제">🗑️</button>
+                </div>`:''}
+            </div>`;
+        });
+        html+=`</div>`;
+    }
+    c.innerHTML=html;
+
+    // 슬라이더 초기화
+    if(latest.images&&latest.images.length>1){
+        startNewsSlider(latest.id);
+    }
+}
+
+function renderNewsFeatured(post){
+    const date=new Date(post.createdAt).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+    const imgs=post.images||[];
+    const adminBtns=isAdmin?`<div style="display:flex;gap:4px;margin-left:auto;">
+        <button class="item-action-btn" onclick="openNewsEditor('${post.id}')" title="수정">✏️</button>
+        <button class="item-action-btn delete" onclick="deleteNews('${post.id}')" title="삭제">🗑️</button>
+    </div>`:'';
+
+    return `<div class="news-post featured">
+        ${imgs.length?`<div class="news-slider" id="slider_${post.id}">
+            ${imgs.map((img,i)=>`<img src="${esc(img)}" class="${i===0?'active':''}" onerror="this.remove()">`).join('')}
+            ${imgs.length>1?`
+                <button class="news-slider-nav prev" onclick="slideNews('${post.id}',-1)">◀</button>
+                <button class="news-slider-nav next" onclick="slideNews('${post.id}',1)">▶</button>
+                <div class="news-slider-dots">
+                    ${imgs.map((_, i)=>`<div class="news-slider-dot${i===0?' active':''}" onclick="goToSlide('${post.id}',${i})"></div>`).join('')}
+                </div>
+            `:''}
+        </div>`:''}
+        <div class="news-post-body">
+            <div class="news-post-title">${esc(post.title)}</div>
+            <div class="news-post-meta">
+                <span>📅 ${date}</span>
+                ${post.author?`<span>✍️ ${esc(post.author)}</span>`:''}
+                ${imgs.length?`<span>📷 ${imgs.length}장</span>`:''}
+                ${adminBtns}
+            </div>
+            <div class="news-post-content">${esc(post.content||'')}</div>
+        </div>
+    </div>`;
+}
+
+function startNewsSlider(postId){
+    let current=0;
+    const slider=document.getElementById('slider_'+postId);
+    if(!slider)return;
+    const imgs=slider.querySelectorAll('img');
+    const dots=slider.querySelectorAll('.news-slider-dot');
+    if(imgs.length<=1)return;
+
+    newsSliderIntervals[postId]=setInterval(()=>{
+        current=(current+1)%imgs.length;
+        imgs.forEach((img,i)=>{img.classList.toggle('active',i===current);});
+        dots.forEach((dot,i)=>{dot.classList.toggle('active',i===current);});
+    },3000);
+}
+
+function slideNews(postId,dir){
+    const slider=document.getElementById('slider_'+postId);
+    if(!slider)return;
+    const imgs=slider.querySelectorAll('img');
+    const dots=slider.querySelectorAll('.news-slider-dot');
+    let current=Array.from(imgs).findIndex(i=>i.classList.contains('active'));
+    current=(current+dir+imgs.length)%imgs.length;
+    imgs.forEach((img,i)=>{img.classList.toggle('active',i===current);});
+    dots.forEach((dot,i)=>{dot.classList.toggle('active',i===current);});
+    // 타이머 리셋
+    if(newsSliderIntervals[postId])clearInterval(newsSliderIntervals[postId]);
+    startNewsSlider(postId);
+}
+
+function goToSlide(postId,idx){
+    const slider=document.getElementById('slider_'+postId);
+    if(!slider)return;
+    const imgs=slider.querySelectorAll('img');
+    const dots=slider.querySelectorAll('.news-slider-dot');
+    imgs.forEach((img,i)=>{img.classList.toggle('active',i===idx);});
+    dots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
+    if(newsSliderIntervals[postId])clearInterval(newsSliderIntervals[postId]);
+    startNewsSlider(postId);
+}
+
+function expandNewsPost(id){
+    const post=newsPosts.find(p=>p.id===id);if(!post)return;
+    // 축약 게시물을 팝업 모달로 보기
+    const date=new Date(post.createdAt).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+    const imgs=post.images||[];
+    const sliderId='modal_slider_'+post.id;
+    const overlay=document.createElement('div');
+    overlay.className='modal-overlay active';
+    overlay.onclick=e=>{if(e.target===overlay){Object.values(newsSliderIntervals).forEach(clearInterval);overlay.remove();}};
+    overlay.innerHTML=`<div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto;">
+        <div class="modal-header"><h2>${esc(post.title)}</h2><button class="btn-close" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+        <div class="modal-body" style="padding:0;">
+            ${imgs.length?`<div class="news-slider" id="${sliderId}" style="border-radius:0;">
+                ${imgs.map((img,i)=>`<img src="${esc(img)}" class="${i===0?'active':''}">`).join('')}
+                ${imgs.length>1?`
+                    <button class="news-slider-nav prev" onclick="slideNews('modal_slider_${post.id}',-1)">◀</button>
+                    <button class="news-slider-nav next" onclick="slideNews('modal_slider_${post.id}',1)">▶</button>
+                    <div class="news-slider-dots">
+                        ${imgs.map((_,i)=>`<div class="news-slider-dot${i===0?' active':''}" onclick="goToSlide('modal_slider_${post.id}',${i})"></div>`).join('')}
+                    </div>
+                `:''}
+            </div>`:''}
+            <div style="padding:18px 20px;">
+                <div class="news-post-meta" style="margin-bottom:12px;">
+                    <span>📅 ${date}</span>
+                    ${post.author?`<span>✍️ ${esc(post.author)}</span>`:''}
+                </div>
+                <div class="news-post-content">${esc(post.content||'')}</div>
+            </div>
+        </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    if(imgs.length>1){
+        setTimeout(()=>startNewsSlider('modal_slider_'+post.id),100);
+    }
 }
 
 // ===== 엑셀(CSV) 내보내기 =====
