@@ -492,6 +492,30 @@
         .tab-delete-btn:hover{background:var(--accent);color:white;}
         .admin-mode .tab-delete-btn.custom-only{display:flex;}
 
+        /* Global search */
+        .global-search-wrap{max-width:960px;margin:0 auto;padding:10px 24px 0;position:relative;}
+        .global-search-bar{display:flex;align-items:center;background:var(--card-bg);border:2px solid var(--border);border-radius:14px;padding:0 16px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+        .global-search-bar:focus-within{border-color:var(--primary);box-shadow:0 2px 12px rgba(74,144,217,0.15);}
+        .global-search-bar .search-icon{font-size:18px;margin-right:10px;flex-shrink:0;}
+        .global-search-bar input{flex:1;border:none;background:none;padding:12px 0;font-size:14px;outline:none;min-width:0;}
+        .global-search-bar .search-clear{width:28px;height:28px;border-radius:50%;border:none;background:var(--border);color:var(--text-light);cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+        .global-search-bar .search-clear:hover{background:var(--accent);color:white;}
+        .global-search-bar .search-clear.show{display:flex;}
+        .global-search-results{position:absolute;top:100%;left:24px;right:24px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.12);max-height:420px;overflow-y:auto;z-index:100;display:none;margin-top:4px;}
+        .global-search-results.show{display:block;}
+        .gsr-group-header{padding:10px 16px 4px;font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;}
+        .gsr-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--border);}
+        .gsr-item:last-child{border-bottom:none;}
+        .gsr-item:hover{background:var(--primary-light);}
+        .gsr-item-icon{font-size:16px;flex-shrink:0;width:24px;text-align:center;}
+        .gsr-item-info{flex:1;min-width:0;}
+        .gsr-item-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .gsr-item-title mark{background:#FFEB3B;border-radius:2px;padding:0 1px;}
+        .gsr-item-sub{font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .gsr-item-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--primary-light);color:var(--primary);font-weight:600;flex-shrink:0;white-space:nowrap;}
+        .gsr-empty{padding:30px;text-align:center;color:var(--text-light);font-size:13px;}
+        .section-item.highlight{background:#FFF9C4;border-left:3px solid #FFD54F;transition:background 1.5s;}
+
         /* Section move buttons */
         .section-move-btns{display:none;gap:2px;align-items:center;}
         .admin-mode .section-move-btns{display:flex;}
@@ -533,6 +557,15 @@
         <div class="main-tabs" id="mainTabs"></div>
     </div>
 
+    <div class="global-search-wrap">
+        <div class="global-search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="globalSearchInput" placeholder="통합 검색 — 모든 탭에서 검색합니다" oninput="onGlobalSearch(this.value)" onfocus="onGlobalSearch(this.value)" autocomplete="off">
+            <button class="search-clear" id="globalSearchClear" onclick="clearGlobalSearch()">✕</button>
+        </div>
+        <div class="global-search-results" id="globalSearchResults"></div>
+    </div>
+
     <!-- ===== SCHEDULE PAGE ===== -->
     <div class="page active" id="page-schedule">
         <div class="schedule-view-tabs">
@@ -552,11 +585,6 @@
 
     <!-- ===== HOME PAGE ===== -->
     <div class="page" id="page-home">
-        <div class="search-bar">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="homeSearch" placeholder="필요한 내용 검색 (Ctrl+F)" oninput="filterSections()">
-            <span class="search-hint">Ctrl+P</span>
-        </div>
 
         <div class="health-callout">
             <span>✅</span> <b>보건실 이용 안내</b> : 보건실 위치 및 내선번호는 교직원 DB를 참고해 주세요.
@@ -1576,14 +1604,9 @@ async function showServerStatus(){
 // ===== SECTIONS (Home Page - Notion Style) =====
 function renderSections(){
     const c=document.getElementById('sectionsContainer');
-    const search=document.getElementById('homeSearch').value.toLowerCase();
     const sorted=[...sections].sort((a,b)=>a.order-b.order);
     c.innerHTML=sorted.map(sec=>{
         let items=sec.items||[];
-        if(search){
-            items=items.filter(it=>it.text.toLowerCase().includes(search)||(it.description||'').toLowerCase().includes(search)||(it.person||'').toLowerCase().includes(search)||(it.personExt||'').includes(search));
-            if(!items.length)return'';
-        }
         const borderColor=sec.borderColor||COLOR_BORDERS[sec.color]||'#E0E0E0';
         return `<div class="section-block" id="sec-${sec.id}">
             <div class="section-header" style="background:${sec.color};border-left:4px solid ${borderColor};" onclick="toggleSection('${sec.id}')">
@@ -1633,6 +1656,152 @@ function renderSections(){
 }
 
 function filterSections(){renderSections();}
+
+// ===== 통합 검색 =====
+function onGlobalSearch(query){
+    const q=query.trim().toLowerCase();
+    const clearBtn=document.getElementById('globalSearchClear');
+    const resultsEl=document.getElementById('globalSearchResults');
+    clearBtn.classList.toggle('show',q.length>0);
+    if(q.length<1){resultsEl.classList.remove('show');resultsEl.innerHTML='';return;}
+
+    const results=[];
+    // 1) 교무실 홈 sections
+    sections.forEach(sec=>{
+        (sec.items||[]).forEach(it=>{
+            if(matchItem(it,q)||sec.title.toLowerCase().includes(q)){
+                results.push({tabId:'home',tabTitle:'교무실 홈',tabIcon:'🏠',secId:sec.id,secTitle:sec.title,item:it,type:'home'});
+            }
+        });
+    });
+    // 2) 커스텀 탭 sections
+    tabsConfig.filter(t=>t.type==='custom').forEach(tab=>{
+        (tab.sections||[]).forEach(sec=>{
+            (sec.items||[]).forEach(it=>{
+                if(matchItem(it,q)||sec.title.toLowerCase().includes(q)){
+                    results.push({tabId:tab.id,tabTitle:tab.title,tabIcon:tab.icon,secId:sec.id,secTitle:sec.title,item:it,type:'custom'});
+                }
+            });
+        });
+    });
+    // 3) 링크
+    links.forEach(l=>{
+        if(l.name.toLowerCase().includes(q)||(l.description||'').toLowerCase().includes(q)){
+            results.push({tabId:'links',tabTitle:'링크 모음',tabIcon:'🔗',item:{text:l.name,description:l.description,icon:l.icon,id:l.id},type:'link',linkUrl:l.url});
+        }
+    });
+    // 4) 연수
+    trainings.forEach(t=>{
+        if(t.name.toLowerCase().includes(q)||(t.provider||'').toLowerCase().includes(q)){
+            results.push({tabId:'training',tabTitle:'연수 관리',tabIcon:'📋',item:{text:t.name,description:t.provider,icon:'📋',id:t.id},type:'training'});
+        }
+    });
+
+    renderGlobalResults(results,q);
+}
+
+function matchItem(it,q){
+    return it.text.toLowerCase().includes(q)||(it.description||'').toLowerCase().includes(q)||(it.person||'').toLowerCase().includes(q);
+}
+
+function highlightText(text,q){
+    if(!q||!text)return esc(text);
+    const escaped=esc(text);
+    const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi');
+    return escaped.replace(re,'<mark>$1</mark>');
+}
+
+function renderGlobalResults(results,q){
+    const el=document.getElementById('globalSearchResults');
+    if(!results.length){
+        el.innerHTML=`<div class="gsr-empty">🔍 "${esc(q)}" 검색 결과가 없습니다</div>`;
+        el.classList.add('show');return;
+    }
+    // 탭별 그룹핑
+    const groups={};
+    results.forEach(r=>{
+        const key=r.tabId;
+        if(!groups[key])groups[key]={tabTitle:r.tabTitle,tabIcon:r.tabIcon,items:[]};
+        groups[key].items.push(r);
+    });
+    let html='';
+    Object.entries(groups).forEach(([tabId,g])=>{
+        html+=`<div class="gsr-group-header">${g.tabIcon} ${esc(g.tabTitle)} <span style="color:var(--primary);font-size:10px;">(${g.items.length})</span></div>`;
+        g.items.slice(0,10).forEach(r=>{
+            const it=r.item;
+            html+=`<div class="gsr-item" onclick="navigateToResult('${r.tabId}','${r.secId||''}','${it.id||''}','${r.type}')">
+                <span class="gsr-item-icon">${it.icon||'📌'}</span>
+                <div class="gsr-item-info">
+                    <div class="gsr-item-title">${highlightText(it.text,q)}</div>
+                    ${it.description?`<div class="gsr-item-sub">${highlightText(it.description,q)}</div>`:''}
+                </div>
+                ${r.secTitle?`<span class="gsr-item-badge">${esc(r.secTitle)}</span>`:''}
+            </div>`;
+        });
+        if(g.items.length>10) html+=`<div class="gsr-item" style="justify-content:center;color:var(--text-light);font-size:12px;">+${g.items.length-10}개 더...</div>`;
+    });
+    el.innerHTML=html;
+    el.classList.add('show');
+}
+
+function navigateToResult(tabId,secId,itemId,type){
+    document.getElementById('globalSearchResults').classList.remove('show');
+    // 탭 이동
+    const tabBtn=document.querySelector(`.main-tab[onclick*="'${tabId}'"]`);
+    switchPage(tabId,tabBtn);
+    // 잠시 후 해당 섹션/항목으로 스크롤 & 하이라이트
+    setTimeout(()=>{
+        let targetEl=null;
+        if(type==='home'){
+            const secEl=document.getElementById('sec-'+secId);
+            if(secEl){
+                secEl.classList.remove('collapsed');
+                if(itemId){
+                    const items=secEl.querySelectorAll('.section-item');
+                    items.forEach(el=>{
+                        if(el.innerHTML.includes(itemId)){targetEl=el;}
+                    });
+                }
+                if(!targetEl)targetEl=secEl;
+            }
+        } else if(type==='custom'){
+            const secEl=document.getElementById('csec-'+secId);
+            if(secEl){
+                secEl.classList.remove('collapsed');
+                if(itemId){
+                    const items=secEl.querySelectorAll('.section-item');
+                    items.forEach(el=>{
+                        if(el.innerHTML.includes(itemId)){targetEl=el;}
+                    });
+                }
+                if(!targetEl)targetEl=secEl;
+            }
+        } else {
+            // links or training - just scroll to top of page
+            targetEl=document.getElementById('page-'+tabId);
+        }
+        if(targetEl){
+            targetEl.scrollIntoView({behavior:'smooth',block:'center'});
+            targetEl.classList.add('highlight');
+            setTimeout(()=>targetEl.classList.remove('highlight'),2500);
+        }
+    },150);
+}
+
+function clearGlobalSearch(){
+    document.getElementById('globalSearchInput').value='';
+    document.getElementById('globalSearchResults').classList.remove('show');
+    document.getElementById('globalSearchResults').innerHTML='';
+    document.getElementById('globalSearchClear').classList.remove('show');
+}
+
+// 검색 결과 외부 클릭 시 닫기
+document.addEventListener('click',e=>{
+    const wrap=document.querySelector('.global-search-wrap');
+    if(wrap&&!wrap.contains(e.target)){
+        document.getElementById('globalSearchResults').classList.remove('show');
+    }
+});
 function toggleSection(id){document.getElementById('sec-'+id)?.classList.toggle('collapsed');}
 
 function resetFileUI(){
@@ -2886,7 +3055,10 @@ function openModal(id){document.getElementById(id).classList.add('active');docum
 function executeConfirmAction(){if(_pendingConfirmAction)_pendingConfirmAction();}
 function closeModal(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){e.target.classList.remove('active');document.body.style.overflow='';}});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.active').forEach(m=>{m.classList.remove('active');document.body.style.overflow='';});});
+document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.active').forEach(m=>{m.classList.remove('active');document.body.style.overflow='';});clearGlobalSearch();}
+    if((e.ctrlKey||e.metaKey)&&(e.key==='f'||e.key==='F'||e.key==='p'||e.key==='P')){e.preventDefault();document.getElementById('globalSearchInput').focus();}
+});
 
 function showToast(msg,type=''){
     const c=document.getElementById('toastContainer');const t=document.createElement('div');
@@ -3062,12 +3234,7 @@ function renderCustomPages(){
 function renderCustomTabContent(tab,page){
     const secs=tab.sections||[];
     const sorted=[...secs].sort((a,b)=>a.order-b.order);
-    let html=`<div class="search-bar">
-        <span class="search-icon">🔍</span>
-        <input type="text" placeholder="필요한 내용 검색 (Ctrl+F)" oninput="filterCustomSections('${tab.id}',this.value)">
-        <span class="search-hint">Ctrl+P</span>
-    </div>`;
-    html+=`<div id="customSections-${tab.id}">`;
+    let html=`<div id="customSections-${tab.id}">`;
     html+=sorted.map(sec=>{
         const items=sec.items||[];
         const borderColor=sec.borderColor||COLOR_BORDERS[sec.color]||'#E0E0E0';
