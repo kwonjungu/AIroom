@@ -23,6 +23,20 @@
         .header-bg-btn:hover{background:rgba(0,0,0,0.5);}
         .admin-mode .header-bg-btn{display:inline-flex;}
         .header-bg-btn input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+        /* Maintenance Mode */
+        .maintenance-overlay{display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);align-items:center;justify-content:center;flex-direction:column;color:white;text-align:center;padding:20px;}
+        .maintenance-overlay.active{display:flex;}
+        .maintenance-overlay .maint-icon{font-size:64px;margin-bottom:20px;}
+        .maintenance-overlay h2{font-size:28px;font-weight:700;margin-bottom:12px;}
+        .maintenance-overlay p{font-size:16px;opacity:0.85;max-width:400px;line-height:1.6;}
+        .maintenance-overlay .maint-admin-btn{margin-top:30px;padding:10px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;cursor:pointer;font-size:13px;font-weight:600;}
+        .maintenance-overlay .maint-admin-btn:hover{background:rgba(255,255,255,0.25);}
+        .btn-maintenance{display:none;background:rgba(255,107,107,0.3);border:1px solid rgba(255,107,107,0.5);color:white;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
+        .btn-maintenance:hover{background:rgba(255,107,107,0.5);}
+        .btn-maintenance.on{background:rgba(255,107,107,0.7);animation:pulse-maint 2s infinite;}
+        .admin-mode .btn-maintenance{display:inline-block;}
+        @keyframes pulse-maint{0%,100%{opacity:1;}50%{opacity:0.7;}}
         .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:center;position:relative;}
         .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
@@ -464,6 +478,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head>
 <body>
+    <!-- 서버 점검 모드 오버레이 -->
+    <div class="maintenance-overlay" id="maintenanceOverlay">
+        <div class="maint-icon">🔧</div>
+        <h2>서버 점검 중입니다</h2>
+        <p>더 나은 서비스를 위해 점검 중입니다.<br>잠시 후 다시 방문해 주세요.</p>
+        <button class="maint-admin-btn" onclick="promptMaintenanceAdmin()">관리자 로그인</button>
+    </div>
+
     <header class="header">
         <div class="header-inner">
             <div class="header-left">
@@ -475,6 +497,7 @@
             <div class="header-right">
                 <span class="header-date" id="currentDate"></span>
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
+                <button class="btn-maintenance" id="btnMaintenance" onclick="toggleMaintenance()">🚧 점검모드</button>
             </div>
         </div>
         <label class="header-bg-btn" title="헤더 배경 이미지 변경">📷 배경 변경<input type="file" accept="image/*" onchange="handleBannerUpload(event)"></label>
@@ -947,6 +970,7 @@ async function api(m,u,b){
 async function init(){
     initFirebase(); // Firebase Storage 비동기 초기화 (병렬)
     loadBanner(); // 배너 이미지 로드
+    loadMaintenance(); // 점검 모드 체크
     try{
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
@@ -1331,6 +1355,63 @@ function toggleAdmin(){
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
+    applyMaintenance();
+    renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
+}
+
+// ===== 서버 점검 모드 =====
+let maintenanceMode=false;
+function loadMaintenance(){
+    api('GET','/api/settings').then(s=>{
+        if(s&&s.maintenance){
+            maintenanceMode=true;
+            applyMaintenance();
+        }
+    }).catch(()=>{});
+    // localStorage 빠른 체크
+    if(localStorage.getItem('maintenanceMode')==='true'){
+        maintenanceMode=true;
+        applyMaintenance();
+    }
+}
+function applyMaintenance(){
+    const overlay=document.getElementById('maintenanceOverlay');
+    const btn=document.getElementById('btnMaintenance');
+    if(maintenanceMode&&!isAdmin){
+        overlay.classList.add('active');
+    } else {
+        overlay.classList.remove('active');
+    }
+    if(btn){
+        btn.textContent=maintenanceMode?'🚧 점검 ON':'🚧 점검모드';
+        btn.classList.toggle('on',maintenanceMode);
+    }
+}
+async function toggleMaintenance(){
+    if(!isAdmin)return;
+    if(!maintenanceMode){
+        if(!confirm('서버 점검 모드를 켜시겠습니까?\n일반 사용자에게 점검 화면이 표시됩니다.'))return;
+    }
+    maintenanceMode=!maintenanceMode;
+    localStorage.setItem('maintenanceMode',maintenanceMode);
+    try{
+        const settings=(await api('GET','/api/settings'))||{};
+        settings.maintenance=maintenanceMode;
+        await api('POST','/api/settings',settings);
+    }catch(e){}
+    applyMaintenance();
+    showToast(maintenanceMode?'점검 모드 ON - 일반 사용자에게 점검 화면 표시':'점검 모드 OFF - 정상 운영',maintenanceMode?'error':'success');
+}
+function promptMaintenanceAdmin(){
+    const pw=prompt('관리자 비밀번호를 입력하세요:');
+    if(pw===null)return;
+    // 간단한 관리자 인증 (toggleAdmin과 동일하게 관리모드 진입)
+    isAdmin=true;document.body.classList.add('admin-mode');
+    const b=document.getElementById('btnAdmin');
+    b.textContent='✅ 관리 ON';
+    b.style.background='rgba(81,207,102,0.3)';
+    applyMaintenance(); // 관리자이므로 오버레이 해제
+    showToast('관리 모드로 진입했습니다','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
 }
 
