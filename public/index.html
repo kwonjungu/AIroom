@@ -3972,20 +3972,39 @@ async function submitCollectionUpload(){
     showToast('자료가 제출되었습니다','success');
 }
 
+function base64ToBlob(dataUrl){
+    const parts=dataUrl.split(',');
+    const mime=(parts[0].match(/:(.*?);/)||[])[1]||'application/octet-stream';
+    const raw=atob(parts[1]);
+    const arr=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
+    return new Blob([arr],{type:mime});
+}
+
 async function downloadColFile(colId,fileIdx){
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const f=col.submissions[fileIdx];if(!f)return;
     const url=f.fileUrl||f.fileData;
     if(!url){showToast('파일 데이터가 없습니다','error');return;}
     try{
-        const resp=await fetch(url);
-        const blob=await resp.blob();
+        let blob;
+        if(url.startsWith('data:')){
+            blob=base64ToBlob(url);
+        } else {
+            const resp=await fetch(url);
+            blob=await resp.blob();
+        }
         const blobUrl=URL.createObjectURL(blob);
-        const a=document.createElement('a');a.href=blobUrl;a.download=f.fileName||'download';
-        document.body.appendChild(a);a.click();document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
+        const a=document.createElement('a');
+        a.href=blobUrl;
+        a.download=f.fileName||'download';
+        a.style.display='none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(blobUrl);},200);
     }catch(e){
-        const a=document.createElement('a');a.href=url;a.download=f.fileName||'download';a.click();
+        console.error('다운로드 실패:',e);
+        showToast('다운로드 실패','error');
     }
 }
 
@@ -3998,26 +4017,31 @@ async function downloadAllColFiles(colId){
         for(const f of col.submissions){
             const url=f.fileUrl||f.fileData;if(!url)continue;
             let name=f.fileName||'file';
-            // 동일 파일명 처리
-            if(usedNames[name]){usedNames[name]++;const ext=name.lastIndexOf('.');name=ext>0?name.slice(0,ext)+'_'+usedNames[name]+name.slice(ext):name+'_'+usedNames[name];}
-            else{usedNames[name]=1;}
-            // 제출자 이름을 폴더로 구분
+            // 동일 파일명 중복 처리
+            if(usedNames[name]){
+                usedNames[name]++;
+                const ext=name.lastIndexOf('.');
+                name=ext>0?name.slice(0,ext)+'_'+usedNames[name]+name.slice(ext):name+'_'+usedNames[name];
+            } else {usedNames[name]=1;}
             const folder=f.submitter||'unknown';
+            let blob;
             if(url.startsWith('data:')){
-                const base64=url.split(',')[1];
-                zip.folder(folder).file(name,base64,{base64:true});
+                blob=base64ToBlob(url);
             } else {
                 const resp=await fetch(url);
-                const blob=await resp.blob();
-                zip.folder(folder).file(name,blob);
+                blob=await resp.blob();
             }
+            zip.folder(folder).file(name,blob);
         }
         const content=await zip.generateAsync({type:'blob'});
+        const blobUrl=URL.createObjectURL(content);
         const a=document.createElement('a');
-        a.href=URL.createObjectURL(content);
-        a.download=`${col.name||'자료집계'}_전체.zip`;
+        a.href=blobUrl;
+        a.download=(col.name||'자료집계')+'_전체.zip';
+        a.style.display='none';
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(a.href);
+        setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(blobUrl);},200);
         showToast('ZIP 다운로드 완료','success');
     }catch(err){
         console.error('ZIP 생성 실패:',err);
