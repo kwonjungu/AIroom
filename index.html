@@ -24,6 +24,22 @@
         .admin-mode .header-bg-btn{display:inline-flex;}
         .header-bg-btn input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
 
+        /* Font size selector */
+        .font-size-selector{position:absolute;left:24px;display:flex;align-items:center;gap:4px;z-index:2;}
+        .font-size-btn{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:white;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:12px;}
+        .font-size-btn:hover{background:rgba(255,255,255,0.3);}
+        .font-size-btn.active{background:rgba(255,255,255,0.35);border-color:white;box-shadow:0 0 8px rgba(255,255,255,0.3);}
+        .font-size-label{font-size:10px;opacity:0.7;margin-right:4px;white-space:nowrap;}
+        /* Zoom levels */
+        body.zoom-large{zoom:1.15;}
+        body.zoom-xlarge{zoom:1.3;}
+        @media(max-width:768px){
+            body.zoom-large{zoom:1.1;}
+            body.zoom-xlarge{zoom:1.2;}
+            .font-size-selector{position:static;justify-content:center;margin-bottom:4px;}
+            .font-size-label{display:none;}
+        }
+
         /* Server Status Button */
         .btn-server-status{display:none;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
         .btn-server-status:hover{background:rgba(255,255,255,0.3);}
@@ -349,7 +365,7 @@
             .header-inner{flex-direction:column;gap:6px;text-align:center;padding:12px 14px;}
             .header-title h1{font-size:18px;}
             .school-icon{width:40px;height:40px;font-size:22px;}
-            .header-right{width:100%;justify-content:center;gap:6px;}
+            .header-right{width:100%;justify-content:center;gap:6px;position:static;}
             .header-date{font-size:11px;padding:4px 10px;}
             .btn-admin{padding:6px 12px;font-size:11px;}
             .header-bg-btn{right:12px;bottom:6px;font-size:10px;padding:4px 8px;}
@@ -530,6 +546,12 @@
 <body>
     <header class="header">
         <div class="header-inner">
+            <div class="font-size-selector">
+                <span class="font-size-label">글씨</span>
+                <button class="font-size-btn active" onclick="setFontSize('normal',this)" title="기본">가</button>
+                <button class="font-size-btn" onclick="setFontSize('large',this)" title="크게" style="font-size:15px;">가</button>
+                <button class="font-size-btn" onclick="setFontSize('xlarge',this)" title="더 크게" style="font-size:18px;">가</button>
+            </div>
             <div class="header-left">
                 <div class="school-icon">🏫</div>
                 <div class="header-title">
@@ -1506,6 +1528,15 @@ function toggleAdmin(){
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
+}
+
+// ===== 글씨 크기 =====
+function setFontSize(size,btn){
+    document.body.classList.remove('zoom-large','zoom-xlarge');
+    if(size==='large') document.body.classList.add('zoom-large');
+    else if(size==='xlarge') document.body.classList.add('zoom-xlarge');
+    document.querySelectorAll('.font-size-btn').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
 }
 
 // ===== 서버 사용량 확인 =====
