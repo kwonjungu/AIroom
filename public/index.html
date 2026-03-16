@@ -33,16 +33,14 @@
         .font-size-btn:hover{background:rgba(255,255,255,0.3);}
         .font-size-btn.active{background:rgba(255,255,255,0.35);border-color:white;box-shadow:0 0 8px rgba(255,255,255,0.3);}
         .font-size-label{font-size:10px;opacity:0.7;margin-right:4px;white-space:nowrap;}
-        /* Zoom levels — 기본 1.3x, 버튼으로 1.2/1.4/1.6배 */
-        body{zoom:1.3;}
-        body.zoom-12x{zoom:calc(1.3 * 1.2);}
-        body.zoom-14x{zoom:calc(1.3 * 1.4);}
-        body.zoom-16x{zoom:calc(1.3 * 1.6);}
+        /* Zoom levels — 기본 1.0, 버튼으로 1.0/1.2/1.4/1.6배 */
+        body.zoom-12x{zoom:1.2;}
+        body.zoom-14x{zoom:1.4;}
+        body.zoom-16x{zoom:1.6;}
         @media(max-width:768px){
-            body{zoom:1.2;}
-            body.zoom-12x{zoom:calc(1.2 * 1.2);}
-            body.zoom-14x{zoom:calc(1.2 * 1.4);}
-            body.zoom-16x{zoom:calc(1.2 * 1.6);}
+            body.zoom-12x{zoom:1.1;}
+            body.zoom-14x{zoom:1.2;}
+            body.zoom-16x{zoom:1.4;}
             .font-size-selector{position:static;justify-content:center;margin-bottom:4px;}
             .font-size-label{display:none;}
         }
@@ -1830,6 +1828,7 @@ function openPrintMenu(){
         <button class="print-menu-item" onclick="printSchedule('day')">📄 일간 인쇄</button>
         <button class="print-menu-item" onclick="printSchedule('week')">📋 주간 인쇄</button>
         <button class="print-menu-item" onclick="printSchedule('month')">📅 월간 인쇄</button>
+        <button class="print-menu-item" onclick="printSchedule('list')">📝 월중행사 인쇄</button>
     `;
     btn.style.position='relative';
     btn.appendChild(menu);
@@ -1873,6 +1872,38 @@ function printSchedule(mode){
                     html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${j===0?dateLabel:''}</td><td style="border:1px solid #ccc;padding:8px;${j>0?'border-top:none;':''}">${it.emoji?it.emoji+' ':''}${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}">${esc(it.manager||'')}</td></tr>`;
                 });
             }
+        }
+        html+='</tbody></table>';
+    } else if(mode==='list'){
+        const y=d.getFullYear(),m=d.getMonth();
+        const last=new Date(y,m+1,0);
+        title=`${y}년 ${m+1}월 월중행사`;
+        let schoolDays=0;
+        for(let dd=1;dd<=last.getDate();dd++){const dt=new Date(y,m,dd);if(dt.getDay()!==0&&dt.getDay()!==6)schoolDays++;}
+        html=`<div style="margin-bottom:12px;font-size:13px;font-weight:700;">수업일수: ${schoolDays}일</div>`;
+        html+='<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;">';
+        html+='<thead><tr><th style="border:1px solid #333;padding:8px;background:#f0f0f0;width:90px;">날짜</th><th style="border:1px solid #333;padding:8px;background:#f0f0f0;width:35px;">요일</th><th style="border:1px solid #333;padding:8px;background:#f0f0f0;width:18%;">행사</th><th style="border:1px solid #333;padding:8px;background:#f0f0f0;">주요활동</th><th style="border:1px solid #333;padding:8px;background:#f0f0f0;width:80px;">담당자</th></tr></thead><tbody>';
+        for(let dd=1;dd<=last.getDate();dd++){
+            const ds=fmtDate(new Date(y,m,dd));
+            const dow=new Date(y,m,dd).getDay();
+            const items=getScheduleItems(ds);
+            const dowColor=dow===0?'color:#e53935;':dow===6?'color:#1565c0;':'';
+            const bgColor=dow===0?'background:#fff0f0;':dow===6?'background:#f0f4ff;':'';
+            html+=`<tr style="${bgColor}">`;
+            html+=`<td style="border:1px solid #ccc;padding:6px;text-align:center;font-weight:600;${dowColor}">${ds}</td>`;
+            html+=`<td style="border:1px solid #ccc;padding:6px;text-align:center;font-weight:600;${dowColor}">${dayNames[dow]}</td>`;
+            if(items.length===0){
+                html+=`<td style="border:1px solid #ccc;padding:6px;"></td><td style="border:1px solid #ccc;padding:6px;"></td><td style="border:1px solid #ccc;padding:6px;"></td>`;
+            } else {
+                const eventNames=items.filter(it=>it.emoji).map(it=>it.emoji+' '+esc(it.text));
+                const details=items.filter(it=>!it.emoji).map(it=>esc(it.text));
+                if(eventNames.length===0&&items.length>0){eventNames.push(esc(items[0].text));details.shift();}
+                const managers=[...new Set(items.map(it=>it.manager).filter(Boolean))];
+                html+=`<td style="border:1px solid #ccc;padding:6px;font-weight:600;color:#4A90D9;">${eventNames.join('<br>')}</td>`;
+                html+=`<td style="border:1px solid #ccc;padding:6px;">${details.join('<br>')||'-'}</td>`;
+                html+=`<td style="border:1px solid #ccc;padding:6px;text-align:center;">${managers.map(m=>esc(m)).join('<br>')}</td>`;
+            }
+            html+=`</tr>`;
         }
         html+='</tbody></table>';
     } else {
