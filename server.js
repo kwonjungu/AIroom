@@ -33,7 +33,8 @@ const KV_KEYS = {
     'schedules.json': 'schedules',
     'tabs.json': 'tabs',
     'settings.json': 'settings',
-    'news.json': 'news'
+    'news.json': 'news',
+    'collections.json': 'collections'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -103,7 +104,8 @@ const DATA_ROUTES = [
     { path: 'schedules', file: 'schedules.json', fallback: [] },
     { path: 'tabs', file: 'tabs.json', fallback: [] },
     { path: 'settings', file: 'settings.json', fallback: {} },
-    { path: 'news', file: 'news.json', fallback: [] }
+    { path: 'news', file: 'news.json', fallback: [] },
+    { path: 'collections', file: 'collections.json', fallback: [] }
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
@@ -132,19 +134,20 @@ app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
 // Export (전체 데이터 내보내기)
 app.get('/api/export', async (req, res) => {
     try {
-        const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news] = await Promise.all([
+        const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections] = await Promise.all([
             readData('links.json'), readData('categories.json'), readData('sections.json'),
             readData('trainings.json'), readData('staff.json'), readData('training-records.json'),
-            readData('schedules.json'), readData('tabs.json'), readData('settings.json'), readData('news.json')
+            readData('schedules.json'), readData('tabs.json'), readData('settings.json'), readData('news.json'),
+            readData('collections.json')
         ]);
-        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, exportedAt: new Date().toISOString() });
+        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, exportedAt: new Date().toISOString() });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Import (전체 데이터 가져오기)
 app.post('/api/import', async (req, res) => {
     try {
-        const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news } = req.body;
+        const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections } = req.body;
         const writes = [];
         if (links) writes.push(writeData('links.json', links));
         if (categories) writes.push(writeData('categories.json', categories));
@@ -156,6 +159,7 @@ app.post('/api/import', async (req, res) => {
         if (tabs) writes.push(writeData('tabs.json', tabs));
         if (settings) writes.push(writeData('settings.json', settings));
         if (news) writes.push(writeData('news.json', news));
+        if (collections) writes.push(writeData('collections.json', collections));
         await Promise.all(writes);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }

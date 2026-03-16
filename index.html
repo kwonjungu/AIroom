@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 아이들 백암초등학교 교무실</title>
+    <title>백암초 AI 교무실</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary:#4A90D9; --primary-dark:#357ABD; --primary-light:#E8F0FE;
@@ -47,8 +50,8 @@
         .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;justify-content:center;position:relative;}
         .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
-        .header-title h1{font-size:21px;font-weight:700;}
-        .header-title p{font-size:11px;opacity:0.85;margin-top:2px;}
+        .header-title h1{font-family:'Jua',sans-serif;font-size:32px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,0.2);}
+        .header-title .header-subtitle{font-family:'Gaegu',cursive;font-size:16px;opacity:0.95;margin-top:4px;font-weight:700;letter-spacing:0.5px;}
         .header-right{display:flex;align-items:center;gap:10px;position:absolute;right:24px;}
         .header-date{font-size:12px;opacity:0.9;background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:18px;}
         .btn-admin{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
@@ -239,6 +242,30 @@
         .stat-icon.blue{background:#E8F0FE;} .stat-icon.green{background:#E6F9ED;} .stat-icon.orange{background:#FFF3E0;} .stat-icon.purple{background:#F3E8FF;}
         .stat-info h3{font-size:18px;font-weight:700;} .stat-info p{font-size:11px;color:var(--text-light);}
 
+        /* ===== Collection (자료 집계) ===== */
+        .collection-filter-btn{padding:6px 14px;border:1px solid var(--border);background:var(--card-bg);border-radius:18px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-light);transition:all .2s;}
+        .collection-filter-btn:hover{border-color:var(--primary);color:var(--primary);}
+        .collection-filter-btn.active{background:var(--primary);color:white;border-color:var(--primary);}
+        .collection-card{background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;border:1px solid var(--border);}
+        .collection-card.closed{opacity:0.7;}
+        .collection-card-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .1s;}
+        .collection-card-header:hover{background:var(--bg);}
+        .collection-card-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
+        .collection-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+        .collection-badge.open{background:#E8F5E9;color:#2E7D32;}
+        .collection-badge.closed{background:#FFEBEE;color:#C62828;}
+        .collection-meta{font-size:12px;color:var(--text-light);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
+        .collection-card-body{padding:0 20px 16px;display:none;}
+        .collection-card.expanded .collection-card-body{display:block;}
+        .collection-desc{font-size:13px;color:var(--text);background:var(--bg);padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:12px;line-height:1.6;}
+        .collection-files-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+        .collection-files-header h4{font-size:14px;font-weight:600;}
+        .collection-file-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:8px;margin-bottom:6px;font-size:13px;}
+        .collection-file-item .file-name{flex:1;font-weight:500;}
+        .collection-file-item .file-submitter{color:var(--text-light);font-size:12px;min-width:70px;}
+        .collection-file-item .file-date{color:var(--text-light);font-size:11px;min-width:80px;text-align:right;}
+        .collection-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+
         /* ===== Modal ===== */
         .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:20px;}
         .modal-overlay.active{display:flex;}
@@ -288,12 +315,31 @@
         .schedule-view-tabs{display:flex;gap:4px;margin-bottom:16px;}
         .schedule-view-tab{padding:8px 18px;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;border-radius:8px;color:var(--text-light);transition:all .2s;}
         .schedule-view-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
-        .schedule-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+        .schedule-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px;position:relative;flex-wrap:wrap;}
         .schedule-nav-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--card-bg);border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
         .schedule-nav-btn:hover{background:var(--primary-light);}
         .schedule-nav-title{font-size:18px;font-weight:700;}
         .schedule-nav-today{padding:6px 14px;border:1px solid var(--primary);color:var(--primary);background:white;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;}
         .schedule-nav-today:hover{background:var(--primary-light);}
+        .schedule-undo-btn{padding:6px 12px;border:1px solid #FF9800;color:#FF9800;background:white;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;margin-left:auto;}
+        .schedule-undo-btn:hover{background:#FFF3E0;}
+        .schedule-print-btn{padding:6px 12px;border:1px solid var(--success-dark);color:var(--success-dark);background:white;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
+        .schedule-print-btn:hover{background:#E8F5E9;}
+        .print-menu{position:absolute;right:0;top:100%;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:50;padding:8px 0;min-width:140px;}
+        .print-menu-item{display:block;width:100%;padding:10px 18px;border:none;background:none;cursor:pointer;font-size:13px;text-align:left;color:var(--text);transition:background .1s;}
+        .print-menu-item:hover{background:var(--primary-light);}
+        @media print{
+            .header,.school-info,.main-tabs-wrapper,.global-search-wrap,.schedule-view-tabs,.schedule-nav,.schedule-add-btn,.del-btn,.btn-admin,.font-size-selector,.header-bg-btn,.schedule-date-strip,.print-menu,#dateStrip,.schedule-undo-btn,.schedule-print-btn,.toast-container{display:none!important;}
+            body{zoom:1!important;background:white!important;}
+            .page{display:block!important;max-width:100%!important;padding:0!important;}
+            .print-header{display:block!important;text-align:center;margin-bottom:20px;padding:16px 0;border-bottom:2px solid #333;}
+            .print-header h2{font-family:'Jua',sans-serif;font-size:24px;margin-bottom:4px;}
+            .print-header p{font-size:13px;color:#666;}
+            .schedule-table{font-size:11px!important;box-shadow:none!important;}
+            .schedule-table th{background:#333!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+            .schedule-item{border-left:2px solid #333!important;background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+            .day-detail-card{box-shadow:none!important;border:1px solid #ccc;}
+        }
         .schedule-table{width:100%;border-collapse:collapse;background:var(--card-bg);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
         .schedule-table th{background:var(--primary);color:white;padding:10px 8px;font-size:13px;font-weight:600;text-align:center;}
         .schedule-table td{border:1px solid var(--border);padding:8px;vertical-align:top;min-height:80px;font-size:13px;}
@@ -555,7 +601,8 @@
             <div class="header-left">
                 <div class="school-icon">🏫</div>
                 <div class="header-title">
-                    <h1>AI 아이들 백암초등학교 교무실</h1>
+                    <h1>백암초 AI 교무실</h1>
+                    <p class="header-subtitle">아이들을 위한 교무실</p>
                 </div>
             </div>
             <div class="header-right">
@@ -600,6 +647,8 @@
             <span class="schedule-nav-title" id="scheduleTitle" onclick="openCalendarPicker()"></span>
             <button class="schedule-nav-btn" onclick="scheduleNav(1)">▶</button>
             <button class="schedule-nav-today" onclick="scheduleToday()">오늘</button>
+            <button class="schedule-undo-btn" id="undoBtn" onclick="undoSchedule()" title="되돌리기" style="opacity:0.4;">↩️ 되돌리기</button>
+            <button class="schedule-print-btn" onclick="openPrintMenu()">🖨️ 인쇄</button>
         </div>
         <div id="dateStrip"></div>
         <div id="scheduleContent"></div>
@@ -720,6 +769,67 @@
         <div class="category-tabs" id="categoryTabs"></div>
         <div class="links-grid" id="linksGrid"></div>
     </div>
+
+    <!-- ===== COLLECTION (자료 집계) PAGE ===== -->
+    <div class="page" id="page-collection">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="font-size:18px;font-weight:700;">📦 자료 집계</h2>
+            <button class="btn btn-primary" onclick="openCollectionCreateModal()" style="font-size:13px;">+ 새 집계 만들기</button>
+        </div>
+        <div class="collection-filter" style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="collection-filter-btn active" onclick="setCollectionFilter('all',this)">전체</button>
+            <button class="collection-filter-btn" onclick="setCollectionFilter('open',this)">📂 집계 중</button>
+            <button class="collection-filter-btn" onclick="setCollectionFilter('closed',this)">🔒 마감</button>
+        </div>
+        <div id="collectionList"></div>
+    </div>
+
+    <!-- Collection Create Modal -->
+    <div class="modal-overlay" id="collectionCreateModal"><div class="modal" style="max-width:480px;">
+        <div class="modal-header"><h2>📦 새 자료 집계 만들기</h2><button class="btn-close" onclick="closeModal('collectionCreateModal')">✕</button></div>
+        <div class="modal-body">
+            <div class="form-group"><label>집계 이름 *</label><input type="text" id="colName" placeholder="예: 3월 현장학습 동의서 수합"></div>
+            <div class="form-group"><label>담당자 이름 *</label><input type="text" id="colManager" placeholder="예: 홍길동"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div class="form-group"><label>시작일</label><input type="date" id="colStartDate"></div>
+                <div class="form-group"><label>마감일</label><input type="date" id="colEndDate"></div>
+            </div>
+            <div class="form-group"><label>모집 대상</label><input type="text" id="colTarget" placeholder="예: 전교생, 3학년, 전체 교직원"></div>
+            <div class="form-group"><label>모집 내용 / 안내사항</label><textarea id="colDescription" placeholder="제출할 자료에 대한 설명을 입력하세요" rows="3"></textarea></div>
+            <div class="form-group"><label>관리 비밀번호 (숫자 4자리) *</label><input type="password" id="colPassword" placeholder="숫자 4자리" maxlength="4" pattern="[0-9]{4}" inputmode="numeric"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('collectionCreateModal')">취소</button><button class="btn btn-primary" onclick="submitCollectionCreate()">게시</button></div>
+    </div></div>
+
+    <!-- Collection Upload Modal -->
+    <div class="modal-overlay" id="collectionUploadModal"><div class="modal" style="max-width:480px;">
+        <div class="modal-header"><h2 id="colUploadTitle">📎 자료 제출</h2><button class="btn-close" onclick="closeModal('collectionUploadModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="colUploadId">
+            <div class="form-group"><label>제출자 이름 *</label><input type="text" id="colUploaderName" placeholder="이름 입력"></div>
+            <div class="form-group">
+                <label>📎 파일 첨부 *</label>
+                <div class="file-upload-area" id="colFileUploadArea">
+                    <input type="file" id="colFileInput" onchange="handleColFileSelect(event)" multiple>
+                    <div id="colFileUploadLabel">📁 클릭하여 파일 선택<br><span style="font-size:11px;color:var(--text-light)">여러 파일 선택 가능 (파일당 최대 5MB)</span></div>
+                </div>
+                <div id="colFileList" style="margin-top:8px;"></div>
+            </div>
+            <div class="form-group"><label>메모 (선택)</label><input type="text" id="colUploadMemo" placeholder="참고사항"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('collectionUploadModal')">취소</button><button class="btn btn-primary" onclick="submitCollectionUpload()">제출</button></div>
+    </div></div>
+
+    <!-- Collection Delete Modal -->
+    <div class="modal-overlay" id="collectionDeleteModal"><div class="modal" style="max-width:360px;">
+        <div class="modal-header"><h2>🔒 집계 삭제</h2><button class="btn-close" onclick="closeModal('collectionDeleteModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="colDeleteId">
+            <p style="margin-bottom:12px;font-size:14px;color:var(--text-light);">이 집계를 삭제하려면 관리 비밀번호를 입력하세요.</p>
+            <div class="form-group"><label>비밀번호 (숫자 4자리)</label><input type="password" id="colDeletePassword" placeholder="****" maxlength="4" inputmode="numeric"></div>
+        </div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('collectionDeleteModal')">취소</button><button class="btn btn-danger" onclick="submitCollectionDelete()">삭제</button></div>
+    </div></div>
 
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
@@ -930,6 +1040,25 @@
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('scheduleAddModal')">취소</button><button class="btn btn-primary" onclick="submitScheduleAdd()">추가</button></div>
     </div></div>
 
+    <!-- Schedule Edit Modal -->
+    <div class="modal-overlay" id="scheduleEditModal"><div class="modal" style="max-width:440px;">
+        <div class="modal-header"><h2>📝 일정 수정</h2><button class="btn-close" onclick="closeModal('scheduleEditModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="scheduleEditId">
+            <div class="form-group"><label>날짜</label><input type="date" id="scheduleEditDate"></div>
+            <div class="form-group"><label>이모티콘</label>
+                <div id="scheduleEditEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+            </div>
+            <div class="form-group"><label>내용</label><input type="text" id="scheduleEditText" placeholder="일정 내용 입력"></div>
+            <div class="form-group"><label>담당자</label><input type="text" id="scheduleEditManager" placeholder="담당자 (선택)"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-danger" onclick="deleteFromEditModal()" style="margin-right:auto;">🗑️ 삭제</button>
+            <button class="btn btn-secondary" onclick="closeModal('scheduleEditModal')">취소</button>
+            <button class="btn btn-primary" onclick="submitScheduleEdit()">저장</button>
+        </div>
+    </div></div>
+
     <!-- Section Move Modal -->
     <div class="modal-overlay" id="moveSectionModal"><div class="modal" style="max-width:400px;">
         <div class="modal-header"><h2>↗️ 섹션 이동</h2><button class="btn-close" onclick="closeModal('moveSectionModal')">✕</button></div>
@@ -991,7 +1120,7 @@ function toggleSectionEmojiPicker(){
     else p.style.display='none';
 }
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[];
 let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
@@ -1002,11 +1131,30 @@ const DEFAULT_TABS=[
     {id:'tab_sujeong',title:'수정분교',icon:'🏫',type:'custom',order:5},
     {id:'training',title:'연수 관리',icon:'📋',type:'builtin',order:6},
     {id:'news',title:'학교 소식',icon:'📰',type:'builtin',order:7},
-    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8}
+    {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8},
+    {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let scheduleView='month',scheduleDate=new Date();
+let undoStack=[];
+const MAX_UNDO=30;
+function pushUndo(){
+    undoStack.push(JSON.stringify(schedules));
+    if(undoStack.length>MAX_UNDO)undoStack.shift();
+    updateUndoBtn();
+}
+async function undoSchedule(){
+    if(undoStack.length===0){showToast('되돌릴 내용이 없습니다','error');return;}
+    schedules=JSON.parse(undoStack.pop());
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();renderSchedule();updateUndoBtn();
+    showToast('되돌리기 완료','success');
+}
+function updateUndoBtn(){
+    const btn=document.getElementById('undoBtn');
+    if(btn){btn.style.opacity=undoStack.length>0?'1':'0.4';btn.title=undoStack.length>0?`되돌리기 (${undoStack.length})`:'되돌릴 내용 없음';}
+}
 let pendingFile=null; // {name, size, data(base64), type}
 const MAX_FILE_SIZE=5*1024*1024; // 5MB limit per file
 
@@ -1110,7 +1258,7 @@ async function saveBannerSettings(){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,ts:Date.now()};
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -1146,11 +1294,12 @@ async function init(){
         const results=await Promise.all([
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
-            api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news')
+            api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news'),
+            api('GET','/api/collections')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
-        tabsConfig=results[7]||[];newsPosts=results[8]||[];
+        tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -1171,7 +1320,7 @@ async function init(){
     }
     await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();renderCollections();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -1213,16 +1362,19 @@ function todayStr(){return fmtDate(new Date());}
 
 async function addScheduleItem(dateStr,text,manager,emoji){
     if(!text.trim())return;
+    pushUndo();
     schedules.push({id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||'',emoji:emoji||''});
     await api('POST','/api/schedules',schedules);
     saveToLocal();renderSchedule();
 }
 async function deleteScheduleItem(id){
+    pushUndo();
     schedules=schedules.filter(s=>s.id!==id);
     await api('POST','/api/schedules',schedules);
     saveToLocal();renderSchedule();
 }
 async function updateScheduleItem(id,field,val){
+    pushUndo();
     const item=schedules.find(s=>s.id===id);if(!item)return;
     item[field]=val;
     await api('POST','/api/schedules',schedules);
@@ -1262,7 +1414,7 @@ function renderMonthView(el,titleEl){
         html+=`<td class="${isToday}" style="width:14.28%">`;
         html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}</div>`;
         items.forEach(it=>{
-            html+=`<div class="schedule-item" title="${esc(it.manager||'')}">`
+            html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
                 +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
@@ -1301,7 +1453,7 @@ function renderWeekView(el,titleEl){
         const items=getScheduleItems(ds);
         html+=`<td class="${isToday}">`;
         items.forEach(it=>{
-            html+=`<div class="schedule-item" title="${esc(it.manager||'')}">`
+            html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
                 +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
@@ -1396,6 +1548,141 @@ function submitScheduleAdd(){
     if(!text.trim()){showToast('내용을 입력하세요','error');return;}
     addScheduleItem(dateStr,text,manager,selectedSchEmoji);
     closeModal('scheduleAddModal');
+}
+
+let selectedEditEmoji='';
+function openScheduleEdit(id){
+    const item=schedules.find(s=>s.id===id);if(!item)return;
+    document.getElementById('scheduleEditId').value=id;
+    document.getElementById('scheduleEditDate').value=item.date;
+    document.getElementById('scheduleEditText').value=item.text;
+    document.getElementById('scheduleEditManager').value=item.manager||'';
+    selectedEditEmoji=item.emoji||'';
+    document.getElementById('scheduleEditEmojiPicker').innerHTML=SCH_EMOJIS.map(e=>
+        `<button type="button" class="sch-emoji-btn ${e===selectedEditEmoji?'selected':''}" onclick="selectEditEmoji('${e}',this)">${e||'없음'}</button>`
+    ).join('');
+    openModal('scheduleEditModal');
+    setTimeout(()=>document.getElementById('scheduleEditText').focus(),100);
+}
+function selectEditEmoji(e,el){
+    selectedEditEmoji=e;
+    document.querySelectorAll('#scheduleEditEmojiPicker .sch-emoji-btn').forEach(b=>b.classList.remove('selected'));
+    el.classList.add('selected');
+}
+async function submitScheduleEdit(){
+    const id=document.getElementById('scheduleEditId').value;
+    const item=schedules.find(s=>s.id===id);if(!item)return;
+    pushUndo();
+    item.date=document.getElementById('scheduleEditDate').value;
+    item.text=document.getElementById('scheduleEditText').value;
+    item.manager=document.getElementById('scheduleEditManager').value;
+    item.emoji=selectedEditEmoji;
+    await api('POST','/api/schedules',schedules);
+    saveToLocal();renderSchedule();
+    closeModal('scheduleEditModal');
+    showToast('일정이 수정되었습니다','success');
+}
+function deleteFromEditModal(){
+    const id=document.getElementById('scheduleEditId').value;
+    closeModal('scheduleEditModal');
+    deleteScheduleItem(id);
+}
+
+// ===== PRINT SCHEDULE =====
+function openPrintMenu(){
+    const existing=document.querySelector('.print-menu');
+    if(existing){existing.remove();return;}
+    const btn=document.querySelector('.schedule-print-btn');
+    const menu=document.createElement('div');menu.className='print-menu';
+    menu.innerHTML=`
+        <button class="print-menu-item" onclick="printSchedule('day')">📄 일간 인쇄</button>
+        <button class="print-menu-item" onclick="printSchedule('week')">📋 주간 인쇄</button>
+        <button class="print-menu-item" onclick="printSchedule('month')">📅 월간 인쇄</button>
+    `;
+    btn.style.position='relative';
+    btn.appendChild(menu);
+    setTimeout(()=>document.addEventListener('click',closePrintMenu,{once:true}),10);
+}
+function closePrintMenu(){document.querySelectorAll('.print-menu').forEach(m=>m.remove());}
+
+function printSchedule(mode){
+    closePrintMenu();
+    const dayNames=['일','월','화','수','목','금','토'];
+    const d=new Date(scheduleDate);
+    let title='',html='';
+
+    if(mode==='day'){
+        const ds=fmtDate(d);
+        title=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${dayNames[d.getDay()]}) 일정`;
+        const items=getScheduleItems(ds);
+        html='<table style="width:100%;border-collapse:collapse;margin-top:16px;">';
+        html+='<thead><tr><th style="border:1px solid #333;padding:10px;background:#f0f0f0;width:40px;">No.</th><th style="border:1px solid #333;padding:10px;background:#f0f0f0;">일정</th><th style="border:1px solid #333;padding:10px;background:#f0f0f0;width:100px;">담당자</th></tr></thead><tbody>';
+        if(items.length===0)html+='<tr><td colspan="3" style="border:1px solid #ccc;padding:20px;text-align:center;color:#999;">등록된 일정이 없습니다.</td></tr>';
+        items.forEach((it,i)=>{
+            html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;">${i+1}</td><td style="border:1px solid #ccc;padding:8px;">${it.emoji?it.emoji+' ':''}${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;">${esc(it.manager||'')}</td></tr>`;
+        });
+        html+='</tbody></table>';
+    } else if(mode==='week'){
+        const day=d.getDay();
+        const sun=new Date(d);sun.setDate(d.getDate()-day);
+        const sat=new Date(sun);sat.setDate(sun.getDate()+6);
+        title=`${sun.getFullYear()}년 ${sun.getMonth()+1}/${sun.getDate()} ~ ${sat.getMonth()+1}/${sat.getDate()} 주간 일정`;
+        html='<table style="width:100%;border-collapse:collapse;margin-top:16px;">';
+        html+='<thead><tr><th style="border:1px solid #333;padding:10px;background:#f0f0f0;width:100px;">날짜</th><th style="border:1px solid #333;padding:10px;background:#f0f0f0;">일정</th><th style="border:1px solid #333;padding:10px;background:#f0f0f0;width:100px;">담당자</th></tr></thead><tbody>';
+        for(let i=0;i<7;i++){
+            const dd=new Date(sun);dd.setDate(sun.getDate()+i);
+            const ds=fmtDate(dd);
+            const items=getScheduleItems(ds);
+            const dateLabel=`${dd.getMonth()+1}/${dd.getDate()} (${dayNames[i]})`;
+            if(items.length===0){
+                html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${dateLabel}</td><td style="border:1px solid #ccc;padding:8px;color:#999;">-</td><td style="border:1px solid #ccc;padding:8px;"></td></tr>`;
+            } else {
+                items.forEach((it,j)=>{
+                    html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${j===0?dateLabel:''}</td><td style="border:1px solid #ccc;padding:8px;${j>0?'border-top:none;':''}">${it.emoji?it.emoji+' ':''}${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}">${esc(it.manager||'')}</td></tr>`;
+                });
+            }
+        }
+        html+='</tbody></table>';
+    } else {
+        const y=d.getFullYear(),m=d.getMonth();
+        title=`${y}년 ${m+1}월 일정`;
+        const first=new Date(y,m,1),last=new Date(y,m+1,0);
+        const startDay=first.getDay();
+        html='<table style="width:100%;border-collapse:collapse;margin-top:16px;">';
+        html+='<thead><tr>';
+        dayNames.forEach((dn,i)=>html+=`<th style="border:1px solid #333;padding:10px;background:#f0f0f0;text-align:center;${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${dn}</th>`);
+        html+='</tr></thead><tbody><tr>';
+        for(let i=0;i<startDay;i++)html+='<td style="border:1px solid #ccc;padding:6px;vertical-align:top;color:#ccc;"></td>';
+        for(let day=1;day<=last.getDate();day++){
+            const ds=fmtDate(new Date(y,m,day));
+            const dow=(startDay+day-1)%7;
+            const items=getScheduleItems(ds);
+            html+=`<td style="border:1px solid #ccc;padding:6px;vertical-align:top;min-height:60px;width:14.28%;">`;
+            html+=`<div style="font-weight:700;margin-bottom:4px;${dow===0?'color:#e53935;':''}${dow===6?'color:#1565c0;':''}">${day}</div>`;
+            items.forEach(it=>{
+                html+=`<div style="font-size:11px;padding:2px 4px;margin-bottom:2px;background:#e8f0fe;border-left:2px solid #4A90D9;border-radius:2px;">${it.emoji?it.emoji+' ':''}${esc(it.text)}${it.manager?' <span style="color:#888;font-size:10px;">('+esc(it.manager)+')</span>':''}</div>`;
+            });
+            html+='</td>';
+            if(dow===6&&day<last.getDate())html+='</tr><tr>';
+        }
+        const endDay=(startDay+last.getDate()-1)%7;
+        for(let i=endDay+1;i<7;i++)html+='<td style="border:1px solid #ccc;padding:6px;"></td>';
+        html+='</tr></tbody></table>';
+    }
+
+    const win=window.open('','_blank','width=900,height=700');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;padding:30px;color:#333;}
+    h2{font-family:'Jua',sans-serif;text-align:center;margin-bottom:4px;}
+    .subtitle{text-align:center;color:#666;font-size:13px;margin-bottom:20px;}
+    @media print{body{padding:20px;}}</style></head><body>
+    <h2>🏫 백암초 AI 교무실</h2>
+    <div class="subtitle">${title}</div>
+    ${html}
+    <script>setTimeout(()=>window.print(),500);<\/script>
+    </body></html>`);
+    win.document.close();
 }
 
 // ===== SKYSCANNER-STYLE DATE PICKER =====
@@ -3505,6 +3792,229 @@ async function moveSection(secId,dir){
     if(newIdx<0||newIdx>=sorted.length)return;
     const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
     await api('POST','/api/sections',sections);saveToLocal();renderSections();
+}
+
+// ===== COLLECTIONS (자료 집계) =====
+let collectionFilter='all';
+let pendingColFiles=[];
+
+function setCollectionFilter(f,btn){
+    collectionFilter=f;
+    document.querySelectorAll('.collection-filter-btn').forEach(b=>b.classList.remove('active'));
+    if(btn)btn.classList.add('active');
+    renderCollections();
+}
+
+function renderCollections(){
+    const el=document.getElementById('collectionList');if(!el)return;
+    let filtered=collections||[];
+    if(collectionFilter==='open')filtered=filtered.filter(c=>c.status==='open');
+    else if(collectionFilter==='closed')filtered=filtered.filter(c=>c.status==='closed');
+    filtered.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(filtered.length===0){
+        el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 등록된 자료 집계가 없습니다.</div>';
+        return;
+    }
+    el.innerHTML=filtered.map(c=>{
+        const isOpen=c.status==='open';
+        const files=c.submissions||[];
+        const dateRange=c.startDate&&c.endDate?`${c.startDate} ~ ${c.endDate}`:'기간 미설정';
+        return `<div class="collection-card ${c.status}" id="col-${c.id}">
+            <div class="collection-card-header" onclick="toggleCollectionCard('${c.id}')">
+                <div>
+                    <div class="collection-card-title">
+                        <span class="collection-badge ${c.status}">${isOpen?'📂 집계 중':'🔒 마감'}</span>
+                        ${esc(c.name)}
+                    </div>
+                    <div class="collection-meta">
+                        <span>👤 ${esc(c.manager||'')}</span>
+                        <span>📅 ${dateRange}</span>
+                        <span>🎯 ${esc(c.target||'전체')}</span>
+                        <span>📎 제출 ${files.length}건</span>
+                    </div>
+                </div>
+                <span class="section-toggle">▼</span>
+            </div>
+            <div class="collection-card-body">
+                ${c.description?`<div class="collection-desc">${esc(c.description)}</div>`:''}
+                <div class="collection-files-header">
+                    <h4>📎 제출된 자료 (${files.length}건)</h4>
+                    ${isOpen?`<button class="btn btn-primary" onclick="openCollectionUpload('${c.id}')" style="font-size:12px;padding:6px 12px;">📤 자료 제출</button>`:''}
+                </div>
+                ${files.length===0?'<div style="padding:16px;text-align:center;color:var(--text-light);font-size:13px;">아직 제출된 자료가 없습니다.</div>':''}
+                ${files.map((f,i)=>`<div class="collection-file-item">
+                    <span>📄</span>
+                    <span class="file-name">${esc(f.fileName||'파일')}</span>
+                    <span class="file-submitter">👤 ${esc(f.submitter||'')}</span>
+                    <span class="file-date">${f.date||''}</span>
+                    <button class="btn btn-secondary" onclick="downloadColFile('${c.id}',${i})" style="font-size:11px;padding:4px 8px;">⬇️</button>
+                </div>`).join('')}
+                <div class="collection-actions">
+                    ${files.length>0?`<button class="btn btn-success" onclick="downloadAllColFiles('${c.id}')" style="font-size:12px;">📥 일괄 다운로드</button>`:''}
+                    ${isOpen?`<button class="btn btn-secondary" onclick="closeCollection('${c.id}')" style="font-size:12px;">🔒 마감하기</button>`:''}
+                    <button class="btn btn-danger" onclick="openCollectionDelete('${c.id}')" style="font-size:12px;">🗑️ 삭제</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function toggleCollectionCard(id){
+    const card=document.getElementById('col-'+id);
+    if(card)card.classList.toggle('expanded');
+}
+
+function openCollectionCreateModal(){
+    document.getElementById('colName').value='';
+    document.getElementById('colManager').value='';
+    document.getElementById('colStartDate').value=fmtDate(new Date());
+    const end=new Date();end.setDate(end.getDate()+7);
+    document.getElementById('colEndDate').value=fmtDate(end);
+    document.getElementById('colTarget').value='';
+    document.getElementById('colDescription').value='';
+    document.getElementById('colPassword').value='';
+    openModal('collectionCreateModal');
+}
+
+async function submitCollectionCreate(){
+    const name=document.getElementById('colName').value.trim();
+    const manager=document.getElementById('colManager').value.trim();
+    const pw=document.getElementById('colPassword').value.trim();
+    if(!name){showToast('집계 이름을 입력하세요','error');return;}
+    if(!manager){showToast('담당자 이름을 입력하세요','error');return;}
+    if(!pw||pw.length!==4||!/^\d{4}$/.test(pw)){showToast('비밀번호는 숫자 4자리로 입력하세요','error');return;}
+    const col={
+        id:'col_'+Date.now(),
+        name,
+        manager,
+        startDate:document.getElementById('colStartDate').value,
+        endDate:document.getElementById('colEndDate').value,
+        target:document.getElementById('colTarget').value.trim()||'전체',
+        description:document.getElementById('colDescription').value.trim(),
+        password:pw,
+        status:'open',
+        submissions:[],
+        createdAt:Date.now()
+    };
+    collections.push(col);
+    await api('POST','/api/collections',collections);
+    saveToLocal();renderCollections();
+    closeModal('collectionCreateModal');
+    showToast('자료 집계가 게시되었습니다','success');
+}
+
+function openCollectionUpload(colId){
+    document.getElementById('colUploadId').value=colId;
+    const col=collections.find(c=>c.id===colId);
+    document.getElementById('colUploadTitle').textContent='📎 자료 제출: '+((col&&col.name)||'');
+    document.getElementById('colUploaderName').value='';
+    document.getElementById('colUploadMemo').value='';
+    document.getElementById('colFileList').innerHTML='';
+    document.getElementById('colFileUploadLabel').innerHTML='📁 클릭하여 파일 선택<br><span style="font-size:11px;color:var(--text-light)">여러 파일 선택 가능 (파일당 최대 5MB)</span>';
+    pendingColFiles=[];
+    openModal('collectionUploadModal');
+}
+
+function handleColFileSelect(e){
+    const files=Array.from(e.target.files);
+    pendingColFiles=[];
+    const listEl=document.getElementById('colFileList');
+    listEl.innerHTML='';
+    files.forEach(file=>{
+        if(file.size>5*1024*1024){showToast(`${file.name}: 5MB 초과!`,'error');return;}
+        const reader=new FileReader();
+        reader.onload=()=>{
+            pendingColFiles.push({fileName:file.name,fileSize:formatFileSize(file.size),fileType:file.type,data:reader.result});
+            listEl.innerHTML=pendingColFiles.map(f=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;">📄 ${esc(f.fileName)} <span style="color:var(--text-light);">(${f.fileSize})</span></div>`).join('');
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function formatFileSize(b){return b<1024?(b+'B'):b<1024*1024?((b/1024).toFixed(1)+'KB'):((b/1024/1024).toFixed(1)+'MB');}
+
+async function submitCollectionUpload(){
+    const colId=document.getElementById('colUploadId').value;
+    const name=document.getElementById('colUploaderName').value.trim();
+    const memo=document.getElementById('colUploadMemo').value.trim();
+    if(!name){showToast('제출자 이름을 입력하세요','error');return;}
+    if(pendingColFiles.length===0){showToast('파일을 선택하세요','error');return;}
+    const col=collections.find(c=>c.id===colId);if(!col)return;
+    const today=fmtDate(new Date());
+
+    // Firebase Storage 사용 시 업로드
+    if(firebaseStorage){
+        showToast('파일 업로드 중...','info');
+        for(const pf of pendingColFiles){
+            try{
+                const ref=firebaseStorage.ref(`collections/${colId}/${Date.now()}_${pf.fileName}`);
+                const resp=await fetch(pf.data);
+                const blob=await resp.blob();
+                await ref.put(blob);
+                const url=await ref.getDownloadURL();
+                col.submissions.push({submitter:name,fileName:pf.fileName,fileSize:pf.fileSize,fileUrl:url,memo,date:today});
+            }catch(err){
+                // Firebase 실패 시 base64로 저장
+                col.submissions.push({submitter:name,fileName:pf.fileName,fileSize:pf.fileSize,fileData:pf.data,memo,date:today});
+            }
+        }
+    } else {
+        pendingColFiles.forEach(pf=>{
+            col.submissions.push({submitter:name,fileName:pf.fileName,fileSize:pf.fileSize,fileData:pf.data,memo,date:today});
+        });
+    }
+
+    await api('POST','/api/collections',collections);
+    saveToLocal();renderCollections();
+    closeModal('collectionUploadModal');
+    pendingColFiles=[];
+    showToast('자료가 제출되었습니다','success');
+}
+
+function downloadColFile(colId,fileIdx){
+    const col=collections.find(c=>c.id===colId);if(!col)return;
+    const f=col.submissions[fileIdx];if(!f)return;
+    const url=f.fileUrl||f.fileData;
+    if(!url){showToast('파일 데이터가 없습니다','error');return;}
+    const a=document.createElement('a');a.href=url;a.download=f.fileName||'download';a.click();
+}
+
+function downloadAllColFiles(colId){
+    const col=collections.find(c=>c.id===colId);if(!col||!col.submissions.length)return;
+    showToast('파일 다운로드를 시작합니다','info');
+    col.submissions.forEach((f,i)=>{
+        setTimeout(()=>{
+            const url=f.fileUrl||f.fileData;
+            if(url){const a=document.createElement('a');a.href=url;a.download=f.fileName||`file_${i+1}`;a.click();}
+        },i*300);
+    });
+}
+
+async function closeCollection(colId){
+    const col=collections.find(c=>c.id===colId);if(!col)return;
+    col.status='closed';
+    await api('POST','/api/collections',collections);
+    saveToLocal();renderCollections();
+    showToast('자료 집계가 마감되었습니다','success');
+}
+
+function openCollectionDelete(colId){
+    document.getElementById('colDeleteId').value=colId;
+    document.getElementById('colDeletePassword').value='';
+    openModal('collectionDeleteModal');
+}
+
+async function submitCollectionDelete(){
+    const colId=document.getElementById('colDeleteId').value;
+    const pw=document.getElementById('colDeletePassword').value.trim();
+    const col=collections.find(c=>c.id===colId);
+    if(!col){closeModal('collectionDeleteModal');return;}
+    if(pw!==col.password){showToast('비밀번호가 일치하지 않습니다','error');return;}
+    collections=collections.filter(c=>c.id!==colId);
+    await api('POST','/api/collections',collections);
+    saveToLocal();renderCollections();
+    closeModal('collectionDeleteModal');
+    showToast('자료 집계가 삭제되었습니다','success');
 }
 
 init();
