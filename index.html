@@ -680,6 +680,7 @@
         .pdf-rotate-controls{display:flex;gap:8px;margin-top:8px;}
         .pdf-rotate-btn{padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);cursor:pointer;font-size:12px;transition:all .2s;}
         .pdf-rotate-btn:hover{background:var(--primary-light);border-color:var(--primary);}
+        #scanCropContainer{touch-action:none;user-select:none;}
         @media(max-width:768px){.pdf-tools-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}.pdf-tool-card{padding:16px 14px;}.pdf-tool-icon{width:42px;height:42px;font-size:20px;}.pdf-workspace{padding:16px;}}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -4439,22 +4440,47 @@ function openPdfTool(toolId){
     if(toolId==='rotate') optionsHtml=`<div class="pdf-options"><label>회전 방법</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 각 페이지를 클릭해 회전하세요.</p><div class="pdf-option-row"><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(90)" style="padding:8px 16px;font-size:12px;">전체 90° →</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(180)" style="padding:8px 16px;font-size:12px;">전체 180°</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(270)" style="padding:8px 16px;font-size:12px;">전체 270° ←</button></div></div>`;
     if(toolId==='protect') optionsHtml=`<div class="pdf-options"><label>암호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">비밀번호</label><input type="password" id="pdfPassword" placeholder="비밀번호 입력"></div><div class="pdf-option-group"><label style="font-size:12px;">비밀번호 확인</label><input type="password" id="pdfPasswordConfirm" placeholder="다시 입력"></div></div></div>`;
     if(toolId==='pagenumber') optionsHtml=`<div class="pdf-options"><label>번호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">위치</label><select id="pdfNumPosition"><option value="bottom-center" selected>하단 중앙</option><option value="bottom-left">하단 왼쪽</option><option value="bottom-right">하단 오른쪽</option><option value="top-center">상단 중앙</option><option value="top-left">상단 왼쪽</option><option value="top-right">상단 오른쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">시작 번호</label><input type="number" id="pdfNumStart" value="1" min="1" style="width:80px;"></div><div class="pdf-option-group"><label style="font-size:12px;">크기</label><select id="pdfNumSize"><option value="10">작게</option><option value="12" selected>보통</option><option value="14">크게</option></select></div></div></div>`;
-    if(toolId==='scan') optionsHtml=`<div class="pdf-options">
-        <label>스캔 모드</label>
-        <div class="pdf-option-row">
-            <div class="pdf-option-group"><label style="font-size:12px;">모드</label><select id="scanMode" onchange="updateScanPreview()"><option value="auto" selected>자동 보정 (권장)</option><option value="bw">흑백 문서</option><option value="gray">그레이스케일</option><option value="color">컬러 선명하게</option><option value="stamp">도장/서명 추출</option></select></div>
-            <div class="pdf-option-group"><label style="font-size:12px;">출력 형식</label><select id="scanOutput"><option value="pdf" selected>PDF</option><option value="jpg">JPG 이미지</option><option value="png">PNG 이미지</option></select></div>
+    if(toolId==='scan') optionsHtml=`
+    <div id="scanEditorArea" style="display:none;margin-top:16px;">
+        <!-- STEP 1: 영역 선택 -->
+        <div id="scanStep1" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <h3 style="margin:0;font-size:16px;">✂️ 1단계: 문서 영역 선택</h3>
+                <div style="display:flex;gap:6px;">
+                    <button class="pdf-btn pdf-btn-secondary" onclick="scanAutoDetect()" style="padding:6px 14px;font-size:12px;">🔍 자동 감지</button>
+                    <button class="pdf-btn pdf-btn-secondary" onclick="scanSelectAll()" style="padding:6px 14px;font-size:12px;">⬜ 전체 선택</button>
+                    <button class="pdf-btn pdf-btn-primary" onclick="scanGoStep2()" style="padding:8px 18px;font-size:13px;">다음 →</button>
+                </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-light);margin:0 0 12px;">모서리 4개 점을 드래그하여 문서 영역을 맞추세요.</p>
+            <div style="position:relative;display:inline-block;max-width:100%;overflow:hidden;border-radius:10px;border:2px solid var(--border);background:#000;cursor:crosshair;" id="scanCropContainer">
+                <canvas id="scanCropCanvas" style="display:block;max-width:100%;"></canvas>
+                <svg id="scanCropOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></svg>
+            </div>
         </div>
-        <div class="pdf-option-row">
-            <div class="pdf-option-group"><label style="font-size:12px;">밝기 <span id="scanBrightVal">0</span></label><input type="range" id="scanBright" min="-50" max="50" value="0" oninput="document.getElementById('scanBrightVal').textContent=this.value;updateScanPreview()" style="width:100%;"></div>
-            <div class="pdf-option-group"><label style="font-size:12px;">대비 <span id="scanContrastVal">0</span></label><input type="range" id="scanContrast" min="-50" max="50" value="0" oninput="document.getElementById('scanContrastVal').textContent=this.value;updateScanPreview()" style="width:100%;"></div>
-        </div>
-    </div>
-    <div id="scanPreviewArea" style="margin-top:16px;display:none;">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px;">미리보기 (첫 번째 사진)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
-            <div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;text-align:center;">원본</div><canvas id="scanOrigCanvas" style="width:100%;border-radius:8px;border:1px solid var(--border);"></canvas></div>
-            <div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;text-align:center;">스캔 결과</div><canvas id="scanResultCanvas" style="width:100%;border-radius:8px;border:1px solid var(--border);"></canvas></div>
+        <!-- STEP 2: 필터/보정 -->
+        <div id="scanStep2" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <h3 style="margin:0;font-size:16px;">🎨 2단계: 보정 및 필터</h3>
+                <div style="display:flex;gap:6px;">
+                    <button class="pdf-btn pdf-btn-secondary" onclick="scanGoStep1()" style="padding:6px 14px;font-size:12px;">← 이전</button>
+                    <button class="pdf-btn pdf-btn-primary" onclick="scanFinish()" style="padding:8px 18px;font-size:13px;">✅ 스캔 완료</button>
+                </div>
+            </div>
+            <div class="pdf-options" style="margin-bottom:16px;">
+                <div class="pdf-option-row">
+                    <div class="pdf-option-group"><label style="font-size:12px;">모드</label><select id="scanMode" onchange="updateScanPreview()"><option value="auto" selected>자동 보정 (권장)</option><option value="bw">흑백 문서</option><option value="gray">그레이스케일</option><option value="color">컬러 선명하게</option><option value="stamp">도장/서명 추출</option></select></div>
+                    <div class="pdf-option-group"><label style="font-size:12px;">출력</label><select id="scanOutput"><option value="pdf" selected>PDF</option><option value="jpg">JPG</option><option value="png">PNG</option></select></div>
+                </div>
+                <div class="pdf-option-row">
+                    <div class="pdf-option-group"><label style="font-size:12px;">밝기 <span id="scanBrightVal">0</span></label><input type="range" id="scanBright" min="-50" max="50" value="0" oninput="document.getElementById('scanBrightVal').textContent=this.value;updateScanPreview()" style="width:100%;"></div>
+                    <div class="pdf-option-group"><label style="font-size:12px;">대비 <span id="scanContrastVal">0</span></label><input type="range" id="scanContrast" min="-50" max="50" value="0" oninput="document.getElementById('scanContrastVal').textContent=this.value;updateScanPreview()" style="width:100%;"></div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
+                <div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;text-align:center;">크롭 결과</div><canvas id="scanCroppedCanvas" style="width:100%;border-radius:8px;border:1px solid var(--border);"></canvas></div>
+                <div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;text-align:center;">필터 적용</div><canvas id="scanResultCanvas" style="width:100%;border-radius:8px;border:1px solid var(--border);"></canvas></div>
+            </div>
         </div>
     </div>`;
     ws.innerHTML=`<div class="pdf-workspace active">
@@ -4544,7 +4570,7 @@ function renderPdfFiles(){
     }
 }
 
-function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();if(pdfToolCurrent==='scan'){if(pdfToolFiles.length>0)initScanPreview();else{const a=document.getElementById('scanPreviewArea');if(a)a.style.display='none';scanOrigBitmap=null;}}}
+function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();if(pdfToolCurrent==='scan'){if(pdfToolFiles.length>0)initScanPreview();else{const a=document.getElementById('scanEditorArea');if(a)a.style.display='none';scanOrigBitmap=null;scanCroppedBitmap=null;}}}
 function movePdfFile(i,dir){
     const j=i+dir;if(j<0||j>=pdfToolFiles.length)return;
     [pdfToolFiles[i],pdfToolFiles[j]]=[pdfToolFiles[j],pdfToolFiles[i]];
@@ -4890,38 +4916,267 @@ async function pdfPageNumber(){
     pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
 }
 
-// ===== 사진 스캔 =====
+// ===== 사진 스캔 (자동 감지 + 크롭 + 원근 보정) =====
 let scanOrigBitmap=null;
+let scanCorners=[];  // [{x,y}] 4 corners in image coords
+let scanDragIdx=-1;
+let scanDisplayScale=1;
+let scanCroppedBitmap=null;
 
 async function initScanPreview(){
-    const area=document.getElementById('scanPreviewArea');
-    if(!area)return;
+    const area=document.getElementById('scanEditorArea');
+    if(!area||pdfToolFiles.length===0)return;
     area.style.display='block';
     const f=pdfToolFiles[0];
     const blob=new Blob([f.data],{type:f.type});
     scanOrigBitmap=await createImageBitmap(blob);
-    // 원본 캔버스 그리기
-    const origC=document.getElementById('scanOrigCanvas');
-    const maxW=400;
-    const scale=Math.min(1,maxW/scanOrigBitmap.width);
-    origC.width=scanOrigBitmap.width*scale;
-    origC.height=scanOrigBitmap.height*scale;
-    origC.getContext('2d').drawImage(scanOrigBitmap,0,0,origC.width,origC.height);
+    // 영역 선택 단계로 진입
+    scanGoStep1();
+}
+
+function scanGoStep1(){
+    document.getElementById('scanStep1').style.display='block';
+    document.getElementById('scanStep2').style.display='none';
+    const canvas=document.getElementById('scanCropCanvas');
+    const maxW=Math.min(700,window.innerWidth-60);
+    scanDisplayScale=Math.min(1,maxW/scanOrigBitmap.width);
+    canvas.width=scanOrigBitmap.width*scanDisplayScale;
+    canvas.height=scanOrigBitmap.height*scanDisplayScale;
+    canvas.getContext('2d').drawImage(scanOrigBitmap,0,0,canvas.width,canvas.height);
+    // 초기 코너 (약간 안쪽)
+    if(scanCorners.length!==4){
+        const w=scanOrigBitmap.width,h=scanOrigBitmap.height,m=0.05;
+        scanCorners=[{x:w*m,y:h*m},{x:w*(1-m),y:h*m},{x:w*(1-m),y:h*(1-m)},{x:w*m,y:h*(1-m)}];
+    }
+    drawScanOverlay();
+    setupScanDrag();
+    // 자동 감지 시도
+    scanAutoDetect();
+}
+
+function drawScanOverlay(){
+    const svg=document.getElementById('scanCropOverlay');
+    const s=scanDisplayScale;
+    const pts=scanCorners.map(p=>({x:p.x*s,y:p.y*s}));
+    let html=`<polygon points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="rgba(74,144,217,0.15)" stroke="#4A90D9" stroke-width="2" stroke-dasharray="6,3"/>`;
+    // 바깥 영역 어둡게
+    const cw=document.getElementById('scanCropCanvas').width,ch=document.getElementById('scanCropCanvas').height;
+    html+=`<defs><mask id="cropMask"><rect width="${cw}" height="${ch}" fill="white"/><polygon points="${pts.map(p=>p.x+','+p.y).join(' ')}" fill="black"/></mask></defs>`;
+    html+=`<rect width="${cw}" height="${ch}" fill="rgba(0,0,0,0.4)" mask="url(#cropMask)"/>`;
+    // 꼭짓점 핸들
+    pts.forEach((p,i)=>{
+        html+=`<circle cx="${p.x}" cy="${p.y}" r="12" fill="#4A90D9" stroke="white" stroke-width="2.5" style="pointer-events:all;cursor:grab;" data-idx="${i}" class="scan-handle"/>`;
+        html+=`<circle cx="${p.x}" cy="${p.y}" r="4" fill="white" style="pointer-events:none;"/>`;
+    });
+    // 변 중점 핸들 (엣지 드래그용)
+    for(let i=0;i<4;i++){
+        const a=pts[i],b=pts[(i+1)%4];
+        const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+        html+=`<rect x="${mx-8}" y="${my-8}" width="16" height="16" rx="3" fill="white" stroke="#4A90D9" stroke-width="1.5" style="pointer-events:all;cursor:move;" data-edge="${i}" class="scan-edge-handle"/>`;
+    }
+    svg.innerHTML=html;
+}
+
+function setupScanDrag(){
+    const container=document.getElementById('scanCropContainer');
+    const svg=document.getElementById('scanCropOverlay');
+    let dragType=null,dragData=null,startPts=null;
+    function getPos(e){
+        const r=container.getBoundingClientRect();
+        const t=e.touches?e.touches[0]:e;
+        return{x:(t.clientX-r.left)/scanDisplayScale,y:(t.clientY-r.top)/scanDisplayScale};
+    }
+    function onDown(e){
+        const t=e.target;
+        if(t.classList.contains('scan-handle')){
+            dragType='corner';dragData=parseInt(t.dataset.idx);
+            e.preventDefault();
+        } else if(t.classList.contains('scan-edge-handle')){
+            dragType='edge';dragData=parseInt(t.dataset.edge);
+            startPts=scanCorners.map(p=>({...p}));
+            e.preventDefault();
+        }
+    }
+    function onMove(e){
+        if(dragType===null)return;
+        e.preventDefault();
+        const p=getPos(e);
+        const W=scanOrigBitmap.width,H=scanOrigBitmap.height;
+        const cx=Math.max(0,Math.min(W,p.x)),cy=Math.max(0,Math.min(H,p.y));
+        if(dragType==='corner'){
+            scanCorners[dragData]={x:cx,y:cy};
+        } else if(dragType==='edge'){
+            const p0=getPos(e);
+            const i=dragData,j=(i+1)%4;
+            scanCorners[i]={x:Math.max(0,Math.min(W,p0.x-30)),y:Math.max(0,Math.min(H,p0.y-30))};
+            scanCorners[j]={x:Math.max(0,Math.min(W,p0.x+30)),y:Math.max(0,Math.min(H,p0.y+30))};
+        }
+        drawScanOverlay();
+    }
+    function onUp(){dragType=null;dragData=null;startPts=null;}
+    svg.style.pointerEvents='auto';
+    container.onmousedown=onDown;container.onmousemove=onMove;container.onmouseup=onUp;container.onmouseleave=onUp;
+    container.ontouchstart=onDown;container.ontouchmove=onMove;container.ontouchend=onUp;
+}
+
+function scanAutoDetect(){
+    if(!scanOrigBitmap)return;
+    // 엣지 감지로 문서 영역 자동 찾기
+    const W=scanOrigBitmap.width,H=scanOrigBitmap.height;
+    const tmpC=document.createElement('canvas');
+    const sw=Math.min(400,W),sh=Math.round(H*(sw/W));
+    tmpC.width=sw;tmpC.height=sh;
+    const ctx=tmpC.getContext('2d');
+    ctx.drawImage(scanOrigBitmap,0,0,sw,sh);
+    const imgData=ctx.getImageData(0,0,sw,sh);
+    const d=imgData.data;
+    // 그레이스케일 + Sobel 엣지
+    const gray=new Float32Array(sw*sh);
+    for(let i=0;i<sw*sh;i++) gray[i]=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+    const edges=new Float32Array(sw*sh);
+    for(let y=1;y<sh-1;y++){
+        for(let x=1;x<sw-1;x++){
+            const gx=-gray[(y-1)*sw+x-1]+gray[(y-1)*sw+x+1]-2*gray[y*sw+x-1]+2*gray[y*sw+x+1]-gray[(y+1)*sw+x-1]+gray[(y+1)*sw+x+1];
+            const gy=-gray[(y-1)*sw+x-1]-2*gray[(y-1)*sw+x]-gray[(y-1)*sw+x+1]+gray[(y+1)*sw+x-1]+2*gray[(y+1)*sw+x]+gray[(y+1)*sw+x+1];
+            edges[y*sw+x]=Math.sqrt(gx*gx+gy*gy);
+        }
+    }
+    // 엣지 강도로 문서 경계 찾기 (상/하/좌/우 각 방향 스캔)
+    const threshold=50;
+    const scaleX=W/sw,scaleY=H/sh;
+    let top=sh*0.05,bottom=sh*0.95,left=sw*0.05,right=sw*0.95;
+    // 상단 경계
+    for(let y=Math.round(sh*0.02);y<sh*0.4;y++){
+        let edgeCount=0;
+        for(let x=Math.round(sw*0.1);x<sw*0.9;x++) if(edges[y*sw+x]>threshold)edgeCount++;
+        if(edgeCount>sw*0.15){top=y;break;}
+    }
+    // 하단 경계
+    for(let y=sh-Math.round(sh*0.02);y>sh*0.6;y--){
+        let edgeCount=0;
+        for(let x=Math.round(sw*0.1);x<sw*0.9;x++) if(edges[y*sw+x]>threshold)edgeCount++;
+        if(edgeCount>sw*0.15){bottom=y;break;}
+    }
+    // 좌측 경계
+    for(let x=Math.round(sw*0.02);x<sw*0.4;x++){
+        let edgeCount=0;
+        for(let y=Math.round(sh*0.1);y<sh*0.9;y++) if(edges[y*sw+x]>threshold)edgeCount++;
+        if(edgeCount>sh*0.15){left=x;break;}
+    }
+    // 우측 경계
+    for(let x=sw-Math.round(sw*0.02);x>sw*0.6;x--){
+        let edgeCount=0;
+        for(let y=Math.round(sh*0.1);y<sh*0.9;y++) if(edges[y*sw+x]>threshold)edgeCount++;
+        if(edgeCount>sh*0.15){right=x;break;}
+    }
+    scanCorners=[
+        {x:left*scaleX,y:top*scaleY},
+        {x:right*scaleX,y:top*scaleY},
+        {x:right*scaleX,y:bottom*scaleY},
+        {x:left*scaleX,y:bottom*scaleY}
+    ];
+    drawScanOverlay();
+}
+
+function scanSelectAll(){
+    if(!scanOrigBitmap)return;
+    const w=scanOrigBitmap.width,h=scanOrigBitmap.height;
+    scanCorners=[{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}];
+    drawScanOverlay();
+}
+
+function scanGoStep2(){
+    if(!scanOrigBitmap)return;
+    document.getElementById('scanStep1').style.display='none';
+    document.getElementById('scanStep2').style.display='block';
+    // 원근 보정 + 크롭
+    scanCroppedBitmap=perspectiveCrop(scanOrigBitmap,scanCorners);
+    const croppedC=document.getElementById('scanCroppedCanvas');
+    croppedC.width=scanCroppedBitmap.width;
+    croppedC.height=scanCroppedBitmap.height;
+    croppedC.getContext('2d').drawImage(scanCroppedBitmap,0,0);
     updateScanPreview();
 }
 
+function perspectiveCrop(bitmap,corners){
+    // 원근 변환: 4꼭짓점 → 직사각형으로 매핑
+    const tl=corners[0],tr=corners[1],br=corners[2],bl=corners[3];
+    const wTop=Math.sqrt((tr.x-tl.x)**2+(tr.y-tl.y)**2);
+    const wBot=Math.sqrt((br.x-bl.x)**2+(br.y-bl.y)**2);
+    const hLeft=Math.sqrt((bl.x-tl.x)**2+(bl.y-tl.y)**2);
+    const hRight=Math.sqrt((br.x-tr.x)**2+(br.y-tr.y)**2);
+    const dstW=Math.round(Math.max(wTop,wBot));
+    const dstH=Math.round(Math.max(hLeft,hRight));
+    // 소스 캔버스
+    const srcC=document.createElement('canvas');
+    srcC.width=bitmap.width;srcC.height=bitmap.height;
+    srcC.getContext('2d').drawImage(bitmap,0,0);
+    const srcData=srcC.getContext('2d').getImageData(0,0,srcC.width,srcC.height).data;
+    // 목적지 캔버스
+    const dstC=document.createElement('canvas');
+    dstC.width=dstW;dstC.height=dstH;
+    const dstCtx=dstC.getContext('2d');
+    const dstImg=dstCtx.createImageData(dstW,dstH);
+    const dd=dstImg.data;
+    // 역방향 매핑: dst의 각 픽셀에 대해 src 좌표 계산 (쌍선형 보간)
+    for(let dy=0;dy<dstH;dy++){
+        const ty=dy/dstH;
+        for(let dx=0;dx<dstW;dx++){
+            const tx=dx/dstW;
+            // 쌍선형 보간으로 원본 좌표 계산
+            const topX=tl.x+(tr.x-tl.x)*tx;
+            const topY=tl.y+(tr.y-tl.y)*tx;
+            const botX=bl.x+(br.x-bl.x)*tx;
+            const botY=bl.y+(br.y-bl.y)*tx;
+            const sx=topX+(botX-topX)*ty;
+            const sy=topY+(botY-topY)*ty;
+            // 쌍선형 샘플링
+            const x0=Math.floor(sx),y0=Math.floor(sy);
+            const x1=Math.min(x0+1,bitmap.width-1),y1=Math.min(y0+1,bitmap.height-1);
+            const fx=sx-x0,fy=sy-y0;
+            const idx=dy*dstW+dx;
+            for(let c=0;c<3;c++){
+                const v00=srcData[(y0*bitmap.width+x0)*4+c];
+                const v10=srcData[(y0*bitmap.width+x1)*4+c];
+                const v01=srcData[(y1*bitmap.width+x0)*4+c];
+                const v11=srcData[(y1*bitmap.width+x1)*4+c];
+                dd[idx*4+c]=v00*(1-fx)*(1-fy)+v10*fx*(1-fy)+v01*(1-fx)*fy+v11*fx*fy;
+            }
+            dd[idx*4+3]=255;
+        }
+    }
+    dstCtx.putImageData(dstImg,0,0);
+    return dstC;
+}
+
 function updateScanPreview(){
-    if(!scanOrigBitmap||!document.getElementById('scanResultCanvas'))return;
+    if(!scanCroppedBitmap||!document.getElementById('scanResultCanvas'))return;
     const resC=document.getElementById('scanResultCanvas');
-    const maxW=400;
-    const scale=Math.min(1,maxW/scanOrigBitmap.width);
-    resC.width=scanOrigBitmap.width*scale;
-    resC.height=scanOrigBitmap.height*scale;
+    resC.width=scanCroppedBitmap.width;
+    resC.height=scanCroppedBitmap.height;
     const ctx=resC.getContext('2d');
-    ctx.drawImage(scanOrigBitmap,0,0,resC.width,resC.height);
+    ctx.drawImage(scanCroppedBitmap,0,0);
     const imageData=ctx.getImageData(0,0,resC.width,resC.height);
     applyScanFilter(imageData);
     ctx.putImageData(imageData,0,0);
+}
+
+function scanFinish(){
+    // 현재 파일의 크롭+필터 결과를 pdfToolFiles에 반영
+    const resC=document.getElementById('scanResultCanvas');
+    resC.toBlob(blob=>{
+        const reader=new FileReader();
+        reader.onload=()=>{
+            pdfToolFiles[0].data=reader.result;
+            pdfToolFiles[0].name=pdfToolFiles[0].name.replace(/\.[^.]+$/,'')+'_scanned.jpg';
+            pdfToolFiles[0].type='image/jpeg';
+            pdfToolFiles[0].size=blob.size;
+            pdfToolFiles[0]._scanned=true;
+            renderPdfFiles();
+            showToast('스캔 보정 완료! 변환 시작을 누르세요.','success');
+        };
+        reader.readAsArrayBuffer(blob);
+    },'image/jpeg',0.95);
 }
 
 function applyScanFilter(imageData){
@@ -5017,9 +5272,12 @@ async function processOneImage(file){
     const ctx=canvas.getContext('2d');
     ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(bitmap,0,0);
-    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-    applyScanFilter(imageData);
-    ctx.putImageData(imageData,0,0);
+    // 이미 스캔 보정 완료된 파일은 필터 스킵
+    if(!file._scanned){
+        const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        applyScanFilter(imageData);
+        ctx.putImageData(imageData,0,0);
+    }
     return canvas;
 }
 
