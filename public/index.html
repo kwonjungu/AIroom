@@ -574,6 +574,22 @@
         .admin-link-edit-btn{display:none;}
         .admin-mode .admin-link-edit-btn{display:inline-flex;}
 
+        /* TDist PDF Field Editor */
+        .tdist-page-wrap{position:relative;margin-bottom:16px;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.1);border-radius:4px;overflow:visible;}
+        .tdist-page-wrap canvas{display:block;width:100%;height:auto;pointer-events:none;}
+        .tdist-overlay{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;}
+        .tdist-field{position:absolute;border:2px solid #4A90D9;background:rgba(74,144,217,0.08);border-radius:4px;cursor:move;user-select:none;min-width:30px;min-height:20px;z-index:10;}
+        .tdist-field.active{border-color:#e53935;box-shadow:0 0 0 2px rgba(229,57,53,0.3);z-index:20;}
+        .tdist-field-label{position:absolute;top:-16px;left:0;font-size:10px;font-weight:700;color:#4A90D9;white-space:nowrap;pointer-events:none;}
+        .tdist-field.active .tdist-field-label{color:#e53935;}
+        .tdist-field-type{font-size:14px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;pointer-events:none;color:#4A90D9;opacity:0.7;}
+        .tdist-field-resize{position:absolute;bottom:-4px;right:-4px;width:12px;height:12px;background:#4A90D9;border-radius:2px;cursor:se-resize;z-index:15;}
+        .tdist-field.active .tdist-field-resize{background:#e53935;}
+        .tdist-field-delete{position:absolute;top:-8px;right:-8px;width:18px;height:18px;background:#e53935;color:white;border:none;border-radius:50%;cursor:pointer;font-size:10px;display:none;align-items:center;justify-content:center;z-index:15;line-height:1;}
+        .tdist-field.active .tdist-field-delete{display:flex;}
+        .tdist-field-props{background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:4px;font-size:12px;}
+        .tdist-field-props input,.tdist-field-props select{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;}
+
         /* Tab admin controls */
         .main-tabs-wrapper{max-width:960px;margin:0 auto;padding:8px 24px 0;}
         .main-tabs{overflow-x:visible;flex-wrap:wrap;}
@@ -1055,6 +1071,112 @@
         </div>
     </div></div>
 
+    <!-- ===== TDIST (교사 배포) PAGE ===== -->
+    <div class="page" id="page-tdist">
+        <div style="text-align:center;margin-bottom:16px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">📤 교사 배포 문서</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">PDF를 업로드하고 입력 필드를 배치하여 학부모용 문서를 배포합니다.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openTdistCreate()" style="margin-bottom:20px;">➕ 새 배포 문서 만들기</button>
+        <div id="tdistList"></div>
+    </div>
+
+    <!-- TDist Create/Edit Modal -->
+    <div class="modal-overlay" id="tdistCreateModal"><div class="modal" style="max-width:900px;">
+        <div class="modal-header"><h2 id="tdistModalTitle">📤 배포 문서 만들기</h2><button class="btn-close" onclick="closeModal('tdistCreateModal')">✕</button></div>
+        <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+            <input type="hidden" id="tdistEditId">
+            <!-- Step 1: 기본 정보 -->
+            <div id="tdistStep1">
+                <div class="form-group"><label>문서 제목 *</label><input type="text" id="tdistTitle" placeholder="예: 현장체험학습 동의서"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                    <div class="form-group"><label>담당자 *</label><input type="text" id="tdistManager" placeholder="담당 교사명"></div>
+                    <div class="form-group"><label>마감일</label><input type="date" id="tdistDeadline"></div>
+                    <div class="form-group"><label>비밀번호 *</label><input type="password" id="tdistPassword" placeholder="제출 확인용"></div>
+                </div>
+                <div class="form-group"><label>안내 문구</label><textarea id="tdistDesc" rows="2" placeholder="학부모에게 보여질 안내 문구 (선택)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;"></textarea></div>
+
+                <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+                <h3 style="font-size:15px;margin:0 0 12px;">📄 PDF 업로드</h3>
+                <div id="tdistPdfUpload" style="border:2px dashed var(--border);border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);position:relative;" onclick="document.getElementById('tdistPdfInput').click()">
+                    <input type="file" id="tdistPdfInput" accept=".pdf" style="display:none" onchange="tdistHandlePdf(event)">
+                    <div style="font-size:32px;margin-bottom:8px;">📄</div>
+                    <div style="font-size:14px;font-weight:600;">PDF 파일을 선택하세요</div>
+                    <div style="font-size:12px;color:var(--text-light);margin-top:4px;">학부모가 작성할 문서 양식 (최대 10MB)</div>
+                </div>
+                <div id="tdistPdfInfo" style="display:none;margin-top:10px;padding:10px 14px;background:#e8f5e9;border-radius:8px;display:flex;align-items:center;gap:10px;">
+                    <span>📄</span>
+                    <span id="tdistPdfName" style="flex:1;font-size:13px;font-weight:600;"></span>
+                    <button onclick="tdistRemovePdf()" style="border:1px solid #ffcdd2;background:#fff5f5;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#e53935;">삭제</button>
+                </div>
+
+                <div id="tdistPageRange" style="display:none;margin-top:12px;">
+                    <div class="form-group">
+                        <label>페이지 범위 (선택)</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="tdistPages" placeholder="예: 1-3 또는 1,2,5 (빈칸=전체)" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                            <span id="tdistTotalPages" style="font-size:12px;color:var(--text-light);white-space:nowrap;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align:right;margin-top:16px;">
+                    <button class="btn btn-primary" onclick="tdistGoStep2()" id="tdistStep2Btn" style="display:none;">다음: 필드 배치 ➡️</button>
+                </div>
+            </div>
+
+            <!-- Step 2: PDF 필드 배치 -->
+            <div id="tdistStep2" style="display:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                    <button class="btn btn-secondary" onclick="tdistGoStep1()" style="font-size:12px;">⬅️ 기본 정보</button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="btn btn-secondary" onclick="tdistAddField('text')" style="font-size:12px;padding:6px 12px;">📝 텍스트</button>
+                        <button class="btn btn-secondary" onclick="tdistAddField('signature')" style="font-size:12px;padding:6px 12px;">✍️ 서명란</button>
+                        <button class="btn btn-secondary" onclick="tdistAddField('checkbox')" style="font-size:12px;padding:6px 12px;">☑️ 체크</button>
+                        <button class="btn btn-secondary" onclick="tdistAddField('date')" style="font-size:12px;padding:6px 12px;">📅 날짜</button>
+                        <button class="btn btn-secondary" onclick="tdistAddField('select')" style="font-size:12px;padding:6px 12px;">📋 선택</button>
+                    </div>
+                </div>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">💡 PDF 위 원하는 위치를 클릭하면 필드가 추가됩니다. 필드를 드래그하여 이동하고, 모서리를 드래그하여 크기를 조절하세요.</p>
+
+                <!-- PDF 미리보기 + 필드 배치 영역 -->
+                <div id="tdistEditorPages" style="background:#e8eaed;border-radius:8px;padding:12px;"></div>
+
+                <!-- 필드 목록 -->
+                <div id="tdistFieldList" style="margin-top:12px;"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('tdistCreateModal')">취소</button>
+            <button class="btn btn-primary" onclick="submitTdistCreate()">💾 저장 및 배포</button>
+        </div>
+    </div></div>
+
+    <!-- TDist Password Modal -->
+    <div class="modal-overlay" id="tdistPwModal"><div class="modal" style="max-width:400px;">
+        <div class="modal-header"><h2>🔒 비밀번호 확인</h2><button class="btn-close" onclick="closeModal('tdistPwModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="tdistPwDocId">
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">이 문서의 비밀번호를 입력해주세요.</p>
+            <input type="password" id="tdistPwInput" placeholder="비밀번호" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;" onkeydown="if(event.key==='Enter')tdistVerifyPw()">
+            <div id="tdistPwError" style="display:none;color:#e53935;font-size:12px;margin-top:6px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('tdistPwModal')">취소</button>
+            <button class="btn btn-primary" onclick="tdistVerifyPw()">확인</button>
+        </div>
+    </div></div>
+
+    <!-- TDist Submissions Modal -->
+    <div class="modal-overlay" id="tdistSubsModal"><div class="modal" style="max-width:800px;">
+        <div class="modal-header"><h2 id="tdistSubsTitle">📊 제출 현황</h2><button class="btn-close" onclick="closeModal('tdistSubsModal')">✕</button></div>
+        <div class="modal-body" id="tdistSubsBody" style="max-height:70vh;overflow-y:auto;"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="tdistExportCSV()" style="margin-right:auto;">📥 CSV 내보내기</button>
+            <button class="btn btn-secondary" onclick="closeModal('tdistSubsModal')">닫기</button>
+        </div>
+    </div></div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1357,7 +1479,7 @@ function toggleSectionEmojiPicker(){
     else p.style.display='none';
 }
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[],tdistDocs=[];
 let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
@@ -1370,7 +1492,8 @@ const DEFAULT_TABS=[
     {id:'news',title:'학교 소식',icon:'📰',type:'builtin',order:7},
     {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8},
     {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
-    {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10}
+    {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
+    {id:'tdist',title:'교사 배포',icon:'📤',type:'builtin',order:11}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1496,7 +1619,7 @@ async function saveBannerSettings(){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,esignDocs,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,esignDocs,tdistDocs,ts:Date.now()};
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -1533,11 +1656,11 @@ async function init(){
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
             api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news'),
-            api('GET','/api/collections'),api('GET','/api/esign-docs')
+            api('GET','/api/collections'),api('GET','/api/esign-docs'),api('GET','/api/tdist-docs')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
-        tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];esignDocs=results[10]||[];
+        tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];esignDocs=results[10]||[];tdistDocs=results[11]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -1558,7 +1681,7 @@ async function init(){
     }
     await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();renderCollections();renderEsignList();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();renderCollections();renderEsignList();renderTdistList();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -1580,6 +1703,7 @@ function switchPage(p,btn){
     if(p==='news')renderNews();
     if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
     if(p==='esign')renderEsignList();
+    if(p==='tdist')renderTdistList();
 }
 
 // ===== SCHEDULE =====
@@ -5671,6 +5795,537 @@ async function pdfScan(){
         if(results.length===1) pdfShowResult(results[0].name,results[0].blob);
         else pdfShowResultMulti(results);
     }
+}
+
+// ===== TDIST (교사 배포) =====
+let tdistPdfData=null; // base64 PDF data
+let tdistPdfDoc=null;  // pdf.js document object
+let tdistFields=[];    // fields array
+let tdistActiveField=null;
+let tdistCurrentSubsDocId=null;
+let tdistCurrentSubsData=null;
+let tdistEditorPageScales={};
+let tdistAddMode=null; // field type to add on click
+
+function openTdistCreate(){
+    document.getElementById('tdistEditId').value='';
+    document.getElementById('tdistTitle').value='';
+    document.getElementById('tdistManager').value='';
+    const dl=new Date();dl.setDate(dl.getDate()+7);
+    document.getElementById('tdistDeadline').value=fmtDate(dl);
+    document.getElementById('tdistPassword').value='';
+    document.getElementById('tdistDesc').value='';
+    document.getElementById('tdistModalTitle').textContent='📤 배포 문서 만들기';
+    tdistPdfData=null;tdistPdfDoc=null;tdistFields=[];tdistActiveField=null;tdistAddMode=null;
+    document.getElementById('tdistPdfInfo').style.display='none';
+    document.getElementById('tdistPageRange').style.display='none';
+    document.getElementById('tdistStep2Btn').style.display='none';
+    document.getElementById('tdistStep1').style.display='';
+    document.getElementById('tdistStep2').style.display='none';
+    document.getElementById('tdistEditorPages').innerHTML='';
+    document.getElementById('tdistPdfUpload').style.display='';
+    openModal('tdistCreateModal');
+}
+
+function openTdistEdit(id){
+    const doc=tdistDocs.find(d=>d.id===id);if(!doc)return;
+    document.getElementById('tdistEditId').value=id;
+    document.getElementById('tdistTitle').value=doc.title;
+    document.getElementById('tdistManager').value=doc.manager;
+    document.getElementById('tdistDeadline').value=doc.deadline||'';
+    document.getElementById('tdistPassword').value=doc.password||'';
+    document.getElementById('tdistDesc').value=doc.description||'';
+    document.getElementById('tdistModalTitle').textContent='✏️ 문서 수정';
+    tdistPdfData=doc.pdfData||null;
+    tdistFields=JSON.parse(JSON.stringify(doc.fields||[]));
+    tdistActiveField=null;tdistAddMode=null;
+    if(tdistPdfData){
+        document.getElementById('tdistPdfUpload').style.display='none';
+        document.getElementById('tdistPdfInfo').style.display='flex';
+        document.getElementById('tdistPdfName').textContent=doc.pdfName||'PDF 파일';
+        document.getElementById('tdistPageRange').style.display='block';
+        document.getElementById('tdistPages').value=(doc.pdfPages||[]).join(',');
+        document.getElementById('tdistStep2Btn').style.display='inline-block';
+    }
+    document.getElementById('tdistStep1').style.display='';
+    document.getElementById('tdistStep2').style.display='none';
+    openModal('tdistCreateModal');
+}
+
+async function tdistHandlePdf(e){
+    const file=e.target.files[0];if(!file)return;
+    if(file.size>10*1024*1024){showToast('PDF는 10MB 이하만 가능합니다','error');return;}
+    try{
+        const ab=await file.arrayBuffer();
+        const bytes=new Uint8Array(ab);
+        let binary='';for(let i=0;i<bytes.length;i++)binary+=String.fromCharCode(bytes[i]);
+        tdistPdfData='data:application/pdf;base64,'+btoa(binary);
+        tdistPdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+        document.getElementById('tdistPdfUpload').style.display='none';
+        document.getElementById('tdistPdfInfo').style.display='flex';
+        document.getElementById('tdistPdfName').textContent=file.name+' ('+tdistPdfDoc.numPages+'페이지)';
+        document.getElementById('tdistPageRange').style.display='block';
+        document.getElementById('tdistTotalPages').textContent='총 '+tdistPdfDoc.numPages+'페이지';
+        document.getElementById('tdistStep2Btn').style.display='inline-block';
+    }catch(err){showToast('PDF 로드 실패: '+err.message,'error');}
+}
+
+function tdistRemovePdf(){
+    tdistPdfData=null;tdistPdfDoc=null;tdistFields=[];
+    document.getElementById('tdistPdfInput').value='';
+    document.getElementById('tdistPdfUpload').style.display='';
+    document.getElementById('tdistPdfInfo').style.display='none';
+    document.getElementById('tdistPageRange').style.display='none';
+    document.getElementById('tdistStep2Btn').style.display='none';
+}
+
+function tdistParsePages(){
+    const input=document.getElementById('tdistPages').value.trim();
+    if(!input||!tdistPdfDoc)return Array.from({length:tdistPdfDoc.numPages},(_,i)=>i+1);
+    const pages=[];
+    input.split(',').forEach(part=>{
+        part=part.trim();
+        if(part.includes('-')){
+            const[a,b]=part.split('-').map(Number);
+            if(!isNaN(a)&&!isNaN(b))for(let i=a;i<=b&&i<=tdistPdfDoc.numPages;i++)if(i>=1)pages.push(i);
+        }else{
+            const n=parseInt(part);
+            if(!isNaN(n)&&n>=1&&n<=tdistPdfDoc.numPages)pages.push(n);
+        }
+    });
+    return pages.length>0?pages:Array.from({length:tdistPdfDoc.numPages},(_,i)=>i+1);
+}
+
+async function tdistGoStep2(){
+    if(!tdistPdfData||!tdistPdfDoc){showToast('PDF를 먼저 업로드하세요','error');return;}
+    document.getElementById('tdistStep1').style.display='none';
+    document.getElementById('tdistStep2').style.display='';
+    await tdistRenderEditorPages();
+}
+
+function tdistGoStep1(){
+    document.getElementById('tdistStep1').style.display='';
+    document.getElementById('tdistStep2').style.display='none';
+}
+
+async function tdistRenderEditorPages(){
+    const container=document.getElementById('tdistEditorPages');
+    if(!tdistPdfDoc){container.innerHTML='';return;}
+    const pages=tdistParsePages();
+    let html='';
+    for(let idx=0;idx<pages.length;idx++){
+        html+=`<div style="text-align:center;font-size:12px;color:#888;font-weight:600;margin-bottom:4px;">${idx+1}/${pages.length} 페이지 (원본 ${pages[idx]}p)</div>`;
+        html+=`<div class="tdist-page-wrap" id="tdistPageWrap_${idx}" data-page-idx="${idx}">
+            <canvas id="tdistCanvas_${idx}"></canvas>
+            <div class="tdist-overlay" id="tdistOverlay_${idx}" onmousedown="tdistOverlayClick(event,${idx})" ontouchstart="tdistOverlayTouch(event,${idx})"></div>
+        </div>`;
+    }
+    container.innerHTML=html;
+
+    // Render each page
+    for(let idx=0;idx<pages.length;idx++){
+        const pageNum=pages[idx];
+        if(pageNum<1||pageNum>tdistPdfDoc.numPages)continue;
+        const page=await tdistPdfDoc.getPage(pageNum);
+        const canvas=document.getElementById('tdistCanvas_'+idx);
+        const ctx=canvas.getContext('2d');
+        const containerWidth=canvas.parentElement.clientWidth;
+        const vp0=page.getViewport({scale:1});
+        const scale=containerWidth/vp0.width;
+        const vp=page.getViewport({scale});
+        canvas.width=vp.width;canvas.height=vp.height;
+        tdistEditorPageScales[idx]={scale,width:vp.width,height:vp.height};
+        await page.render({canvasContext:ctx,viewport:vp}).promise;
+    }
+    // Render existing fields
+    tdistRenderAllFields();
+}
+
+function tdistRenderAllFields(){
+    // Clear all overlays
+    const pages=tdistParsePages();
+    for(let idx=0;idx<pages.length;idx++){
+        const overlay=document.getElementById('tdistOverlay_'+idx);
+        if(overlay){
+            // Keep only the overlay itself, remove field divs
+            overlay.querySelectorAll('.tdist-field').forEach(el=>el.remove());
+        }
+    }
+    // Render each field
+    tdistFields.forEach((f,fi)=>{
+        const overlay=document.getElementById('tdistOverlay_'+f.page);
+        if(!overlay)return;
+        const div=document.createElement('div');
+        div.className='tdist-field'+(tdistActiveField===fi?' active':'');
+        div.style.left=f.x+'%';div.style.top=f.y+'%';div.style.width=f.width+'%';div.style.height=f.height+'%';
+        div.dataset.fieldIdx=fi;
+        const typeIcons={text:'📝',signature:'✍️',checkbox:'☑️',date:'📅',select:'📋'};
+        div.innerHTML=`<span class="tdist-field-label">${esc(f.label||getFieldLabel(f.type))}</span>
+            <span class="tdist-field-type">${typeIcons[f.type]||'📝'}</span>
+            <div class="tdist-field-resize"></div>
+            <button class="tdist-field-delete" onclick="event.stopPropagation();tdistDeleteField(${fi})">✕</button>`;
+        // Drag to move
+        div.addEventListener('mousedown',e=>{if(e.target.classList.contains('tdist-field-resize')||e.target.classList.contains('tdist-field-delete'))return;e.stopPropagation();tdistStartDrag(e,fi);});
+        div.addEventListener('touchstart',e=>{if(e.target.classList.contains('tdist-field-resize')||e.target.classList.contains('tdist-field-delete'))return;e.stopPropagation();tdistStartDrag(e,fi);},{passive:false});
+        // Click to select
+        div.addEventListener('click',e=>{e.stopPropagation();tdistSelectField(fi);});
+        // Resize handle
+        const resizer=div.querySelector('.tdist-field-resize');
+        resizer.addEventListener('mousedown',e=>{e.stopPropagation();tdistStartResize(e,fi);});
+        resizer.addEventListener('touchstart',e=>{e.stopPropagation();tdistStartResize(e,fi);},{passive:false});
+        overlay.appendChild(div);
+    });
+    tdistRenderFieldList();
+}
+
+function tdistSelectField(idx){
+    tdistActiveField=idx;
+    tdistRenderAllFields();
+}
+
+function tdistDeleteField(idx){
+    tdistFields.splice(idx,1);
+    if(tdistActiveField===idx)tdistActiveField=null;
+    else if(tdistActiveField!==null&&tdistActiveField>idx)tdistActiveField--;
+    tdistRenderAllFields();
+}
+
+function tdistAddField(type){
+    tdistAddMode=type;
+    showToast('PDF 위 원하는 위치를 클릭하세요','success');
+}
+
+function tdistOverlayClick(e,pageIdx){
+    if(!tdistAddMode)return;
+    const overlay=e.currentTarget;
+    const rect=overlay.getBoundingClientRect();
+    const x=((e.clientX-rect.left)/rect.width)*100;
+    const y=((e.clientY-rect.top)/rect.height)*100;
+    const defaults={text:{width:25,height:3.5},signature:{width:20,height:8},checkbox:{width:20,height:3.5},date:{width:18,height:3.5},select:{width:20,height:3.5}};
+    const d=defaults[tdistAddMode]||{width:20,height:4};
+    const f={
+        id:'tf_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+        type:tdistAddMode,
+        label:getFieldLabel(tdistAddMode),
+        page:pageIdx,
+        x:Math.min(x,100-d.width),
+        y:Math.min(y,100-d.height),
+        width:d.width,height:d.height,
+        required:true
+    };
+    if(tdistAddMode==='text')f.placeholder='';
+    if(tdistAddMode==='checkbox')f.checkLabel='동의합니다';
+    if(tdistAddMode==='select')f.options='해당,비해당';
+    tdistFields.push(f);
+    tdistActiveField=tdistFields.length-1;
+    tdistAddMode=null;
+    tdistRenderAllFields();
+}
+
+function tdistOverlayTouch(e,pageIdx){
+    if(!tdistAddMode)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    const overlay=e.currentTarget;
+    const rect=overlay.getBoundingClientRect();
+    const fakeE={clientX:t.clientX,clientY:t.clientY,currentTarget:overlay};
+    tdistOverlayClick(fakeE,pageIdx);
+}
+
+// Drag field
+let tdistDragState=null;
+function tdistStartDrag(e,fi){
+    e.preventDefault();
+    const f=tdistFields[fi];if(!f)return;
+    tdistActiveField=fi;
+    const overlay=document.getElementById('tdistOverlay_'+f.page);
+    if(!overlay)return;
+    const rect=overlay.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    const startMx=t.clientX,startMy=t.clientY;
+    const startX=f.x,startY=f.y;
+
+    function move(ev){
+        const p=ev.touches?ev.touches[0]:ev;
+        const dx=((p.clientX-startMx)/rect.width)*100;
+        const dy=((p.clientY-startMy)/rect.height)*100;
+        f.x=Math.max(0,Math.min(100-f.width,startX+dx));
+        f.y=Math.max(0,Math.min(100-f.height,startY+dy));
+        tdistRenderAllFields();
+    }
+    function up(){
+        document.removeEventListener('mousemove',move);
+        document.removeEventListener('mouseup',up);
+        document.removeEventListener('touchmove',move);
+        document.removeEventListener('touchend',up);
+    }
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('touchend',up);
+}
+
+// Resize field
+function tdistStartResize(e,fi){
+    e.preventDefault();
+    const f=tdistFields[fi];if(!f)return;
+    const overlay=document.getElementById('tdistOverlay_'+f.page);
+    if(!overlay)return;
+    const rect=overlay.getBoundingClientRect();
+    const t=e.touches?e.touches[0]:e;
+    const startMx=t.clientX,startMy=t.clientY;
+    const startW=f.width,startH=f.height;
+
+    function move(ev){
+        const p=ev.touches?ev.touches[0]:ev;
+        const dx=((p.clientX-startMx)/rect.width)*100;
+        const dy=((p.clientY-startMy)/rect.height)*100;
+        f.width=Math.max(5,Math.min(100-f.x,startW+dx));
+        f.height=Math.max(2,Math.min(100-f.y,startH+dy));
+        tdistRenderAllFields();
+    }
+    function up(){
+        document.removeEventListener('mousemove',move);
+        document.removeEventListener('mouseup',up);
+        document.removeEventListener('touchmove',move);
+        document.removeEventListener('touchend',up);
+    }
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('touchend',up);
+}
+
+function tdistRenderFieldList(){
+    const el=document.getElementById('tdistFieldList');if(!el)return;
+    if(tdistFields.length===0){
+        el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;">아직 필드가 없습니다. 위 버튼을 눌러 추가하세요.</div>';
+        return;
+    }
+    let html='<h4 style="font-size:14px;margin:0 0 8px;">📋 필드 목록 ('+tdistFields.length+'개)</h4>';
+    tdistFields.forEach((f,i)=>{
+        const isActive=tdistActiveField===i;
+        html+=`<div class="tdist-field-props" style="${isActive?'border-color:#4A90D9;background:#f0f7ff;':''}margin-bottom:6px;cursor:pointer;" onclick="tdistSelectField(${i})">`;
+        html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${isActive?'8':'0'}px;">`;
+        html+=`<span style="font-weight:600;">${getFieldIcon(f.type)} ${esc(f.label||getFieldLabel(f.type))} <span style="color:var(--text-light);font-weight:400;">P${(f.page||0)+1}</span></span>`;
+        html+=`<button onclick="event.stopPropagation();tdistDeleteField(${i})" style="border:none;background:#fff5f5;color:#e53935;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px;">삭제</button>`;
+        html+=`</div>`;
+        if(isActive){
+            html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">`;
+            html+=`<div><label style="font-size:11px;color:var(--text-light);">라벨</label><input value="${esc(f.label||'')}" onchange="tdistFields[${i}].label=this.value;tdistRenderAllFields();" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;"></div>`;
+            if(f.type==='text')html+=`<div><label style="font-size:11px;color:var(--text-light);">힌트 텍스트</label><input value="${esc(f.placeholder||'')}" onchange="tdistFields[${i}].placeholder=this.value" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;"></div>`;
+            if(f.type==='checkbox')html+=`<div><label style="font-size:11px;color:var(--text-light);">체크 문구</label><input value="${esc(f.checkLabel||'')}" onchange="tdistFields[${i}].checkLabel=this.value" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;"></div>`;
+            if(f.type==='select')html+=`<div><label style="font-size:11px;color:var(--text-light);">선택지 (쉼표 구분)</label><input value="${esc(f.options||'')}" onchange="tdistFields[${i}].options=this.value" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;"></div>`;
+            html+=`</div>`;
+        }
+        html+=`</div>`;
+    });
+    el.innerHTML=html;
+}
+
+async function submitTdistCreate(){
+    const title=document.getElementById('tdistTitle').value.trim();
+    const manager=document.getElementById('tdistManager').value.trim();
+    const password=document.getElementById('tdistPassword').value.trim();
+    if(!title){showToast('문서 제목을 입력하세요','error');return;}
+    if(!manager){showToast('담당자를 입력하세요','error');return;}
+    if(!password){showToast('비밀번호를 설정하세요','error');return;}
+    if(!tdistPdfData){showToast('PDF를 업로드하세요','error');return;}
+    if(tdistFields.length===0){showToast('필드를 하나 이상 추가하세요','error');return;}
+
+    const editId=document.getElementById('tdistEditId').value;
+    const pages=tdistParsePages();
+
+    if(editId){
+        const doc=tdistDocs.find(d=>d.id===editId);if(!doc)return;
+        doc.title=title;doc.manager=manager;doc.password=password;
+        doc.deadline=document.getElementById('tdistDeadline').value;
+        doc.description=document.getElementById('tdistDesc').value.trim();
+        doc.pdfData=tdistPdfData;
+        doc.pdfPages=pages;
+        doc.pdfName=document.getElementById('tdistPdfName').textContent;
+        doc.fields=JSON.parse(JSON.stringify(tdistFields));
+    }else{
+        const doc={
+            id:'tdist_'+Date.now(),
+            token:generateToken(),
+            title,manager,password,
+            deadline:document.getElementById('tdistDeadline').value,
+            description:document.getElementById('tdistDesc').value.trim(),
+            pdfData:tdistPdfData,
+            pdfPages:pages,
+            pdfName:document.getElementById('tdistPdfName').textContent,
+            fields:JSON.parse(JSON.stringify(tdistFields)),
+            status:'open',
+            submissions:[],
+            createdAt:Date.now()
+        };
+        tdistDocs.push(doc);
+    }
+    await api('POST','/api/tdist-docs',tdistDocs);
+    saveToLocal();renderTdistList();
+    closeModal('tdistCreateModal');
+    showToast(editId?'문서가 수정되었습니다':'문서가 생성되었습니다! 링크를 복사해 배포하세요.','success');
+}
+
+function renderTdistList(){
+    const el=document.getElementById('tdistList');if(!el)return;
+    if(tdistDocs.length===0){
+        el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);"><p style="font-size:36px;margin-bottom:8px;">📤</p><p>아직 생성된 배포 문서가 없습니다.</p></div>';
+        return;
+    }
+    let html='';
+    const sorted=[...tdistDocs].sort((a,b)=>b.createdAt-a.createdAt);
+    sorted.forEach(doc=>{
+        const subCount=doc.submissions?doc.submissions.length:0;
+        const isExpired=doc.deadline&&new Date(doc.deadline+'T23:59:59')<new Date();
+        const isClosed=doc.status==='closed';
+        const statusBadge=isClosed?'<span style="background:#ffcdd2;color:#c62828;padding:2px 8px;border-radius:8px;font-size:11px;">마감</span>'
+            :isExpired?'<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:8px;font-size:11px;">기한 만료</span>'
+            :'<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:8px;font-size:11px;">진행 중</span>';
+        const docUrl=location.origin+'/doc/'+doc.token;
+        html+=`<div style="background:var(--card-bg);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);border-left:4px solid ${isClosed?'#e53935':isExpired?'#fb8c00':'#4A90D9'};">`;
+        html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;">`;
+        html+=`<div><h3 style="margin:0;font-size:16px;">${esc(doc.title)} ${statusBadge}</h3>`;
+        html+=`<p style="margin:4px 0 0;font-size:12px;color:var(--text-light);">담당: ${esc(doc.manager)} · 마감: ${doc.deadline||'없음'} · 제출: <strong>${subCount}건</strong> · 필드: ${(doc.fields||[]).length}개</p></div>`;
+        html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+        html+=`<button class="btn btn-secondary" onclick="tdistCopyLink('${doc.token}')" style="font-size:12px;padding:6px 12px;">🔗 링크 복사</button>`;
+        html+=`<button class="btn btn-secondary" onclick="tdistOpenPwModal('${doc.id}')" style="font-size:12px;padding:6px 12px;">🔒 제출 현황 (${subCount})</button>`;
+        html+=`<button class="btn btn-secondary" onclick="openTdistEdit('${doc.id}')" style="font-size:12px;padding:6px 12px;">✏️</button>`;
+        if(!isClosed) html+=`<button class="btn btn-secondary" onclick="tdistClose('${doc.id}')" style="font-size:12px;padding:6px 12px;color:#e53935;">🔒 마감</button>`;
+        else html+=`<button class="btn btn-secondary" onclick="tdistReopen('${doc.id}')" style="font-size:12px;padding:6px 12px;color:#2e7d32;">🔓 재개</button>`;
+        html+=`<button class="btn btn-secondary" onclick="tdistDelete('${doc.id}')" style="font-size:12px;padding:6px 10px;color:#e53935;">🗑️</button>`;
+        html+=`</div></div>`;
+        // 공유 링크
+        html+=`<div style="margin-top:10px;background:#f5f5f5;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">`;
+        html+=`<span style="font-size:11px;color:var(--text-light);">📎 배포 링크:</span>`;
+        html+=`<code style="font-size:11px;word-break:break-all;flex:1;">${esc(docUrl)}</code>`;
+        html+=`<button onclick="tdistCopyLink('${doc.token}')" style="border:none;background:var(--primary);color:white;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">복사</button>`;
+        html+=`</div></div>`;
+    });
+    el.innerHTML=html;
+}
+
+function tdistCopyLink(token){
+    const url=location.origin+'/doc/'+token;
+    navigator.clipboard.writeText(url).then(()=>showToast('링크가 복사되었습니다! 학부모에게 전달하세요.','success'));
+}
+
+async function tdistClose(id){
+    const doc=tdistDocs.find(d=>d.id===id);if(!doc)return;
+    if(!confirm('이 문서를 마감할까요?'))return;
+    doc.status='closed';
+    await api('POST','/api/tdist-docs',tdistDocs);
+    saveToLocal();renderTdistList();showToast('마감되었습니다','success');
+}
+
+async function tdistReopen(id){
+    const doc=tdistDocs.find(d=>d.id===id);if(!doc)return;
+    doc.status='open';
+    await api('POST','/api/tdist-docs',tdistDocs);
+    saveToLocal();renderTdistList();showToast('재개되었습니다','success');
+}
+
+async function tdistDelete(id){
+    if(!confirm('이 문서를 삭제할까요? 제출된 데이터도 모두 삭제됩니다.'))return;
+    tdistDocs=tdistDocs.filter(d=>d.id!==id);
+    await api('POST','/api/tdist-docs',tdistDocs);
+    saveToLocal();renderTdistList();showToast('삭제되었습니다','success');
+}
+
+// Password-protected submissions
+function tdistOpenPwModal(docId){
+    document.getElementById('tdistPwDocId').value=docId;
+    document.getElementById('tdistPwInput').value='';
+    document.getElementById('tdistPwError').style.display='none';
+    openModal('tdistPwModal');
+    setTimeout(()=>document.getElementById('tdistPwInput').focus(),200);
+}
+
+async function tdistVerifyPw(){
+    const docId=document.getElementById('tdistPwDocId').value;
+    const pw=document.getElementById('tdistPwInput').value;
+    if(!pw){document.getElementById('tdistPwError').textContent='비밀번호를 입력하세요';document.getElementById('tdistPwError').style.display='block';return;}
+    try{
+        const res=await fetch('/api/tdist-subs/'+docId,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({password:pw})
+        });
+        if(res.status===403){
+            document.getElementById('tdistPwError').textContent='비밀번호가 올바르지 않습니다.';
+            document.getElementById('tdistPwError').style.display='block';return;
+        }
+        if(!res.ok)throw new Error('서버 오류');
+        const data=await res.json();
+        closeModal('tdistPwModal');
+        tdistCurrentSubsDocId=docId;
+        tdistCurrentSubsData=data;
+        tdistShowSubs(data);
+    }catch(e){
+        document.getElementById('tdistPwError').textContent='오류: '+e.message;
+        document.getElementById('tdistPwError').style.display='block';
+    }
+}
+
+function tdistShowSubs(data){
+    document.getElementById('tdistSubsTitle').textContent='📊 '+data.title+' - 제출 현황';
+    const subs=data.submissions||[];
+    const fields=data.fields||[];
+    let html='';
+    if(subs.length===0){
+        html='<div style="text-align:center;padding:30px;color:var(--text-light);">아직 제출된 문서가 없습니다.</div>';
+    }else{
+        html+=`<p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">총 <strong>${subs.length}건</strong> 제출</p>`;
+        // Table view
+        html+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">`;
+        html+=`<thead><tr style="background:linear-gradient(135deg,#4A90D9,#6C5CE7);color:white;">`;
+        html+=`<th style="padding:10px 8px;text-align:left;">#</th>`;
+        fields.filter(f=>f.type!=='label').forEach(f=>{
+            html+=`<th style="padding:10px 8px;text-align:left;">${esc(f.label||getFieldLabel(f.type))}</th>`;
+        });
+        html+=`<th style="padding:10px 8px;text-align:left;">제출일시</th></tr></thead><tbody>`;
+        subs.forEach((s,si)=>{
+            html+=`<tr style="border-bottom:1px solid #eee;">`;
+            html+=`<td style="padding:8px;">${si+1}</td>`;
+            fields.filter(f=>f.type!=='label').forEach(f=>{
+                const v=s.values?s.values[f.id]:'';
+                html+=`<td style="padding:8px;">`;
+                if(f.type==='signature'&&v) html+=`<img src="${v}" style="max-width:120px;max-height:50px;border:1px solid #ddd;border-radius:4px;">`;
+                else if(f.type==='checkbox') html+=v?'☑️ 동의':'⬜';
+                else html+=esc(String(v||'-'));
+                html+=`</td>`;
+            });
+            html+=`<td style="padding:8px;font-size:11px;color:var(--text-light);">${new Date(s.submittedAt).toLocaleString('ko-KR')}</td>`;
+            html+=`</tr>`;
+        });
+        html+=`</tbody></table></div>`;
+    }
+    document.getElementById('tdistSubsBody').innerHTML=html;
+    openModal('tdistSubsModal');
+}
+
+function tdistExportCSV(){
+    if(!tdistCurrentSubsData)return;
+    const{submissions:subs,fields,title}=tdistCurrentSubsData;
+    if(!subs||subs.length===0){showToast('내보낼 데이터가 없습니다','error');return;}
+    const cols=fields.filter(f=>f.type!=='label');
+    let csv='\uFEFF';
+    csv+=['번호',...cols.map(f=>f.label||getFieldLabel(f.type)),'제출일시'].join(',')+'\n';
+    subs.forEach((s,i)=>{
+        const row=[i+1];
+        cols.forEach(f=>{
+            const v=s.values?s.values[f.id]:'';
+            if(f.type==='checkbox')row.push(v?'동의':'미동의');
+            else if(f.type==='signature')row.push(v?'(서명완료)':'');
+            else row.push('"'+String(v||'').replace(/"/g,'""')+'"');
+        });
+        row.push(new Date(s.submittedAt).toLocaleString('ko-KR'));
+        csv+=row.join(',')+'\n';
+    });
+    const blob=new Blob([csv],{type:'text/csv'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=title+'_제출현황.csv';a.click();
 }
 
 init();

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>문서 작성</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#e8eaed;color:#1a1a1a;min-height:100vh;}
+.container{max-width:900px;margin:0 auto;padding:16px 12px 60px;}
+.card{background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+
+/* Header */
+.doc-header{text-align:center;padding:16px 0 8px;}
+.doc-header h1{font-size:20px;font-weight:800;margin-bottom:6px;color:#1a1a1a;}
+.doc-header .badge{display:inline-block;background:#e3f2fd;color:#1565c0;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;}
+.doc-header .manager{font-size:13px;color:#666;margin-top:8px;}
+.desc{background:#f0f7ff;padding:14px;border-radius:12px;font-size:14px;line-height:1.7;color:#333;margin-bottom:12px;}
+
+/* PDF Page Container */
+.pdf-page-wrap{position:relative;margin-bottom:24px;background:white;box-shadow:0 2px 16px rgba(0,0,0,0.12);border-radius:4px;overflow:hidden;}
+.pdf-page-wrap canvas{display:block;width:100%;height:auto;}
+.pdf-fields-overlay{position:absolute;top:0;left:0;width:100%;height:100%;}
+
+/* Form Fields on PDF */
+.pdf-field{position:absolute;z-index:10;}
+.pdf-field-text input{width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 6px;font-size:13px;background:rgba(255,255,255,0.92);outline:none;transition:border-color .2s;}
+.pdf-field-text input:focus{border-color:#1565c0;box-shadow:0 0 0 3px rgba(74,144,217,0.2);}
+.pdf-field-checkbox{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.92);border:2px solid #4A90D9;border-radius:4px;padding:2px 6px;cursor:pointer;}
+.pdf-field-checkbox input[type="checkbox"]{width:18px;height:18px;accent-color:#4A90D9;cursor:pointer;flex-shrink:0;}
+.pdf-field-checkbox label{font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdf-field-select select{width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 4px;font-size:13px;background:rgba(255,255,255,0.92);outline:none;}
+.pdf-field-date input{width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 6px;font-size:13px;background:rgba(255,255,255,0.92);outline:none;}
+
+/* Signature field */
+.pdf-field-signature{border:2px solid #e53935;border-radius:6px;background:rgba(255,255,255,0.95);overflow:hidden;cursor:crosshair;}
+.pdf-field-signature canvas{display:block;width:100%;height:100%;touch-action:none;}
+.sig-label{position:absolute;top:-18px;left:0;font-size:10px;color:#e53935;font-weight:700;white-space:nowrap;}
+.sig-clear-btn{position:absolute;top:-18px;right:0;font-size:10px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;padding:0 6px;cursor:pointer;color:#e53935;line-height:16px;}
+
+/* Non-PDF fields section (below PDF) */
+.extra-fields{margin-top:8px;}
+.field-group{margin-bottom:16px;}
+.field-label{font-size:13px;font-weight:700;margin-bottom:6px;display:block;color:#333;}
+.field-label .req{color:#e53935;margin-left:2px;}
+.field-input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;transition:border-color .2s;outline:none;background:white;}
+.field-input:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.12);}
+
+/* Standalone signature (not on PDF) */
+.standalone-sig{border:2px dashed #ccc;border-radius:12px;overflow:hidden;position:relative;background:#fafafa;touch-action:none;}
+.standalone-sig canvas{display:block;width:100%;}
+.standalone-sig-actions{display:flex;gap:8px;margin-top:8px;}
+.standalone-sig-clear{border:1px solid #ddd;background:white;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;}
+
+/* Submit */
+.submit-section{position:sticky;bottom:0;background:white;padding:16px;margin:0 -12px;box-shadow:0 -4px 20px rgba(0,0,0,0.1);z-index:50;}
+.submit-btn{width:100%;padding:16px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,144,217,0.3);}
+.submit-btn:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none;}
+.submit-note{text-align:center;font-size:11px;color:#999;margin-top:8px;}
+
+/* Loading / Error / Success */
+.loading{text-align:center;padding:80px 20px;}
+.loading .spinner{width:40px;height:40px;border:3px solid #eee;border-top-color:#4A90D9;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-page{text-align:center;padding:60px 20px;color:#666;}
+.error-page .emoji{font-size:48px;margin-bottom:12px;}
+.success-page{text-align:center;padding:60px 20px;}
+.success-page .emoji{font-size:64px;margin-bottom:16px;}
+.success-page h2{font-size:22px;margin-bottom:8px;color:#2e7d32;}
+
+/* Page indicator */
+.page-indicator{text-align:center;font-size:12px;color:#888;margin:-16px 0 12px;font-weight:600;}
+
+/* Tooltip for required fields */
+.field-error{border-color:#e53935!important;animation:shake 0.3s;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
+
+@media(max-width:640px){
+    .container{padding:8px 6px 60px;}
+    .card{padding:14px 12px;border-radius:12px;}
+    .doc-header h1{font-size:18px;}
+    .pdf-field-text input,.pdf-field-select select,.pdf-field-date input{font-size:11px;padding:1px 4px;}
+    .pdf-field-checkbox label{font-size:10px;}
+    .pdf-field-checkbox input[type="checkbox"]{width:14px;height:14px;}
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="loading" id="loadingState">
+        <div class="spinner"></div>
+        <p>문서를 불러오는 중...</p>
+    </div>
+</div>
+
+<script>
+const token = location.pathname.split('/doc/')[1];
+let docData = null;
+let pdfDoc = null;
+let signatureCanvases = {};
+let pageScales = {};
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function init() {
+    if (!token) return showError('잘못된 링크입니다.');
+    try {
+        const res = await fetch('/api/tdist-public/' + token);
+        if (res.status === 404) return showError('문서를 찾을 수 없습니다.\n링크가 올바른지 확인해주세요.');
+        if (res.status === 410) { const d = await res.json(); return showError(d.error || '마감된 문서입니다.'); }
+        if (!res.ok) return showError('서버 오류가 발생했습니다.');
+        docData = await res.json();
+        await renderDocument();
+    } catch (e) { showError('네트워크 오류: ' + e.message); }
+}
+
+function showError(msg) {
+    document.getElementById('app').innerHTML = `
+        <div class="card error-page">
+            <div class="emoji">😔</div>
+            <h2>접근할 수 없습니다</h2>
+            <p style="white-space:pre-line;margin-top:8px;">${esc(msg)}</p>
+        </div>`;
+}
+
+async function renderDocument() {
+    const app = document.getElementById('app');
+    let html = '';
+
+    // Header
+    html += `<div class="doc-header">
+        <h1>${esc(docData.title)}</h1>
+        <span class="badge">📄 문서 작성</span>
+        <div class="manager">담당: ${esc(docData.manager)}${docData.deadline ? ' · 마감: ' + docData.deadline : ''}</div>
+    </div>`;
+
+    // Description
+    if (docData.description) {
+        html += `<div class="card"><div class="desc">${esc(docData.description).replace(/\n/g, '<br>')}</div></div>`;
+    }
+
+    // PDF pages container
+    html += `<div id="pdfPagesContainer"></div>`;
+
+    // Extra fields (fields not placed on PDF)
+    const extraFields = (docData.fields || []).filter(f => !f.page && f.page !== 0);
+    if (extraFields.length > 0) {
+        html += `<div class="card extra-fields">`;
+        extraFields.forEach(f => {
+            html += renderExtraField(f);
+        });
+        html += `</div>`;
+    }
+
+    // Submit section
+    html += `<div class="submit-section">
+        <button class="submit-btn" onclick="submitForm()" id="submitBtn">✅ 작성 완료 · 제출하기</button>
+        <div class="submit-note">${docData.deadline ? '📅 마감: ' + docData.deadline : ''} · 제출 후 수정이 불가합니다</div>
+    </div>`;
+
+    app.innerHTML = html;
+
+    // Render PDF
+    if (docData.pdfData) {
+        try {
+            const pdfBytes = base64ToUint8Array(docData.pdfData);
+            pdfDoc = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+            await renderPdfPages();
+        } catch (e) {
+            console.error('PDF 렌더링 실패:', e);
+            document.getElementById('pdfPagesContainer').innerHTML =
+                '<div class="card" style="text-align:center;padding:30px;color:#e53935;">PDF를 표시할 수 없습니다.</div>';
+        }
+    }
+
+    // Init signature canvases
+    setTimeout(() => {
+        (docData.fields || []).filter(f => f.type === 'signature').forEach(f => {
+            if (f.page !== undefined && f.page !== null) initPdfSigCanvas(f.id);
+            else initStandaloneSigCanvas(f.id);
+        });
+    }, 300);
+}
+
+async function renderPdfPages() {
+    const container = document.getElementById('pdfPagesContainer');
+    if (!container || !pdfDoc) return;
+
+    const pages = docData.pdfPages || [];
+    const totalPages = pdfDoc.numPages;
+    const pagesToRender = pages.length > 0 ? pages : Array.from({ length: totalPages }, (_, i) => i + 1);
+
+    let html = '';
+    for (let idx = 0; idx < pagesToRender.length; idx++) {
+        const pageNum = pagesToRender[idx];
+        html += `<div class="page-indicator">${idx + 1} / ${pagesToRender.length} 페이지</div>`;
+        html += `<div class="pdf-page-wrap" id="pageWrap_${idx}">
+            <canvas id="pdfCanvas_${idx}"></canvas>
+            <div class="pdf-fields-overlay" id="fieldsOverlay_${idx}"></div>
+        </div>`;
+    }
+    container.innerHTML = html;
+
+    // Render each page
+    for (let idx = 0; idx < pagesToRender.length; idx++) {
+        const pageNum = pagesToRender[idx];
+        if (pageNum < 1 || pageNum > totalPages) continue;
+        const page = await pdfDoc.getPage(pageNum);
+        const canvas = document.getElementById('pdfCanvas_' + idx);
+        const ctx = canvas.getContext('2d');
+
+        // Scale to fit container width
+        const containerWidth = canvas.parentElement.clientWidth;
+        const viewport0 = page.getViewport({ scale: 1 });
+        const scale = containerWidth / viewport0.width;
+        const viewport = page.getViewport({ scale });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        pageScales[idx] = { scale, width: viewport.width, height: viewport.height, origW: viewport0.width, origH: viewport0.height };
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // Render form fields for this page
+        renderPageFields(idx);
+    }
+}
+
+function renderPageFields(pageIdx) {
+    const overlay = document.getElementById('fieldsOverlay_' + pageIdx);
+    if (!overlay) return;
+    const ps = pageScales[pageIdx];
+    if (!ps) return;
+
+    const fields = (docData.fields || []).filter(f => f.page === pageIdx);
+    let html = '';
+
+    fields.forEach(f => {
+        // Position as percentage of page
+        const left = f.x + '%';
+        const top = f.y + '%';
+        const width = f.width + '%';
+        const height = f.height + '%';
+        const style = `left:${left};top:${top};width:${width};height:${height};`;
+
+        if (f.type === 'text') {
+            html += `<div class="pdf-field pdf-field-text" style="${style}">
+                <input type="text" id="field_${f.id}" placeholder="${esc(f.placeholder || f.label || '')}" title="${esc(f.label || '')}">
+            </div>`;
+        } else if (f.type === 'checkbox') {
+            html += `<div class="pdf-field pdf-field-checkbox" style="${style}">
+                <input type="checkbox" id="field_${f.id}">
+                <label for="field_${f.id}">${esc(f.checkLabel || f.label || '')}</label>
+            </div>`;
+        } else if (f.type === 'signature') {
+            html += `<div class="pdf-field pdf-field-signature" style="${style}" id="sigWrap_${f.id}">
+                <span class="sig-label">${esc(f.label || '서명')}</span>
+                <button class="sig-clear-btn" onclick="clearPdfSig('${f.id}')">지우기</button>
+                <canvas id="sigCanvas_${f.id}"></canvas>
+            </div>`;
+        } else if (f.type === 'date') {
+            html += `<div class="pdf-field pdf-field-date" style="${style}">
+                <input type="date" id="field_${f.id}" value="${new Date().toISOString().slice(0, 10)}" title="${esc(f.label || '')}">
+            </div>`;
+        } else if (f.type === 'select') {
+            const opts = (f.options || '').split(',').map(o => o.trim()).filter(Boolean);
+            html += `<div class="pdf-field pdf-field-select" style="${style}">
+                <select id="field_${f.id}" title="${esc(f.label || '')}">
+                    <option value="">${esc(f.label || '선택')}</option>
+                    ${opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+                </select>
+            </div>`;
+        }
+    });
+
+    overlay.innerHTML = html;
+}
+
+function renderExtraField(f) {
+    let html = `<div class="field-group" data-field-id="${f.id}">`;
+    if (f.type === 'label') {
+        html += `<div style="font-size:14px;line-height:1.8;white-space:pre-wrap;color:#444;">${esc(f.content || '')}</div>`;
+    } else {
+        const isRequired = f.required !== false && f.type !== 'file';
+        html += `<span class="field-label">${esc(f.label || '')}${isRequired ? '<span class="req">*</span>' : ''}</span>`;
+
+        if (f.type === 'text') {
+            html += `<input class="field-input" type="text" id="field_${f.id}" placeholder="${esc(f.placeholder || '')}">`;
+        }
+        if (f.type === 'date') {
+            html += `<input class="field-input" type="date" id="field_${f.id}" value="${new Date().toISOString().slice(0, 10)}">`;
+        }
+        if (f.type === 'select') {
+            const opts = (f.options || '').split(',').map(o => o.trim()).filter(Boolean);
+            html += `<select class="field-input" id="field_${f.id}">
+                <option value="">선택하세요</option>
+                ${opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+            </select>`;
+        }
+        if (f.type === 'checkbox') {
+            html += `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#fafafa;border-radius:10px;">
+                <input type="checkbox" id="field_${f.id}" style="width:20px;height:20px;accent-color:#4A90D9;">
+                <label for="field_${f.id}" style="font-size:14px;line-height:1.5;cursor:pointer;">${esc(f.checkLabel || '동의합니다')}</label>
+            </div>`;
+        }
+        if (f.type === 'signature') {
+            html += `<div class="standalone-sig" id="sigContainer_${f.id}">
+                <canvas id="sigCanvas_${f.id}" height="150"></canvas>
+            </div>
+            <div class="standalone-sig-actions">
+                <button class="standalone-sig-clear" onclick="clearStandaloneSig('${f.id}')">🗑️ 지우기</button>
+                <span style="font-size:11px;color:#999;line-height:32px;">터치 또는 마우스로 서명하세요</span>
+            </div>`;
+        }
+    }
+    html += `</div>`;
+    return html;
+}
+
+// ===== Signature on PDF =====
+function initPdfSigCanvas(fieldId) {
+    const wrap = document.getElementById('sigWrap_' + fieldId);
+    const canvas = document.getElementById('sigCanvas_' + fieldId);
+    if (!wrap || !canvas) return;
+
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let drawing = false, hasSigned = false;
+
+    function getPos(e) {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: (t.clientX - r.left) * (canvas.width / r.width), y: (t.clientY - r.top) * (canvas.height / r.height) };
+    }
+
+    function start(e) { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function move(e) { if (!drawing) return; e.preventDefault(); hasSigned = true; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function end() { drawing = false; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+
+    signatureCanvases[fieldId] = { canvas, ctx, hasSigned: () => hasSigned, reset: () => { hasSigned = false; } };
+}
+
+function clearPdfSig(fieldId) {
+    const sc = signatureCanvases[fieldId];
+    if (!sc) return;
+    sc.ctx.clearRect(0, 0, sc.canvas.width, sc.canvas.height);
+    sc.reset();
+}
+
+// ===== Standalone signature (not on PDF) =====
+function initStandaloneSigCanvas(fieldId) {
+    const canvas = document.getElementById('sigCanvas_' + fieldId);
+    if (!canvas) return;
+    const container = canvas.parentElement;
+    canvas.width = container.clientWidth;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let drawing = false, hasSigned = false;
+
+    function getPos(e) {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+    }
+
+    function start(e) { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function move(e) { if (!drawing) return; e.preventDefault(); hasSigned = true; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function end() { drawing = false; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+
+    signatureCanvases[fieldId] = { canvas, ctx, hasSigned: () => hasSigned, reset: () => { hasSigned = false; } };
+}
+
+function clearStandaloneSig(fieldId) {
+    const sc = signatureCanvases[fieldId];
+    if (!sc) return;
+    sc.ctx.clearRect(0, 0, sc.canvas.width, sc.canvas.height);
+    sc.reset();
+}
+
+// ===== Submit =====
+let submitting = false;
+async function submitForm() {
+    if (submitting) return;
+    const values = {};
+    let valid = true;
+    let firstInvalid = null;
+
+    (docData.fields || []).forEach(f => {
+        if (f.type === 'label') return;
+        const isRequired = f.required !== false && f.type !== 'file';
+
+        if (f.type === 'text') {
+            const el = document.getElementById('field_' + f.id);
+            const v = el?.value?.trim() || '';
+            if (isRequired && !v) { valid = false; markError(el); if (!firstInvalid) firstInvalid = el; }
+            values[f.id] = v;
+        }
+        if (f.type === 'date') {
+            const el = document.getElementById('field_' + f.id);
+            const v = el?.value || '';
+            if (isRequired && !v) { valid = false; markError(el); if (!firstInvalid) firstInvalid = el; }
+            values[f.id] = v;
+        }
+        if (f.type === 'select') {
+            const el = document.getElementById('field_' + f.id);
+            const v = el?.value || '';
+            if (isRequired && !v) { valid = false; markError(el); if (!firstInvalid) firstInvalid = el; }
+            values[f.id] = v;
+        }
+        if (f.type === 'checkbox') {
+            const el = document.getElementById('field_' + f.id);
+            const v = el?.checked || false;
+            if (isRequired && !v) { valid = false; if (!firstInvalid) firstInvalid = el; }
+            values[f.id] = v;
+        }
+        if (f.type === 'signature') {
+            const sc = signatureCanvases[f.id];
+            if (!sc || !sc.hasSigned()) {
+                if (isRequired) { valid = false; }
+            } else {
+                values[f.id] = sc.canvas.toDataURL('image/png');
+            }
+        }
+    });
+
+    if (!valid) {
+        alert('필수 항목을 모두 작성해주세요.');
+        if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    if (!confirm('작성한 내용을 제출하시겠습니까?\n제출 후에는 수정이 불가합니다.')) return;
+
+    submitting = true;
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 제출 중...';
+
+    try {
+        const res = await fetch('/api/tdist-public/' + token + '/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values })
+        });
+
+        if (!res.ok) {
+            const d = await res.json();
+            throw new Error(d.error || '제출에 실패했습니다.');
+        }
+
+        document.getElementById('app').innerHTML = `
+            <div class="card success-page">
+                <div class="emoji">✅</div>
+                <h2>제출이 완료되었습니다!</h2>
+                <p style="color:#666;margin-top:8px;font-size:15px;">감사합니다. 담당 교사에게 전달됩니다.</p>
+                <p style="font-size:12px;color:#999;margin-top:20px;">${new Date().toLocaleString('ko-KR')}</p>
+                <div style="margin-top:24px;padding:16px;background:#f0f7ff;border-radius:12px;font-size:13px;color:#555;">
+                    📋 <strong>${esc(docData.title)}</strong><br>
+                    담당: ${esc(docData.manager)}
+                </div>
+            </div>`;
+    } catch (e) {
+        alert('제출 실패: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '✅ 작성 완료 · 제출하기';
+        submitting = false;
+    }
+}
+
+function markError(el) {
+    if (!el) return;
+    el.classList.add('field-error');
+    setTimeout(() => el.classList.remove('field-error'), 1500);
+}
+
+// Utilities
+function base64ToUint8Array(base64) {
+    // Handle data URL or raw base64
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const binary = atob(raw);
+    const arr = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+    return arr;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Handle resize - re-render PDF field positions
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(async () => {
+        if (pdfDoc && docData) {
+            await renderPdfPages();
+            setTimeout(() => {
+                (docData.fields || []).filter(f => f.type === 'signature' && (f.page !== undefined && f.page !== null)).forEach(f => initPdfSigCanvas(f.id));
+            }, 100);
+        }
+    }, 300);
+});
+
+init();
+</script>
+</body>
+</html>

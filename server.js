@@ -10,7 +10,7 @@ const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const HAS_REDIS = !!(REDIS_URL && REDIS_TOKEN);
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ===== Upstash Redis =====
@@ -35,7 +35,8 @@ const KV_KEYS = {
     'settings.json': 'settings',
     'news.json': 'news',
     'collections.json': 'collections',
-    'esign-docs.json': 'esign-docs'
+    'esign-docs.json': 'esign-docs',
+    'tdist-docs.json': 'tdist-docs'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -107,7 +108,8 @@ const DATA_ROUTES = [
     { path: 'settings', file: 'settings.json', fallback: {} },
     { path: 'news', file: 'news.json', fallback: [] },
     { path: 'collections', file: 'collections.json', fallback: [] },
-    { path: 'esign-docs', file: 'esign-docs.json', fallback: [] }
+    { path: 'esign-docs', file: 'esign-docs.json', fallback: [] },
+    { path: 'tdist-docs', file: 'tdist-docs.json', fallback: [] }
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
@@ -136,20 +138,20 @@ app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
 // Export (전체 데이터 내보내기)
 app.get('/api/export', async (req, res) => {
     try {
-        const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs] = await Promise.all([
+        const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, tdistDocs] = await Promise.all([
             readData('links.json'), readData('categories.json'), readData('sections.json'),
             readData('trainings.json'), readData('staff.json'), readData('training-records.json'),
             readData('schedules.json'), readData('tabs.json'), readData('settings.json'), readData('news.json'),
-            readData('collections.json'), readData('esign-docs.json')
+            readData('collections.json'), readData('esign-docs.json'), readData('tdist-docs.json')
         ]);
-        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, exportedAt: new Date().toISOString() });
+        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, tdistDocs, exportedAt: new Date().toISOString() });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Import (전체 데이터 가져오기)
 app.post('/api/import', async (req, res) => {
     try {
-        const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs } = req.body;
+        const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, tdistDocs } = req.body;
         const writes = [];
         if (links) writes.push(writeData('links.json', links));
         if (categories) writes.push(writeData('categories.json', categories));
@@ -163,6 +165,7 @@ app.post('/api/import', async (req, res) => {
         if (news) writes.push(writeData('news.json', news));
         if (collections) writes.push(writeData('collections.json', collections));
         if (esignDocs) writes.push(writeData('esign-docs.json', esignDocs));
+        if (tdistDocs) writes.push(writeData('tdist-docs.json', tdistDocs));
         await Promise.all(writes);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -253,6 +256,59 @@ app.post('/api/esign-public/:token/submit', async (req, res) => {
 // 공개 서명 페이지 HTML 서빙
 app.get('/sign/:token', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sign.html'));
+});
+
+// ===== 교사 배포 문서 공개 API =====
+// 문서 데이터 조회 (토큰 기반 - PDF + 필드 구조)
+app.get('/api/tdist-public/:token', async (req, res) => {
+    try {
+        const docs = await readData('tdist-docs.json') || [];
+        const doc = docs.find(d => d.token === req.params.token);
+        if (!doc) return res.status(404).json({ error: '문서를 찾을 수 없습니다.' });
+        if (doc.status === 'closed') return res.status(410).json({ error: '마감된 문서입니다.' });
+        if (doc.deadline && new Date(doc.deadline + 'T23:59:59') < new Date()) return res.status(410).json({ error: '마감 기한이 지났습니다.' });
+        // 제출 데이터, 비밀번호 제외하고 반환
+        const { submissions, password, ...publicDoc } = doc;
+        res.json(publicDoc);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 학부모 문서 제출 (JSON body max 10mb - 서명 이미지 포함)
+app.post('/api/tdist-public/:token/submit', async (req, res) => {
+    try {
+        const docs = await readData('tdist-docs.json') || [];
+        const doc = docs.find(d => d.token === req.params.token);
+        if (!doc) return res.status(404).json({ error: '문서를 찾을 수 없습니다.' });
+        if (doc.status === 'closed') return res.status(410).json({ error: '마감된 문서입니다.' });
+        if (doc.deadline && new Date(doc.deadline + 'T23:59:59') < new Date()) return res.status(410).json({ error: '마감 기한이 지났습니다.' });
+        if (!doc.submissions) doc.submissions = [];
+        const sub = {
+            id: 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            ...req.body,
+            submittedAt: new Date().toISOString()
+        };
+        doc.submissions.push(sub);
+        await writeData('tdist-docs.json', docs);
+        res.json({ success: true, message: '제출 완료' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 비밀번호 검증 후 제출 목록 조회
+app.post('/api/tdist-subs/:docId', async (req, res) => {
+    try {
+        const docs = await readData('tdist-docs.json') || [];
+        const doc = docs.find(d => d.id === req.params.docId);
+        if (!doc) return res.status(404).json({ error: '문서를 찾을 수 없습니다.' });
+        if (doc.password && doc.password !== req.body.password) {
+            return res.status(403).json({ error: '비밀번호가 올바르지 않습니다.' });
+        }
+        res.json({ submissions: doc.submissions || [], fields: doc.fields || [], title: doc.title });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 교사 배포 공개 페이지 HTML 서빙
+app.get('/doc/:token', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'doc.html'));
 });
 
 // 메인 페이지
