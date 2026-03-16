@@ -4408,7 +4408,7 @@ function handlePdfFileSelect(e){
 async function addPdfFiles(files){
     const tool=PDF_TOOLS[pdfToolCurrent];
     for(const file of files){
-        if(pdfToolCurrent==='img2pdf'){
+        if(pdfToolCurrent==='img2pdf'||pdfToolCurrent==='scan'){
             if(!file.type.startsWith('image/')){showToast(file.name+': 이미지 파일만 가능','error');continue;}
         } else {
             if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){showToast(file.name+': PDF 파일만 가능','error');continue;}
