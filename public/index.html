@@ -66,8 +66,8 @@
         .school-info-inner span{display:flex;align-items:center;gap:4px;}
 
         /* Main Tabs */
-        .main-tabs{max-width:960px;margin:0 auto;padding:8px 24px 0;display:flex;gap:4px;border-bottom:2px solid var(--border);}
-        .main-tab{padding:11px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;white-space:nowrap;flex-shrink:0;}
+        .main-tabs{max-width:960px;margin:0 auto;padding:8px 24px 0;display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--border);}
+        .main-tab{padding:11px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;white-space:nowrap;}
         .main-tab:hover{color:var(--primary);background:var(--primary-light);}
         .main-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-light);}
 
@@ -454,8 +454,8 @@
             .school-info{padding:8px 10px;}
             .school-info-inner{flex-direction:column;align-items:flex-start;padding:10px 14px;font-size:12px;}
             .main-tabs-wrapper{padding:6px 10px 0;}
-            .main-tabs{padding-left:10px;padding-right:10px;gap:2px;}
-            .main-tab{padding:8px 12px;font-size:11px;}
+            .main-tabs{padding-left:10px;padding-right:10px;gap:3px;}
+            .main-tab{padding:7px 10px;font-size:11px;}
             .tab-add-btn{padding:7px 10px;font-size:11px;}
             .links-grid{grid-template-columns:1fr;}
             .stats-row{grid-template-columns:repeat(2,1fr);}
@@ -576,8 +576,8 @@
 
         /* Tab admin controls */
         .main-tabs-wrapper{max-width:960px;margin:0 auto;padding:8px 24px 0;}
-        .main-tabs{overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch;}
-        .main-tab-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0;}
+        .main-tabs{overflow-x:visible;flex-wrap:wrap;}
+        .main-tab-wrap{position:relative;display:inline-flex;align-items:center;}
         .tab-move-btns{display:none;gap:1px;align-items:center;margin-right:2px;}
         .admin-mode .tab-move-btns{display:flex;}
         .tab-move-btn{width:20px;height:20px;border-radius:4px;border:1px solid var(--border);background:white;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0;flex-shrink:0;}
@@ -1201,7 +1201,7 @@
     </div></div>
 
     <!-- Schedule Edit Modal -->
-    <div class="modal-overlay" id="scheduleEditModal"><div class="modal" style="max-width:440px;">
+    <div class="modal-overlay" id="scheduleEditModal"><div class="modal" style="max-width:500px;">
         <div class="modal-header"><h2>📝 일정 수정</h2><button class="btn-close" onclick="closeModal('scheduleEditModal')">✕</button></div>
         <div class="modal-body">
             <input type="hidden" id="scheduleEditId">
@@ -1211,6 +1211,19 @@
             </div>
             <div class="form-group"><label>내용</label><input type="text" id="scheduleEditText" placeholder="일정 내용 입력"></div>
             <div class="form-group"><label>담당자</label><input type="text" id="scheduleEditManager" placeholder="담당자 (선택)"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+            <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleEditLink" placeholder="https:// 공지사항 링크 등"></div>
+            <div class="form-group"><label>📎 첨부파일 (선택)</label>
+                <div id="schEditFileArea" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <input type="file" id="schEditFileInput" onchange="handleSchEditFile(event)" style="font-size:12px;">
+                    <span id="schEditFileInfo" style="font-size:12px;color:var(--text-light);"></span>
+                </div>
+            </div>
+            <div class="form-group"><label>📌 사이트 내 바로가기 (선택)</label>
+                <select id="scheduleEditGoto" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                    <option value="">없음</option>
+                </select>
+            </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-danger" onclick="deleteFromEditModal()" style="margin-right:auto;">🗑️ 삭제</button>
@@ -1577,8 +1590,9 @@ function renderMonthView(el,titleEl){
         html+=`<td class="${isToday}" style="width:14.28%">`;
         html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}</div>`;
         items.forEach(it=>{
+            const hasExtra=it.link||it.fileUrl||it.gotoTab;
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
-                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
+                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
@@ -1636,11 +1650,17 @@ function renderDayView(el,titleEl){
     let html='<div class="day-detail-card">';
     if(items.length===0) html+='<div style="text-align:center;padding:30px;color:var(--text-light);">등록된 일정이 없습니다.</div>';
     items.forEach(it=>{
-        html+=`<div class="day-detail-item">
+        let badges='';
+        if(it.link) badges+=`<a href="${esc(it.link)}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:10px;text-decoration:none;white-space:nowrap;">🔗 링크</a>`;
+        if(it.fileUrl) badges+=`<a href="${esc(it.fileUrl)}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:10px;text-decoration:none;white-space:nowrap;">📎 ${esc(it.fileName||'파일')}</a>`;
+        if(it.gotoTab){const tab=tabsConfig.find(t=>t.id===it.gotoTab);if(tab) badges+=`<button onclick="event.stopPropagation();switchPage('${it.gotoTab}',document.querySelector('.main-tab'))" style="font-size:11px;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;">📌 ${esc(tab.title)}</button>`;}
+        html+=`<div class="day-detail-item" style="flex-wrap:wrap;">
             <button class="day-detail-emoji" onclick="toggleEmojiDropdown(this,'${it.id}')">${it.emoji||'😀'}</button>
             <input class="day-detail-input" value="${esc(it.text)}" onchange="updateScheduleItem('${it.id}','text',this.value)">
             <input class="day-detail-manager" value="${esc(it.manager||'')}" placeholder="담당자" onchange="updateScheduleItem('${it.id}','manager',this.value)">
+            <button class="item-action-btn" onclick="openScheduleEdit('${it.id}')" style="font-size:14px;" title="수정">✏️</button>
             <button class="item-action-btn delete" onclick="deleteScheduleItem('${it.id}')" style="font-size:14px;">🗑️</button>
+            ${badges?'<div style="width:100%;display:flex;gap:6px;margin-left:50px;flex-wrap:wrap;">'+badges+'</div>':''}
         </div>`;
     });
     html+=`<div class="day-detail-item" style="border-bottom:none;">
@@ -1781,18 +1801,40 @@ function submitScheduleAdd(){
 }
 
 let selectedEditEmoji='';
+let schEditPendingFile=null;
 function openScheduleEdit(id){
     const item=schedules.find(s=>s.id===id);if(!item)return;
     document.getElementById('scheduleEditId').value=id;
     document.getElementById('scheduleEditDate').value=item.date;
     document.getElementById('scheduleEditText').value=item.text;
     document.getElementById('scheduleEditManager').value=item.manager||'';
+    document.getElementById('scheduleEditLink').value=item.link||'';
     selectedEditEmoji=item.emoji||'';
+    schEditPendingFile=null;
+    document.getElementById('schEditFileInput').value='';
+    const fileInfo=document.getElementById('schEditFileInfo');
+    if(item.fileUrl){fileInfo.innerHTML=`📎 <a href="${esc(item.fileUrl)}" target="_blank" style="font-size:12px;">${esc(item.fileName||'첨부파일')}</a> <button onclick="removeSchEditFile()" style="border:none;background:none;cursor:pointer;color:#e53935;font-size:12px;">✕ 삭제</button>`;}
+    else{fileInfo.textContent='';}
     document.getElementById('scheduleEditEmojiPicker').innerHTML=SCH_EMOJIS.map(e=>
         `<button type="button" class="sch-emoji-btn ${e===selectedEditEmoji?'selected':''}" onclick="selectEditEmoji('${e}',this)">${e||'없음'}</button>`
     ).join('');
+    // 사이트 내 바로가기 셀렉트 생성
+    const sel=document.getElementById('scheduleEditGoto');
+    sel.innerHTML='<option value="">없음</option>';
+    tabsConfig.forEach(t=>{sel.innerHTML+=`<option value="${t.id}" ${item.gotoTab===t.id?'selected':''}>${t.icon||''} ${esc(t.title)}</option>`;});
     openModal('scheduleEditModal');
     setTimeout(()=>document.getElementById('scheduleEditText').focus(),100);
+}
+function handleSchEditFile(e){
+    const file=e.target.files[0];if(!file)return;
+    if(file.size>5*1024*1024){showToast('파일 5MB 이하만 가능','error');e.target.value='';return;}
+    schEditPendingFile=file;
+    document.getElementById('schEditFileInfo').textContent='📎 '+file.name+' ('+formatFileSize(file.size)+')';
+}
+function removeSchEditFile(){
+    schEditPendingFile='__remove__';
+    document.getElementById('schEditFileInfo').textContent='(첨부파일 삭제됨)';
+    document.getElementById('schEditFileInput').value='';
 }
 function selectEditEmoji(e,el){
     selectedEditEmoji=e;
@@ -1807,6 +1849,21 @@ async function submitScheduleEdit(){
     item.text=document.getElementById('scheduleEditText').value;
     item.manager=document.getElementById('scheduleEditManager').value;
     item.emoji=selectedEditEmoji;
+    item.link=document.getElementById('scheduleEditLink').value.trim()||'';
+    item.gotoTab=document.getElementById('scheduleEditGoto').value||'';
+    // 파일 처리
+    if(schEditPendingFile==='__remove__'){
+        if(item.filePath)await deleteFromFirebase(item.filePath);
+        item.fileUrl='';item.fileName='';item.filePath='';
+    } else if(schEditPendingFile&&firebaseStorage){
+        if(item.filePath)await deleteFromFirebase(item.filePath);
+        const storagePath='schedules/'+id+'/'+Date.now()+'_'+schEditPendingFile.name;
+        const url=await uploadToFirebase(schEditPendingFile,storagePath);
+        item.fileUrl=url;item.fileName=schEditPendingFile.name;item.filePath=storagePath;
+    } else if(schEditPendingFile&&!firebaseStorage){
+        showToast('Firebase 미연결 — 파일 업로드 불가','error');
+    }
+    schEditPendingFile=null;
     await api('POST','/api/schedules',schedules);
     saveToLocal();renderSchedule();
     closeModal('scheduleEditModal');
