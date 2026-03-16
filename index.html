@@ -338,11 +338,44 @@
             .schedule-table{font-size:11px!important;box-shadow:none!important;}
             .schedule-table th{background:#333!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
             .schedule-item{border-left:2px solid #333!important;background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+            .list-view-header{margin-bottom:8px!important;}
+            .list-view-nav{display:none!important;}
+            .list-table{font-size:11px!important;box-shadow:none!important;}
+            .list-table th{background:#333!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+            .list-table tr.row-sun,.list-table tr.row-sat,.list-table tr.row-today{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
             .day-detail-card{box-shadow:none!important;border:1px solid #ccc;}
         }
         .schedule-table{width:100%;border-collapse:collapse;background:var(--card-bg);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
         .schedule-table th{background:var(--primary);color:white;padding:10px 8px;font-size:13px;font-weight:600;text-align:center;}
         .schedule-table td{border:1px solid var(--border);padding:8px;vertical-align:top;min-height:80px;font-size:13px;}
+        /* 월중행사 목록 뷰 */
+        .list-view-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+        .list-view-school-days{display:inline-flex;align-items:center;gap:6px;background:var(--primary-light);border:1px solid var(--primary);color:var(--primary);padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;}
+        .list-view-nav{display:flex;align-items:center;gap:8px;}
+        .list-view-nav button{padding:6px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+        .list-view-nav button:hover{background:var(--primary-light);border-color:var(--primary);}
+        .list-view-nav .nav-current{background:var(--primary);color:white;border-color:var(--primary);}
+        .list-view-title{font-size:18px;font-weight:700;color:var(--text);}
+        .list-table{width:100%;border-collapse:collapse;background:var(--card-bg);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);table-layout:fixed;}
+        .list-table th{background:var(--primary);color:white;padding:10px 12px;font-size:13px;font-weight:600;text-align:center;border:1px solid rgba(255,255,255,0.2);}
+        .list-table td{border:1px solid var(--border);padding:8px 10px;font-size:13px;vertical-align:top;line-height:1.6;}
+        .list-table .col-date{width:100px;text-align:center;font-weight:600;}
+        .list-table .col-dow{width:40px;text-align:center;font-weight:600;}
+        .list-table .col-event{width:15%;}
+        .list-table .col-detail{width:auto;}
+        .list-table .col-manager{width:90px;text-align:center;}
+        .list-table .col-note{width:15%;}
+        .list-table tr.row-sun{background:#FFF0F0;}
+        .list-table tr.row-sat{background:#F0F4FF;}
+        .list-table tr.row-today{background:#FFF8E1;border-left:3px solid var(--primary);}
+        .list-table tr.row-empty td{color:var(--text-light);padding:6px 10px;}
+        .list-table .dow-sun{color:#e53935;font-weight:700;}
+        .list-table .dow-sat{color:#1565c0;font-weight:700;}
+        .list-table .event-name{color:var(--primary);font-weight:700;}
+        .list-table .event-holiday{color:#e53935;font-weight:700;}
+        .list-table .event-detail-line{margin-bottom:2px;}
+        .list-table .event-detail-line:last-child{margin-bottom:0;}
+        .list-table .manager-line{display:block;font-size:12px;}
         .schedule-table td.today{background:#FFF8E1;}
         .schedule-table td.other-month{color:#ccc;background:#fafafa;}
         .schedule-day-num{font-weight:700;font-size:14px;margin-bottom:4px;}
@@ -642,6 +675,7 @@
             <button class="schedule-view-tab" onclick="setScheduleView('day',this)">일간</button>
             <button class="schedule-view-tab" onclick="setScheduleView('week',this)">주간</button>
             <button class="schedule-view-tab active" onclick="setScheduleView('month',this)">월간</button>
+            <button class="schedule-view-tab" onclick="setScheduleView('list',this)">월중행사</button>
         </div>
         <div class="schedule-nav">
             <button class="schedule-nav-btn" onclick="scheduleNav(-1)">◀</button>
@@ -1385,7 +1419,8 @@ async function updateScheduleItem(id,field,val){
 function renderSchedule(){
     const el=document.getElementById('scheduleContent');
     const title=document.getElementById('scheduleTitle');
-    if(scheduleView==='month')renderMonthView(el,title);
+    if(scheduleView==='list')renderListView(el,title);
+    else if(scheduleView==='month')renderMonthView(el,title);
     else if(scheduleView==='week')renderWeekView(el,title);
     else renderDayView(el,title);
     renderDateStrip();
@@ -1488,6 +1523,73 @@ function renderDayView(el,titleEl){
         <button class="item-action-btn" onclick="submitDayAdd('${ds}')" style="font-size:14px;">➕</button>
     </div>`;
     html+='</div>';
+    el.innerHTML=html;
+}
+
+function renderListView(el,titleEl){
+    const y=scheduleDate.getFullYear(),m=scheduleDate.getMonth();
+    titleEl.textContent=`${y}년 ${m+1}월`;
+    const last=new Date(y,m+1,0);
+    const today=todayStr();
+    const dayNames=['일','월','화','수','목','금','토'];
+    // 수업일수 계산 (평일 중 일정이 없거나 일반 일정인 날 = 주말/공휴일 제외)
+    let schoolDays=0;
+    for(let d=1;d<=last.getDate();d++){
+        const dt=new Date(y,m,d);
+        const dow=dt.getDay();
+        if(dow!==0&&dow!==6) schoolDays++;
+    }
+    let html='<div class="list-view-header">';
+    html+=`<div class="list-view-school-days">📋 수업일수: ${schoolDays}일</div>`;
+    html+=`<div style="display:flex;align-items:center;gap:12px;">`;
+    html+=`<span class="list-view-title">${y}년 ${String(m+1).padStart(2,'0')}월</span>`;
+    html+=`<div class="list-view-nav">`;
+    html+=`<button onclick="scheduleNav(-1)">◀ 이전달</button>`;
+    html+=`<button class="nav-current" onclick="scheduleToday()">이번달</button>`;
+    html+=`<button onclick="scheduleNav(1)">다음달 ▶</button>`;
+    html+=`</div></div></div>`;
+    html+=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">`;
+    html+=`<table class="list-table"><thead><tr>`;
+    html+=`<th class="col-date">날짜</th><th class="col-dow">요일</th><th class="col-event">행사</th><th class="col-detail">주요활동</th><th class="col-manager">담당자</th>`;
+    html+=`</tr></thead><tbody>`;
+    for(let d=1;d<=last.getDate();d++){
+        const ds=fmtDate(new Date(y,m,d));
+        const dt=new Date(y,m,d);
+        const dow=dt.getDay();
+        const isToday=ds===today;
+        const items=getScheduleItems(ds);
+        let rowClass='';
+        if(isToday) rowClass='row-today';
+        else if(dow===0) rowClass='row-sun';
+        else if(dow===6) rowClass='row-sat';
+        if(items.length===0){
+            rowClass+=' row-empty';
+        }
+        const dowClass=dow===0?'dow-sun':dow===6?'dow-sat':'';
+        html+=`<tr class="${rowClass}">`;
+        html+=`<td class="col-date">${ds}</td>`;
+        html+=`<td class="col-dow ${dowClass}">${dayNames[dow]}</td>`;
+        if(items.length===0){
+            html+=`<td></td><td></td><td></td>`;
+        } else {
+            // 행사: 이모지가 있는 항목의 텍스트 (주요 행사명)
+            const eventNames=items.filter(it=>it.emoji).map(it=>`<div class="event-name">${it.emoji} ${esc(it.text)}</div>`);
+            const detailItems=items.filter(it=>!it.emoji).map(it=>`<div class="event-detail-line">${esc(it.text)}</div>`);
+            // 이모지 없는 것도 행사에 포함 (행사가 비면)
+            if(eventNames.length===0){
+                const first=items[0];
+                eventNames.push(`<div class="event-name">${esc(first.text)}</div>`);
+                detailItems.shift();
+            }
+            html+=`<td class="col-event">${eventNames.join('')}</td>`;
+            html+=`<td class="col-detail">${detailItems.length?detailItems.join(''):'<span style="color:var(--text-light);">-</span>'}</td>`;
+            // 담당자
+            const managers=[...new Set(items.map(it=>it.manager).filter(Boolean))];
+            html+=`<td class="col-manager">${managers.map(mg=>`<span class="manager-line">${esc(mg)}</span>`).join('')||''}</td>`;
+        }
+        html+=`</tr>`;
+    }
+    html+=`</tbody></table></div>`;
     el.innerHTML=html;
 }
 
