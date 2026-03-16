@@ -978,6 +978,11 @@
                     <h3>페이지 번호</h3><p>PDF 각 페이지에 번호를 자동으로 삽입합니다.</p>
                     <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#6d4c41;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
                 </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('scan')">
+                    <div class="pdf-tool-icon" style="background:#00acc1;">📸</div>
+                    <h3>사진 스캔</h3><p>사진을 스캔한 것처럼 깔끔하게 변환합니다. 자동 보정!</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00acc1;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
             </div>
         </div>
         <div id="pdfToolsWorkspace"></div>
@@ -4316,7 +4321,8 @@ const PDF_TOOLS={
     pdf2img:{title:'PDF → 이미지',icon:'📷',color:'#8e24aa',accept:'.pdf',multi:false,desc:'이미지로 변환할 PDF를 선택하세요'},
     rotate:{title:'PDF 회전',icon:'🔄',color:'#00897b',accept:'.pdf',multi:false,desc:'회전할 PDF 파일을 선택하세요'},
     protect:{title:'PDF 보호',icon:'🔒',color:'#5c6bc0',accept:'.pdf',multi:false,desc:'암호를 설정할 PDF를 선택하세요'},
-    pagenumber:{title:'페이지 번호',icon:'🔢',color:'#6d4c41',accept:'.pdf',multi:false,desc:'번호를 삽입할 PDF를 선택하세요'}
+    pagenumber:{title:'페이지 번호',icon:'🔢',color:'#6d4c41',accept:'.pdf',multi:false,desc:'번호를 삽입할 PDF를 선택하세요'},
+    scan:{title:'사진 스캔',icon:'📸',color:'#00acc1',accept:'image/*',multi:true,desc:'스캔할 사진을 선택하세요 (JPG, PNG)'}
 };
 let pdfToolFiles=[];
 let pdfToolCurrent=null;
@@ -4339,6 +4345,24 @@ function openPdfTool(toolId){
     if(toolId==='rotate') optionsHtml=`<div class="pdf-options"><label>회전 방법</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 각 페이지를 클릭해 회전하세요.</p><div class="pdf-option-row"><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(90)" style="padding:8px 16px;font-size:12px;">전체 90° →</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(180)" style="padding:8px 16px;font-size:12px;">전체 180°</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(270)" style="padding:8px 16px;font-size:12px;">전체 270° ←</button></div></div>`;
     if(toolId==='protect') optionsHtml=`<div class="pdf-options"><label>암호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">비밀번호</label><input type="password" id="pdfPassword" placeholder="비밀번호 입력"></div><div class="pdf-option-group"><label style="font-size:12px;">비밀번호 확인</label><input type="password" id="pdfPasswordConfirm" placeholder="다시 입력"></div></div></div>`;
     if(toolId==='pagenumber') optionsHtml=`<div class="pdf-options"><label>번호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">위치</label><select id="pdfNumPosition"><option value="bottom-center" selected>하단 중앙</option><option value="bottom-left">하단 왼쪽</option><option value="bottom-right">하단 오른쪽</option><option value="top-center">상단 중앙</option><option value="top-left">상단 왼쪽</option><option value="top-right">상단 오른쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">시작 번호</label><input type="number" id="pdfNumStart" value="1" min="1" style="width:80px;"></div><div class="pdf-option-group"><label style="font-size:12px;">크기</label><select id="pdfNumSize"><option value="10">작게</option><option value="12" selected>보통</option><option value="14">크게</option></select></div></div></div>`;
+    if(toolId==='scan') optionsHtml=`<div class="pdf-options">
+        <label>스캔 모드</label>
+        <div class="pdf-option-row">
+            <div class="pdf-option-group"><label style="font-size:12px;">모드</label><select id="scanMode" onchange="updateScanPreview()"><option value="auto" selected>자동 보정 (권장)</option><option value="bw">흑백 문서</option><option value="gray">그레이스케일</option><option value="color">컬러 선명하게</option><option value="stamp">도장/서명 추출</option></select></div>
+            <div class="pdf-option-group"><label style="font-size:12px;">출력 형식</label><select id="scanOutput"><option value="pdf" selected>PDF</option><option value="jpg">JPG 이미지</option><option value="png">PNG 이미지</option></select></div>
+        </div>
+        <div class="pdf-option-row">
+            <div class="pdf-option-group"><label style="font-size:12px;">밝기 <span id="scanBrightVal">0</span></label><input type="range" id="scanBright" min="-50" max="50" value="0" oninput="document.getElementById('scanBrightVal').textContent=this.value;updateScanPreview()" style="width:100%;"></div>
+            <div class="pdf-option-group"><label style="font-size:12px;">대비 <span id="scanContrastVal">0</span></label><input type="range" id="scanContrast" min="-50" max="50" value="0" oninput="document.getElementById('scanContrastVal').textContent=this.value;updateScanPreview()" style="width:100%;"></div>
+        </div>
+    </div>
+    <div id="scanPreviewArea" style="margin-top:16px;display:none;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px;">미리보기 (첫 번째 사진)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
+            <div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;text-align:center;">원본</div><canvas id="scanOrigCanvas" style="width:100%;border-radius:8px;border:1px solid var(--border);"></canvas></div>
+            <div><div style="font-size:11px;color:var(--text-light);margin-bottom:4px;text-align:center;">스캔 결과</div><canvas id="scanResultCanvas" style="width:100%;border-radius:8px;border:1px solid var(--border);"></canvas></div>
+        </div>
+    </div>`;
     ws.innerHTML=`<div class="pdf-workspace active">
         <div class="pdf-ws-header"><h2><span style="background:${tool.color};color:white;width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">${tool.icon}</span>${tool.title}</h2><button class="pdf-ws-back" onclick="closePdfTool()">← 도구 목록</button></div>
         <div class="pdf-dropzone" id="pdfDropzone" onclick="document.getElementById('pdfFileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handlePdfDrop(event)">
@@ -4393,6 +4417,7 @@ async function addPdfFiles(files){
     }
     renderPdfFiles();
     if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate') renderPdfPreview();
+    if(pdfToolCurrent==='scan'&&pdfToolFiles.length>0) initScanPreview();
 }
 
 function renderPdfFiles(){
@@ -4425,7 +4450,7 @@ function renderPdfFiles(){
     }
 }
 
-function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();}
+function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();if(pdfToolCurrent==='scan'){if(pdfToolFiles.length>0)initScanPreview();else{const a=document.getElementById('scanPreviewArea');if(a)a.style.display='none';scanOrigBitmap=null;}}}
 function movePdfFile(i,dir){
     const j=i+dir;if(j<0||j>=pdfToolFiles.length)return;
     [pdfToolFiles[i],pdfToolFiles[j]]=[pdfToolFiles[j],pdfToolFiles[i]];
@@ -4552,6 +4577,7 @@ async function processPdfTool(){
             case 'rotate': await pdfRotate(); break;
             case 'protect': await pdfProtect(); break;
             case 'pagenumber': await pdfPageNumber(); break;
+            case 'scan': await pdfScan(); break;
         }
     }catch(e){
         showToast('처리 실패: '+e.message,'error');
@@ -4768,6 +4794,181 @@ async function pdfPageNumber(){
     const bytes=await doc.save();
     const name=pdfToolFiles[0].name.replace('.pdf','')+'_numbered.pdf';
     pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== 사진 스캔 =====
+let scanOrigBitmap=null;
+
+async function initScanPreview(){
+    const area=document.getElementById('scanPreviewArea');
+    if(!area)return;
+    area.style.display='block';
+    const f=pdfToolFiles[0];
+    const blob=new Blob([f.data],{type:f.type});
+    scanOrigBitmap=await createImageBitmap(blob);
+    // 원본 캔버스 그리기
+    const origC=document.getElementById('scanOrigCanvas');
+    const maxW=400;
+    const scale=Math.min(1,maxW/scanOrigBitmap.width);
+    origC.width=scanOrigBitmap.width*scale;
+    origC.height=scanOrigBitmap.height*scale;
+    origC.getContext('2d').drawImage(scanOrigBitmap,0,0,origC.width,origC.height);
+    updateScanPreview();
+}
+
+function updateScanPreview(){
+    if(!scanOrigBitmap||!document.getElementById('scanResultCanvas'))return;
+    const resC=document.getElementById('scanResultCanvas');
+    const maxW=400;
+    const scale=Math.min(1,maxW/scanOrigBitmap.width);
+    resC.width=scanOrigBitmap.width*scale;
+    resC.height=scanOrigBitmap.height*scale;
+    const ctx=resC.getContext('2d');
+    ctx.drawImage(scanOrigBitmap,0,0,resC.width,resC.height);
+    const imageData=ctx.getImageData(0,0,resC.width,resC.height);
+    applyScanFilter(imageData);
+    ctx.putImageData(imageData,0,0);
+}
+
+function applyScanFilter(imageData){
+    const d=imageData.data;
+    const mode=document.getElementById('scanMode')?.value||'auto';
+    const bright=parseInt(document.getElementById('scanBright')?.value||'0');
+    const contrast=parseInt(document.getElementById('scanContrast')?.value||'0');
+    // 자동 보정: 밝기/대비 자동 계산
+    let autoBright=0,autoContrast=0;
+    if(mode==='auto'||mode==='bw'||mode==='gray'){
+        // 히스토그램 분석
+        let sum=0,min=255,max=0;
+        for(let i=0;i<d.length;i+=4){
+            const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+            sum+=g;if(g<min)min=g;if(g>max)max=g;
+        }
+        const avg=sum/(d.length/4);
+        autoBright=Math.round((128-avg)*0.5);
+        autoContrast=Math.round(Math.max(0,(200-max+min)*0.3));
+    }
+    const totalBright=bright+autoBright;
+    const totalContrast=contrast+autoContrast;
+    const factor=(259*(totalContrast+255))/(255*(259-totalContrast));
+    for(let i=0;i<d.length;i+=4){
+        let r=d[i],g=d[i+1],b=d[i+2];
+        // 밝기
+        r+=totalBright;g+=totalBright;b+=totalBright;
+        // 대비
+        r=factor*(r-128)+128;
+        g=factor*(g-128)+128;
+        b=factor*(b-128)+128;
+        if(mode==='bw'){
+            const gray=0.299*r+0.587*g+0.114*b;
+            const bw=gray>140?255:0;
+            r=g=b=bw;
+        } else if(mode==='gray'){
+            const gray=0.299*r+0.587*g+0.114*b;
+            r=g=b=gray;
+        } else if(mode==='stamp'){
+            // 도장/서명 추출: 빨간색/파란색 강조, 나머지 흰색
+            const gray=0.299*r+0.587*g+0.114*b;
+            const isRed=r>100&&r>g*1.4&&r>b*1.4;
+            const isBlue=b>100&&b>r*1.2&&b>g*1.1;
+            const isDark=gray<80;
+            if(isRed){r=Math.min(255,r*1.3);g=g*0.3;b=b*0.3;}
+            else if(isBlue){r=r*0.3;g=g*0.3;b=Math.min(255,b*1.3);}
+            else if(isDark){r=g=b=Math.max(0,gray*0.5);}
+            else{r=g=b=255;}
+        } else if(mode==='color'){
+            // 컬러 선명하게: 채도 올리기
+            const gray=0.299*r+0.587*g+0.114*b;
+            const sat=1.4;
+            r=gray+sat*(r-gray);
+            g=gray+sat*(g-gray);
+            b=gray+sat*(b-gray);
+        }
+        // 클램프
+        d[i]=Math.max(0,Math.min(255,r));
+        d[i+1]=Math.max(0,Math.min(255,g));
+        d[i+2]=Math.max(0,Math.min(255,b));
+    }
+    // 언샤프 마스크 (선명도) - auto/bw/gray 모드
+    if(mode==='auto'||mode==='bw'||mode==='gray'||mode==='color'){
+        sharpenImageData(imageData);
+    }
+}
+
+function sharpenImageData(imageData){
+    const w=imageData.width,h=imageData.height,d=imageData.data;
+    const copy=new Uint8ClampedArray(d);
+    // 간단한 언샤프 마스크
+    const kernel=[0,-1,0,-1,5,-1,0,-1,0];
+    for(let y=1;y<h-1;y++){
+        for(let x=1;x<w-1;x++){
+            for(let c=0;c<3;c++){
+                let val=0;
+                for(let ky=-1;ky<=1;ky++){
+                    for(let kx=-1;kx<=1;kx++){
+                        val+=copy[((y+ky)*w+(x+kx))*4+c]*kernel[(ky+1)*3+(kx+1)];
+                    }
+                }
+                d[(y*w+x)*4+c]=Math.max(0,Math.min(255,val));
+            }
+        }
+    }
+}
+
+async function processOneImage(file){
+    const blob=new Blob([file.data],{type:file.type});
+    const bitmap=await createImageBitmap(blob);
+    const canvas=document.createElement('canvas');
+    canvas.width=bitmap.width;canvas.height=bitmap.height;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(bitmap,0,0);
+    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    applyScanFilter(imageData);
+    ctx.putImageData(imageData,0,0);
+    return canvas;
+}
+
+async function pdfScan(){
+    const output=document.getElementById('scanOutput')?.value||'pdf';
+    pdfShowProgress(5,'스캔 처리 중...');
+    if(output==='pdf'){
+        const doc=await PDFLib.PDFDocument.create();
+        for(let i=0;i<pdfToolFiles.length;i++){
+            pdfShowProgress(5+85*(i/pdfToolFiles.length),'사진 '+(i+1)+'/'+pdfToolFiles.length+' 스캔 중...');
+            const canvas=await processOneImage(pdfToolFiles[i]);
+            const jpgData=canvas.toDataURL('image/jpeg',0.92);
+            const jpgBytes=Uint8Array.from(atob(jpgData.split(',')[1]),c=>c.charCodeAt(0));
+            const img=await doc.embedJpg(jpgBytes);
+            // A4 비율에 맞추기
+            const pageW=595.28,pageH=841.89;
+            const imgRatio=img.width/img.height;
+            const pageRatio=pageW/pageH;
+            let w,h;
+            if(imgRatio>pageRatio){w=pageW;h=pageW/imgRatio;}
+            else{h=pageH;w=pageH*imgRatio;}
+            const page=doc.addPage([pageW,pageH]);
+            page.drawImage(img,{x:(pageW-w)/2,y:(pageH-h)/2,width:w,height:h});
+        }
+        pdfShowProgress(95,'PDF 생성 중...');
+        const bytes=await doc.save();
+        pdfShowResult('scanned.pdf',new Blob([bytes],{type:'application/pdf'}));
+    } else {
+        // 이미지 출력
+        const results=[];
+        for(let i=0;i<pdfToolFiles.length;i++){
+            pdfShowProgress(5+85*(i/pdfToolFiles.length),'사진 '+(i+1)+'/'+pdfToolFiles.length+' 스캔 중...');
+            const canvas=await processOneImage(pdfToolFiles[i]);
+            const mimeType=output==='png'?'image/png':'image/jpeg';
+            const ext=output==='png'?'.png':'.jpg';
+            const blob=await new Promise(r=>canvas.toBlob(r,mimeType,0.92));
+            const name=pdfToolFiles[i].name.replace(/\.[^.]+$/,'')+'_scanned'+ext;
+            results.push({name,blob});
+        }
+        pdfShowProgress(100,'스캔 완료!');
+        if(results.length===1) pdfShowResult(results[0].name,results[0].blob);
+        else pdfShowResultMulti(results);
+    }
 }
 
 init();
