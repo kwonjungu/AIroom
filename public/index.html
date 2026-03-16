@@ -3969,17 +3969,50 @@ async function submitCollectionUpload(){
     showToast('자료가 제출되었습니다','success');
 }
 
-function downloadColFile(colId,fileIdx){
+async function downloadColFile(colId,fileIdx){
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const f=col.submissions[fileIdx];if(!f)return;
-    const url=f.downloadUrl;
-    if(!url){showToast('다운로드 URL이 없습니다','error');return;}
-    const a=document.createElement('a');
-    a.href=url;
-    a.style.display='none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try{
+        // storagePath가 있으면 Firebase SDK로 최신 URL 가져오기
+        let url=f.downloadUrl;
+        if(f.storagePath&&firebaseStorage){
+            try{url=await firebaseStorage.ref().child(f.storagePath).getDownloadURL();}catch(e){}
+        }
+        if(!url){showToast('다운로드 URL이 없습니다','error');return;}
+        const a=document.createElement('a');
+        a.href=url;
+        a.target='_blank';
+        a.style.display='none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }catch(e){showToast('다운로드 실패: '+e.message,'error');}
+}
+
+function fetchBlobXHR(url){
+    return new Promise((resolve,reject)=>{
+        const xhr=new XMLHttpRequest();
+        xhr.open('GET',url,true);
+        xhr.responseType='blob';
+        xhr.onload=()=>xhr.status===200?resolve(xhr.response):reject(new Error('HTTP '+xhr.status));
+        xhr.onerror=()=>reject(new Error('네트워크 오류'));
+        xhr.send();
+    });
+}
+
+async function getFileBlob(f){
+    // storagePath가 있으면 Firebase SDK로 최신 URL 가져오기
+    if(f.storagePath&&firebaseStorage){
+        try{
+            const url=await firebaseStorage.ref().child(f.storagePath).getDownloadURL();
+            return await fetchBlobXHR(url);
+        }catch(e){}
+    }
+    // downloadUrl로 직접 시도
+    if(f.downloadUrl){
+        return await fetchBlobXHR(f.downloadUrl);
+    }
+    throw new Error('다운로드 URL 없음');
 }
 
 async function downloadAllColFiles(colId){
@@ -3988,10 +4021,9 @@ async function downloadAllColFiles(colId){
     try{
         const zip=new JSZip();
         const usedNames={};
+        let successCount=0;
         for(const f of col.submissions){
-            const url=f.downloadUrl;if(!url)continue;
             let name=f.fileName||'file';
-            // 제출자 이름을 파일명 앞에 붙여서 폴더 없이 플랫하게
             const submitter=f.submitter||'unknown';
             name=submitter+'_'+name;
             if(usedNames[name]){
@@ -3999,10 +4031,15 @@ async function downloadAllColFiles(colId){
                 const ext=name.lastIndexOf('.');
                 name=ext>0?name.slice(0,ext)+'_'+usedNames[name]+name.slice(ext):name+'_'+usedNames[name];
             } else {usedNames[name]=1;}
-            const resp=await fetch(url);
-            const blob=await resp.blob();
-            zip.file(name,blob);
+            try{
+                const blob=await getFileBlob(f);
+                zip.file(name,blob);
+                successCount++;
+            }catch(err){
+                console.warn('파일 다운로드 실패:',name,err);
+            }
         }
+        if(successCount===0){showToast('다운로드 가능한 파일이 없습니다','error');return;}
         const content=await zip.generateAsync({type:'blob'});
         const blobUrl=URL.createObjectURL(content);
         const a=document.createElement('a');
@@ -4012,7 +4049,7 @@ async function downloadAllColFiles(colId){
         document.body.appendChild(a);
         a.click();
         setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(blobUrl);},200);
-        showToast('ZIP 다운로드 완료','success');
+        showToast(`ZIP 다운로드 완료 (${successCount}/${col.submissions.length}개)`,'success');
     }catch(err){
         console.error('ZIP 생성 실패:',err);
         showToast('ZIP 생성 실패: '+err.message,'error');
