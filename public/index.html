@@ -992,6 +992,69 @@
         <div id="pdfToolsWorkspace"></div>
     </div>
 
+    <!-- ===== E-SIGN (전자서명) PAGE ===== -->
+    <div class="page" id="page-esign">
+        <div style="text-align:center;margin-bottom:16px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">✍️ 전자서명 문서</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">문서를 만들고 링크로 배포하면, 학부모가 서명·작성 후 제출합니다.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openEsignCreate()" style="margin-bottom:20px;">➕ 새 전자서명 문서 만들기</button>
+        <div id="esignList"></div>
+    </div>
+
+    <!-- E-Sign Create/Edit Modal -->
+    <div class="modal-overlay" id="esignCreateModal"><div class="modal" style="max-width:700px;">
+        <div class="modal-header"><h2 id="esignModalTitle">✍️ 전자서명 문서 만들기</h2><button class="btn-close" onclick="closeModal('esignCreateModal')">✕</button></div>
+        <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+            <input type="hidden" id="esignEditId">
+            <div class="form-group"><label>문서 제목 *</label><input type="text" id="esignTitle" placeholder="예: 현장체험학습 동의서"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group"><label>담당자 *</label><input type="text" id="esignManager" placeholder="담당 교사명"></div>
+                <div class="form-group"><label>마감일</label><input type="date" id="esignDeadline"></div>
+            </div>
+            <div class="form-group"><label>안내 문구</label><textarea id="esignDesc" rows="2" placeholder="학부모에게 보여질 안내 문구 (선택)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;"></textarea></div>
+
+            <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+            <h3 style="font-size:15px;margin:0 0 12px;">📝 문서 본문 편집</h3>
+            <p style="font-size:12px;color:var(--text-light);margin:0 0 12px;">본문 텍스트를 작성하고, 입력 필드를 삽입하세요. 학부모가 이 양식을 채워서 제출합니다.</p>
+
+            <!-- 필드 삽입 버튼 -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+                <button class="btn btn-secondary" onclick="esignInsertField('text')" style="font-size:12px;padding:6px 12px;">📝 텍스트 입력</button>
+                <button class="btn btn-secondary" onclick="esignInsertField('signature')" style="font-size:12px;padding:6px 12px;">✍️ 서명란</button>
+                <button class="btn btn-secondary" onclick="esignInsertField('checkbox')" style="font-size:12px;padding:6px 12px;">☑️ 체크박스</button>
+                <button class="btn btn-secondary" onclick="esignInsertField('date')" style="font-size:12px;padding:6px 12px;">📅 날짜 입력</button>
+                <button class="btn btn-secondary" onclick="esignInsertField('select')" style="font-size:12px;padding:6px 12px;">📋 선택지</button>
+                <button class="btn btn-secondary" onclick="esignInsertField('file')" style="font-size:12px;padding:6px 12px;">📎 파일 첨부</button>
+            </div>
+
+            <!-- 본문 에디터 -->
+            <div id="esignEditorArea" contenteditable="false" style="min-height:300px;border:2px solid var(--border);border-radius:10px;padding:16px;background:white;font-size:14px;line-height:1.8;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="esignPreviewDoc()">👁️ 미리보기</button>
+            <button class="btn btn-secondary" onclick="closeModal('esignCreateModal')">취소</button>
+            <button class="btn btn-primary" onclick="submitEsignCreate()">저장 및 배포</button>
+        </div>
+    </div></div>
+
+    <!-- E-Sign Preview Modal -->
+    <div class="modal-overlay" id="esignPreviewModal"><div class="modal" style="max-width:600px;">
+        <div class="modal-header"><h2>👁️ 학부모 화면 미리보기</h2><button class="btn-close" onclick="closeModal('esignPreviewModal')">✕</button></div>
+        <div class="modal-body" id="esignPreviewBody" style="max-height:70vh;overflow-y:auto;"></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('esignPreviewModal')">닫기</button></div>
+    </div></div>
+
+    <!-- E-Sign Submissions Modal -->
+    <div class="modal-overlay" id="esignSubsModal"><div class="modal" style="max-width:700px;">
+        <div class="modal-header"><h2 id="esignSubsTitle">📊 제출 현황</h2><button class="btn-close" onclick="closeModal('esignSubsModal')">✕</button></div>
+        <div class="modal-body" id="esignSubsBody" style="max-height:70vh;overflow-y:auto;"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="esignExportCSV()" style="margin-right:auto;">📥 CSV 내보내기</button>
+            <button class="btn btn-secondary" onclick="closeModal('esignSubsModal')">닫기</button>
+        </div>
+    </div></div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1294,7 +1357,7 @@ function toggleSectionEmojiPicker(){
     else p.style.display='none';
 }
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[];
 let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
@@ -1433,7 +1496,7 @@ async function saveBannerSettings(){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,esignDocs,ts:Date.now()};
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -1470,11 +1533,11 @@ async function init(){
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
             api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news'),
-            api('GET','/api/collections')
+            api('GET','/api/collections'),api('GET','/api/esign-docs')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
-        tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];
+        tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];esignDocs=results[10]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -1495,7 +1558,7 @@ async function init(){
     }
     await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
-    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();renderCollections();
+    setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();renderCollections();renderEsignList();
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -1516,6 +1579,7 @@ function switchPage(p,btn){
     if(p==='schedule')renderSchedule();
     if(p==='news')renderNews();
     if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
+    if(p==='esign')renderEsignList();
 }
 
 // ===== SCHEDULE =====
@@ -4114,6 +4178,292 @@ async function moveSection(secId,dir){
     if(newIdx<0||newIdx>=sorted.length)return;
     const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
     await api('POST','/api/sections',sections);saveToLocal();renderSections();
+}
+
+// ===== E-SIGN (전자서명 문서) =====
+let esignEditorFields=[];
+let esignCurrentViewId='';
+
+function generateToken(){
+    const chars='abcdefghijkmnpqrstuvwxyz23456789';
+    let s='';for(let i=0;i<8;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+    return s;
+}
+
+function openEsignCreate(){
+    document.getElementById('esignEditId').value='';
+    document.getElementById('esignTitle').value='';
+    document.getElementById('esignManager').value='';
+    const dl=new Date();dl.setDate(dl.getDate()+7);
+    document.getElementById('esignDeadline').value=fmtDate(dl);
+    document.getElementById('esignDesc').value='';
+    document.getElementById('esignModalTitle').textContent='✍️ 전자서명 문서 만들기';
+    esignEditorFields=[];
+    renderEsignEditor();
+    openModal('esignCreateModal');
+}
+
+function openEsignEdit(id){
+    const doc=esignDocs.find(d=>d.id===id);if(!doc)return;
+    document.getElementById('esignEditId').value=id;
+    document.getElementById('esignTitle').value=doc.title;
+    document.getElementById('esignManager').value=doc.manager;
+    document.getElementById('esignDeadline').value=doc.deadline||'';
+    document.getElementById('esignDesc').value=doc.description||'';
+    document.getElementById('esignModalTitle').textContent='✏️ 문서 수정';
+    esignEditorFields=JSON.parse(JSON.stringify(doc.fields||[]));
+    renderEsignEditor();
+    openModal('esignCreateModal');
+}
+
+function renderEsignEditor(){
+    const area=document.getElementById('esignEditorArea');
+    let html='';
+    esignEditorFields.forEach((f,i)=>{
+        html+=`<div class="esign-field-block" style="border:2px dashed var(--border);border-radius:10px;padding:12px;margin:8px 0;background:#f8f9ff;position:relative;">`;
+        html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">`;
+        html+=`<span style="font-size:12px;font-weight:700;color:var(--primary);">${getFieldIcon(f.type)} ${getFieldLabel(f.type)}</span>`;
+        html+=`<div style="display:flex;gap:4px;">`;
+        if(i>0) html+=`<button onclick="esignMoveField(${i},-1)" style="border:1px solid var(--border);background:white;border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;">↑</button>`;
+        if(i<esignEditorFields.length-1) html+=`<button onclick="esignMoveField(${i},1)" style="border:1px solid var(--border);background:white;border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;">↓</button>`;
+        html+=`<button onclick="esignRemoveField(${i})" style="border:1px solid #ffcdd2;background:#fff5f5;border-radius:4px;cursor:pointer;padding:2px 6px;font-size:11px;color:#e53935;">✕</button>`;
+        html+=`</div></div>`;
+        // 필드별 설정
+        html+=`<input type="text" value="${esc(f.label||'')}" onchange="esignEditorFields[${i}].label=this.value" placeholder="필드 이름 (예: 학생 이름)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;margin-bottom:6px;">`;
+        if(f.type==='text') html+=`<input type="text" value="${esc(f.placeholder||'')}" onchange="esignEditorFields[${i}].placeholder=this.value" placeholder="입력 안내 텍스트" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text-light);">`;
+        if(f.type==='checkbox') html+=`<input type="text" value="${esc(f.checkLabel||'')}" onchange="esignEditorFields[${i}].checkLabel=this.value" placeholder="체크 문구 (예: 위 내용에 동의합니다)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;">`;
+        if(f.type==='select') html+=`<input type="text" value="${esc(f.options||'')}" onchange="esignEditorFields[${i}].options=this.value" placeholder="선택지 (쉼표로 구분: 해당,비해당)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:12px;">`;
+        if(f.type==='signature') html+=`<div style="height:60px;border:2px dashed #ccc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">✍️ 서명란이 여기에 표시됩니다</div>`;
+        if(f.type==='label') html+=`<textarea onchange="esignEditorFields[${i}].content=this.value" placeholder="안내 문구 / 본문 텍스트 입력" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-height:60px;resize:vertical;">${esc(f.content||'')}</textarea>`;
+        html+=`</div>`;
+    });
+    if(esignEditorFields.length===0) html=`<div style="text-align:center;padding:40px;color:var(--text-light);">
+        <p style="font-size:18px;margin-bottom:8px;">📝</p>
+        <p>위 버튼으로 입력 필드를 추가하세요.</p>
+        <p style="font-size:12px;">💡 팁: "안내 텍스트" 필드로 본문을 작성하고,<br>서명란/체크박스 등을 삽입하세요.</p>
+    </div>`;
+    area.innerHTML=html;
+}
+
+function getFieldIcon(type){return{text:'📝',signature:'✍️',checkbox:'☑️',date:'📅',select:'📋',file:'📎',label:'📄'}[type]||'📝';}
+function getFieldLabel(type){return{text:'텍스트 입력',signature:'서명란',checkbox:'체크박스',date:'날짜 입력',select:'선택지',file:'파일 첨부',label:'안내 텍스트'}[type]||'필드';}
+
+function esignInsertField(type){
+    const f={type,label:'',id:'f_'+Date.now()+'_'+Math.random().toString(36).slice(2,5)};
+    if(type==='text'){f.label='';f.placeholder='';}
+    if(type==='signature'){f.label='서명';}
+    if(type==='checkbox'){f.label='동의';f.checkLabel='위 내용에 동의합니다.';}
+    if(type==='date'){f.label='날짜';}
+    if(type==='select'){f.label='선택';f.options='해당,비해당';}
+    if(type==='file'){f.label='첨부파일';}
+    if(type==='label'){f.label='안내 텍스트';f.content='';}
+    esignEditorFields.push(f);
+    renderEsignEditor();
+}
+
+function esignRemoveField(i){esignEditorFields.splice(i,1);renderEsignEditor();}
+function esignMoveField(i,dir){
+    const j=i+dir;if(j<0||j>=esignEditorFields.length)return;
+    [esignEditorFields[i],esignEditorFields[j]]=[esignEditorFields[j],esignEditorFields[i]];
+    renderEsignEditor();
+}
+
+async function submitEsignCreate(){
+    const title=document.getElementById('esignTitle').value.trim();
+    const manager=document.getElementById('esignManager').value.trim();
+    if(!title){showToast('문서 제목을 입력하세요','error');return;}
+    if(!manager){showToast('담당자를 입력하세요','error');return;}
+    if(esignEditorFields.length===0){showToast('필드를 하나 이상 추가하세요','error');return;}
+    const editId=document.getElementById('esignEditId').value;
+    if(editId){
+        // 수정
+        const doc=esignDocs.find(d=>d.id===editId);if(!doc)return;
+        doc.title=title;doc.manager=manager;
+        doc.deadline=document.getElementById('esignDeadline').value;
+        doc.description=document.getElementById('esignDesc').value.trim();
+        doc.fields=JSON.parse(JSON.stringify(esignEditorFields));
+    } else {
+        // 신규 생성
+        const doc={
+            id:'esign_'+Date.now(),
+            token:generateToken(),
+            title,manager,
+            deadline:document.getElementById('esignDeadline').value,
+            description:document.getElementById('esignDesc').value.trim(),
+            fields:JSON.parse(JSON.stringify(esignEditorFields)),
+            status:'open',
+            submissions:[],
+            createdAt:Date.now()
+        };
+        esignDocs.push(doc);
+    }
+    await api('POST','/api/esign-docs',esignDocs);
+    saveToLocal();renderEsignList();
+    closeModal('esignCreateModal');
+    showToast(editId?'문서가 수정되었습니다':'문서가 생성되었습니다! 링크를 복사해 배포하세요.','success');
+}
+
+function renderEsignList(){
+    const el=document.getElementById('esignList');if(!el)return;
+    if(esignDocs.length===0){
+        el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);"><p style="font-size:36px;margin-bottom:8px;">✍️</p><p>아직 생성된 전자서명 문서가 없습니다.</p></div>';
+        return;
+    }
+    let html='';
+    // 정렬: 최신순
+    const sorted=[...esignDocs].sort((a,b)=>b.createdAt-a.createdAt);
+    sorted.forEach(doc=>{
+        const subCount=doc.submissions?doc.submissions.length:0;
+        const isExpired=doc.deadline&&new Date(doc.deadline+'T23:59:59')<new Date();
+        const isClosed=doc.status==='closed';
+        const statusBadge=isClosed?'<span style="background:#ffcdd2;color:#c62828;padding:2px 8px;border-radius:8px;font-size:11px;">마감</span>'
+            :isExpired?'<span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:8px;font-size:11px;">기한 만료</span>'
+            :'<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:8px;font-size:11px;">진행 중</span>';
+        const signUrl=location.origin+'/sign/'+doc.token;
+        html+=`<div style="background:var(--card-bg);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);border-left:4px solid ${isClosed?'#e53935':isExpired?'#fb8c00':'#4A90D9'};">`;
+        html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;">`;
+        html+=`<div><h3 style="margin:0;font-size:16px;">${esc(doc.title)} ${statusBadge}</h3>`;
+        html+=`<p style="margin:4px 0 0;font-size:12px;color:var(--text-light);">담당: ${esc(doc.manager)} · 마감: ${doc.deadline||'없음'} · 제출: <strong>${subCount}건</strong></p></div>`;
+        html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+        html+=`<button class="btn btn-secondary" onclick="esignCopyLink('${doc.token}')" style="font-size:12px;padding:6px 12px;">🔗 링크 복사</button>`;
+        html+=`<button class="btn btn-secondary" onclick="esignViewSubs('${doc.id}')" style="font-size:12px;padding:6px 12px;">📊 제출 현황 (${subCount})</button>`;
+        html+=`<button class="btn btn-secondary" onclick="openEsignEdit('${doc.id}')" style="font-size:12px;padding:6px 12px;">✏️</button>`;
+        if(!isClosed) html+=`<button class="btn btn-secondary" onclick="esignClose('${doc.id}')" style="font-size:12px;padding:6px 12px;color:#e53935;">🔒 마감</button>`;
+        else html+=`<button class="btn btn-secondary" onclick="esignReopen('${doc.id}')" style="font-size:12px;padding:6px 12px;color:#2e7d32;">🔓 재개</button>`;
+        html+=`<button class="btn btn-secondary" onclick="esignDelete('${doc.id}')" style="font-size:12px;padding:6px 10px;color:#e53935;">🗑️</button>`;
+        html+=`</div></div>`;
+        // 공유 링크 표시
+        html+=`<div style="margin-top:10px;background:#f5f5f5;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">`;
+        html+=`<span style="font-size:11px;color:var(--text-light);">📎 배포 링크:</span>`;
+        html+=`<code style="font-size:11px;word-break:break-all;flex:1;" id="esignUrl_${doc.token}">${esc(signUrl)}</code>`;
+        html+=`<button onclick="esignCopyLink('${doc.token}')" style="border:none;background:var(--primary);color:white;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">복사</button>`;
+        html+=`</div>`;
+        html+=`</div>`;
+    });
+    el.innerHTML=html;
+}
+
+function esignCopyLink(token){
+    const url=location.origin+'/sign/'+token;
+    navigator.clipboard.writeText(url).then(()=>showToast('링크가 복사되었습니다! 학부모에게 전달하세요.','success'));
+}
+
+async function esignClose(id){
+    const doc=esignDocs.find(d=>d.id===id);if(!doc)return;
+    if(!confirm('이 문서를 마감할까요? 마감 후에는 새로운 제출이 불가합니다.'))return;
+    doc.status='closed';
+    await api('POST','/api/esign-docs',esignDocs);
+    saveToLocal();renderEsignList();
+    showToast('문서가 마감되었습니다','success');
+}
+
+async function esignReopen(id){
+    const doc=esignDocs.find(d=>d.id===id);if(!doc)return;
+    doc.status='open';
+    await api('POST','/api/esign-docs',esignDocs);
+    saveToLocal();renderEsignList();
+    showToast('문서가 재개되었습니다','success');
+}
+
+async function esignDelete(id){
+    if(!confirm('이 문서를 삭제할까요? 제출된 데이터도 모두 삭제됩니다.'))return;
+    esignDocs=esignDocs.filter(d=>d.id!==id);
+    await api('POST','/api/esign-docs',esignDocs);
+    saveToLocal();renderEsignList();
+    showToast('문서가 삭제되었습니다','success');
+}
+
+function esignViewSubs(id){
+    const doc=esignDocs.find(d=>d.id===id);if(!doc)return;
+    esignCurrentViewId=id;
+    document.getElementById('esignSubsTitle').textContent='📊 '+doc.title+' - 제출 현황';
+    const subs=doc.submissions||[];
+    let html='';
+    if(subs.length===0){
+        html='<div style="text-align:center;padding:30px;color:var(--text-light);">아직 제출된 문서가 없습니다.</div>';
+    } else {
+        html+=`<p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">총 <strong>${subs.length}건</strong> 제출</p>`;
+        html+='<div style="display:flex;flex-direction:column;gap:10px;">';
+        subs.forEach((s,si)=>{
+            html+=`<div style="background:#f8f9fa;border-radius:10px;padding:14px;border:1px solid var(--border);">`;
+            html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">`;
+            html+=`<strong style="font-size:14px;">#${si+1}</strong>`;
+            html+=`<span style="font-size:11px;color:var(--text-light);">${new Date(s.submittedAt).toLocaleString('ko-KR')}</span>`;
+            html+=`</div>`;
+            // 필드값 표시
+            if(s.values){
+                doc.fields.forEach(f=>{
+                    const v=s.values[f.id];
+                    if(v===undefined)return;
+                    html+=`<div style="margin-bottom:6px;">`;
+                    html+=`<span style="font-size:11px;color:var(--text-light);">${esc(f.label||getFieldLabel(f.type))}</span><br>`;
+                    if(f.type==='signature'&&v){
+                        html+=`<img src="${v}" style="max-width:200px;max-height:80px;border:1px solid #ddd;border-radius:6px;">`;
+                    } else if(f.type==='checkbox'){
+                        html+=`<span style="font-size:13px;">${v?'☑️ 동의':'⬜ 미동의'}</span>`;
+                    } else if(f.type==='file'&&v){
+                        html+=`<a href="${esc(v.url||'#')}" target="_blank" style="font-size:12px;">📎 ${esc(v.name||'파일')}</a>`;
+                    } else {
+                        html+=`<span style="font-size:13px;">${esc(String(v))}</span>`;
+                    }
+                    html+=`</div>`;
+                });
+            }
+            html+=`</div>`;
+        });
+        html+='</div>';
+    }
+    document.getElementById('esignSubsBody').innerHTML=html;
+    openModal('esignSubsModal');
+}
+
+function esignExportCSV(){
+    const doc=esignDocs.find(d=>d.id===esignCurrentViewId);if(!doc)return;
+    const subs=doc.submissions||[];if(subs.length===0){showToast('내보낼 데이터가 없습니다','error');return;}
+    const fields=doc.fields.filter(f=>f.type!=='label');
+    let csv='\uFEFF';// BOM for Excel
+    csv+=['번호',...fields.map(f=>f.label||getFieldLabel(f.type)),'제출일시'].join(',')+'\n';
+    subs.forEach((s,i)=>{
+        const row=[i+1];
+        fields.forEach(f=>{
+            const v=s.values?s.values[f.id]:'';
+            if(f.type==='checkbox') row.push(v?'동의':'미동의');
+            else if(f.type==='signature') row.push(v?'(서명완료)':'');
+            else if(f.type==='file') row.push(v?.name||'');
+            else row.push('"'+String(v||'').replace(/"/g,'""')+'"');
+        });
+        row.push(new Date(s.submittedAt).toLocaleString('ko-KR'));
+        csv+=row.join(',')+'\n';
+    });
+    const blob=new Blob([csv],{type:'text/csv'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=doc.title+'_제출현황.csv';a.click();
+}
+
+function esignPreviewDoc(){
+    const body=document.getElementById('esignPreviewBody');
+    let html=`<div style="padding:16px;">`;
+    const desc=document.getElementById('esignDesc').value;
+    if(desc) html+=`<div style="background:#f0f7ff;padding:14px;border-radius:10px;margin-bottom:16px;font-size:14px;line-height:1.6;">${esc(desc).replace(/\n/g,'<br>')}</div>`;
+    esignEditorFields.forEach(f=>{
+        html+=`<div style="margin-bottom:16px;">`;
+        if(f.type==='label'){
+            html+=`<div style="font-size:14px;line-height:1.8;white-space:pre-wrap;">${esc(f.content||'')}</div>`;
+        } else {
+            html+=`<label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">${esc(f.label||getFieldLabel(f.type))}${f.type!=='file'?' *':''}</label>`;
+            if(f.type==='text') html+=`<input type="text" disabled placeholder="${esc(f.placeholder||'')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">`;
+            if(f.type==='signature') html+=`<div style="width:100%;height:120px;border:2px dashed #ccc;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#999;">✍️ 터치/마우스로 서명</div>`;
+            if(f.type==='checkbox') html+=`<label style="display:flex;align-items:center;gap:8px;font-size:14px;"><input type="checkbox" disabled> ${esc(f.checkLabel||'동의합니다')}</label>`;
+            if(f.type==='date') html+=`<input type="date" disabled style="padding:10px;border:1px solid #ddd;border-radius:8px;">`;
+            if(f.type==='select'){const opts=(f.options||'').split(',');html+=`<select disabled style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">${opts.map(o=>'<option>'+esc(o.trim())+'</option>').join('')}</select>`;}
+            if(f.type==='file') html+=`<div style="border:2px dashed #ddd;border-radius:8px;padding:20px;text-align:center;color:#999;">📎 파일 첨부</div>`;
+        }
+        html+=`</div>`;
+    });
+    html+=`<button disabled style="width:100%;padding:14px;background:#4A90D9;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;">✅ 제출하기</button>`;
+    html+=`</div>`;
+    body.innerHTML=html;
+    openModal('esignPreviewModal');
 }
 
 // ===== COLLECTIONS (자료 집계) =====

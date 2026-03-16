@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>전자서명</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a1a;min-height:100vh;}
+.container{max-width:600px;margin:0 auto;padding:20px 16px 40px;}
+.card{background:white;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.header{text-align:center;padding:20px 0 10px;}
+.header h1{font-size:22px;font-weight:800;margin-bottom:6px;}
+.header .badge{display:inline-block;background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+.header .manager{font-size:13px;color:#666;margin-top:8px;}
+.desc{background:#f0f7ff;padding:14px;border-radius:12px;font-size:14px;line-height:1.7;color:#333;margin-bottom:4px;}
+.field-group{margin-bottom:18px;}
+.field-label{font-size:13px;font-weight:700;margin-bottom:6px;display:block;color:#333;}
+.field-label .req{color:#e53935;margin-left:2px;}
+.field-input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;transition:border-color .2s;outline:none;background:white;}
+.field-input:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.12);}
+.field-select{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;background:white;outline:none;}
+.field-checkbox{display:flex;align-items:flex-start;gap:10px;padding:12px;background:#fafafa;border-radius:10px;}
+.field-checkbox input{width:20px;height:20px;margin-top:2px;accent-color:#4A90D9;flex-shrink:0;}
+.field-checkbox label{font-size:14px;line-height:1.5;cursor:pointer;}
+.label-text{font-size:14px;line-height:1.8;white-space:pre-wrap;color:#444;}
+
+/* 서명 캔버스 */
+.sig-container{border:2px dashed #ccc;border-radius:12px;overflow:hidden;position:relative;background:#fafafa;touch-action:none;}
+.sig-canvas{display:block;width:100%;}
+.sig-actions{display:flex;gap:8px;margin-top:8px;}
+.sig-clear{border:1px solid #ddd;background:white;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;}
+
+/* 파일 */
+.file-drop{border:2px dashed #ccc;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;}
+.file-drop:hover{border-color:#4A90D9;background:#f0f7ff;}
+.file-info{font-size:12px;color:#666;margin-top:6px;}
+
+/* 제출 버튼 */
+.submit-btn{width:100%;padding:16px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:10px;}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,144,217,0.3);}
+.submit-btn:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* 상태 */
+.loading{text-align:center;padding:60px 20px;}
+.loading .spinner{width:40px;height:40px;border:3px solid #eee;border-top-color:#4A90D9;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-page{text-align:center;padding:60px 20px;color:#666;}
+.error-page .emoji{font-size:48px;margin-bottom:12px;}
+.success-page{text-align:center;padding:60px 20px;}
+.success-page .emoji{font-size:48px;margin-bottom:12px;}
+.success-page h2{font-size:20px;margin-bottom:8px;color:#2e7d32;}
+.deadline-info{font-size:12px;color:#888;text-align:center;margin-top:8px;}
+
+@media(max-width:480px){
+    .container{padding:12px 10px 30px;}
+    .card{padding:18px 14px;}
+    .header h1{font-size:19px;}
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+    <div class="loading" id="loadingState">
+        <div class="spinner"></div>
+        <p>문서를 불러오는 중...</p>
+    </div>
+</div>
+
+<script>
+const token = location.pathname.split('/sign/')[1];
+let docData = null;
+let signatureCanvases = {};
+
+async function init() {
+    if (!token) return showError('잘못된 링크입니다.');
+    try {
+        const res = await fetch('/api/esign-public/' + token);
+        if (res.status === 404) return showError('문서를 찾을 수 없습니다.\n링크가 올바른지 확인해주세요.');
+        if (res.status === 410) { const d = await res.json(); return showError(d.error || '마감된 문서입니다.'); }
+        if (!res.ok) return showError('서버 오류가 발생했습니다.');
+        docData = await res.json();
+        renderForm();
+    } catch (e) { showError('네트워크 오류: ' + e.message); }
+}
+
+function showError(msg) {
+    document.getElementById('app').innerHTML = `
+        <div class="card error-page">
+            <div class="emoji">😔</div>
+            <h2>접근할 수 없습니다</h2>
+            <p style="white-space:pre-line;margin-top:8px;">${esc(msg)}</p>
+        </div>`;
+}
+
+function renderForm() {
+    const app = document.getElementById('app');
+    let html = '';
+    // 헤더
+    html += `<div class="header">
+        <h1>${esc(docData.title)}</h1>
+        <span class="badge">✍️ 전자서명 문서</span>
+        <div class="manager">담당: ${esc(docData.manager)}${docData.deadline ? ' · 마감: ' + docData.deadline : ''}</div>
+    </div>`;
+
+    html += '<div class="card">';
+    // 설명
+    if (docData.description) {
+        html += `<div class="desc">${esc(docData.description).replace(/\n/g, '<br>')}</div>`;
+    }
+
+    // 필드 렌더링
+    (docData.fields || []).forEach(f => {
+        html += `<div class="field-group" data-field-id="${f.id}">`;
+        if (f.type === 'label') {
+            html += `<div class="label-text">${esc(f.content || '')}</div>`;
+        } else {
+            const isRequired = f.type !== 'file';
+            html += `<span class="field-label">${esc(f.label || '')}${isRequired ? '<span class="req">*</span>' : ''}</span>`;
+
+            if (f.type === 'text') {
+                html += `<input class="field-input" type="text" id="field_${f.id}" placeholder="${esc(f.placeholder || '')}">`;
+            }
+            if (f.type === 'date') {
+                html += `<input class="field-input" type="date" id="field_${f.id}" value="${new Date().toISOString().slice(0, 10)}">`;
+            }
+            if (f.type === 'select') {
+                const opts = (f.options || '').split(',').map(o => o.trim()).filter(Boolean);
+                html += `<select class="field-select" id="field_${f.id}">
+                    <option value="">선택하세요</option>
+                    ${opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
+                </select>`;
+            }
+            if (f.type === 'checkbox') {
+                html += `<div class="field-checkbox">
+                    <input type="checkbox" id="field_${f.id}">
+                    <label for="field_${f.id}">${esc(f.checkLabel || '동의합니다')}</label>
+                </div>`;
+            }
+            if (f.type === 'signature') {
+                html += `<div class="sig-container" id="sigContainer_${f.id}">
+                    <canvas class="sig-canvas" id="sigCanvas_${f.id}" height="150"></canvas>
+                </div>
+                <div class="sig-actions">
+                    <button class="sig-clear" onclick="clearSig('${f.id}')">🗑️ 지우기</button>
+                    <span style="font-size:11px;color:#999;line-height:32px;">터치 또는 마우스로 서명하세요</span>
+                </div>`;
+            }
+            if (f.type === 'file') {
+                html += `<div class="file-drop" id="fileDrop_${f.id}" onclick="document.getElementById('fileInput_${f.id}').click()">
+                    <div style="font-size:24px;margin-bottom:6px;">📎</div>
+                    <div style="font-size:13px;">파일을 선택하세요</div>
+                    <div class="file-info" id="fileInfo_${f.id}"></div>
+                    <input type="file" id="fileInput_${f.id}" style="display:none" onchange="handleFileSelect('${f.id}', event)">
+                </div>`;
+            }
+        }
+        html += `</div>`;
+    });
+
+    html += `<button class="submit-btn" onclick="submitForm()" id="submitBtn">✅ 제출하기</button>`;
+    if (docData.deadline) {
+        html += `<div class="deadline-info">📅 마감일: ${docData.deadline}</div>`;
+    }
+    html += '</div>';
+
+    app.innerHTML = html;
+
+    // 서명 캔버스 초기화
+    setTimeout(() => {
+        (docData.fields || []).filter(f => f.type === 'signature').forEach(f => initSigCanvas(f.id));
+    }, 100);
+}
+
+// ===== 서명 캔버스 =====
+function initSigCanvas(fieldId) {
+    const canvas = document.getElementById('sigCanvas_' + fieldId);
+    if (!canvas) return;
+    const container = canvas.parentElement;
+    canvas.width = container.clientWidth;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let drawing = false, lastX = 0, lastY = 0, hasSigned = false;
+
+    function getPos(e) {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+    }
+
+    function start(e) {
+        e.preventDefault();
+        drawing = true;
+        const p = getPos(e);
+        lastX = p.x; lastY = p.y;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+    }
+
+    function move(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        hasSigned = true;
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        lastX = p.x; lastY = p.y;
+    }
+
+    function end() { drawing = false; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+
+    signatureCanvases[fieldId] = { canvas, ctx, hasSigned: () => hasSigned, reset: () => { hasSigned = false; } };
+}
+
+function clearSig(fieldId) {
+    const sc = signatureCanvases[fieldId];
+    if (!sc) return;
+    sc.ctx.clearRect(0, 0, sc.canvas.width, sc.canvas.height);
+    sc.reset();
+}
+
+// ===== 파일 처리 =====
+let pendingFiles = {};
+function handleFileSelect(fieldId, e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('파일은 5MB 이하만 가능합니다.'); return; }
+    pendingFiles[fieldId] = file;
+    document.getElementById('fileInfo_' + fieldId).textContent = '📎 ' + file.name + ' (' + formatSize(file.size) + ')';
+}
+
+function formatSize(b) { return b < 1024 ? b + 'B' : b < 1048576 ? (b / 1024).toFixed(1) + 'KB' : (b / 1048576).toFixed(1) + 'MB'; }
+
+// ===== 제출 =====
+let submitting = false;
+async function submitForm() {
+    if (submitting) return;
+    const values = {};
+    let valid = true;
+
+    (docData.fields || []).forEach(f => {
+        if (f.type === 'label') return;
+        if (f.type === 'text') {
+            const v = document.getElementById('field_' + f.id)?.value?.trim() || '';
+            if (!v) { valid = false; highlight('field_' + f.id); }
+            values[f.id] = v;
+        }
+        if (f.type === 'date') {
+            const v = document.getElementById('field_' + f.id)?.value || '';
+            if (!v) { valid = false; highlight('field_' + f.id); }
+            values[f.id] = v;
+        }
+        if (f.type === 'select') {
+            const v = document.getElementById('field_' + f.id)?.value || '';
+            if (!v) { valid = false; highlight('field_' + f.id); }
+            values[f.id] = v;
+        }
+        if (f.type === 'checkbox') {
+            const v = document.getElementById('field_' + f.id)?.checked || false;
+            if (!v) { valid = false; }
+            values[f.id] = v;
+        }
+        if (f.type === 'signature') {
+            const sc = signatureCanvases[f.id];
+            if (!sc || !sc.hasSigned()) { valid = false; }
+            else { values[f.id] = sc.canvas.toDataURL('image/png'); }
+        }
+        if (f.type === 'file') {
+            // 파일은 선택사항
+            if (pendingFiles[f.id]) {
+                values[f.id] = { name: pendingFiles[f.id].name, size: pendingFiles[f.id].size };
+            }
+        }
+    });
+
+    if (!valid) {
+        alert('필수 항목을 모두 작성해주세요.');
+        return;
+    }
+
+    submitting = true;
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 제출 중...';
+
+    try {
+        // 파일 업로드가 필요한 경우 base64로 인코딩하여 전송
+        for (const fId in pendingFiles) {
+            const file = pendingFiles[fId];
+            const base64 = await fileToBase64(file);
+            values[fId] = { name: file.name, size: file.size, data: base64 };
+        }
+
+        const res = await fetch('/api/esign-public/' + token + '/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values })
+        });
+
+        if (!res.ok) {
+            const d = await res.json();
+            throw new Error(d.error || '제출에 실패했습니다.');
+        }
+
+        // 성공
+        document.getElementById('app').innerHTML = `
+            <div class="card success-page">
+                <div class="emoji">✅</div>
+                <h2>제출이 완료되었습니다!</h2>
+                <p style="color:#666;margin-top:8px;">감사합니다. 담당 교사에게 전달됩니다.</p>
+                <p style="font-size:12px;color:#999;margin-top:16px;">${new Date().toLocaleString('ko-KR')}</p>
+            </div>`;
+    } catch (e) {
+        alert('제출 실패: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '✅ 제출하기';
+        submitting = false;
+    }
+}
+
+function highlight(id) {
+    const el = document.getElementById(id);
+    if (el) { el.style.borderColor = '#e53935'; setTimeout(() => { el.style.borderColor = ''; }, 2000); }
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+    });
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+init();
+</script>
+</body>
+</html>

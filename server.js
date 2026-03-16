@@ -34,7 +34,8 @@ const KV_KEYS = {
     'tabs.json': 'tabs',
     'settings.json': 'settings',
     'news.json': 'news',
-    'collections.json': 'collections'
+    'collections.json': 'collections',
+    'esign-docs.json': 'esign-docs'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -105,7 +106,8 @@ const DATA_ROUTES = [
     { path: 'tabs', file: 'tabs.json', fallback: [] },
     { path: 'settings', file: 'settings.json', fallback: {} },
     { path: 'news', file: 'news.json', fallback: [] },
-    { path: 'collections', file: 'collections.json', fallback: [] }
+    { path: 'collections', file: 'collections.json', fallback: [] },
+    { path: 'esign-docs', file: 'esign-docs.json', fallback: [] }
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
@@ -134,20 +136,20 @@ app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
 // Export (전체 데이터 내보내기)
 app.get('/api/export', async (req, res) => {
     try {
-        const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections] = await Promise.all([
+        const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs] = await Promise.all([
             readData('links.json'), readData('categories.json'), readData('sections.json'),
             readData('trainings.json'), readData('staff.json'), readData('training-records.json'),
             readData('schedules.json'), readData('tabs.json'), readData('settings.json'), readData('news.json'),
-            readData('collections.json')
+            readData('collections.json'), readData('esign-docs.json')
         ]);
-        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, exportedAt: new Date().toISOString() });
+        res.json({ links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, exportedAt: new Date().toISOString() });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Import (전체 데이터 가져오기)
 app.post('/api/import', async (req, res) => {
     try {
-        const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections } = req.body;
+        const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs } = req.body;
         const writes = [];
         if (links) writes.push(writeData('links.json', links));
         if (categories) writes.push(writeData('categories.json', categories));
@@ -160,6 +162,7 @@ app.post('/api/import', async (req, res) => {
         if (settings) writes.push(writeData('settings.json', settings));
         if (news) writes.push(writeData('news.json', news));
         if (collections) writes.push(writeData('collections.json', collections));
+        if (esignDocs) writes.push(writeData('esign-docs.json', esignDocs));
         await Promise.all(writes);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -210,6 +213,46 @@ app.get('/api/proxy-download', (req, res) => {
         console.error('[proxy] 에러:', e.message);
         res.status(500).json({ error: e.message });
     });
+});
+
+// ===== 전자서명 공개 서명 페이지 =====
+// 문서 데이터 조회 (토큰 기반)
+app.get('/api/esign-public/:token', async (req, res) => {
+    try {
+        const docs = await readData('esign-docs.json') || [];
+        const doc = docs.find(d => d.token === req.params.token);
+        if (!doc) return res.status(404).json({ error: '문서를 찾을 수 없습니다.' });
+        if (doc.status === 'closed') return res.status(410).json({ error: '마감된 문서입니다.' });
+        if (doc.deadline && new Date(doc.deadline + 'T23:59:59') < new Date()) return res.status(410).json({ error: '마감 기한이 지났습니다.' });
+        // 제출 데이터는 제외하고 문서 구조만 반환
+        const { submissions, password, ...publicDoc } = doc;
+        res.json(publicDoc);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 학부모 서명 제출
+app.post('/api/esign-public/:token/submit', async (req, res) => {
+    try {
+        const docs = await readData('esign-docs.json') || [];
+        const doc = docs.find(d => d.token === req.params.token);
+        if (!doc) return res.status(404).json({ error: '문서를 찾을 수 없습니다.' });
+        if (doc.status === 'closed') return res.status(410).json({ error: '마감된 문서입니다.' });
+        if (doc.deadline && new Date(doc.deadline + 'T23:59:59') < new Date()) return res.status(410).json({ error: '마감 기한이 지났습니다.' });
+        if (!doc.submissions) doc.submissions = [];
+        const sub = {
+            id: 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            ...req.body,
+            submittedAt: new Date().toISOString()
+        };
+        doc.submissions.push(sub);
+        await writeData('esign-docs.json', docs);
+        res.json({ success: true, message: '제출 완료' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 공개 서명 페이지 HTML 서빙
+app.get('/sign/:token', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sign.html'));
 });
 
 // 메인 페이지
