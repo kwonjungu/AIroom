@@ -4007,15 +4007,17 @@ async function downloadAllColFiles(colId){
         for(const f of col.submissions){
             const url=f.downloadUrl;if(!url)continue;
             let name=f.fileName||'file';
+            // 제출자 이름을 파일명 앞에 붙여서 폴더 없이 플랫하게
+            const submitter=f.submitter||'unknown';
+            name=submitter+'_'+name;
             if(usedNames[name]){
                 usedNames[name]++;
                 const ext=name.lastIndexOf('.');
                 name=ext>0?name.slice(0,ext)+'_'+usedNames[name]+name.slice(ext):name+'_'+usedNames[name];
             } else {usedNames[name]=1;}
-            const folder=f.submitter||'unknown';
             const resp=await fetch(url);
             const blob=await resp.blob();
-            zip.folder(folder).file(name,blob);
+            zip.file(name,blob);
         }
         const content=await zip.generateAsync({type:'blob'});
         const blobUrl=URL.createObjectURL(content);
