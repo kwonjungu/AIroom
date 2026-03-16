@@ -3989,30 +3989,23 @@ async function downloadColFile(colId,fileIdx){
     }catch(e){showToast('다운로드 실패: '+e.message,'error');}
 }
 
-function fetchBlobXHR(url){
-    return new Promise((resolve,reject)=>{
-        const xhr=new XMLHttpRequest();
-        xhr.open('GET',url,true);
-        xhr.responseType='blob';
-        xhr.onload=()=>xhr.status===200?resolve(xhr.response):reject(new Error('HTTP '+xhr.status));
-        xhr.onerror=()=>reject(new Error('네트워크 오류'));
-        xhr.send();
-    });
-}
-
 async function getFileBlob(f){
+    let url=f.downloadUrl;
     // storagePath가 있으면 Firebase SDK로 최신 URL 가져오기
     if(f.storagePath&&firebaseStorage){
-        try{
-            const url=await firebaseStorage.ref().child(f.storagePath).getDownloadURL();
-            return await fetchBlobXHR(url);
-        }catch(e){}
+        try{url=await firebaseStorage.ref().child(f.storagePath).getDownloadURL();}catch(e){}
     }
-    // downloadUrl로 직접 시도
-    if(f.downloadUrl){
-        return await fetchBlobXHR(f.downloadUrl);
+    if(!url) throw new Error('다운로드 URL 없음');
+    // Firebase URL이면 서버 프록시 경유 (CORS 우회)
+    if(url.includes('firebasestorage.googleapis.com')||url.includes('storage.googleapis.com')){
+        const resp=await fetch('/api/proxy-download?url='+encodeURIComponent(url));
+        if(!resp.ok) throw new Error('프록시 다운로드 실패');
+        return await resp.blob();
     }
-    throw new Error('다운로드 URL 없음');
+    // 일반 URL
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('다운로드 실패');
+    return await resp.blob();
 }
 
 async function downloadAllColFiles(colId){
