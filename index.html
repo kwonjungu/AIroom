@@ -3917,19 +3917,12 @@ function openCollectionUpload(colId){
 }
 
 function handleColFileSelect(e){
-    const files=Array.from(e.target.files);
-    pendingColFiles=[];
-    const listEl=document.getElementById('colFileList');
-    listEl.innerHTML='';
-    files.forEach(file=>{
-        if(file.size>5*1024*1024){showToast(`${file.name}: 5MB 초과!`,'error');return;}
-        const reader=new FileReader();
-        reader.onload=()=>{
-            pendingColFiles.push({fileName:file.name,fileSize:formatFileSize(file.size),fileType:file.type,data:reader.result});
-            listEl.innerHTML=pendingColFiles.map(f=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;">📄 ${esc(f.fileName)} <span style="color:var(--text-light);">(${f.fileSize})</span></div>`).join('');
-        };
-        reader.readAsDataURL(file);
+    pendingColFiles=Array.from(e.target.files).filter(file=>{
+        if(file.size>10*1024*1024){showToast(`${file.name}: 10MB 초과!`,'error');return false;}
+        return true;
     });
+    const listEl=document.getElementById('colFileList');
+    listEl.innerHTML=pendingColFiles.map(f=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;">📄 ${esc(f.name)} <span style="color:var(--text-light);">(${formatFileSize(f.size)})</span></div>`).join('');
 }
 
 function formatFileSize(b){return b<1024?(b+'B'):b<1024*1024?((b/1024).toFixed(1)+'KB'):((b/1024/1024).toFixed(1)+'MB');}
@@ -3942,29 +3935,25 @@ async function submitCollectionUpload(){
     if(pendingColFiles.length===0){showToast('파일을 선택하세요','error');return;}
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const today=fmtDate(new Date());
-
-    // Firebase Storage 사용 시 업로드
-    if(firebaseStorage){
-        showToast('파일 업로드 중...','info');
-        for(const pf of pendingColFiles){
-            try{
-                const ref=firebaseStorage.ref(`collections/${colId}/${Date.now()}_${pf.fileName}`);
-                const resp=await fetch(pf.data);
-                const blob=await resp.blob();
-                await ref.put(blob);
-                const url=await ref.getDownloadURL();
-                col.submissions.push({submitter:name,fileName:pf.fileName,fileSize:pf.fileSize,fileUrl:url,memo,date:today});
-            }catch(err){
-                // Firebase 실패 시 base64로 저장
-                col.submissions.push({submitter:name,fileName:pf.fileName,fileSize:pf.fileSize,fileData:pf.data,memo,date:today});
-            }
+    showToast('파일 업로드 중...','info');
+    for(const file of pendingColFiles){
+        try{
+            const fd=new FormData();
+            fd.append('file',file);
+            const resp=await fetch('/api/upload',{method:'POST',body:fd});
+            if(!resp.ok) throw new Error('업로드 실패');
+            const result=await resp.json();
+            col.submissions.push({
+                submitter:name,
+                fileName:result.fileName,
+                fileSize:formatFileSize(result.fileSize),
+                downloadUrl:result.downloadUrl,
+                memo,date:today
+            });
+        }catch(err){
+            showToast(`${file.name} 업로드 실패: ${err.message}`,'error');
         }
-    } else {
-        pendingColFiles.forEach(pf=>{
-            col.submissions.push({submitter:name,fileName:pf.fileName,fileSize:pf.fileSize,fileData:pf.data,memo,date:today});
-        });
     }
-
     await api('POST','/api/collections',collections);
     saveToLocal();renderCollections();
     closeModal('collectionUploadModal');
@@ -3972,40 +3961,17 @@ async function submitCollectionUpload(){
     showToast('자료가 제출되었습니다','success');
 }
 
-function base64ToBlob(dataUrl){
-    const parts=dataUrl.split(',');
-    const mime=(parts[0].match(/:(.*?);/)||[])[1]||'application/octet-stream';
-    const raw=atob(parts[1]);
-    const arr=new Uint8Array(raw.length);
-    for(let i=0;i<raw.length;i++)arr[i]=raw.charCodeAt(i);
-    return new Blob([arr],{type:mime});
-}
-
-async function downloadColFile(colId,fileIdx){
+function downloadColFile(colId,fileIdx){
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const f=col.submissions[fileIdx];if(!f)return;
-    const url=f.fileUrl||f.fileData;
-    if(!url){showToast('파일 데이터가 없습니다','error');return;}
-    try{
-        let blob;
-        if(url.startsWith('data:')){
-            blob=base64ToBlob(url);
-        } else {
-            const resp=await fetch(url);
-            blob=await resp.blob();
-        }
-        const blobUrl=URL.createObjectURL(blob);
-        const a=document.createElement('a');
-        a.href=blobUrl;
-        a.download=f.fileName||'download';
-        a.style.display='none';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(blobUrl);},200);
-    }catch(e){
-        console.error('다운로드 실패:',e);
-        showToast('다운로드 실패','error');
-    }
+    const url=f.downloadUrl;
+    if(!url){showToast('다운로드 URL이 없습니다','error');return;}
+    const a=document.createElement('a');
+    a.href=url;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 async function downloadAllColFiles(colId){
@@ -4015,22 +3981,16 @@ async function downloadAllColFiles(colId){
         const zip=new JSZip();
         const usedNames={};
         for(const f of col.submissions){
-            const url=f.fileUrl||f.fileData;if(!url)continue;
+            const url=f.downloadUrl;if(!url)continue;
             let name=f.fileName||'file';
-            // 동일 파일명 중복 처리
             if(usedNames[name]){
                 usedNames[name]++;
                 const ext=name.lastIndexOf('.');
                 name=ext>0?name.slice(0,ext)+'_'+usedNames[name]+name.slice(ext):name+'_'+usedNames[name];
             } else {usedNames[name]=1;}
             const folder=f.submitter||'unknown';
-            let blob;
-            if(url.startsWith('data:')){
-                blob=base64ToBlob(url);
-            } else {
-                const resp=await fetch(url);
-                blob=await resp.blob();
-            }
+            const resp=await fetch(url);
+            const blob=await resp.blob();
             zip.folder(folder).file(name,blob);
         }
         const content=await zip.generateAsync({type:'blob'});

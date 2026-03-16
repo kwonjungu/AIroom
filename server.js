@@ -1,10 +1,12 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
+const UPLOAD_DIR = path.join(__dirname, 'data', 'uploads');
 // Upstash 직접 or Vercel 마켓플레이스(KV_REST_API_*) 둘 다 지원
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -186,6 +188,43 @@ app.get('/api/firebase-config', (req, res) => {
     };
     if (!cfg.apiKey) return res.json({});
     res.json(cfg);
+});
+
+// ===== 파일 업로드/다운로드 (자료 집계용) =====
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+        filename: (req, file, cb) => {
+            const unique = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            const safeName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+            cb(null, unique + '_' + safeName);
+        }
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: '파일 없음' });
+    const safeName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+    res.json({
+        success: true,
+        fileId: req.file.filename,
+        fileName: safeName,
+        fileSize: req.file.size,
+        downloadUrl: '/api/download/' + encodeURIComponent(req.file.filename)
+    });
+});
+
+app.get('/api/download/:fileId', (req, res) => {
+    const fileId = decodeURIComponent(req.params.fileId);
+    const filePath = path.join(UPLOAD_DIR, fileId);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: '파일 없음' });
+    // 파일명에서 원래 이름 추출 (unique_safeName)
+    const parts = fileId.split('_');
+    const originalName = parts.length > 2 ? parts.slice(2).join('_') : fileId;
+    res.download(filePath, originalName);
 });
 
 // 메인 페이지
