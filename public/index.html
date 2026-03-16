@@ -51,7 +51,7 @@
         .header-left{display:flex;align-items:center;gap:14px;flex-direction:column;text-align:center;}
         .school-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;}
         .header-title h1{font-family:'Jua',sans-serif;font-size:32px;font-weight:700;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,0.2);}
-        .header-title .header-subtitle{font-family:'Gaegu',cursive;font-size:16px;opacity:0.95;margin-top:4px;font-weight:700;letter-spacing:0.5px;}
+        .header-title .header-subtitle{font-family:'Gaegu',cursive;font-size:22px;opacity:0.95;margin-top:6px;font-weight:700;letter-spacing:0.5px;}
         .header-right{display:flex;align-items:center;gap:10px;position:absolute;right:24px;}
         .header-date{font-size:12px;opacity:0.9;background:rgba(255,255,255,0.15);padding:6px 14px;border-radius:18px;}
         .btn-admin{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:8px 16px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;}
@@ -584,6 +584,7 @@
         .section-move-btn{width:26px;height:26px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:transparent;color:var(--text-light);}
         .section-move-btn:hover{background:var(--primary-light);color:var(--primary);}
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -3971,23 +3972,57 @@ async function submitCollectionUpload(){
     showToast('자료가 제출되었습니다','success');
 }
 
-function downloadColFile(colId,fileIdx){
+async function downloadColFile(colId,fileIdx){
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const f=col.submissions[fileIdx];if(!f)return;
     const url=f.fileUrl||f.fileData;
     if(!url){showToast('파일 데이터가 없습니다','error');return;}
-    const a=document.createElement('a');a.href=url;a.download=f.fileName||'download';a.click();
+    try{
+        const resp=await fetch(url);
+        const blob=await resp.blob();
+        const blobUrl=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=blobUrl;a.download=f.fileName||'download';
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+    }catch(e){
+        const a=document.createElement('a');a.href=url;a.download=f.fileName||'download';a.click();
+    }
 }
 
-function downloadAllColFiles(colId){
+async function downloadAllColFiles(colId){
     const col=collections.find(c=>c.id===colId);if(!col||!col.submissions.length)return;
-    showToast('파일 다운로드를 시작합니다','info');
-    col.submissions.forEach((f,i)=>{
-        setTimeout(()=>{
-            const url=f.fileUrl||f.fileData;
-            if(url){const a=document.createElement('a');a.href=url;a.download=f.fileName||`file_${i+1}`;a.click();}
-        },i*300);
-    });
+    showToast('ZIP 파일 생성 중...','info');
+    try{
+        const zip=new JSZip();
+        const usedNames={};
+        for(const f of col.submissions){
+            const url=f.fileUrl||f.fileData;if(!url)continue;
+            let name=f.fileName||'file';
+            // 동일 파일명 처리
+            if(usedNames[name]){usedNames[name]++;const ext=name.lastIndexOf('.');name=ext>0?name.slice(0,ext)+'_'+usedNames[name]+name.slice(ext):name+'_'+usedNames[name];}
+            else{usedNames[name]=1;}
+            // 제출자 이름을 폴더로 구분
+            const folder=f.submitter||'unknown';
+            if(url.startsWith('data:')){
+                const base64=url.split(',')[1];
+                zip.folder(folder).file(name,base64,{base64:true});
+            } else {
+                const resp=await fetch(url);
+                const blob=await resp.blob();
+                zip.folder(folder).file(name,blob);
+            }
+        }
+        const content=await zip.generateAsync({type:'blob'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(content);
+        a.download=`${col.name||'자료집계'}_전체.zip`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('ZIP 다운로드 완료','success');
+    }catch(err){
+        console.error('ZIP 생성 실패:',err);
+        showToast('ZIP 생성 실패: '+err.message,'error');
+    }
 }
 
 async function closeCollection(colId){
