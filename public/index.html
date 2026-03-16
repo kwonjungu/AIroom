@@ -3936,34 +3936,26 @@ function fileToBase64(file){
     });
 }
 
-async function uploadFile(file){
-    const dataUrl=await fileToBase64(file);
-    const resp=await fetch('/api/upload',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({fileName:file.name,fileData:dataUrl})
-    });
-    if(!resp.ok) throw new Error('업로드 실패');
-    return await resp.json();
-}
-
 async function submitCollectionUpload(){
     const colId=document.getElementById('colUploadId').value;
     const name=document.getElementById('colUploaderName').value.trim();
     const memo=document.getElementById('colUploadMemo').value.trim();
     if(!name){showToast('제출자 이름을 입력하세요','error');return;}
     if(pendingColFiles.length===0){showToast('파일을 선택하세요','error');return;}
+    if(!firebaseStorage){showToast('Firebase 미연결! 관리자에게 문의하세요.','error');return;}
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const today=fmtDate(new Date());
     showToast('파일 업로드 중...','info');
     for(const file of pendingColFiles){
         try{
-            const result=await uploadFile(file);
+            const storagePath='collections/'+colId+'/'+Date.now()+'_'+file.name;
+            const url=await uploadToFirebase(file,storagePath);
             col.submissions.push({
                 submitter:name,
-                fileName:result.fileName,
-                fileSize:formatFileSize(result.fileSize),
-                downloadUrl:result.downloadUrl,
+                fileName:file.name,
+                fileSize:formatFileSize(file.size),
+                downloadUrl:url,
+                storagePath:storagePath,
                 memo,date:today
             });
         }catch(err){
@@ -4047,6 +4039,12 @@ async function submitCollectionDelete(){
     const col=collections.find(c=>c.id===colId);
     if(!col){closeModal('collectionDeleteModal');return;}
     if(pw!==col.password){showToast('비밀번호가 일치하지 않습니다','error');return;}
+    // Firebase Storage에서 파일 삭제
+    if(col.submissions){
+        for(const f of col.submissions){
+            if(f.storagePath) await deleteFromFirebase(f.storagePath);
+        }
+    }
     collections=collections.filter(c=>c.id!==colId);
     await api('POST','/api/collections',collections);
     saveToLocal();renderCollections();

@@ -5,7 +5,6 @@ const path = require('path');
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
-const UPLOAD_DIR = path.join(__dirname, 'data', 'uploads');
 // Upstash 직접 or Vercel 마켓플레이스(KV_REST_API_*) 둘 다 지원
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -189,85 +188,7 @@ app.get('/api/firebase-config', (req, res) => {
     res.json(cfg);
 });
 
-// ===== 파일 업로드/다운로드 (자료 집계용) =====
-// Redis가 있으면 KV에 base64로 영구 저장, 없으면 로컬 디스크에 저장
-const ACTUAL_UPLOAD_DIR = IS_VERCEL ? '/tmp/uploads' : UPLOAD_DIR;
-
-// KV 기반 파일 저장/읽기
-async function saveFileToKV(fileId, fileName, base64Data, fileSize) {
-    if (!redis) return false;
-    try {
-        await redis.set('file:' + fileId, JSON.stringify({ fileName, data: base64Data, size: fileSize }));
-        return true;
-    } catch (e) { console.error('KV 파일 저장 실패:', e.message); return false; }
-}
-
-async function getFileFromKV(fileId) {
-    if (!redis) return null;
-    try {
-        const raw = await redis.get('file:' + fileId);
-        if (!raw) return null;
-        return typeof raw === 'string' ? JSON.parse(raw) : raw;
-    } catch (e) { return null; }
-}
-
-// 업로드 API (JSON base64 방식 — Vercel + 로컬 모두 호환)
-app.post('/api/upload', express.json({ limit: '10mb' }), async (req, res) => {
-    try {
-        const { fileName, fileData } = req.body;
-        if (!fileName || !fileData) return res.status(400).json({ error: '파일 데이터 없음' });
-        const unique = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        const fileId = unique + '_' + fileName;
-        const base64Data = fileData.replace(/^data:[^;]+;base64,/, '');
-        const buf = Buffer.from(base64Data, 'base64');
-        const fileSize = buf.length;
-
-        // Redis(KV)에 영구 저장 시도
-        const savedToKV = await saveFileToKV(fileId, fileName, base64Data, fileSize);
-
-        // 로컬 디스크에도 저장 (로컬 개발 or KV 실패 시 폴백용)
-        if (!savedToKV || !IS_VERCEL) {
-            try {
-                if (!fs.existsSync(ACTUAL_UPLOAD_DIR)) fs.mkdirSync(ACTUAL_UPLOAD_DIR, { recursive: true });
-                fs.writeFileSync(path.join(ACTUAL_UPLOAD_DIR, fileId), buf);
-            } catch (e) {
-                if (!savedToKV) return res.status(500).json({ error: '파일 저장 실패' });
-            }
-        }
-
-        res.json({
-            success: true,
-            fileId,
-            fileName,
-            fileSize,
-            downloadUrl: '/api/download/' + encodeURIComponent(fileId)
-        });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// 다운로드 API (KV 우선 → 디스크 폴백)
-app.get('/api/download/:fileId', async (req, res) => {
-    const fileId = decodeURIComponent(req.params.fileId);
-    if (fileId.includes('..') || fileId.includes('/')) return res.status(400).json({ error: '잘못된 파일 ID' });
-
-    // 1. KV에서 조회
-    const kvFile = await getFileFromKV(fileId);
-    if (kvFile) {
-        const buf = Buffer.from(kvFile.data, 'base64');
-        const name = kvFile.fileName || fileId;
-        res.setHeader('Content-Disposition', 'attachment; filename="' + encodeURIComponent(name) + '"');
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Length', buf.length);
-        return res.end(buf);
-    }
-
-    // 2. 디스크에서 조회 (로컬 폴백)
-    const filePath = path.join(ACTUAL_UPLOAD_DIR, fileId);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: '파일 없음' });
-    const parts = fileId.split('_');
-    const originalName = parts.length > 2 ? parts.slice(2).join('_') : fileId;
-    res.download(filePath, originalName);
-});
+// ===== 파일 업로드/다운로드는 Firebase Storage 사용 (클라이언트 직접 업로드) =====
 
 // 메인 페이지
 app.get('/', (req, res) => {
