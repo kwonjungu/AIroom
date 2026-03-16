@@ -616,10 +616,74 @@
         .admin-mode .section-move-btns{display:flex;}
         .section-move-btn{width:26px;height:26px;border-radius:6px;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:transparent;color:var(--text-light);}
         .section-move-btn:hover{background:var(--primary-light);color:var(--primary);}
+        /* ===== PDF 도구 스타일 ===== */
+        .pdf-tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:16px;}
+        .pdf-tool-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:24px 20px;cursor:pointer;transition:all .25s;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;}
+        .pdf-tool-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,0.12);border-color:transparent;}
+        .pdf-tool-card:hover .card-top-bar{opacity:1!important;}
+        .pdf-tool-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;flex-shrink:0;}
+        .pdf-tool-card h3{font-size:15px;font-weight:700;margin:0;color:var(--text);}
+        .pdf-tool-card p{font-size:12px;color:var(--text-light);margin:0;line-height:1.5;}
+        .pdf-workspace{display:none;background:var(--card-bg);border-radius:14px;border:1px solid var(--border);padding:28px;margin-top:16px;box-shadow:var(--shadow);}
+        .pdf-workspace.active{display:block;}
+        .pdf-ws-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+        .pdf-ws-header h2{font-size:20px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px;}
+        .pdf-ws-back{background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);transition:all .2s;}
+        .pdf-ws-back:hover{background:var(--primary-light);border-color:var(--primary);color:var(--primary);}
+        .pdf-dropzone{border:2px dashed var(--border);border-radius:14px;padding:48px 24px;text-align:center;transition:all .25s;cursor:pointer;background:var(--bg);}
+        .pdf-dropzone:hover,.pdf-dropzone.dragover{border-color:var(--primary);background:var(--primary-light);}
+        .pdf-dropzone-icon{font-size:48px;margin-bottom:12px;}
+        .pdf-dropzone-text{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+        .pdf-dropzone-sub{font-size:12px;color:var(--text-light);}
+        .pdf-file-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
+        .pdf-file-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);border-radius:10px;border:1px solid var(--border);}
+        .pdf-file-item .file-icon{width:40px;height:40px;border-radius:8px;background:#e53935;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+        .pdf-file-item .file-info{flex:1;min-width:0;}
+        .pdf-file-item .file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .pdf-file-item .file-size{font-size:11px;color:var(--text-light);}
+        .pdf-file-item .file-remove{background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-light);padding:4px;transition:color .2s;}
+        .pdf-file-item .file-remove:hover{color:#e53935;}
+        .pdf-file-item .file-pages{font-size:11px;color:var(--primary);font-weight:600;background:var(--primary-light);padding:2px 8px;border-radius:12px;}
+        .pdf-action-bar{margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+        .pdf-btn{padding:12px 28px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;}
+        .pdf-btn-primary{background:var(--primary);color:white;}
+        .pdf-btn-primary:hover{background:#3a7fc5;transform:translateY(-1px);}
+        .pdf-btn-primary:disabled{background:#ccc;cursor:not-allowed;transform:none;}
+        .pdf-btn-secondary{background:var(--bg);border:1px solid var(--border);color:var(--text);}
+        .pdf-btn-secondary:hover{background:var(--primary-light);border-color:var(--primary);}
+        .pdf-btn-success{background:#43a047;color:white;}
+        .pdf-btn-success:hover{background:#388e3c;}
+        .pdf-progress{margin-top:16px;display:none;}
+        .pdf-progress.active{display:block;}
+        .pdf-progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:8px;}
+        .pdf-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#66bb6a);border-radius:4px;transition:width .3s;width:0%;}
+        .pdf-progress-text{font-size:12px;color:var(--text-light);text-align:center;}
+        .pdf-result{margin-top:20px;padding:20px;background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border-radius:12px;border:1px solid #c8e6c9;display:none;}
+        .pdf-result.active{display:block;}
+        .pdf-result h3{margin:0 0 12px;font-size:16px;color:#2e7d32;display:flex;align-items:center;gap:8px;}
+        .pdf-options{margin-top:16px;padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:12px;}
+        .pdf-options label{font-size:13px;font-weight:600;color:var(--text);}
+        .pdf-options input[type="text"],.pdf-options input[type="number"],.pdf-options input[type="password"],.pdf-options select{padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;width:100%;box-sizing:border-box;}
+        .pdf-options input:focus,.pdf-options select:focus{border-color:var(--primary);}
+        .pdf-option-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+        .pdf-option-group{flex:1;min-width:150px;}
+        .pdf-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:16px;}
+        .pdf-preview-page{background:white;border:2px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative;}
+        .pdf-preview-page:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+        .pdf-preview-page.selected{border-color:var(--primary);box-shadow:0 0 0 3px rgba(74,144,217,0.3);}
+        .pdf-preview-page canvas{width:100%;height:auto;display:block;}
+        .pdf-preview-page .page-num{text-align:center;padding:6px;font-size:11px;font-weight:600;background:var(--bg);color:var(--text);}
+        .pdf-preview-page .page-check{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+        .pdf-preview-page.selected .page-check{display:flex;}
+        .pdf-rotate-controls{display:flex;gap:8px;margin-top:8px;}
+        .pdf-rotate-btn{padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);cursor:pointer;font-size:12px;transition:all .2s;}
+        .pdf-rotate-btn:hover{background:var(--primary-light);border-color:var(--primary);}
+        @media(max-width:768px){.pdf-tools-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}.pdf-tool-card{padding:16px 14px;}.pdf-tool-icon{width:42px;height:42px;font-size:20px;}.pdf-workspace{padding:16px;}}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 </head>
@@ -865,6 +929,59 @@
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('collectionDeleteModal')">취소</button><button class="btn btn-danger" onclick="submitCollectionDelete()">삭제</button></div>
     </div></div>
+
+    <!-- ===== PDF TOOLS PAGE ===== -->
+    <div class="page" id="page-pdftools">
+        <div id="pdfToolsMain">
+            <div style="text-align:center;margin-bottom:8px;">
+                <h2 style="font-size:22px;font-weight:800;margin:0;">🛠️ PDF 도구 모음</h2>
+                <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">iLovePDF처럼, 브라우저에서 바로 PDF를 변환하세요. 파일은 서버로 전송되지 않습니다.</p>
+            </div>
+            <div class="pdf-tools-grid">
+                <div class="pdf-tool-card" onclick="openPdfTool('merge')" style="--card-color:#e53935">
+                    <div class="pdf-tool-icon" style="background:#e53935;">📑</div>
+                    <h3>PDF 합치기</h3><p>여러 PDF를 하나로 합칩니다. 순서도 자유롭게 변경 가능!</p>
+                    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#e53935;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;" class="card-top-bar"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('split')">
+                    <div class="pdf-tool-icon" style="background:#e53935;">✂️</div>
+                    <h3>PDF 분할</h3><p>원하는 페이지만 골라 새 PDF로 추출합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#e53935;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('compress')">
+                    <div class="pdf-tool-icon" style="background:#43a047;">📦</div>
+                    <h3>PDF 압축</h3><p>PDF 파일 크기를 줄여 공유와 저장이 편리해집니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#43a047;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('img2pdf')">
+                    <div class="pdf-tool-icon" style="background:#fb8c00;">🖼️</div>
+                    <h3>이미지 → PDF</h3><p>JPG, PNG 이미지를 PDF로 변환합니다. 여러 장도 가능!</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#fb8c00;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('pdf2img')">
+                    <div class="pdf-tool-icon" style="background:#8e24aa;">📷</div>
+                    <h3>PDF → 이미지</h3><p>PDF 페이지를 JPG/PNG 이미지로 변환합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#8e24aa;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('rotate')">
+                    <div class="pdf-tool-icon" style="background:#00897b;">🔄</div>
+                    <h3>PDF 회전</h3><p>페이지별로 90°, 180°, 270° 회전합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00897b;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('protect')">
+                    <div class="pdf-tool-icon" style="background:#5c6bc0;">🔒</div>
+                    <h3>PDF 보호</h3><p>PDF에 암호를 설정해 무단 접근을 방지합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#5c6bc0;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('pagenumber')">
+                    <div class="pdf-tool-icon" style="background:#6d4c41;">🔢</div>
+                    <h3>페이지 번호</h3><p>PDF 각 페이지에 번호를 자동으로 삽입합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#6d4c41;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+            </div>
+        </div>
+        <div id="pdfToolsWorkspace"></div>
+    </div>
 
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
@@ -1167,7 +1284,8 @@ const DEFAULT_TABS=[
     {id:'training',title:'연수 관리',icon:'📋',type:'builtin',order:6},
     {id:'news',title:'학교 소식',icon:'📰',type:'builtin',order:7},
     {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8},
-    {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9}
+    {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
+    {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1375,6 +1493,7 @@ function switchPage(p,btn){
     activeTabId=p;
     if(p==='schedule')renderSchedule();
     if(p==='news')renderNews();
+    if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
 }
 
 // ===== SCHEDULE =====
@@ -4186,6 +4305,469 @@ async function submitCollectionDelete(){
     saveToLocal();renderCollections();
     closeModal('collectionDeleteModal');
     showToast('자료 집계가 삭제되었습니다','success');
+}
+
+// ===== PDF 도구 모음 =====
+const PDF_TOOLS={
+    merge:{title:'PDF 합치기',icon:'📑',color:'#e53935',accept:'.pdf',multi:true,desc:'합칠 PDF 파일들을 선택하세요 (2개 이상)'},
+    split:{title:'PDF 분할',icon:'✂️',color:'#e53935',accept:'.pdf',multi:false,desc:'분할할 PDF 파일을 선택하세요'},
+    compress:{title:'PDF 압축',icon:'📦',color:'#43a047',accept:'.pdf',multi:false,desc:'압축할 PDF 파일을 선택하세요'},
+    img2pdf:{title:'이미지 → PDF',icon:'🖼️',color:'#fb8c00',accept:'image/*',multi:true,desc:'변환할 이미지를 선택하세요 (JPG, PNG)'},
+    pdf2img:{title:'PDF → 이미지',icon:'📷',color:'#8e24aa',accept:'.pdf',multi:false,desc:'이미지로 변환할 PDF를 선택하세요'},
+    rotate:{title:'PDF 회전',icon:'🔄',color:'#00897b',accept:'.pdf',multi:false,desc:'회전할 PDF 파일을 선택하세요'},
+    protect:{title:'PDF 보호',icon:'🔒',color:'#5c6bc0',accept:'.pdf',multi:false,desc:'암호를 설정할 PDF를 선택하세요'},
+    pagenumber:{title:'페이지 번호',icon:'🔢',color:'#6d4c41',accept:'.pdf',multi:false,desc:'번호를 삽입할 PDF를 선택하세요'}
+};
+let pdfToolFiles=[];
+let pdfToolCurrent=null;
+let pdfSelectedPages=new Set();
+let pdfPageRotations={};
+
+function openPdfTool(toolId){
+    pdfToolCurrent=toolId;
+    pdfToolFiles=[];
+    pdfSelectedPages=new Set();
+    pdfPageRotations={};
+    const tool=PDF_TOOLS[toolId];
+    const ws=document.getElementById('pdfToolsWorkspace');
+    document.getElementById('pdfToolsMain').style.display='none';
+    let optionsHtml='';
+    if(toolId==='split') optionsHtml=`<div class="pdf-options"><label>페이지 선택</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 원하는 페이지를 클릭하세요.</p></div>`;
+    if(toolId==='compress') optionsHtml=`<div class="pdf-options"><label>압축 수준</label><div class="pdf-option-row"><select id="pdfCompressLevel"><option value="high">높은 압축 (작은 파일)</option><option value="medium" selected>보통 압축 (권장)</option><option value="low">낮은 압축 (고품질)</option></select></div></div>`;
+    if(toolId==='img2pdf') optionsHtml=`<div class="pdf-options"><label>페이지 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">방향</label><select id="pdfPageOrientation"><option value="portrait">세로 (Portrait)</option><option value="landscape">가로 (Landscape)</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">여백</label><select id="pdfPageMargin"><option value="0">없음</option><option value="20" selected>작게</option><option value="40">보통</option></select></div></div></div>`;
+    if(toolId==='pdf2img') optionsHtml=`<div class="pdf-options"><label>변환 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">형식</label><select id="pdfImgFormat"><option value="jpeg" selected>JPG</option><option value="png">PNG</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">해상도</label><select id="pdfImgScale"><option value="1">보통 (1x)</option><option value="2" selected>높음 (2x)</option><option value="3">매우 높음 (3x)</option></select></div></div></div>`;
+    if(toolId==='rotate') optionsHtml=`<div class="pdf-options"><label>회전 방법</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 각 페이지를 클릭해 회전하세요.</p><div class="pdf-option-row"><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(90)" style="padding:8px 16px;font-size:12px;">전체 90° →</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(180)" style="padding:8px 16px;font-size:12px;">전체 180°</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(270)" style="padding:8px 16px;font-size:12px;">전체 270° ←</button></div></div>`;
+    if(toolId==='protect') optionsHtml=`<div class="pdf-options"><label>암호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">비밀번호</label><input type="password" id="pdfPassword" placeholder="비밀번호 입력"></div><div class="pdf-option-group"><label style="font-size:12px;">비밀번호 확인</label><input type="password" id="pdfPasswordConfirm" placeholder="다시 입력"></div></div></div>`;
+    if(toolId==='pagenumber') optionsHtml=`<div class="pdf-options"><label>번호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">위치</label><select id="pdfNumPosition"><option value="bottom-center" selected>하단 중앙</option><option value="bottom-left">하단 왼쪽</option><option value="bottom-right">하단 오른쪽</option><option value="top-center">상단 중앙</option><option value="top-left">상단 왼쪽</option><option value="top-right">상단 오른쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">시작 번호</label><input type="number" id="pdfNumStart" value="1" min="1" style="width:80px;"></div><div class="pdf-option-group"><label style="font-size:12px;">크기</label><select id="pdfNumSize"><option value="10">작게</option><option value="12" selected>보통</option><option value="14">크게</option></select></div></div></div>`;
+    ws.innerHTML=`<div class="pdf-workspace active">
+        <div class="pdf-ws-header"><h2><span style="background:${tool.color};color:white;width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">${tool.icon}</span>${tool.title}</h2><button class="pdf-ws-back" onclick="closePdfTool()">← 도구 목록</button></div>
+        <div class="pdf-dropzone" id="pdfDropzone" onclick="document.getElementById('pdfFileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handlePdfDrop(event)">
+            <div class="pdf-dropzone-icon">${tool.icon}</div>
+            <div class="pdf-dropzone-text">${tool.desc}</div>
+            <div class="pdf-dropzone-sub">또는 여기에 파일을 끌어다 놓으세요</div>
+            <input type="file" id="pdfFileInput" accept="${tool.accept}" ${tool.multi?'multiple':''} style="display:none" onchange="handlePdfFileSelect(event)">
+        </div>
+        <div class="pdf-file-list" id="pdfFileList"></div>
+        ${optionsHtml}
+        <div class="pdf-preview-grid" id="pdfPreviewGrid"></div>
+        <div class="pdf-action-bar" id="pdfActionBar" style="display:none;">
+            <button class="pdf-btn pdf-btn-primary" id="pdfProcessBtn" onclick="processPdfTool()">🚀 변환 시작</button>
+            <button class="pdf-btn pdf-btn-secondary" onclick="pdfToolFiles=[];renderPdfFiles();">🗑️ 초기화</button>
+        </div>
+        <div class="pdf-progress" id="pdfProgress"><div class="pdf-progress-bar"><div class="pdf-progress-fill" id="pdfProgressFill"></div></div><div class="pdf-progress-text" id="pdfProgressText">처리 중...</div></div>
+        <div class="pdf-result" id="pdfResult"></div>
+    </div>`;
+}
+
+function closePdfTool(){
+    document.getElementById('pdfToolsMain').style.display='';
+    document.getElementById('pdfToolsWorkspace').innerHTML='';
+    pdfToolFiles=[];pdfToolCurrent=null;pdfSelectedPages=new Set();pdfPageRotations={};
+}
+
+function handlePdfDrop(e){
+    const files=Array.from(e.dataTransfer.files);
+    addPdfFiles(files);
+}
+function handlePdfFileSelect(e){
+    const files=Array.from(e.target.files);
+    addPdfFiles(files);
+    e.target.value='';
+}
+
+async function addPdfFiles(files){
+    const tool=PDF_TOOLS[pdfToolCurrent];
+    for(const file of files){
+        if(pdfToolCurrent==='img2pdf'){
+            if(!file.type.startsWith('image/')){showToast(file.name+': 이미지 파일만 가능','error');continue;}
+        } else {
+            if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){showToast(file.name+': PDF 파일만 가능','error');continue;}
+        }
+        const ab=await file.arrayBuffer();
+        let pageCount=0;
+        if(file.name.toLowerCase().endsWith('.pdf')){
+            try{const doc=await PDFLib.PDFDocument.load(ab,{ignoreEncryption:true});pageCount=doc.getPageCount();}catch(e){pageCount=0;}
+        }
+        if(!tool.multi){pdfToolFiles=[];}
+        pdfToolFiles.push({name:file.name,size:file.size,data:ab,pageCount,type:file.type});
+    }
+    renderPdfFiles();
+    if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate') renderPdfPreview();
+}
+
+function renderPdfFiles(){
+    const list=document.getElementById('pdfFileList');
+    const bar=document.getElementById('pdfActionBar');
+    const result=document.getElementById('pdfResult');
+    if(result)result.className='pdf-result';
+    if(pdfToolFiles.length===0){
+        list.innerHTML='';bar.style.display='none';
+        const grid=document.getElementById('pdfPreviewGrid');if(grid)grid.innerHTML='';
+        return;
+    }
+    bar.style.display='flex';
+    list.innerHTML=pdfToolFiles.map((f,i)=>`<div class="pdf-file-item">
+        <div class="file-icon">${pdfToolCurrent==='img2pdf'?'IMG':'PDF'}</div>
+        <div class="file-info"><div class="file-name">${esc(f.name)}</div><div class="file-size">${formatFileSize(f.size)}${f.pageCount?' · '+f.pageCount+'페이지':''}</div></div>
+        ${pdfToolCurrent==='merge'&&pdfToolFiles.length>1?`<button class="file-remove" onclick="movePdfFile(${i},-1)" title="위로">⬆️</button><button class="file-remove" onclick="movePdfFile(${i},1)" title="아래로">⬇️</button>`:''}
+        <button class="file-remove" onclick="removePdfFile(${i})" title="삭제">✕</button>
+    </div>`).join('');
+    // 드롭존 축소
+    const dz=document.getElementById('pdfDropzone');
+    if(dz){
+        if(PDF_TOOLS[pdfToolCurrent].multi){
+            dz.style.padding='16px';
+            dz.querySelector('.pdf-dropzone-icon').style.fontSize='24px';
+            dz.querySelector('.pdf-dropzone-icon').style.marginBottom='4px';
+        } else {
+            dz.style.display='none';
+        }
+    }
+}
+
+function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();}
+function movePdfFile(i,dir){
+    const j=i+dir;if(j<0||j>=pdfToolFiles.length)return;
+    [pdfToolFiles[i],pdfToolFiles[j]]=[pdfToolFiles[j],pdfToolFiles[i]];
+    renderPdfFiles();
+}
+
+async function renderPdfPreview(){
+    const grid=document.getElementById('pdfPreviewGrid');
+    if(!grid||pdfToolFiles.length===0)return;
+    grid.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-light);">미리보기 생성 중...</div>';
+    const f=pdfToolFiles[0];
+    try{
+        const pdf=await pdfjsLib.getDocument({data:new Uint8Array(f.data)}).promise;
+        let html='';
+        for(let p=1;p<=pdf.numPages;p++){
+            const page=await pdf.getPage(p);
+            const vp=page.getViewport({scale:0.5});
+            const canvas=document.createElement('canvas');
+            canvas.width=vp.width;canvas.height=vp.height;
+            await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+            const img=canvas.toDataURL('image/jpeg',0.7);
+            const selected=pdfToolCurrent==='split'?pdfSelectedPages.has(p):false;
+            const rotation=pdfPageRotations[p]||0;
+            if(pdfToolCurrent==='split'){
+                html+=`<div class="pdf-preview-page ${selected?'selected':''}" onclick="togglePdfPage(${p},this)">
+                    <img src="${img}" style="width:100%;display:block;">
+                    <div class="page-num">페이지 ${p}</div>
+                    <div class="page-check">✓</div>
+                </div>`;
+            } else if(pdfToolCurrent==='rotate'){
+                html+=`<div class="pdf-preview-page" onclick="rotatePdfPage(${p},this)" style="cursor:pointer;" title="클릭해서 90° 회전">
+                    <img src="${img}" style="width:100%;display:block;transform:rotate(${rotation}deg);transition:transform .3s;" id="pdfRotImg${p}">
+                    <div class="page-num">페이지 ${p} ${rotation?'('+rotation+'°)':''}</div>
+                </div>`;
+            }
+        }
+        grid.innerHTML=html;
+    }catch(e){grid.innerHTML=`<div style="color:#e53935;padding:16px;">미리보기 생성 실패: ${e.message}</div>`;}
+}
+
+function togglePdfPage(p,el){
+    if(pdfSelectedPages.has(p)){pdfSelectedPages.delete(p);el.classList.remove('selected');}
+    else{pdfSelectedPages.add(p);el.classList.add('selected');}
+}
+
+function rotatePdfPage(p){
+    pdfPageRotations[p]=((pdfPageRotations[p]||0)+90)%360;
+    const img=document.getElementById('pdfRotImg'+p);
+    if(img)img.style.transform='rotate('+pdfPageRotations[p]+'deg)';
+    const pageEl=img?.closest('.pdf-preview-page');
+    if(pageEl){const num=pageEl.querySelector('.page-num');if(num)num.textContent='페이지 '+p+(pdfPageRotations[p]?' ('+pdfPageRotations[p]+'°)':'');}
+}
+
+function pdfRotateAll(deg){
+    if(pdfToolFiles.length===0)return;
+    const f=pdfToolFiles[0];
+    for(let p=1;p<=f.pageCount;p++){
+        pdfPageRotations[p]=deg;
+        const img=document.getElementById('pdfRotImg'+p);
+        if(img)img.style.transform='rotate('+deg+'deg)';
+        const pageEl=img?.closest('.pdf-preview-page');
+        if(pageEl){const num=pageEl.querySelector('.page-num');if(num)num.textContent='페이지 '+p+' ('+deg+'°)';}
+    }
+}
+
+function pdfShowProgress(pct,text){
+    const el=document.getElementById('pdfProgress');
+    const fill=document.getElementById('pdfProgressFill');
+    const txt=document.getElementById('pdfProgressText');
+    el.className='pdf-progress active';
+    fill.style.width=pct+'%';
+    txt.textContent=text||'처리 중...';
+}
+
+function pdfShowResult(filename,blob){
+    const el=document.getElementById('pdfResult');
+    const url=URL.createObjectURL(blob);
+    el.className='pdf-result active';
+    el.innerHTML=`<h3>✅ 변환 완료!</h3>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span style="font-size:13px;color:var(--text);">${esc(filename)} (${formatFileSize(blob.size)})</span>
+            <a href="${url}" download="${esc(filename)}" class="pdf-btn pdf-btn-success" style="text-decoration:none;">⬇️ 다운로드</a>
+        </div>`;
+    document.getElementById('pdfProgress').className='pdf-progress';
+}
+
+function pdfShowResultMulti(files){
+    const el=document.getElementById('pdfResult');
+    el.className='pdf-result active';
+    let html='<h3>✅ 변환 완료! ('+files.length+'개 파일)</h3><div style="display:flex;flex-direction:column;gap:8px;">';
+    files.forEach(f=>{
+        const url=URL.createObjectURL(f.blob);
+        html+=`<div style="display:flex;align-items:center;gap:12px;"><span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(f.name)} (${formatFileSize(f.blob.size)})</span><a href="${url}" download="${esc(f.name)}" class="pdf-btn pdf-btn-success" style="text-decoration:none;padding:6px 16px;font-size:12px;">⬇️</a></div>`;
+    });
+    if(files.length>1){
+        html+=`<button class="pdf-btn pdf-btn-primary" onclick="downloadAllPdfResults()" style="margin-top:8px;">📦 전체 ZIP 다운로드</button>`;
+    }
+    html+='</div>';
+    el.innerHTML=html;
+    el._files=files;
+    document.getElementById('pdfProgress').className='pdf-progress';
+}
+
+async function downloadAllPdfResults(){
+    const el=document.getElementById('pdfResult');
+    if(!el._files)return;
+    const zip=new JSZip();
+    el._files.forEach(f=>zip.file(f.name,f.blob));
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pdf_images.zip';a.click();
+}
+
+async function processPdfTool(){
+    if(pdfToolFiles.length===0){showToast('파일을 선택하세요','error');return;}
+    const btn=document.getElementById('pdfProcessBtn');
+    btn.disabled=true;btn.textContent='⏳ 처리 중...';
+    try{
+        switch(pdfToolCurrent){
+            case 'merge': await pdfMerge(); break;
+            case 'split': await pdfSplit(); break;
+            case 'compress': await pdfCompress(); break;
+            case 'img2pdf': await pdfImg2Pdf(); break;
+            case 'pdf2img': await pdfPdf2Img(); break;
+            case 'rotate': await pdfRotate(); break;
+            case 'protect': await pdfProtect(); break;
+            case 'pagenumber': await pdfPageNumber(); break;
+        }
+    }catch(e){
+        showToast('처리 실패: '+e.message,'error');
+        document.getElementById('pdfProgress').className='pdf-progress';
+    }
+    btn.disabled=false;btn.textContent='🚀 변환 시작';
+}
+
+// ===== PDF 합치기 =====
+async function pdfMerge(){
+    if(pdfToolFiles.length<2){showToast('2개 이상의 PDF를 선택하세요','error');return;}
+    pdfShowProgress(10,'PDF 합치는 중...');
+    const merged=await PDFLib.PDFDocument.create();
+    for(let i=0;i<pdfToolFiles.length;i++){
+        pdfShowProgress(10+80*(i/pdfToolFiles.length),'합치는 중... ('+(i+1)+'/'+pdfToolFiles.length+')');
+        const doc=await PDFLib.PDFDocument.load(pdfToolFiles[i].data,{ignoreEncryption:true});
+        const pages=await merged.copyPages(doc,doc.getPageIndices());
+        pages.forEach(p=>merged.addPage(p));
+    }
+    pdfShowProgress(95,'파일 생성 중...');
+    const bytes=await merged.save();
+    pdfShowResult('merged.pdf',new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== PDF 분할 =====
+async function pdfSplit(){
+    if(pdfSelectedPages.size===0){showToast('추출할 페이지를 선택하세요','error');return;}
+    pdfShowProgress(10,'페이지 추출 중...');
+    const src=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
+    const newDoc=await PDFLib.PDFDocument.create();
+    const sorted=[...pdfSelectedPages].sort((a,b)=>a-b);
+    for(let i=0;i<sorted.length;i++){
+        pdfShowProgress(10+80*(i/sorted.length),'페이지 '+sorted[i]+' 추출 중...');
+        const [page]=await newDoc.copyPages(src,[sorted[i]-1]);
+        newDoc.addPage(page);
+    }
+    pdfShowProgress(95,'파일 생성 중...');
+    const bytes=await newDoc.save();
+    const name=pdfToolFiles[0].name.replace('.pdf','')+'_pages_'+sorted.join('-')+'.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== PDF 압축 =====
+async function pdfCompress(){
+    pdfShowProgress(10,'PDF 압축 중...');
+    const level=document.getElementById('pdfCompressLevel')?.value||'medium';
+    const src=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
+    // 이미지 품질 조정으로 압축
+    const scale=level==='high'?0.5:level==='medium'?0.7:0.85;
+    const pdf=await pdfjsLib.getDocument({data:new Uint8Array(pdfToolFiles[0].data)}).promise;
+    const newDoc=await PDFLib.PDFDocument.create();
+    for(let p=1;p<=pdf.numPages;p++){
+        pdfShowProgress(10+75*(p/pdf.numPages),'페이지 '+p+'/'+pdf.numPages+' 압축 중...');
+        const page=await pdf.getPage(p);
+        const vp=page.getViewport({scale:1.5*scale});
+        const canvas=document.createElement('canvas');
+        canvas.width=vp.width;canvas.height=vp.height;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
+        await page.render({canvasContext:ctx,viewport:vp}).promise;
+        const jpegQuality=level==='high'?0.4:level==='medium'?0.6:0.8;
+        const imgData=canvas.toDataURL('image/jpeg',jpegQuality);
+        const imgBytes=Uint8Array.from(atob(imgData.split(',')[1]),c=>c.charCodeAt(0));
+        const img=await newDoc.embedJpg(imgBytes);
+        const origPage=src.getPage(p-1);
+        const {width,height}=origPage.getSize();
+        const newPage=newDoc.addPage([width,height]);
+        newPage.drawImage(img,{x:0,y:0,width,height});
+    }
+    pdfShowProgress(90,'파일 생성 중...');
+    const bytes=await newDoc.save();
+    const origSize=pdfToolFiles[0].size;
+    const newSize=bytes.length;
+    const ratio=Math.round((1-newSize/origSize)*100);
+    pdfShowProgress(100,`압축 완료! ${ratio>0?ratio+'% 감소':'크기 변화 없음'}`);
+    const name=pdfToolFiles[0].name.replace('.pdf','')+'_compressed.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== 이미지 → PDF =====
+async function pdfImg2Pdf(){
+    pdfShowProgress(10,'PDF 생성 중...');
+    const orientation=document.getElementById('pdfPageOrientation')?.value||'portrait';
+    const margin=parseInt(document.getElementById('pdfPageMargin')?.value||'20');
+    const doc=await PDFLib.PDFDocument.create();
+    for(let i=0;i<pdfToolFiles.length;i++){
+        pdfShowProgress(10+80*(i/pdfToolFiles.length),'이미지 '+(i+1)+'/'+pdfToolFiles.length+' 변환 중...');
+        const f=pdfToolFiles[i];
+        let img;
+        if(f.type==='image/png'){img=await doc.embedPng(f.data);}
+        else{
+            // JPG 또는 기타 → JPG로 변환
+            const canvas=document.createElement('canvas');
+            const bitmap=await createImageBitmap(new Blob([f.data],{type:f.type}));
+            canvas.width=bitmap.width;canvas.height=bitmap.height;
+            const ctx=canvas.getContext('2d');
+            ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.drawImage(bitmap,0,0);
+            const jpgData=canvas.toDataURL('image/jpeg',0.92);
+            const jpgBytes=Uint8Array.from(atob(jpgData.split(',')[1]),c=>c.charCodeAt(0));
+            img=await doc.embedJpg(jpgBytes);
+        }
+        const pageW=orientation==='portrait'?595.28:841.89;
+        const pageH=orientation==='portrait'?841.89:595.28;
+        const availW=pageW-margin*2;
+        const availH=pageH-margin*2;
+        const imgRatio=img.width/img.height;
+        let drawW,drawH;
+        if(imgRatio>availW/availH){drawW=availW;drawH=availW/imgRatio;}
+        else{drawH=availH;drawW=availH*imgRatio;}
+        const page=doc.addPage([pageW,pageH]);
+        page.drawImage(img,{x:margin+(availW-drawW)/2,y:margin+(availH-drawH)/2,width:drawW,height:drawH});
+    }
+    pdfShowProgress(95,'파일 생성 중...');
+    const bytes=await doc.save();
+    pdfShowResult('images.pdf',new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== PDF → 이미지 =====
+async function pdfPdf2Img(){
+    pdfShowProgress(10,'이미지 변환 중...');
+    const format=document.getElementById('pdfImgFormat')?.value||'jpeg';
+    const scale=parseFloat(document.getElementById('pdfImgScale')?.value||'2');
+    const pdf=await pdfjsLib.getDocument({data:new Uint8Array(pdfToolFiles[0].data)}).promise;
+    const results=[];
+    for(let p=1;p<=pdf.numPages;p++){
+        pdfShowProgress(10+80*(p/pdf.numPages),'페이지 '+p+'/'+pdf.numPages+' 변환 중...');
+        const page=await pdf.getPage(p);
+        const vp=page.getViewport({scale});
+        const canvas=document.createElement('canvas');
+        canvas.width=vp.width;canvas.height=vp.height;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);
+        await page.render({canvasContext:ctx,viewport:vp}).promise;
+        const mimeType=format==='png'?'image/png':'image/jpeg';
+        const quality=format==='png'?undefined:0.92;
+        const blob=await new Promise(res=>canvas.toBlob(res,mimeType,quality));
+        const ext=format==='png'?'.png':'.jpg';
+        const name=pdfToolFiles[0].name.replace('.pdf','')+'_page'+p+ext;
+        results.push({name,blob});
+    }
+    pdfShowProgress(100,'변환 완료!');
+    pdfShowResultMulti(results);
+}
+
+// ===== PDF 회전 =====
+async function pdfRotate(){
+    const hasRotation=Object.values(pdfPageRotations).some(r=>r!==0);
+    if(!hasRotation){showToast('회전할 페이지를 선택하세요','error');return;}
+    pdfShowProgress(10,'PDF 회전 중...');
+    const doc=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
+    const pages=doc.getPages();
+    pages.forEach((page,i)=>{
+        const rot=pdfPageRotations[i+1]||0;
+        if(rot)page.setRotation(PDFLib.degrees((page.getRotation().angle+rot)%360));
+    });
+    pdfShowProgress(90,'파일 생성 중...');
+    const bytes=await doc.save();
+    const name=pdfToolFiles[0].name.replace('.pdf','')+'_rotated.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== PDF 보호 =====
+async function pdfProtect(){
+    const pw=document.getElementById('pdfPassword')?.value;
+    const pw2=document.getElementById('pdfPasswordConfirm')?.value;
+    if(!pw){showToast('비밀번호를 입력하세요','error');return;}
+    if(pw!==pw2){showToast('비밀번호가 일치하지 않습니다','error');return;}
+    pdfShowProgress(10,'PDF 암호 설정 중...');
+    const doc=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
+    const bytes=await doc.save({
+        userPassword:pw,
+        ownerPassword:pw,
+        permissions:{
+            printing:PDFLib.PrintPermission.HighQuality,
+            modifying:false,
+            copying:false,
+            annotating:false,
+            fillingForms:true,
+            contentAccessibility:true,
+            documentAssembly:false
+        }
+    });
+    pdfShowProgress(100,'암호 설정 완료!');
+    const name=pdfToolFiles[0].name.replace('.pdf','')+'_protected.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== 페이지 번호 삽입 =====
+async function pdfPageNumber(){
+    pdfShowProgress(10,'페이지 번호 삽입 중...');
+    const position=document.getElementById('pdfNumPosition')?.value||'bottom-center';
+    const startNum=parseInt(document.getElementById('pdfNumStart')?.value||'1');
+    const fontSize=parseInt(document.getElementById('pdfNumSize')?.value||'12');
+    const doc=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
+    const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+    const pages=doc.getPages();
+    for(let i=0;i<pages.length;i++){
+        pdfShowProgress(10+80*(i/pages.length),'페이지 '+(i+1)+' 처리 중...');
+        const page=pages[i];
+        const {width,height}=page.getSize();
+        const numText=String(startNum+i);
+        const textWidth=font.widthOfTextAtSize(numText,fontSize);
+        let x,y;
+        const [posV,posH]=position.split('-');
+        if(posH==='left') x=40;
+        else if(posH==='right') x=width-40-textWidth;
+        else x=(width-textWidth)/2;
+        if(posV==='top') y=height-30;
+        else y=25;
+        page.drawText(numText,{x,y,size:fontSize,font,color:PDFLib.rgb(0.3,0.3,0.3)});
+    }
+    pdfShowProgress(95,'파일 생성 중...');
+    const bytes=await doc.save();
+    const name=pdfToolFiles[0].name.replace('.pdf','')+'_numbered.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
 }
 
 init();
