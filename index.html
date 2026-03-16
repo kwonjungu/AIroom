@@ -3927,6 +3927,34 @@ function handleColFileSelect(e){
 
 function formatFileSize(b){return b<1024?(b+'B'):b<1024*1024?((b/1024).toFixed(1)+'KB'):((b/1024/1024).toFixed(1)+'MB');}
 
+function fileToBase64(file){
+    return new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function uploadFile(file){
+    // 1차: FormData(multer) 시도
+    try{
+        const fd=new FormData();
+        fd.append('file',file);
+        const resp=await fetch('/api/upload',{method:'POST',body:fd});
+        if(resp.ok) return await resp.json();
+    }catch(e){}
+    // 2차: base64 방식 (Vercel 호환)
+    const dataUrl=await fileToBase64(file);
+    const resp=await fetch('/api/upload-base64',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fileName:file.name,fileData:dataUrl})
+    });
+    if(!resp.ok) throw new Error('업로드 실패');
+    return await resp.json();
+}
+
 async function submitCollectionUpload(){
     const colId=document.getElementById('colUploadId').value;
     const name=document.getElementById('colUploaderName').value.trim();
@@ -3938,11 +3966,7 @@ async function submitCollectionUpload(){
     showToast('파일 업로드 중...','info');
     for(const file of pendingColFiles){
         try{
-            const fd=new FormData();
-            fd.append('file',file);
-            const resp=await fetch('/api/upload',{method:'POST',body:fd});
-            if(!resp.ok) throw new Error('업로드 실패');
-            const result=await resp.json();
+            const result=await uploadFile(file);
             col.submissions.push({
                 submitter:name,
                 fileName:result.fileName,

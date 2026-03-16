@@ -1,7 +1,6 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const multer = require('multer');
 
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
@@ -191,37 +190,74 @@ app.get('/api/firebase-config', (req, res) => {
 });
 
 // ===== 파일 업로드/다운로드 (자료 집계용) =====
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Vercel 서버리스에서는 /tmp 사용, 로컬에서는 data/uploads 사용
+const ACTUAL_UPLOAD_DIR = IS_VERCEL ? '/tmp/uploads' : UPLOAD_DIR;
 
-const upload = multer({
-    storage: multer.diskStorage({
-        destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-        filename: (req, file, cb) => {
-            const unique = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-            const safeName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-            cb(null, unique + '_' + safeName);
-        }
-    }),
-    limits: { fileSize: 10 * 1024 * 1024 }
-});
-
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: '파일 없음' });
-    const safeName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-    res.json({
-        success: true,
-        fileId: req.file.filename,
-        fileName: safeName,
-        fileSize: req.file.size,
-        downloadUrl: '/api/download/' + encodeURIComponent(req.file.filename)
+let upload = null;
+try {
+    const multer = require('multer');
+    if (!fs.existsSync(ACTUAL_UPLOAD_DIR)) fs.mkdirSync(ACTUAL_UPLOAD_DIR, { recursive: true });
+    upload = multer({
+        storage: multer.diskStorage({
+            destination: (req, file, cb) => cb(null, ACTUAL_UPLOAD_DIR),
+            filename: (req, file, cb) => {
+                const unique = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                const safeName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+                cb(null, unique + '_' + safeName);
+            }
+        }),
+        limits: { fileSize: 10 * 1024 * 1024 }
     });
+} catch (e) { console.warn('multer 로드 실패 (파일 업로드 비활성화):', e.message); }
+
+// base64 업로드 (Vercel 호환 - multer 없이도 동작)
+app.post('/api/upload-base64', async (req, res) => {
+    try {
+        const { fileName, fileData } = req.body;
+        if (!fileName || !fileData) return res.status(400).json({ error: '파일 데이터 없음' });
+        const unique = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        const fileId = unique + '_' + fileName;
+        const filePath = path.join(ACTUAL_UPLOAD_DIR, fileId);
+        if (!fs.existsSync(ACTUAL_UPLOAD_DIR)) fs.mkdirSync(ACTUAL_UPLOAD_DIR, { recursive: true });
+        // base64 → 파일 저장
+        const base64Data = fileData.replace(/^data:[^;]+;base64,/, '');
+        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+        const stats = fs.statSync(filePath);
+        res.json({
+            success: true,
+            fileId,
+            fileName,
+            fileSize: stats.size,
+            downloadUrl: '/api/download/' + encodeURIComponent(fileId)
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+if (upload) {
+    app.post('/api/upload', upload.single('file'), (req, res) => {
+        if (!req.file) return res.status(400).json({ error: '파일 없음' });
+        const safeName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+        res.json({
+            success: true,
+            fileId: req.file.filename,
+            fileName: safeName,
+            fileSize: req.file.size,
+            downloadUrl: '/api/download/' + encodeURIComponent(req.file.filename)
+        });
+    });
+} else {
+    // multer 없을 때 fallback
+    app.post('/api/upload', (req, res) => {
+        res.status(400).json({ error: 'multer 미설치. /api/upload-base64 사용하세요.' });
+    });
+}
 
 app.get('/api/download/:fileId', (req, res) => {
     const fileId = decodeURIComponent(req.params.fileId);
-    const filePath = path.join(UPLOAD_DIR, fileId);
+    // 보안: 경로 traversal 방지
+    if (fileId.includes('..') || fileId.includes('/')) return res.status(400).json({ error: '잘못된 파일 ID' });
+    const filePath = path.join(ACTUAL_UPLOAD_DIR, fileId);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: '파일 없음' });
-    // 파일명에서 원래 이름 추출 (unique_safeName)
     const parts = fileId.split('_');
     const originalName = parts.length > 2 ? parts.slice(2).join('_') : fileId;
     res.download(filePath, originalName);
