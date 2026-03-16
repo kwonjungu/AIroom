@@ -3993,18 +3993,22 @@ async function getFileBlob(f){
     let url=f.downloadUrl;
     // storagePath가 있으면 Firebase SDK로 최신 URL 가져오기
     if(f.storagePath&&firebaseStorage){
-        try{url=await firebaseStorage.ref().child(f.storagePath).getDownloadURL();}catch(e){}
+        try{
+            url=await firebaseStorage.ref().child(f.storagePath).getDownloadURL();
+            console.log('Firebase URL 획득:',url);
+        }catch(e){console.error('getDownloadURL 실패:',f.storagePath,e);}
     }
     if(!url) throw new Error('다운로드 URL 없음');
-    // Firebase URL이면 서버 프록시 경유 (CORS 우회)
-    if(url.includes('firebasestorage.googleapis.com')||url.includes('storage.googleapis.com')){
-        const resp=await fetch('/api/proxy-download?url='+encodeURIComponent(url));
-        if(!resp.ok) throw new Error('프록시 다운로드 실패');
-        return await resp.blob();
+    console.log('다운로드 시도 URL:',url);
+    // 서버 프록시 경유 (CORS 우회)
+    const proxyUrl='/api/proxy-download?url='+encodeURIComponent(url);
+    console.log('프록시 요청:',proxyUrl);
+    const resp=await fetch(proxyUrl);
+    if(!resp.ok){
+        const errText=await resp.text().catch(()=>'');
+        console.error('프록시 실패:',resp.status,errText);
+        throw new Error('다운로드 실패: '+resp.status+' '+errText);
     }
-    // 일반 URL
-    const resp=await fetch(url);
-    if(!resp.ok) throw new Error('다운로드 실패');
     return await resp.blob();
 }
 

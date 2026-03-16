@@ -189,22 +189,27 @@ app.get('/api/firebase-config', (req, res) => {
 });
 
 // ===== Firebase Storage 다운로드 프록시 (CORS 우회) =====
-app.get('/api/proxy-download', async (req, res) => {
+const https = require('https');
+app.get('/api/proxy-download', (req, res) => {
     const url = req.query.url;
+    console.log('[proxy] 요청 URL:', url);
     if (!url) return res.status(400).json({ error: 'url 파라미터 필요' });
     // Firebase Storage URL만 허용
     if (!url.includes('firebasestorage.googleapis.com') && !url.includes('storage.googleapis.com')) {
         return res.status(403).json({ error: '허용되지 않는 URL' });
     }
-    try {
-        const response = await fetch(url);
-        if (!response.ok) return res.status(response.status).json({ error: '다운로드 실패' });
-        res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
-        const contentLength = response.headers.get('content-length');
-        if (contentLength) res.setHeader('Content-Length', contentLength);
-        const arrayBuffer = await response.arrayBuffer();
-        res.end(Buffer.from(arrayBuffer));
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    https.get(url, (proxyRes) => {
+        console.log('[proxy] 응답 상태:', proxyRes.statusCode);
+        if (proxyRes.statusCode !== 200) {
+            return res.status(proxyRes.statusCode).json({ error: '원본 다운로드 실패: ' + proxyRes.statusCode });
+        }
+        res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'application/octet-stream');
+        if (proxyRes.headers['content-length']) res.setHeader('Content-Length', proxyRes.headers['content-length']);
+        proxyRes.pipe(res);
+    }).on('error', (e) => {
+        console.error('[proxy] 에러:', e.message);
+        res.status(500).json({ error: e.message });
+    });
 });
 
 // 메인 페이지
