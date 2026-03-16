@@ -3937,16 +3937,8 @@ function fileToBase64(file){
 }
 
 async function uploadFile(file){
-    // 1차: FormData(multer) 시도
-    try{
-        const fd=new FormData();
-        fd.append('file',file);
-        const resp=await fetch('/api/upload',{method:'POST',body:fd});
-        if(resp.ok) return await resp.json();
-    }catch(e){}
-    // 2차: base64 방식 (Vercel 호환)
     const dataUrl=await fileToBase64(file);
-    const resp=await fetch('/api/upload-base64',{
+    const resp=await fetch('/api/upload',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({fileName:file.name,fileData:dataUrl})
