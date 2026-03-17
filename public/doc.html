@@ -424,11 +424,17 @@ function initModalSig(existingVal) {
     const canvas = document.getElementById('modalSigCanvas');
     if (!wrap || !canvas) return;
 
-    // Size canvas to fill wrapper
-    canvas.width = wrap.clientWidth;
-    canvas.height = wrap.clientHeight;
+    // High-DPI canvas for crisp signatures
+    const dpr = window.devicePixelRatio || 1;
+    const w = wrap.clientWidth;
+    const h = wrap.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
 
     const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
     ctx.strokeStyle = '#1a1a1a';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
@@ -440,7 +446,7 @@ function initModalSig(existingVal) {
     if (existingVal && typeof existingVal === 'string' && existingVal.startsWith('data:')) {
         const img = new Image();
         img.onload = () => {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, w, h);
             signed = true;
             modalSigCanvas = { canvas, ctx, signed: true };
         };
@@ -450,7 +456,7 @@ function initModalSig(existingVal) {
     function pos(e) {
         const r = canvas.getBoundingClientRect();
         const t = e.touches ? e.touches[0] : e;
-        return { x: (t.clientX - r.left) * (canvas.width / r.width), y: (t.clientY - r.top) * (canvas.height / r.height) };
+        return { x: (t.clientX - r.left) * (w / r.width), y: (t.clientY - r.top) * (h / r.height) };
     }
     function start(e) { e.preventDefault(); e.stopPropagation(); drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
     function move(e) { if (!drawing) return; e.preventDefault(); e.stopPropagation(); signed = true; if(modalSigCanvas) modalSigCanvas.signed=true; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }

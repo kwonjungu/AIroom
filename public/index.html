@@ -6457,17 +6457,22 @@ function tdistShowSubs(data){
 
 // ===== PDF 다운로드 (원본 PDF + 입력값 합성) =====
 function _textToPng(text,fw,fh,bgWhite){
-    const scale=2;
+    const scale=3;
+    const str=String(text);
     const c=document.createElement('canvas');
-    c.width=Math.max(Math.round(fw*scale),4);
+    const fs=Math.min(Math.max(fh*0.55,8),18)*scale;
+    // Measure text width to avoid clipping
+    const ctx0=c.getContext('2d');
+    ctx0.font=fs+'px "Noto Sans KR",sans-serif';
+    const measured=ctx0.measureText(str).width+12*scale;
+    c.width=Math.max(Math.round(fw*scale),Math.round(measured),4);
     c.height=Math.max(Math.round(fh*scale),4);
     const ctx=c.getContext('2d');
     if(bgWhite){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,c.width,c.height);}
-    const fs=Math.min(Math.max(fh*0.55,8),18)*scale;
     ctx.font=fs+'px "Noto Sans KR",sans-serif';
     ctx.fillStyle='#000000';
     ctx.textBaseline='middle';
-    ctx.fillText(String(text),4*scale,c.height/2);
+    ctx.fillText(str,4*scale,c.height/2);
     const dataUrl=c.toDataURL('image/png');
     const raw=dataUrl.split(',')[1];
     return Uint8Array.from(atob(raw),ch=>ch.charCodeAt(0));
@@ -6521,8 +6526,11 @@ async function tdistDownloadSubPdf(subIdx){
                     const useBg=f.type==='date';
                     const imgBytes=_textToPng(displayVal,fw,fh,useBg);
                     const img=await newDoc.embedPng(imgBytes);
-                    if(useBg){page.drawRectangle({x:fx,y:fy,width:fw,height:fh,color:PDFLib.rgb(1,1,1)});}
-                    page.drawImage(img,{x:fx,y:fy,width:fw,height:fh});
+                    // Scale width proportionally if text is wider than field
+                    const drawW=Math.max(fw,fw*(img.width/(fw*3)));
+                    const drawH=fh;
+                    if(useBg){page.drawRectangle({x:fx,y:fy,width:drawW,height:drawH,color:PDFLib.rgb(1,1,1)});}
+                    page.drawImage(img,{x:fx,y:fy,width:drawW,height:drawH});
                 }else if(f.type==='checkbox'&&v){
                     const imgBytes=_checkToPng(fw,fh);
                     const img=await newDoc.embedPng(imgBytes);
