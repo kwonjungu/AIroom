@@ -8,69 +8,93 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a1a;-webkit-text-size-adjust:100%;}
-.container{max-width:800px;margin:0 auto;padding:10px 8px 90px;}
+.container{max-width:800px;margin:0 auto;padding:10px 8px 100px;}
 .card{background:white;border-radius:12px;padding:14px 12px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
 
-/* Header */
 .doc-header{text-align:center;padding:10px 0 4px;}
 .doc-header h1{font-size:17px;font-weight:800;margin-bottom:4px;}
 .doc-header .badge{display:inline-block;background:#e3f2fd;color:#1565c0;padding:3px 12px;border-radius:16px;font-size:11px;font-weight:600;}
 .doc-header .manager{font-size:12px;color:#666;margin-top:4px;}
 .desc{background:#f0f7ff;padding:10px;border-radius:8px;font-size:13px;line-height:1.6;color:#333;}
 
-/* PDF pages */
+/* Start button */
+.start-btn{display:block;width:100%;padding:16px;margin:10px 0;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.start-btn:active{opacity:0.9;}
+
+/* PDF pages - view only */
 .pdf-page-wrap{position:relative;margin-bottom:12px;background:white;box-shadow:0 1px 8px rgba(0,0,0,0.1);border-radius:4px;overflow:visible;}
 .pdf-page-wrap canvas{display:block;width:100%;height:auto;}
-.pdf-fields-overlay{position:absolute;top:0;left:0;width:100%;height:100%;}
+.pdf-fields-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 .page-indicator{text-align:center;font-size:11px;color:#999;margin:4px 0;font-weight:600;}
 
-/* ===== Form Fields on PDF ===== */
-.pdf-field{position:absolute;z-index:10;box-sizing:border-box;}
-.pdf-field-text input,.pdf-field-date input,.pdf-field-select select{
-    width:100%;height:100%;border:1px solid rgba(74,144,217,0.5);border-radius:2px;padding:1px 3px;
-    font-size:inherit;background:rgba(255,255,255,0.85);outline:none;box-sizing:border-box;
+/* Field markers on PDF (tap targets) */
+.field-marker{position:absolute;border:2px solid #4A90D9;border-radius:3px;background:rgba(74,144,217,0.08);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:background .2s;}
+.field-marker:active{background:rgba(74,144,217,0.2);}
+.field-marker.sig-marker{border-color:#e53935;background:rgba(229,57,53,0.06);}
+.field-marker.sig-marker:active{background:rgba(229,57,53,0.15);}
+.field-marker .marker-val{font-size:10px;color:#1565c0;text-align:center;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 3px;width:100%;}
+.field-marker .marker-val.filled{background:rgba(255,255,255,0.9);font-weight:600;}
+.field-marker .marker-num{position:absolute;top:-8px;left:-8px;width:16px;height:16px;background:#4A90D9;color:white;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.field-marker.sig-marker .marker-num{background:#e53935;}
+.field-marker.done{border-color:#2e7d32;background:rgba(46,125,50,0.06);}
+.field-marker.done .marker-num{background:#2e7d32;}
+.field-marker.done .marker-val{color:#2e7d32;}
+
+/* ===== Fullscreen Input Modal ===== */
+.input-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:white;display:none;flex-direction:column;}
+.input-modal.show{display:flex;}
+
+.im-header{background:#4A90D9;color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.im-header .im-step{font-size:13px;opacity:0.85;font-weight:600;}
+.im-header .im-title{font-size:16px;font-weight:700;flex:1;}
+.im-close{background:none;border:none;color:white;font-size:22px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent;}
+
+.im-body{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;}
+.im-label{font-size:18px;font-weight:700;margin-bottom:16px;color:#333;}
+.im-label .im-type{font-size:12px;font-weight:500;color:#888;margin-left:8px;}
+
+.im-input-wrap{flex:1;display:flex;flex-direction:column;}
+.im-input-wrap input[type="text"],.im-input-wrap input[type="date"],.im-input-wrap select{
+    width:100%;padding:16px 18px;border:2px solid #ddd;border-radius:12px;font-size:18px;outline:none;background:white;
+    -webkit-appearance:none;transition:border-color .2s;
 }
-.pdf-field-text input:focus,.pdf-field-date input:focus,.pdf-field-select select:focus{
-    border-color:#1565c0;background:rgba(255,255,255,0.95);box-shadow:0 0 0 2px rgba(74,144,217,0.25);
-}
-.pdf-field-checkbox{display:flex;align-items:center;gap:3px;background:rgba(255,255,255,0.8);border:1px solid rgba(74,144,217,0.5);border-radius:2px;padding:1px 3px;cursor:pointer;}
-.pdf-field-checkbox input[type="checkbox"]{width:16px;height:16px;accent-color:#4A90D9;cursor:pointer;flex-shrink:0;}
-.pdf-field-checkbox label{font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.im-input-wrap input:focus,.im-input-wrap select:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.15);}
+.im-input-wrap .im-hint{font-size:12px;color:#999;margin-top:8px;}
 
-/* Signature field */
-.pdf-field-signature{border:1px solid rgba(229,57,53,0.5);border-radius:2px;background:rgba(255,255,255,0.9);overflow:hidden;cursor:crosshair;}
-.pdf-field-signature canvas{display:block;width:100%;height:100%;touch-action:none;}
-.sig-label{position:absolute;top:-14px;left:0;font-size:9px;color:#e53935;font-weight:700;white-space:nowrap;}
-.sig-clear-btn{position:absolute;top:-14px;right:0;font-size:9px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:3px;padding:0 4px;cursor:pointer;color:#e53935;line-height:14px;}
+/* Checkbox in modal */
+.im-checkbox-wrap{display:flex;align-items:center;gap:14px;padding:20px;background:#f8f9fa;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.im-checkbox-wrap input[type="checkbox"]{width:28px;height:28px;accent-color:#4A90D9;flex-shrink:0;cursor:pointer;}
+.im-checkbox-wrap label{font-size:17px;cursor:pointer;line-height:1.5;}
 
-/* Extra fields */
-.field-group{margin-bottom:14px;}
-.field-label{font-size:14px;font-weight:700;margin-bottom:6px;display:block;color:#333;}
-.field-label .req{color:#e53935;margin-left:2px;}
-.field-input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:16px;outline:none;background:white;-webkit-appearance:none;}
-.field-input:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.15);}
+/* Signature in modal */
+.im-sig-area{flex:1;display:flex;flex-direction:column;min-height:200px;}
+.im-sig-canvas-wrap{flex:1;border:2px dashed #ccc;border-radius:12px;background:#fafafa;position:relative;overflow:hidden;touch-action:none;min-height:180px;}
+.im-sig-canvas-wrap canvas{display:block;width:100%;height:100%;}
+.im-sig-hint{text-align:center;font-size:13px;color:#999;margin-top:8px;}
+.im-sig-clear{align-self:flex-start;margin-top:8px;padding:8px 16px;border:1px solid #ddd;background:white;border-radius:8px;font-size:13px;cursor:pointer;}
 
-/* Standalone signature */
-.standalone-sig{border:2px dashed #ccc;border-radius:10px;overflow:hidden;position:relative;background:#fafafa;touch-action:none;}
-.standalone-sig canvas{display:block;width:100%;}
-.standalone-sig-clear{border:1px solid #ddd;background:white;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;margin-top:6px;}
+/* Current value display */
+.im-current-val{margin-top:12px;padding:10px;background:#e8f5e9;border-radius:8px;font-size:13px;color:#2e7d32;display:none;}
+.im-current-val.show{display:block;}
 
-/* ===== Field Navigation Bar (above keyboard) ===== */
-.field-nav-bar{position:fixed;bottom:0;left:0;right:0;z-index:200;background:#f0f0f0;border-top:1px solid #ccc;padding:6px 10px;display:none;align-items:center;gap:8px;justify-content:space-between;}
-.field-nav-bar.show{display:flex;}
-.field-nav-bar .nav-info{font-size:12px;color:#666;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.field-nav-bar button{background:#4A90D9;color:white;border:none;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;white-space:nowrap;}
-.field-nav-bar button:active{opacity:0.8;}
-.field-nav-bar .done-btn{background:#2e7d32;}
+.im-footer{padding:12px 16px;border-top:1px solid #eee;display:flex;gap:10px;flex-shrink:0;background:white;}
+.im-footer button{flex:1;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.im-footer button:active{opacity:0.85;}
+.im-prev{background:#f0f0f0;color:#333;}
+.im-next{background:#4A90D9;color:white;}
+.im-done{background:#2e7d32;color:white;}
 
 /* ===== Submit ===== */
-.submit-section{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -3px 16px rgba(0,0,0,0.1);z-index:90;transition:transform .3s;}
-.submit-section.hidden{transform:translateY(100%);}
+.submit-section{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -3px 16px rgba(0,0,0,0.1);z-index:90;}
 .submit-inner{max-width:800px;margin:0 auto;}
-.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;}
 .submit-btn:active{opacity:0.9;}
 .submit-btn:disabled{background:#ccc;cursor:not-allowed;}
 .submit-note{text-align:center;font-size:10px;color:#999;margin-top:4px;}
+
+/* Progress bar */
+.progress-bar{height:4px;background:#e0e0e0;border-radius:2px;margin:8px 0;overflow:hidden;}
+.progress-fill{height:100%;background:#4A90D9;border-radius:2px;transition:width .3s;}
 
 /* Loading / Error / Success */
 .loading{text-align:center;padding:80px 20px;}
@@ -81,12 +105,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .success-page{text-align:center;padding:60px 20px;}
 .success-page .emoji{font-size:56px;margin-bottom:14px;}
 .success-page h2{font-size:20px;margin-bottom:8px;color:#2e7d32;}
-
-.field-error{border-color:#e53935!important;animation:shake .3s;}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-
-/* Active field highlight */
-.pdf-field.active-field{z-index:20;filter:drop-shadow(0 0 6px rgba(74,144,217,0.5));}
 </style>
 </head>
 <body>
@@ -94,12 +112,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
     <div class="loading"><div class="spinner"></div><p>문서를 불러오는 중...</p></div>
 </div>
 
-<!-- Field navigation bar (shows when field focused) -->
-<div class="field-nav-bar" id="fieldNavBar">
-    <button onclick="navField(-1)">◀ 이전</button>
-    <span class="nav-info" id="navInfo">1 / 5</span>
-    <button onclick="navField(1)">다음 ▶</button>
-    <button class="done-btn" onclick="doneEditing()">완료</button>
+<!-- Fullscreen input modal -->
+<div class="input-modal" id="inputModal">
+    <div class="im-header">
+        <div>
+            <div class="im-step" id="imStep">1 / 5</div>
+            <div class="im-title" id="imTitle">항목 입력</div>
+        </div>
+        <button class="im-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="imProgress" style="width:0%"></div></div>
+    <div class="im-body" id="imBody"></div>
+    <div class="im-footer" id="imFooter">
+        <button class="im-prev" onclick="modalNav(-1)">◀ 이전</button>
+        <button class="im-next" onclick="modalNav(1)">다음 ▶</button>
+    </div>
 </div>
 
 <div class="submit-section" id="submitSection">
@@ -113,14 +140,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 const token = location.pathname.split('/doc/')[1];
 let docData = null;
 let pdfDoc = null;
-let signatureCanvases = {};
-let pageScales = {};
-
-// Field navigation
 let fieldsList = [];
-let currentFieldIdx = -1;
-let isFieldFocused = false;
-let initialWidth = 0; // track width to ignore keyboard resize
+let fieldValues = {}; // { fieldId: value }
+let modalSigCanvas = null; // current signature canvas in modal
+let modalFieldIdx = -1;
+let initialWidth = 0;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -145,7 +169,6 @@ async function render() {
     const app = document.getElementById('app');
     let h = '';
 
-    // Header
     h += '<div class="doc-header"><h1>'+esc(docData.title)+'</h1>';
     h += '<span class="badge">문서 작성</span>';
     h += '<div class="manager">담당: '+esc(docData.manager||'')+(docData.deadline?' · 마감: '+docData.deadline:'')+'</div></div>';
@@ -154,21 +177,27 @@ async function render() {
         h += '<div class="card"><div class="desc">'+esc(docData.description).replace(/\n/g,'<br>')+'</div></div>';
     }
 
-    // PDF container
-    h += '<div id="pdfContainer"></div>';
+    // Build field list
+    buildFieldList();
 
-    // Extra fields
-    const extra = (docData.fields||[]).filter(f => f.page === undefined || f.page === null);
-    if (extra.length) {
-        h += '<div class="card" id="extraSection">';
-        extra.forEach(f => { h += renderExtraField(f); });
-        h += '</div>';
+    if (fieldsList.length > 0) {
+        h += '<button class="start-btn" onclick="openModal(0)">작성 시작 ('+fieldsList.length+'개 항목)</button>';
     }
 
-    app.innerHTML = h;
+    // PDF container (view only with markers)
+    h += '<div id="pdfContainer"></div>';
 
     // Submit note
     document.getElementById('submitNote').textContent = (docData.deadline ? '마감: '+docData.deadline+' · ' : '') + '제출 후 수정 불가';
+
+    app.innerHTML = h;
+
+    // Init default values
+    fieldsList.forEach(f => {
+        if (f.type === 'date' && !fieldValues[f.id]) {
+            fieldValues[f.id] = new Date().toISOString().slice(0,10);
+        }
+    });
 
     // Render PDF
     if (docData.pdfData) {
@@ -182,16 +211,15 @@ async function render() {
             document.getElementById('pdfContainer').innerHTML = '<div class="card" style="text-align:center;padding:20px;color:#e53935;">PDF 표시 불가</div>';
         }
     }
+}
 
-    // Init signatures + build field list
-    setTimeout(() => {
-        (docData.fields||[]).filter(f => f.type === 'signature').forEach(f => {
-            if (f.page !== undefined && f.page !== null) initPdfSig(f.id);
-            else initStandaloneSig(f.id);
-        });
-        buildFieldList();
-        assignTabIndexes();
-    }, 300);
+function buildFieldList() {
+    fieldsList = [];
+    if (!docData || !docData.fields) return;
+    const pdf = docData.fields.filter(f => f.page !== undefined && f.page !== null && f.type !== 'label');
+    pdf.sort((a,b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
+    const extra = docData.fields.filter(f => (f.page === undefined || f.page === null) && f.type !== 'label');
+    fieldsList = [...pdf, ...extra];
 }
 
 async function renderPages() {
@@ -221,190 +249,203 @@ async function renderPages() {
         const vp = page.getViewport({scale:sc});
         canvas.width = vp.width;
         canvas.height = vp.height;
-        pageScales[i] = {scale:sc, w:vp.width, h:vp.height};
         await page.render({canvasContext:ctx, viewport:vp}).promise;
-        renderFieldsOnPage(i);
+        renderMarkers(i);
     }
 }
 
-function renderFieldsOnPage(pi) {
+function renderMarkers(pi) {
     const ov = document.getElementById('fo_'+pi);
     if (!ov) return;
-    const fields = (docData.fields||[]).filter(f => f.page === pi);
+    const fields = fieldsList.filter(f => f.page === pi);
     let h = '';
 
     fields.forEach(f => {
+        const idx = fieldsList.indexOf(f);
         const st = 'left:'+f.x+'%;top:'+f.y+'%;width:'+f.width+'%;height:'+f.height+'%;';
+        const isSig = f.type === 'signature';
+        const val = fieldValues[f.id];
+        const hasDone = val !== undefined && val !== '' && val !== false;
+        const cls = 'field-marker' + (isSig?' sig-marker':'') + (hasDone?' done':'');
 
-        if (f.type === 'text') {
-            h += '<div class="pdf-field pdf-field-text" style="'+st+'" data-fid="'+f.id+'">' +
-                '<input type="text" id="f_'+f.id+'" placeholder="'+esc(f.placeholder||f.label||'')+'">' +
-                '</div>';
-        } else if (f.type === 'checkbox') {
-            h += '<div class="pdf-field pdf-field-checkbox" style="'+st+'" data-fid="'+f.id+'">' +
-                '<input type="checkbox" id="f_'+f.id+'">' +
-                '<label for="f_'+f.id+'">'+esc(f.checkLabel||f.label||'')+'</label></div>';
-        } else if (f.type === 'signature') {
-            h += '<div class="pdf-field pdf-field-signature" style="'+st+'" id="sw_'+f.id+'" data-fid="'+f.id+'">' +
-                '<span class="sig-label">'+esc(f.label||'서명')+'</span>' +
-                '<button class="sig-clear-btn" onclick="clearSig(\''+f.id+'\')">지우기</button>' +
-                '<canvas id="sc_'+f.id+'"></canvas></div>';
-        } else if (f.type === 'date') {
-            h += '<div class="pdf-field pdf-field-date" style="'+st+'" data-fid="'+f.id+'">' +
-                '<input type="date" id="f_'+f.id+'" value="'+new Date().toISOString().slice(0,10)+'">' +
-                '</div>';
-        } else if (f.type === 'select') {
-            const opts = (f.options||'').split(',').map(o=>o.trim()).filter(Boolean);
-            h += '<div class="pdf-field pdf-field-select" style="'+st+'" data-fid="'+f.id+'">' +
-                '<select id="f_'+f.id+'"><option value="">'+esc(f.label||'선택')+'</option>' +
-                opts.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('') +
-                '</select></div>';
+        let valDisplay = '';
+        if (hasDone) {
+            if (f.type === 'signature') valDisplay = '서명완료';
+            else if (f.type === 'checkbox') valDisplay = '체크됨';
+            else valDisplay = esc(String(val));
         }
+
+        h += '<div class="'+cls+'" style="'+st+'" onclick="openModal('+idx+')">' +
+            '<span class="marker-num">'+(idx+1)+'</span>' +
+            (valDisplay ? '<span class="marker-val filled">'+valDisplay+'</span>' : '') +
+            '</div>';
     });
 
     ov.innerHTML = h;
 }
 
-function renderExtraField(f) {
-    let h = '<div class="field-group" data-fid="'+f.id+'">';
-    if (f.type === 'label') {
-        h += '<div style="font-size:13px;line-height:1.7;white-space:pre-wrap;color:#444;">'+esc(f.content||'')+'</div>';
-    } else {
-        const req = f.required !== false && f.type !== 'file';
-        h += '<span class="field-label">'+esc(f.label||'')+(req?'<span class="req">*</span>':'')+'</span>';
-
-        if (f.type === 'text') h += '<input class="field-input" type="text" id="f_'+f.id+'" placeholder="'+esc(f.placeholder||'')+'">';
-        if (f.type === 'date') h += '<input class="field-input" type="date" id="f_'+f.id+'" value="'+new Date().toISOString().slice(0,10)+'">';
-        if (f.type === 'select') {
-            const opts = (f.options||'').split(',').map(o=>o.trim()).filter(Boolean);
-            h += '<select class="field-input" id="f_'+f.id+'"><option value="">선택</option>'+opts.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select>';
-        }
-        if (f.type === 'checkbox') {
-            h += '<div style="display:flex;align-items:center;gap:10px;padding:12px;background:#fafafa;border-radius:8px;">' +
-                '<input type="checkbox" id="f_'+f.id+'" style="width:24px;height:24px;accent-color:#4A90D9;flex-shrink:0;">' +
-                '<label for="f_'+f.id+'" style="font-size:14px;cursor:pointer;">'+esc(f.checkLabel||'동의')+'</label></div>';
-        }
-        if (f.type === 'signature') {
-            h += '<div class="standalone-sig" id="scon_'+f.id+'"><canvas id="sc_'+f.id+'" height="150"></canvas></div>' +
-                '<button class="standalone-sig-clear" onclick="clearSig(\''+f.id+'\')">지우기</button>';
-        }
-    }
-    h += '</div>';
-    return h;
+function updateAllMarkers() {
+    const pages = docData.pdfPages || [];
+    const total = pdfDoc ? pdfDoc.numPages : 0;
+    const toRender = pages.length > 0 ? pages : Array.from({length:total},(_,i)=>i+1);
+    for (let i = 0; i < toRender.length; i++) renderMarkers(i);
 }
 
-// ===== Field list & Tab navigation =====
-function buildFieldList() {
-    fieldsList = [];
-    if (!docData || !docData.fields) return;
-    const pdf = docData.fields.filter(f => f.page !== undefined && f.page !== null && f.type !== 'label');
-    pdf.sort((a,b) => a.page !== b.page ? a.page - b.page : a.y - b.y);
-    const extra = docData.fields.filter(f => (f.page === undefined || f.page === null) && f.type !== 'label');
-    fieldsList = [...pdf, ...extra];
+// ===== Fullscreen Input Modal =====
+function openModal(idx) {
+    if (idx < 0 || idx >= fieldsList.length) return;
+    modalFieldIdx = idx;
+    saveCurrentModalField(); // save previous if any
+    document.getElementById('inputModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    renderModalField();
 }
 
-function assignTabIndexes() {
-    fieldsList.forEach((f, i) => {
-        const el = document.getElementById('f_' + f.id);
-        if (el) {
-            el.setAttribute('tabindex', i + 1);
-            // Listen for focus to show nav bar and scroll
-            el.addEventListener('focus', () => onFocus(f.id, i));
-            el.addEventListener('blur', () => onBlur());
-        }
-    });
+function closeModal() {
+    saveCurrentModalField();
+    document.getElementById('inputModal').classList.remove('show');
+    document.body.style.overflow = '';
+    modalSigCanvas = null;
+    updateAllMarkers();
+    updateStartBtn();
 }
 
-function onFocus(fieldId, idx) {
-    isFieldFocused = true;
-    currentFieldIdx = idx;
-
-    // Show nav bar
-    const nav = document.getElementById('fieldNavBar');
-    nav.classList.add('show');
-    document.getElementById('submitSection').classList.add('hidden');
-    updateNavInfo();
-
-    // Highlight active field
-    document.querySelectorAll('.pdf-field.active-field').forEach(el => el.classList.remove('active-field'));
-    const wrapper = document.querySelector('[data-fid="'+fieldId+'"]');
-    if (wrapper) wrapper.classList.add('active-field');
-
-    // Scroll the field into view smoothly after a tiny delay (let keyboard appear first)
-    setTimeout(() => {
-        const el = document.getElementById('f_' + fieldId);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }, 350);
-}
-
-function onBlur() {
-    // Delay to check if focus moved to another field
-    setTimeout(() => {
-        const active = document.activeElement;
-        // If focus is still on a form field, keep nav bar
-        if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA')) return;
-        isFieldFocused = false;
-        document.getElementById('fieldNavBar').classList.remove('show');
-        document.getElementById('submitSection').classList.remove('hidden');
-        document.querySelectorAll('.pdf-field.active-field').forEach(el => el.classList.remove('active-field'));
-    }, 200);
-}
-
-function updateNavInfo() {
-    const info = document.getElementById('navInfo');
-    if (!info) return;
-    const f = fieldsList[currentFieldIdx];
-    const label = f ? (f.label || f.placeholder || f.type) : '';
-    info.textContent = (currentFieldIdx+1) + ' / ' + fieldsList.length + (label ? '  ·  ' + label : '');
-}
-
-function navField(dir) {
-    let next = currentFieldIdx + dir;
+function modalNav(dir) {
+    saveCurrentModalField();
+    let next = modalFieldIdx + dir;
     if (next < 0) next = 0;
-    if (next >= fieldsList.length) next = fieldsList.length - 1;
-    currentFieldIdx = next;
-    const f = fieldsList[next];
-    const el = document.getElementById('f_' + f.id);
-    if (el) {
-        el.focus(); // this triggers onFocus which scrolls
+    if (next >= fieldsList.length) {
+        // Last field - close modal
+        closeModal();
+        return;
+    }
+    modalFieldIdx = next;
+    renderModalField();
+}
+
+function renderModalField() {
+    const f = fieldsList[modalFieldIdx];
+    const total = fieldsList.length;
+    const body = document.getElementById('imBody');
+    const footer = document.getElementById('imFooter');
+
+    // Header
+    document.getElementById('imStep').textContent = (modalFieldIdx+1) + ' / ' + total;
+    document.getElementById('imTitle').textContent = f.label || f.placeholder || getTypeLabel(f.type);
+    document.getElementById('imProgress').style.width = ((modalFieldIdx+1)/total*100)+'%';
+
+    // Body
+    let h = '';
+    const typeLabel = getTypeLabel(f.type);
+    h += '<div class="im-label">'+esc(f.label || f.placeholder || typeLabel)+'<span class="im-type">'+typeLabel+'</span></div>';
+    h += '<div class="im-input-wrap">';
+
+    const curVal = fieldValues[f.id];
+
+    if (f.type === 'text') {
+        h += '<input type="text" id="modalInput" placeholder="'+esc(f.placeholder||f.label||'입력하세요')+'" value="'+esc(curVal||'')+'" autocomplete="off">';
+    } else if (f.type === 'date') {
+        h += '<input type="date" id="modalInput" value="'+(curVal || new Date().toISOString().slice(0,10))+'">';
+    } else if (f.type === 'select') {
+        const opts = (f.options||'').split(',').map(o=>o.trim()).filter(Boolean);
+        h += '<select id="modalInput"><option value="">선택하세요</option>';
+        opts.forEach(o => {
+            h += '<option value="'+esc(o)+'"'+(curVal===o?' selected':'')+'>'+esc(o)+'</option>';
+        });
+        h += '</select>';
+    } else if (f.type === 'checkbox') {
+        h += '<div class="im-checkbox-wrap" onclick="document.getElementById(\'modalCheck\').click()">' +
+            '<input type="checkbox" id="modalCheck"'+(curVal?' checked':'')+' onclick="event.stopPropagation()">' +
+            '<label>'+esc(f.checkLabel||f.label||'동의합니다')+'</label></div>';
+    } else if (f.type === 'signature') {
+        h += '<div class="im-sig-area">' +
+            '<div class="im-sig-canvas-wrap" id="modalSigWrap"><canvas id="modalSigCanvas"></canvas></div>' +
+            '<div class="im-sig-hint">위 영역에 터치로 서명하세요</div>' +
+            '<button class="im-sig-clear" onclick="clearModalSig()">지우기</button>' +
+            '</div>';
+    }
+
+    // Show current value if filled
+    if (curVal && f.type !== 'checkbox' && f.type !== 'signature') {
+        h += '<div class="im-current-val show">현재 값: '+esc(String(curVal))+'</div>';
+    }
+
+    h += '</div>';
+    body.innerHTML = h;
+
+    // Footer buttons
+    const isFirst = modalFieldIdx === 0;
+    const isLast = modalFieldIdx === total - 1;
+    let fh = '';
+    fh += '<button class="im-prev" onclick="modalNav(-1)"'+(isFirst?' disabled style="opacity:0.4"':'')+'>◀ 이전</button>';
+    if (isLast) {
+        fh += '<button class="im-done" onclick="modalNav(1)">완료</button>';
+    } else {
+        fh += '<button class="im-next" onclick="modalNav(1)">다음 ▶</button>';
+    }
+    footer.innerHTML = fh;
+
+    // Focus input after render
+    setTimeout(() => {
+        if (f.type === 'text') {
+            const el = document.getElementById('modalInput');
+            if (el) el.focus();
+        } else if (f.type === 'signature') {
+            initModalSig(curVal);
+        }
+    }, 100);
+}
+
+function saveCurrentModalField() {
+    if (modalFieldIdx < 0 || modalFieldIdx >= fieldsList.length) return;
+    const f = fieldsList[modalFieldIdx];
+
+    if (f.type === 'text' || f.type === 'date' || f.type === 'select') {
+        const el = document.getElementById('modalInput');
+        if (el) fieldValues[f.id] = el.value;
+    } else if (f.type === 'checkbox') {
+        const el = document.getElementById('modalCheck');
+        if (el) fieldValues[f.id] = el.checked;
+    } else if (f.type === 'signature') {
+        if (modalSigCanvas && modalSigCanvas.signed) {
+            fieldValues[f.id] = modalSigCanvas.canvas.toDataURL('image/png');
+        }
     }
 }
 
-function doneEditing() {
-    const active = document.activeElement;
-    if (active) active.blur();
-    isFieldFocused = false;
-    document.getElementById('fieldNavBar').classList.remove('show');
-    document.getElementById('submitSection').classList.remove('hidden');
-    document.querySelectorAll('.pdf-field.active-field').forEach(el => el.classList.remove('active-field'));
+function getTypeLabel(type) {
+    const map = {text:'텍스트 입력',date:'날짜 선택',select:'항목 선택',checkbox:'체크박스',signature:'서명'};
+    return map[type] || type;
 }
 
-// ===== Signature =====
-function initPdfSig(fid) {
-    const wrap = document.getElementById('sw_'+fid);
-    const canvas = document.getElementById('sc_'+fid);
+// ===== Modal Signature =====
+function initModalSig(existingVal) {
+    const wrap = document.getElementById('modalSigWrap');
+    const canvas = document.getElementById('modalSigCanvas');
     if (!wrap || !canvas) return;
+
+    // Size canvas to fill wrapper
     canvas.width = wrap.clientWidth;
     canvas.height = wrap.clientHeight;
-    setupSigCanvas(canvas, fid);
-}
 
-function initStandaloneSig(fid) {
-    const canvas = document.getElementById('sc_'+fid);
-    if (!canvas) return;
-    canvas.width = canvas.parentElement.clientWidth;
-    setupSigCanvas(canvas, fid);
-}
-
-function setupSigCanvas(canvas, fid) {
     const ctx = canvas.getContext('2d');
     ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
     let drawing = false, signed = false;
+
+    // Restore existing signature
+    if (existingVal && typeof existingVal === 'string' && existingVal.startsWith('data:')) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            signed = true;
+            modalSigCanvas = { canvas, ctx, signed: true };
+        };
+        img.src = existingVal;
+    }
 
     function pos(e) {
         const r = canvas.getBoundingClientRect();
@@ -412,7 +453,7 @@ function setupSigCanvas(canvas, fid) {
         return { x: (t.clientX - r.left) * (canvas.width / r.width), y: (t.clientY - r.top) * (canvas.height / r.height) };
     }
     function start(e) { e.preventDefault(); e.stopPropagation(); drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
-    function move(e) { if (!drawing) return; e.preventDefault(); e.stopPropagation(); signed = true; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function move(e) { if (!drawing) return; e.preventDefault(); e.stopPropagation(); signed = true; if(modalSigCanvas) modalSigCanvas.signed=true; const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
     function end(e) { if (e) e.stopPropagation(); drawing = false; }
 
     canvas.addEventListener('mousedown', start);
@@ -423,54 +464,57 @@ function setupSigCanvas(canvas, fid) {
     canvas.addEventListener('touchmove', move, {passive:false});
     canvas.addEventListener('touchend', end);
 
-    signatureCanvases[fid] = { canvas, ctx, hasSigned: () => signed, reset: () => { signed = false; } };
+    modalSigCanvas = { canvas, ctx, signed };
 }
 
-function clearSig(fid) {
-    const sc = signatureCanvases[fid];
-    if (!sc) return;
-    sc.ctx.clearRect(0, 0, sc.canvas.width, sc.canvas.height);
-    sc.reset();
+function clearModalSig() {
+    if (!modalSigCanvas) return;
+    modalSigCanvas.ctx.clearRect(0, 0, modalSigCanvas.canvas.width, modalSigCanvas.canvas.height);
+    modalSigCanvas.signed = false;
+    // Also clear stored value
+    const f = fieldsList[modalFieldIdx];
+    if (f) delete fieldValues[f.id];
+}
+
+function updateStartBtn() {
+    const btn = document.querySelector('.start-btn');
+    if (!btn) return;
+    const filled = fieldsList.filter(f => {
+        const v = fieldValues[f.id];
+        return v !== undefined && v !== '' && v !== false;
+    }).length;
+    if (filled === fieldsList.length) {
+        btn.textContent = '모든 항목 작성 완료 (수정하기)';
+        btn.style.background = 'linear-gradient(135deg,#2e7d32,#1b5e20)';
+    } else if (filled > 0) {
+        btn.textContent = '계속 작성하기 ('+filled+'/'+fieldsList.length+' 완료)';
+    } else {
+        btn.textContent = '작성 시작 ('+fieldsList.length+'개 항목)';
+        btn.style.background = '';
+    }
 }
 
 // ===== Submit =====
 let submitting = false;
 async function submitForm() {
     if (submitting) return;
-    const values = {};
-    let valid = true, firstBad = null;
 
-    (docData.fields||[]).forEach(f => {
+    // Validate
+    let valid = true, firstMissing = -1;
+    fieldsList.forEach((f, idx) => {
         if (f.type === 'label') return;
         const req = f.required !== false && f.type !== 'file';
-        const el = document.getElementById('f_'+f.id);
-
-        if (f.type === 'text') {
-            const v = el?.value?.trim() || '';
-            if (req && !v) { valid = false; markErr(el); if (!firstBad) firstBad = el; }
-            values[f.id] = v;
-        } else if (f.type === 'date') {
-            const v = el?.value || '';
-            if (req && !v) { valid = false; markErr(el); if (!firstBad) firstBad = el; }
-            values[f.id] = v;
-        } else if (f.type === 'select') {
-            const v = el?.value || '';
-            if (req && !v) { valid = false; markErr(el); if (!firstBad) firstBad = el; }
-            values[f.id] = v;
-        } else if (f.type === 'checkbox') {
-            const v = el?.checked || false;
-            if (req && !v) { valid = false; if (!firstBad) firstBad = el; }
-            values[f.id] = v;
-        } else if (f.type === 'signature') {
-            const sc = signatureCanvases[f.id];
-            if (!sc || !sc.hasSigned()) { if (req) valid = false; }
-            else values[f.id] = sc.canvas.toDataURL('image/png');
+        if (!req) return;
+        const v = fieldValues[f.id];
+        if (v === undefined || v === '' || v === false) {
+            valid = false;
+            if (firstMissing < 0) firstMissing = idx;
         }
     });
 
     if (!valid) {
         alert('필수 항목을 모두 작성해주세요.');
-        if (firstBad) firstBad.scrollIntoView({behavior:'smooth',block:'center'});
+        if (firstMissing >= 0) openModal(firstMissing);
         return;
     }
     if (!confirm('제출하시겠습니까?\n제출 후 수정 불가합니다.')) return;
@@ -482,12 +526,11 @@ async function submitForm() {
     try {
         const res = await fetch('/api/tdist-public/'+token+'/submit', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({values})
+            body: JSON.stringify({values: fieldValues})
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error||'제출 실패'); }
 
         document.getElementById('submitSection').style.display = 'none';
-        document.getElementById('fieldNavBar').style.display = 'none';
         document.getElementById('app').innerHTML =
             '<div class="card success-page"><div class="emoji">✅</div>' +
             '<h2>제출 완료!</h2>' +
@@ -502,12 +545,6 @@ async function submitForm() {
     }
 }
 
-function markErr(el) {
-    if (!el) return;
-    el.classList.add('field-error');
-    setTimeout(() => el.classList.remove('field-error'), 1500);
-}
-
 // ===== Utils =====
 function base64ToUint8(b64) {
     const raw = b64.includes(',') ? b64.split(',')[1] : b64;
@@ -516,26 +553,19 @@ function base64ToUint8(b64) {
     for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
     return arr;
 }
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function esc(s) { if(!s)return''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// ===== Resize: ONLY re-render if WIDTH changed (ignore keyboard height changes) =====
+// Resize: only re-render if width changed
 let resizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-        const container = document.getElementById('pdfContainer');
-        if (!container || !pdfDoc || !docData) return;
-        const newWidth = container.clientWidth;
-        // Only re-render if width actually changed (not keyboard open/close)
-        if (Math.abs(newWidth - initialWidth) > 10) {
-            initialWidth = newWidth;
-            renderPages().then(() => {
-                setTimeout(() => {
-                    (docData.fields||[]).filter(f => f.type === 'signature' && f.page !== undefined && f.page !== null)
-                        .forEach(f => initPdfSig(f.id));
-                    assignTabIndexes();
-                }, 200);
-            });
+        const c = document.getElementById('pdfContainer');
+        if (!c || !pdfDoc || !docData) return;
+        const nw = c.clientWidth;
+        if (Math.abs(nw - initialWidth) > 10) {
+            initialWidth = nw;
+            renderPages();
         }
     }, 500);
 });
