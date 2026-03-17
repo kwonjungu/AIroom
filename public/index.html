@@ -1672,7 +1672,14 @@ async function saveBannerSettings(){
 const LS_KEY='airoom_backup';
 function saveToLocal(){
     try{
-        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,esignDocs,tdistDocs,ts:Date.now()};
+        const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,newsPosts,collections,esignDocs,tdistDocs,ts:Date.now()};
+        // 빈 데이터로 기존 백업을 덮어쓰지 않도록 보호
+        const existing=loadFromLocal();
+        if(existing&&existing.ts){
+            const allEmpty=isEmptyData(categories)&&isEmptyData(links)&&isEmptyData(sections)&&isEmptyData(schedules)&&isEmptyData(trainings);
+            const backupHasData=!isEmptyData(existing.categories)||!isEmptyData(existing.links)||!isEmptyData(existing.sections)||!isEmptyData(existing.schedules)||!isEmptyData(existing.trainings);
+            if(allEmpty&&backupHasData){console.warn('빈 데이터로 백업 덮어쓰기 방지');return;}
+        }
         localStorage.setItem(LS_KEY,JSON.stringify(d));
     }catch(e){console.warn('localStorage 저장 실패:',e);}
 }
@@ -1681,13 +1688,19 @@ function loadFromLocal(){
 }
 function isEmptyData(d){return !d||((Array.isArray(d)&&d.length===0)||(typeof d==='object'&&Object.keys(d).length===0));}
 
-async function api(m,u,b){
+async function api(m,u,b,_retry=0){
     try{
         const o={method:m,headers:{'Content-Type':'application/json'}};
         if(b)o.body=JSON.stringify(b);
         const r=await fetch(u,o);
         if(!r.ok){
             const errText=await r.text().catch(()=>'');
+            // POST 실패 시 재시도 (최대 2회)
+            if(m!=='GET'&&_retry<2){
+                console.warn('API 재시도 ('+(_retry+1)+'/2):',u);
+                await new Promise(r=>setTimeout(r,1000*(_retry+1)));
+                return api(m,u,b,_retry+1);
+            }
             throw new Error(`서버 오류 (${r.status}): ${errText}`);
         }
         const data=await r.json();
@@ -1695,6 +1708,12 @@ async function api(m,u,b){
         return data;
     }catch(e){
         console.error('API 오류:',m,u,e);
+        // POST 실패 시 재시도 (네트워크 오류)
+        if(m!=='GET'&&_retry<2){
+            console.warn('API 네트워크 재시도 ('+(_retry+1)+'/2):',u);
+            await new Promise(r=>setTimeout(r,1000*(_retry+1)));
+            return api(m,u,b,_retry+1);
+        }
         if(m!=='GET')showToast('서버 저장 실패 (로컬 백업 중)','error');
         setTimeout(saveToLocal,100);
         return null;
@@ -1716,21 +1735,37 @@ async function init(){
         tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];esignDocs=results[10]||[];tdistDocs=results[11]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
+        let restored=false;
         if(backup){
-            if(isEmptyData(categories)&&!isEmptyData(backup.categories)){categories=backup.categories;api('POST','/api/categories',categories);}
-            if(isEmptyData(links)&&!isEmptyData(backup.links)){links=backup.links;api('POST','/api/links',links);}
-            if(isEmptyData(trainings)&&!isEmptyData(backup.trainings)){trainings=backup.trainings;api('POST','/api/trainings',trainings);}
-            if(isEmptyData(staff)&&!isEmptyData(backup.staff)){staff=backup.staff;api('POST','/api/staff',staff);}
-            if(isEmptyData(trainingRecords)&&!isEmptyData(backup.trainingRecords)){trainingRecords=backup.trainingRecords;api('POST','/api/training-records',trainingRecords);}
-            if(isEmptyData(sections)&&!isEmptyData(backup.sections)){sections=backup.sections;api('POST','/api/sections',sections);}
-            if(isEmptyData(tabsConfig)&&!isEmptyData(backup.tabsConfig)){tabsConfig=backup.tabsConfig;api('POST','/api/tabs',tabsConfig);}
+            function tryRestore(cur,bk,apiPath,name){
+                if(isEmptyData(cur)&&!isEmptyData(bk)){api('POST',apiPath,bk);console.log('백업에서 복원:',name);restored=true;return bk;}return cur;
+            }
+            categories=tryRestore(categories,backup.categories,'/api/categories','categories');
+            links=tryRestore(links,backup.links,'/api/links','links');
+            trainings=tryRestore(trainings,backup.trainings,'/api/trainings','trainings');
+            staff=tryRestore(staff,backup.staff,'/api/staff','staff');
+            trainingRecords=tryRestore(trainingRecords,backup.trainingRecords,'/api/training-records','trainingRecords');
+            sections=tryRestore(sections,backup.sections,'/api/sections','sections');
+            schedules=tryRestore(schedules,backup.schedules,'/api/schedules','schedules');
+            tabsConfig=tryRestore(tabsConfig,backup.tabsConfig,'/api/tabs','tabsConfig');
+            newsPosts=tryRestore(newsPosts,backup.newsPosts,'/api/news','newsPosts');
+            collections=tryRestore(collections,backup.collections,'/api/collections','collections');
+            esignDocs=tryRestore(esignDocs,backup.esignDocs,'/api/esign-docs','esignDocs');
+            tdistDocs=tryRestore(tdistDocs,backup.tdistDocs,'/api/tdist-docs','tdistDocs');
+            if(restored)showToast('서버 데이터가 비어 백업에서 복원했습니다','success');
         }
         saveToLocal();
     }catch(e){
         console.error('초기화 오류:',e);
         // 서버 완전 실패 시 localStorage에서 복원
         const backup=loadFromLocal();
-        if(backup){categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];tabsConfig=backup.tabsConfig||[];}
+        if(backup){
+            categories=backup.categories||[];links=backup.links||[];trainings=backup.trainings||[];
+            staff=backup.staff||[];trainingRecords=backup.trainingRecords||{};sections=backup.sections||[];
+            schedules=backup.schedules||[];tabsConfig=backup.tabsConfig||[];newsPosts=backup.newsPosts||[];
+            collections=backup.collections||[];esignDocs=backup.esignDocs||[];tdistDocs=backup.tdistDocs||[];
+            showToast('서버 연결 실패 - 로컬 백업에서 복원','error');
+        }
     }
     await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();

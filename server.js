@@ -58,19 +58,30 @@ function writeFile(filename, data) {
 }
 
 // ===== 통합 읽기/쓰기 (KV 우선 → 파일 폴백) =====
+async function redisRetry(fn, retries = 2) {
+    for (let i = 0; i <= retries; i++) {
+        try { return await fn(); }
+        catch (e) {
+            console.error(`Redis 시도 ${i+1}/${retries+1} 실패:`, e.message);
+            if (i === retries) throw e;
+            await new Promise(r => setTimeout(r, 500 * (i + 1)));
+        }
+    }
+}
+
 async function readData(filename) {
     const key = KV_KEYS[filename];
     // Upstash Redis 연결 시: Redis에서 읽기
     if (redis && key) {
         try {
-            const data = await redis.get(key);
+            const data = await redisRetry(() => redis.get(key));
             if (data !== null && data !== undefined) return data;
             // Redis 비어있으면 defaults에서 초기 데이터 로드 후 Redis에 저장
             const defaults = readFile(filename);
             if (defaults) { await redis.set(key, JSON.stringify(defaults)); return defaults; }
             return null;
         } catch (e) {
-            console.error('Redis 읽기 실패:', e.message);
+            console.error('Redis 읽기 최종 실패 ('+key+'):', e.message);
             return readFile(filename);
         }
     }
@@ -83,11 +94,11 @@ async function writeData(filename, data) {
     // Upstash Redis 연결 시: Redis에 저장
     if (redis && key) {
         try {
-            await redis.set(key, JSON.stringify(data));
+            await redisRetry(() => redis.set(key, JSON.stringify(data)));
         } catch (e) {
-            console.error('Redis 쓰기 실패:', e.message);
+            console.error('Redis 쓰기 최종 실패 ('+key+'):', e.message);
             // Vercel에서 Redis 실패 시 에러 전파
-            if (IS_VERCEL) throw new Error('Redis 쓰기 실패: ' + e.message);
+            if (IS_VERCEL) throw new Error('데이터 저장 실패 - 잠시 후 다시 시도해주세요');
         }
     }
     // 로컬이면 파일에도 저장
