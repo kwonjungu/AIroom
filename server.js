@@ -302,7 +302,7 @@ app.post('/api/tdist-subs/:docId', async (req, res) => {
         if (doc.password && doc.password !== req.body.password) {
             return res.status(403).json({ error: '비밀번호가 올바르지 않습니다.' });
         }
-        res.json({ submissions: doc.submissions || [], fields: doc.fields || [], title: doc.title });
+        res.json({ submissions: doc.submissions || [], fields: doc.fields || [], title: doc.title, pdfData: doc.pdfData || null, pdfPages: doc.pdfPages || [] });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

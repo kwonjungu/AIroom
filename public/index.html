@@ -575,18 +575,36 @@
         .admin-mode .admin-link-edit-btn{display:inline-flex;}
 
         /* TDist PDF Field Editor */
-        .tdist-page-wrap{position:relative;margin-bottom:16px;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.1);border-radius:4px;overflow:visible;}
+        .tdist-page-wrap{position:relative;margin-bottom:20px;background:white;box-shadow:0 4px 20px rgba(0,0,0,0.15);border-radius:4px;overflow:visible;}
         .tdist-page-wrap canvas{display:block;width:100%;height:auto;pointer-events:none;}
-        .tdist-overlay{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;}
-        .tdist-field{position:absolute;border:2px solid #4A90D9;background:rgba(74,144,217,0.08);border-radius:4px;cursor:move;user-select:none;min-width:30px;min-height:20px;z-index:10;}
-        .tdist-field.active{border-color:#e53935;box-shadow:0 0 0 2px rgba(229,57,53,0.3);z-index:20;}
-        .tdist-field-label{position:absolute;top:-16px;left:0;font-size:10px;font-weight:700;color:#4A90D9;white-space:nowrap;pointer-events:none;}
-        .tdist-field.active .tdist-field-label{color:#e53935;}
-        .tdist-field-type{font-size:14px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;pointer-events:none;color:#4A90D9;opacity:0.7;}
-        .tdist-field-resize{position:absolute;bottom:-4px;right:-4px;width:12px;height:12px;background:#4A90D9;border-radius:2px;cursor:se-resize;z-index:15;}
+        .tdist-overlay{position:absolute;top:0;left:0;width:100%;height:100%;}
+        .tdist-overlay.mode-select{cursor:default;}
+        .tdist-overlay.mode-add{cursor:crosshair;}
+        .tdist-field{position:absolute;border:2px solid #4A90D9;background:rgba(74,144,217,0.1);border-radius:4px;user-select:none;min-width:30px;min-height:20px;z-index:10;transition:box-shadow .15s;}
+        .tdist-field:hover{box-shadow:0 0 0 2px rgba(74,144,217,0.25);}
+        .tdist-field.active{border-color:#e53935;background:rgba(229,57,53,0.08);box-shadow:0 0 0 3px rgba(229,57,53,0.25);z-index:20;}
+        .tdist-field-label{position:absolute;top:-18px;left:0;font-size:10px;font-weight:700;color:#4A90D9;white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.9);padding:0 4px;border-radius:3px;}
+        .tdist-field.active .tdist-field-label{color:#e53935;background:rgba(255,255,255,0.95);}
+        .tdist-field-type{font-size:14px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;pointer-events:none;color:#4A90D9;opacity:0.6;}
+        .tdist-field.active .tdist-field-type{color:#e53935;opacity:0.8;}
+        .tdist-field-resize{position:absolute;bottom:-5px;right:-5px;width:14px;height:14px;background:#4A90D9;border:2px solid white;border-radius:3px;cursor:se-resize;z-index:15;transition:transform .1s;}
+        .tdist-field-resize:hover{transform:scale(1.3);}
         .tdist-field.active .tdist-field-resize{background:#e53935;}
-        .tdist-field-delete{position:absolute;top:-8px;right:-8px;width:18px;height:18px;background:#e53935;color:white;border:none;border-radius:50%;cursor:pointer;font-size:10px;display:none;align-items:center;justify-content:center;z-index:15;line-height:1;}
+        .tdist-field-delete{position:absolute;top:-10px;right:-10px;width:22px;height:22px;background:#e53935;color:white;border:2px solid white;border-radius:50%;cursor:pointer;font-size:11px;display:none;align-items:center;justify-content:center;z-index:15;line-height:1;transition:transform .1s;}
+        .tdist-field-delete:hover{transform:scale(1.2);}
         .tdist-field.active .tdist-field-delete{display:flex;}
+        /* move cursor for fields in select mode */
+        .tdist-overlay.mode-select .tdist-field{cursor:move;}
+        .tdist-overlay.mode-add .tdist-field{cursor:move;}
+        /* Tool buttons */
+        .tdist-tool-btn{padding:6px 12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:white;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;white-space:nowrap;}
+        .tdist-tool-btn:hover{background:rgba(255,255,255,0.2);}
+        .tdist-tool-btn.active{background:#4A90D9;border-color:#4A90D9;box-shadow:0 0 8px rgba(74,144,217,0.4);}
+        /* Step indicator */
+        .tdist-step-ind{transition:all .2s;}
+        .tdist-step-ind.active{background:white;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+        .tdist-step-ind:not(.active){opacity:0.5;}
+        /* Field props */
         .tdist-field-props{background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:4px;font-size:12px;}
         .tdist-field-props input,.tdist-field-props select{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;}
 
@@ -1082,65 +1100,100 @@
     </div>
 
     <!-- TDist Create/Edit Modal -->
-    <div class="modal-overlay" id="tdistCreateModal"><div class="modal" style="max-width:900px;">
+    <div class="modal-overlay" id="tdistCreateModal"><div class="modal" style="max-width:960px;">
         <div class="modal-header"><h2 id="tdistModalTitle">📤 배포 문서 만들기</h2><button class="btn-close" onclick="closeModal('tdistCreateModal')">✕</button></div>
-        <div class="modal-body" style="max-height:75vh;overflow-y:auto;">
+        <div class="modal-body" style="max-height:78vh;overflow-y:auto;padding:16px;">
             <input type="hidden" id="tdistEditId">
-            <!-- Step 1: 기본 정보 -->
+
+            <!-- 진행 단계 표시 -->
+            <div id="tdistStepIndicator" style="display:flex;gap:0;margin-bottom:20px;background:#f0f2f5;border-radius:12px;overflow:hidden;">
+                <div id="tdistStepBtn1" class="tdist-step-ind active" onclick="tdistGoStep(1)" style="flex:1;padding:12px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;transition:all .2s;">
+                    <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#4A90D9;color:white;line-height:22px;font-size:11px;margin-right:6px;">1</span>기본 정보 + PDF
+                </div>
+                <div id="tdistStepBtn2" class="tdist-step-ind" onclick="tdistGoStep(2)" style="flex:1;padding:12px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;transition:all .2s;opacity:0.5;">
+                    <span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:#aaa;color:white;line-height:22px;font-size:11px;margin-right:6px;">2</span>필드 배치
+                </div>
+            </div>
+
+            <!-- Step 1: 기본 정보 + PDF -->
             <div id="tdistStep1">
                 <div class="form-group"><label>문서 제목 *</label><input type="text" id="tdistTitle" placeholder="예: 현장체험학습 동의서"></div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
                     <div class="form-group"><label>담당자 *</label><input type="text" id="tdistManager" placeholder="담당 교사명"></div>
                     <div class="form-group"><label>마감일</label><input type="date" id="tdistDeadline"></div>
-                    <div class="form-group"><label>비밀번호 *</label><input type="password" id="tdistPassword" placeholder="제출 확인용"></div>
+                    <div class="form-group"><label>비밀번호 *</label><input type="password" id="tdistPassword" placeholder="제출 확인용 비밀번호"></div>
                 </div>
                 <div class="form-group"><label>안내 문구</label><textarea id="tdistDesc" rows="2" placeholder="학부모에게 보여질 안내 문구 (선택)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;"></textarea></div>
 
                 <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
                 <h3 style="font-size:15px;margin:0 0 12px;">📄 PDF 업로드</h3>
-                <div id="tdistPdfUpload" style="border:2px dashed var(--border);border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);position:relative;" onclick="document.getElementById('tdistPdfInput').click()">
+                <div id="tdistPdfUpload" ondragover="event.preventDefault();this.style.borderColor='#4A90D9';this.style.background='#f0f7ff';" ondragleave="this.style.borderColor='';this.style.background='';" ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';tdistHandleDrop(event);" onclick="document.getElementById('tdistPdfInput').click()" style="border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg);">
                     <input type="file" id="tdistPdfInput" accept=".pdf" style="display:none" onchange="tdistHandlePdf(event)">
-                    <div style="font-size:32px;margin-bottom:8px;">📄</div>
-                    <div style="font-size:14px;font-weight:600;">PDF 파일을 선택하세요</div>
-                    <div style="font-size:12px;color:var(--text-light);margin-top:4px;">학부모가 작성할 문서 양식 (최대 10MB)</div>
+                    <div style="font-size:40px;margin-bottom:10px;">📄</div>
+                    <div style="font-size:15px;font-weight:700;margin-bottom:4px;">PDF 파일을 여기에 끌어놓거나 클릭하세요</div>
+                    <div style="font-size:12px;color:var(--text-light);">학부모가 작성할 문서 양식 (최대 10MB)</div>
                 </div>
-                <div id="tdistPdfInfo" style="display:none;margin-top:10px;padding:10px 14px;background:#e8f5e9;border-radius:8px;display:flex;align-items:center;gap:10px;">
-                    <span>📄</span>
-                    <span id="tdistPdfName" style="flex:1;font-size:13px;font-weight:600;"></span>
-                    <button onclick="tdistRemovePdf()" style="border:1px solid #ffcdd2;background:#fff5f5;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;color:#e53935;">삭제</button>
-                </div>
-
-                <div id="tdistPageRange" style="display:none;margin-top:12px;">
-                    <div class="form-group">
-                        <label>페이지 범위 (선택)</label>
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <input type="text" id="tdistPages" placeholder="예: 1-3 또는 1,2,5 (빈칸=전체)" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-                            <span id="tdistTotalPages" style="font-size:12px;color:var(--text-light);white-space:nowrap;"></span>
+                <div id="tdistPdfInfo" style="display:none;margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border-radius:10px;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:28px;">📄</span>
+                        <div style="flex:1;">
+                            <div id="tdistPdfName" style="font-size:14px;font-weight:700;color:#2e7d32;"></div>
+                            <div id="tdistPdfSizeInfo" style="font-size:11px;color:#666;margin-top:2px;"></div>
+                        </div>
+                        <button onclick="tdistRemovePdf()" style="border:1px solid #ffcdd2;background:#fff5f5;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:#e53935;font-weight:600;">삭제</button>
+                    </div>
+                    <div id="tdistPageRange" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.08);">
+                        <label style="font-size:12px;font-weight:600;color:#555;">페이지 범위 (선택 · 빈칸=전체)</label>
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                            <input type="text" id="tdistPages" placeholder="예: 1-3 또는 1,2,5" style="flex:1;padding:8px 10px;border:1px solid #c8e6c9;border-radius:6px;font-size:13px;background:white;">
+                            <span id="tdistTotalPages" style="font-size:12px;color:#666;white-space:nowrap;"></span>
                         </div>
                     </div>
                 </div>
 
-                <div style="text-align:right;margin-top:16px;">
-                    <button class="btn btn-primary" onclick="tdistGoStep2()" id="tdistStep2Btn" style="display:none;">다음: 필드 배치 ➡️</button>
+                <!-- PDF 미리보기 썸네일 -->
+                <div id="tdistPdfThumbnails" style="display:none;margin-top:16px;">
+                    <h4 style="font-size:13px;margin:0 0 8px;color:var(--text-light);">📋 PDF 미리보기</h4>
+                    <div id="tdistThumbContainer" style="display:flex;gap:8px;overflow-x:auto;padding:4px 0;"></div>
+                </div>
+
+                <div style="text-align:right;margin-top:20px;">
+                    <button class="btn btn-primary" onclick="tdistGoStep(2)" id="tdistStep2Btn" style="display:none;padding:12px 28px;font-size:14px;">다음 단계: 필드 배치 ➡️</button>
                 </div>
             </div>
 
-            <!-- Step 2: PDF 필드 배치 -->
+            <!-- Step 2: PDF 필드 배치 (캔버스형 에디터) -->
             <div id="tdistStep2" style="display:none;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                    <button class="btn btn-secondary" onclick="tdistGoStep1()" style="font-size:12px;">⬅️ 기본 정보</button>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn btn-secondary" onclick="tdistAddField('text')" style="font-size:12px;padding:6px 12px;">📝 텍스트</button>
-                        <button class="btn btn-secondary" onclick="tdistAddField('signature')" style="font-size:12px;padding:6px 12px;">✍️ 서명란</button>
-                        <button class="btn btn-secondary" onclick="tdistAddField('checkbox')" style="font-size:12px;padding:6px 12px;">☑️ 체크</button>
-                        <button class="btn btn-secondary" onclick="tdistAddField('date')" style="font-size:12px;padding:6px 12px;">📅 날짜</button>
-                        <button class="btn btn-secondary" onclick="tdistAddField('select')" style="font-size:12px;padding:6px 12px;">📋 선택</button>
-                    </div>
+                <!-- 도구 모음 (캔버스 앱 스타일) -->
+                <div style="background:linear-gradient(135deg,#2c3e50,#34495e);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="tdistGoStep(1)" style="font-size:12px;padding:6px 12px;background:rgba(255,255,255,0.15);color:white;border-color:transparent;">⬅️ 뒤로</button>
+                    <div style="width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
+                    <!-- 모드 선택 -->
+                    <button id="tdistModeSelect" onclick="tdistSetMode('select')" class="tdist-tool-btn active" title="선택/이동 모드 (V)">🖱️ 선택</button>
+                    <div style="width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 2px;"></div>
+                    <!-- 필드 추가 버튼 -->
+                    <button id="tdistModeText" onclick="tdistSetMode('text')" class="tdist-tool-btn" title="텍스트 입력 필드">📝 텍스트</button>
+                    <button id="tdistModeSig" onclick="tdistSetMode('signature')" class="tdist-tool-btn" title="서명란">✍️ 서명</button>
+                    <button id="tdistModeCheck" onclick="tdistSetMode('checkbox')" class="tdist-tool-btn" title="체크박스">☑️ 체크</button>
+                    <button id="tdistModeDate" onclick="tdistSetMode('date')" class="tdist-tool-btn" title="날짜 입력">📅 날짜</button>
+                    <button id="tdistModeSelOpt" onclick="tdistSetMode('select')" class="tdist-tool-btn" title="선택지">📋 선택</button>
+                    <div style="flex:1;"></div>
+                    <span id="tdistModeIndicator" style="font-size:11px;color:rgba(255,255,255,0.7);white-space:nowrap;">🖱️ 선택 모드</span>
                 </div>
-                <p style="font-size:12px;color:var(--text-light);margin-bottom:12px;">💡 PDF 위 원하는 위치를 클릭하면 필드가 추가됩니다. 필드를 드래그하여 이동하고, 모서리를 드래그하여 크기를 조절하세요.</p>
 
-                <!-- PDF 미리보기 + 필드 배치 영역 -->
-                <div id="tdistEditorPages" style="background:#e8eaed;border-radius:8px;padding:12px;"></div>
+                <p style="font-size:12px;color:var(--text-light);margin-bottom:8px;" id="tdistHelpText">필드를 클릭하여 선택하고, 드래그하여 이동합니다. 우측 하단 핸들로 크기를 조절합니다.</p>
+
+                <!-- PDF 에디터 영역 -->
+                <div id="tdistEditorPages" style="background:#d0d5dd;border-radius:8px;padding:16px;min-height:200px;"></div>
+
+                <!-- 선택된 필드 속성 패널 -->
+                <div id="tdistFieldProps" style="display:none;margin-top:12px;background:linear-gradient(135deg,#f0f7ff,#e3f2fd);border:2px solid #4A90D9;border-radius:12px;padding:16px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                        <h4 style="margin:0;font-size:14px;color:#1565c0;" id="tdistPropTitle">필드 속성</h4>
+                        <button onclick="tdistDeleteActiveField()" style="border:1px solid #ffcdd2;background:#fff5f5;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;color:#e53935;font-weight:600;">🗑️ 삭제</button>
+                    </div>
+                    <div id="tdistPropBody" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+                </div>
 
                 <!-- 필드 목록 -->
                 <div id="tdistFieldList" style="margin-top:12px;"></div>
@@ -1148,7 +1201,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeModal('tdistCreateModal')">취소</button>
-            <button class="btn btn-primary" onclick="submitTdistCreate()">💾 저장 및 배포</button>
+            <button class="btn btn-primary" onclick="submitTdistCreate()" style="padding:10px 24px;">💾 저장 및 배포</button>
         </div>
     </div></div>
 
@@ -1168,7 +1221,7 @@
     </div></div>
 
     <!-- TDist Submissions Modal -->
-    <div class="modal-overlay" id="tdistSubsModal"><div class="modal" style="max-width:800px;">
+    <div class="modal-overlay" id="tdistSubsModal"><div class="modal" style="max-width:850px;">
         <div class="modal-header"><h2 id="tdistSubsTitle">📊 제출 현황</h2><button class="btn-close" onclick="closeModal('tdistSubsModal')">✕</button></div>
         <div class="modal-body" id="tdistSubsBody" style="max-height:70vh;overflow-y:auto;"></div>
         <div class="modal-footer">
@@ -5798,14 +5851,54 @@ async function pdfScan(){
 }
 
 // ===== TDIST (교사 배포) =====
-let tdistPdfData=null; // base64 PDF data
-let tdistPdfDoc=null;  // pdf.js document object
-let tdistFields=[];    // fields array
+let tdistPdfData=null;
+let tdistPdfDoc=null;
+let tdistFields=[];
 let tdistActiveField=null;
 let tdistCurrentSubsDocId=null;
 let tdistCurrentSubsData=null;
 let tdistEditorPageScales={};
-let tdistAddMode=null; // field type to add on click
+let tdistMode='select'; // 'select' or field type to add
+let tdistCurrentStep=1;
+
+function tdistSetMode(mode){
+    tdistMode=mode;
+    const modes=['select','text','signature','checkbox','date'];
+    const modeIds={select:'tdistModeSelect',text:'tdistModeText',signature:'tdistModeSig',checkbox:'tdistModeCheck',date:'tdistModeDate'};
+    // Deactivate all tool buttons
+    document.querySelectorAll('.tdist-tool-btn').forEach(b=>b.classList.remove('active'));
+    const btn=document.getElementById(modeIds[mode]);
+    if(btn)btn.classList.add('active');
+    // Update overlay cursors
+    document.querySelectorAll('.tdist-overlay').forEach(o=>{
+        o.classList.remove('mode-select','mode-add');
+        o.classList.add(mode==='select'?'mode-select':'mode-add');
+    });
+    // Update indicator
+    const labels={select:'🖱️ 선택/이동 모드',text:'📝 텍스트 추가 - PDF 클릭',signature:'✍️ 서명란 추가 - PDF 클릭',checkbox:'☑️ 체크 추가 - PDF 클릭',date:'📅 날짜 추가 - PDF 클릭','select':'📋 선택 추가 - PDF 클릭'};
+    const ind=document.getElementById('tdistModeIndicator');
+    if(ind)ind.textContent=labels[mode]||mode;
+    const help=document.getElementById('tdistHelpText');
+    if(help)help.textContent=mode==='select'?'필드를 클릭하여 선택하고, 드래그하여 이동합니다. 우측 하단 핸들로 크기를 조절합니다.':'PDF 위 원하는 위치를 클릭하면 필드가 추가됩니다.';
+}
+
+function tdistGoStep(step){
+    if(step===2&&(!tdistPdfData||!tdistPdfDoc)){showToast('PDF를 먼저 업로드하세요','error');return;}
+    tdistCurrentStep=step;
+    document.getElementById('tdistStep1').style.display=step===1?'':'none';
+    document.getElementById('tdistStep2').style.display=step===2?'':'none';
+    // Update step indicator
+    const s1=document.getElementById('tdistStepBtn1'),s2=document.getElementById('tdistStepBtn2');
+    if(s1){s1.classList.toggle('active',step===1);s1.querySelector('span').style.background=step===1?'#4A90D9':'#aaa';}
+    if(s2){s2.classList.toggle('active',step===2);s2.querySelector('span').style.background=step===2?'#4A90D9':'#aaa';}
+    if(step===2){tdistSetMode('select');tdistRenderEditorPages();}
+}
+
+function tdistHandleDrop(e){
+    const file=e.dataTransfer.files[0];
+    if(!file||!file.name.toLowerCase().endsWith('.pdf'))return showToast('PDF 파일만 업로드 가능합니다','error');
+    tdistLoadPdfFile(file);
+}
 
 function openTdistCreate(){
     document.getElementById('tdistEditId').value='';
@@ -5816,14 +5909,13 @@ function openTdistCreate(){
     document.getElementById('tdistPassword').value='';
     document.getElementById('tdistDesc').value='';
     document.getElementById('tdistModalTitle').textContent='📤 배포 문서 만들기';
-    tdistPdfData=null;tdistPdfDoc=null;tdistFields=[];tdistActiveField=null;tdistAddMode=null;
+    tdistPdfData=null;tdistPdfDoc=null;tdistFields=[];tdistActiveField=null;tdistMode='select';
     document.getElementById('tdistPdfInfo').style.display='none';
-    document.getElementById('tdistPageRange').style.display='none';
     document.getElementById('tdistStep2Btn').style.display='none';
-    document.getElementById('tdistStep1').style.display='';
-    document.getElementById('tdistStep2').style.display='none';
     document.getElementById('tdistEditorPages').innerHTML='';
     document.getElementById('tdistPdfUpload').style.display='';
+    document.getElementById('tdistPdfThumbnails').style.display='none';
+    tdistGoStep(1);
     openModal('tdistCreateModal');
 }
 
@@ -5838,22 +5930,38 @@ function openTdistEdit(id){
     document.getElementById('tdistModalTitle').textContent='✏️ 문서 수정';
     tdistPdfData=doc.pdfData||null;
     tdistFields=JSON.parse(JSON.stringify(doc.fields||[]));
-    tdistActiveField=null;tdistAddMode=null;
+    tdistActiveField=null;tdistMode='select';
     if(tdistPdfData){
         document.getElementById('tdistPdfUpload').style.display='none';
-        document.getElementById('tdistPdfInfo').style.display='flex';
+        document.getElementById('tdistPdfInfo').style.display='block';
         document.getElementById('tdistPdfName').textContent=doc.pdfName||'PDF 파일';
-        document.getElementById('tdistPageRange').style.display='block';
         document.getElementById('tdistPages').value=(doc.pdfPages||[]).join(',');
         document.getElementById('tdistStep2Btn').style.display='inline-block';
+        // Load pdf.js doc
+        tdistLoadPdfFromData();
     }
-    document.getElementById('tdistStep1').style.display='';
-    document.getElementById('tdistStep2').style.display='none';
+    tdistGoStep(1);
     openModal('tdistCreateModal');
+}
+
+async function tdistLoadPdfFromData(){
+    if(!tdistPdfData)return;
+    try{
+        const raw=tdistPdfData.includes(',')?tdistPdfData.split(',')[1]:tdistPdfData;
+        const binary=atob(raw);const arr=new Uint8Array(binary.length);
+        for(let i=0;i<binary.length;i++)arr[i]=binary.charCodeAt(i);
+        tdistPdfDoc=await pdfjsLib.getDocument({data:arr}).promise;
+        document.getElementById('tdistTotalPages').textContent='총 '+tdistPdfDoc.numPages+'페이지';
+        tdistRenderThumbnails();
+    }catch(e){console.warn('PDF 재로드 실패:',e);}
 }
 
 async function tdistHandlePdf(e){
     const file=e.target.files[0];if(!file)return;
+    await tdistLoadPdfFile(file);
+}
+
+async function tdistLoadPdfFile(file){
     if(file.size>10*1024*1024){showToast('PDF는 10MB 이하만 가능합니다','error');return;}
     try{
         const ab=await file.arrayBuffer();
@@ -5862,12 +5970,38 @@ async function tdistHandlePdf(e){
         tdistPdfData='data:application/pdf;base64,'+btoa(binary);
         tdistPdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
         document.getElementById('tdistPdfUpload').style.display='none';
-        document.getElementById('tdistPdfInfo').style.display='flex';
+        document.getElementById('tdistPdfInfo').style.display='block';
         document.getElementById('tdistPdfName').textContent=file.name+' ('+tdistPdfDoc.numPages+'페이지)';
-        document.getElementById('tdistPageRange').style.display='block';
+        document.getElementById('tdistPdfSizeInfo').textContent=(file.size/1024/1024).toFixed(1)+'MB · '+tdistPdfDoc.numPages+'페이지';
         document.getElementById('tdistTotalPages').textContent='총 '+tdistPdfDoc.numPages+'페이지';
         document.getElementById('tdistStep2Btn').style.display='inline-block';
+        await tdistRenderThumbnails();
     }catch(err){showToast('PDF 로드 실패: '+err.message,'error');}
+}
+
+async function tdistRenderThumbnails(){
+    if(!tdistPdfDoc)return;
+    const container=document.getElementById('tdistThumbContainer');
+    const wrapper=document.getElementById('tdistPdfThumbnails');
+    if(!container||!wrapper)return;
+    wrapper.style.display='block';
+    container.innerHTML='';
+    const pages=tdistParsePages();
+    for(let i=0;i<Math.min(pages.length,8);i++){
+        const page=await tdistPdfDoc.getPage(pages[i]);
+        const vp=page.getViewport({scale:0.2});
+        const canvas=document.createElement('canvas');
+        canvas.width=vp.width;canvas.height=vp.height;
+        canvas.style.cssText='height:80px;width:auto;border-radius:4px;border:2px solid #ddd;flex-shrink:0;';
+        await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+        container.appendChild(canvas);
+    }
+    if(pages.length>8){
+        const more=document.createElement('div');
+        more.style.cssText='display:flex;align-items:center;font-size:12px;color:#888;padding:0 8px;';
+        more.textContent='+' + (pages.length-8)+'p';
+        container.appendChild(more);
+    }
 }
 
 function tdistRemovePdf(){
@@ -5875,8 +6009,13 @@ function tdistRemovePdf(){
     document.getElementById('tdistPdfInput').value='';
     document.getElementById('tdistPdfUpload').style.display='';
     document.getElementById('tdistPdfInfo').style.display='none';
-    document.getElementById('tdistPageRange').style.display='none';
     document.getElementById('tdistStep2Btn').style.display='none';
+    document.getElementById('tdistPdfThumbnails').style.display='none';
+}
+
+function tdistDeleteActiveField(){
+    if(tdistActiveField===null)return;
+    tdistDeleteField(tdistActiveField);
 }
 
 function tdistParsePages(){
@@ -5896,17 +6035,7 @@ function tdistParsePages(){
     return pages.length>0?pages:Array.from({length:tdistPdfDoc.numPages},(_,i)=>i+1);
 }
 
-async function tdistGoStep2(){
-    if(!tdistPdfData||!tdistPdfDoc){showToast('PDF를 먼저 업로드하세요','error');return;}
-    document.getElementById('tdistStep1').style.display='none';
-    document.getElementById('tdistStep2').style.display='';
-    await tdistRenderEditorPages();
-}
-
-function tdistGoStep1(){
-    document.getElementById('tdistStep1').style.display='';
-    document.getElementById('tdistStep2').style.display='none';
-}
+// Step navigation now handled by tdistGoStep() above
 
 async function tdistRenderEditorPages(){
     const container=document.getElementById('tdistEditorPages');
@@ -5981,6 +6110,7 @@ function tdistRenderAllFields(){
 function tdistSelectField(idx){
     tdistActiveField=idx;
     tdistRenderAllFields();
+    tdistShowFieldProps();
 }
 
 function tdistDeleteField(idx){
@@ -5988,48 +6118,69 @@ function tdistDeleteField(idx){
     if(tdistActiveField===idx)tdistActiveField=null;
     else if(tdistActiveField!==null&&tdistActiveField>idx)tdistActiveField--;
     tdistRenderAllFields();
-}
-
-function tdistAddField(type){
-    tdistAddMode=type;
-    showToast('PDF 위 원하는 위치를 클릭하세요','success');
+    tdistShowFieldProps();
 }
 
 function tdistOverlayClick(e,pageIdx){
-    if(!tdistAddMode)return;
+    if(tdistMode==='select'){
+        // Deselect
+        tdistActiveField=null;
+        tdistRenderAllFields();
+        tdistShowFieldProps();
+        return;
+    }
+    // Add field mode
     const overlay=e.currentTarget;
     const rect=overlay.getBoundingClientRect();
     const x=((e.clientX-rect.left)/rect.width)*100;
     const y=((e.clientY-rect.top)/rect.height)*100;
-    const defaults={text:{width:25,height:3.5},signature:{width:20,height:8},checkbox:{width:20,height:3.5},date:{width:18,height:3.5},select:{width:20,height:3.5}};
-    const d=defaults[tdistAddMode]||{width:20,height:4};
+    const defaults={text:{width:25,height:3.5},signature:{width:20,height:8},checkbox:{width:20,height:3.5},date:{width:18,height:3.5},'select':{width:20,height:3.5}};
+    const d=defaults[tdistMode]||{width:20,height:4};
     const f={
         id:'tf_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
-        type:tdistAddMode,
-        label:getFieldLabel(tdistAddMode),
+        type:tdistMode,
+        label:getFieldLabel(tdistMode),
         page:pageIdx,
         x:Math.min(x,100-d.width),
         y:Math.min(y,100-d.height),
         width:d.width,height:d.height,
         required:true
     };
-    if(tdistAddMode==='text')f.placeholder='';
-    if(tdistAddMode==='checkbox')f.checkLabel='동의합니다';
-    if(tdistAddMode==='select')f.options='해당,비해당';
+    if(tdistMode==='text')f.placeholder='';
+    if(tdistMode==='checkbox')f.checkLabel='동의합니다';
+    if(tdistMode==='select')f.options='해당,비해당';
     tdistFields.push(f);
     tdistActiveField=tdistFields.length-1;
-    tdistAddMode=null;
+    // Switch back to select mode after adding
+    tdistSetMode('select');
     tdistRenderAllFields();
+    tdistShowFieldProps();
 }
 
 function tdistOverlayTouch(e,pageIdx){
-    if(!tdistAddMode)return;
+    if(tdistMode==='select'&&!e.target.classList.contains('tdist-field'))tdistActiveField=null;
+    if(tdistMode==='select'){tdistRenderAllFields();tdistShowFieldProps();return;}
     e.preventDefault();
     const t=e.touches[0];
     const overlay=e.currentTarget;
-    const rect=overlay.getBoundingClientRect();
     const fakeE={clientX:t.clientX,clientY:t.clientY,currentTarget:overlay};
     tdistOverlayClick(fakeE,pageIdx);
+}
+
+function tdistShowFieldProps(){
+    const panel=document.getElementById('tdistFieldProps');
+    if(!panel)return;
+    if(tdistActiveField===null||!tdistFields[tdistActiveField]){panel.style.display='none';return;}
+    const f=tdistFields[tdistActiveField];
+    const i=tdistActiveField;
+    panel.style.display='block';
+    document.getElementById('tdistPropTitle').textContent=getFieldIcon(f.type)+' '+getFieldLabel(f.type)+' 속성 (P'+(f.page+1)+')';
+    let html='';
+    html+=`<div><label style="font-size:11px;color:#555;font-weight:600;">라벨</label><input value="${esc(f.label||'')}" onchange="tdistFields[${i}].label=this.value;tdistRenderAllFields();" style="padding:8px;border:1px solid #90caf9;border-radius:6px;font-size:13px;width:100%;"></div>`;
+    if(f.type==='text')html+=`<div><label style="font-size:11px;color:#555;font-weight:600;">힌트 텍스트</label><input value="${esc(f.placeholder||'')}" onchange="tdistFields[${i}].placeholder=this.value" style="padding:8px;border:1px solid #90caf9;border-radius:6px;font-size:13px;width:100%;"></div>`;
+    if(f.type==='checkbox')html+=`<div><label style="font-size:11px;color:#555;font-weight:600;">체크 문구</label><input value="${esc(f.checkLabel||'')}" onchange="tdistFields[${i}].checkLabel=this.value" style="padding:8px;border:1px solid #90caf9;border-radius:6px;font-size:13px;width:100%;"></div>`;
+    if(f.type==='select')html+=`<div><label style="font-size:11px;color:#555;font-weight:600;">선택지 (쉼표 구분)</label><input value="${esc(f.options||'')}" onchange="tdistFields[${i}].options=this.value" style="padding:8px;border:1px solid #90caf9;border-radius:6px;font-size:13px;width:100%;"></div>`;
+    document.getElementById('tdistPropBody').innerHTML=html;
 }
 
 // Drag field
@@ -6277,32 +6428,95 @@ function tdistShowSubs(data){
         html='<div style="text-align:center;padding:30px;color:var(--text-light);">아직 제출된 문서가 없습니다.</div>';
     }else{
         html+=`<p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">총 <strong>${subs.length}건</strong> 제출</p>`;
-        // Table view
-        html+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">`;
-        html+=`<thead><tr style="background:linear-gradient(135deg,#4A90D9,#6C5CE7);color:white;">`;
-        html+=`<th style="padding:10px 8px;text-align:left;">#</th>`;
-        fields.filter(f=>f.type!=='label').forEach(f=>{
-            html+=`<th style="padding:10px 8px;text-align:left;">${esc(f.label||getFieldLabel(f.type))}</th>`;
-        });
-        html+=`<th style="padding:10px 8px;text-align:left;">제출일시</th></tr></thead><tbody>`;
+        // Card view for each submission
+        html+='<div style="display:flex;flex-direction:column;gap:12px;">';
         subs.forEach((s,si)=>{
-            html+=`<tr style="border-bottom:1px solid #eee;">`;
-            html+=`<td style="padding:8px;">${si+1}</td>`;
+            html+=`<div style="background:#f8f9fa;border-radius:12px;padding:16px;border:1px solid #e0e0e0;">`;
+            html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">`;
+            html+=`<div><strong style="font-size:14px;">#${si+1}</strong> <span style="font-size:11px;color:var(--text-light);">${new Date(s.submittedAt).toLocaleString('ko-KR')}</span></div>`;
+            html+=`<button onclick="tdistDownloadSubPdf(${si})" style="border:1px solid #4A90D9;background:#f0f7ff;color:#1565c0;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600;">📄 PDF 다운로드</button>`;
+            html+=`</div>`;
+            // Field values in grid
+            html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;">`;
             fields.filter(f=>f.type!=='label').forEach(f=>{
                 const v=s.values?s.values[f.id]:'';
-                html+=`<td style="padding:8px;">`;
-                if(f.type==='signature'&&v) html+=`<img src="${v}" style="max-width:120px;max-height:50px;border:1px solid #ddd;border-radius:4px;">`;
-                else if(f.type==='checkbox') html+=v?'☑️ 동의':'⬜';
-                else html+=esc(String(v||'-'));
-                html+=`</td>`;
+                html+=`<div style="background:white;border-radius:8px;padding:8px 10px;border:1px solid #eee;">`;
+                html+=`<div style="font-size:10px;color:var(--text-light);margin-bottom:3px;">${esc(f.label||getFieldLabel(f.type))}</div>`;
+                if(f.type==='signature'&&v) html+=`<img src="${v}" style="max-width:150px;max-height:60px;border:1px solid #ddd;border-radius:4px;">`;
+                else if(f.type==='checkbox') html+=`<span style="font-size:13px;">${v?'☑️ 동의':'⬜ 미동의'}</span>`;
+                else html+=`<span style="font-size:13px;font-weight:600;">${esc(String(v||'-'))}</span>`;
+                html+=`</div>`;
             });
-            html+=`<td style="padding:8px;font-size:11px;color:var(--text-light);">${new Date(s.submittedAt).toLocaleString('ko-KR')}</td>`;
-            html+=`</tr>`;
+            html+=`</div></div>`;
         });
-        html+=`</tbody></table></div>`;
+        html+='</div>';
     }
     document.getElementById('tdistSubsBody').innerHTML=html;
     openModal('tdistSubsModal');
+}
+
+// ===== PDF 다운로드 (원본 PDF + 입력값 합성) =====
+async function tdistDownloadSubPdf(subIdx){
+    if(!tdistCurrentSubsData||!tdistCurrentSubsData.pdfData){showToast('PDF 데이터가 없습니다','error');return;}
+    const{pdfData,pdfPages,fields,submissions,title}=tdistCurrentSubsData;
+    const sub=submissions[subIdx];if(!sub){showToast('제출 데이터를 찾을 수 없습니다','error');return;}
+    try{
+        showToast('PDF 생성 중...','success');
+        // Load original PDF with pdf-lib
+        const raw=pdfData.includes(',')?pdfData.split(',')[1]:pdfData;
+        const pdfBytes=Uint8Array.from(atob(raw),c=>c.charCodeAt(0));
+        const srcDoc=await PDFLib.PDFDocument.load(pdfBytes,{ignoreEncryption:true});
+        const newDoc=await PDFLib.PDFDocument.create();
+        // Copy selected pages
+        const pages=pdfPages&&pdfPages.length>0?pdfPages:Array.from({length:srcDoc.getPageCount()},(_,i)=>i+1);
+        const copiedPages=await newDoc.copyPages(srcDoc,pages.map(p=>p-1));
+        copiedPages.forEach(p=>newDoc.addPage(p));
+        // Embed font for text
+        const font=await newDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+        // Draw field values on each page
+        for(let pi=0;pi<pages.length;pi++){
+            const page=newDoc.getPage(pi);
+            const{width:pw,height:ph}=page.getSize();
+            const pageFields=fields.filter(f=>f.page===pi);
+            for(const f of pageFields){
+                const v=sub.values?sub.values[f.id]:undefined;
+                if(v===undefined||v===''||v===false)continue;
+                // Convert % to PDF coordinates (PDF origin is bottom-left)
+                const fx=pw*(f.x/100);
+                const fy=ph-ph*(f.y/100)-ph*(f.height/100);
+                const fw=pw*(f.width/100);
+                const fh=ph*(f.height/100);
+                if(f.type==='text'||f.type==='date'||f.type==='select'){
+                    const fontSize=Math.min(Math.max(fh*0.5,8),16);
+                    page.drawText(String(v),{x:fx+4,y:fy+fh*0.3,size:fontSize,font,color:PDFLib.rgb(0,0,0.6)});
+                }else if(f.type==='checkbox'){
+                    if(v){
+                        page.drawText('V',{x:fx+fw*0.15,y:fy+fh*0.15,size:Math.min(fh*0.7,18),font,color:PDFLib.rgb(0,0.4,0)});
+                        page.drawRectangle({x:fx,y:fy,width:fh,height:fh,borderColor:PDFLib.rgb(0,0.4,0),borderWidth:1.5,color:PDFLib.rgb(0.9,1,0.9),opacity:0.3});
+                    }
+                }else if(f.type==='signature'&&v){
+                    try{
+                        const sigRaw=v.split(',')[1];
+                        const sigBytes=Uint8Array.from(atob(sigRaw),c=>c.charCodeAt(0));
+                        const sigImg=await newDoc.embedPng(sigBytes);
+                        const sigDims=sigImg.scaleToFit(fw,fh);
+                        page.drawImage(sigImg,{x:fx,y:fy,width:sigDims.width,height:sigDims.height});
+                    }catch(sigErr){console.warn('서명 삽입 실패:',sigErr);}
+                }
+            }
+        }
+        const finalBytes=await newDoc.save();
+        const blob=new Blob([finalBytes],{type:'application/pdf'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        const subDate=new Date(sub.submittedAt).toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','');
+        a.download=title+'_#'+(subIdx+1)+'_'+subDate+'.pdf';
+        a.click();
+        showToast('PDF 다운로드 완료','success');
+    }catch(e){
+        console.error('PDF 생성 실패:',e);
+        showToast('PDF 생성 실패: '+e.message,'error');
+    }
 }
 
 function tdistExportCSV(){

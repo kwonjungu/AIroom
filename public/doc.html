@@ -7,60 +7,80 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#e8eaed;color:#1a1a1a;min-height:100vh;}
-.container{max-width:900px;margin:0 auto;padding:16px 12px 60px;}
-.card{background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#e8eaed;color:#1a1a1a;min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-text-size-adjust:100%;}
+.container{max-width:900px;margin:0 auto;padding:12px 8px 80px;}
+.card{background:white;border-radius:14px;padding:16px 14px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);}
 
 /* Header */
-.doc-header{text-align:center;padding:16px 0 8px;}
-.doc-header h1{font-size:20px;font-weight:800;margin-bottom:6px;color:#1a1a1a;}
+.doc-header{text-align:center;padding:12px 0 6px;}
+.doc-header h1{font-size:18px;font-weight:800;margin-bottom:6px;color:#1a1a1a;}
 .doc-header .badge{display:inline-block;background:#e3f2fd;color:#1565c0;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;}
-.doc-header .manager{font-size:13px;color:#666;margin-top:8px;}
-.desc{background:#f0f7ff;padding:14px;border-radius:12px;font-size:14px;line-height:1.7;color:#333;margin-bottom:12px;}
+.doc-header .manager{font-size:13px;color:#666;margin-top:6px;}
+.desc{background:#f0f7ff;padding:12px;border-radius:10px;font-size:13px;line-height:1.7;color:#333;margin-bottom:8px;}
 
-/* PDF Page Container */
-.pdf-page-wrap{position:relative;margin-bottom:24px;background:white;box-shadow:0 2px 16px rgba(0,0,0,0.12);border-radius:4px;overflow:hidden;}
+/* ===== View Mode Toggle ===== */
+.mode-toggle-bar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:8px;margin:0 -8px 8px;display:flex;gap:6px;justify-content:center;border-bottom:1px solid #e0e0e0;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.mode-btn{flex:1;max-width:180px;padding:10px 8px;border:2px solid #e0e0e0;border-radius:10px;background:white;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;color:#666;}
+.mode-btn.active{border-color:#4A90D9;background:#e3f2fd;color:#1565c0;}
+.mode-btn .mode-icon{font-size:18px;display:block;margin-bottom:2px;}
+
+/* Zoom indicator */
+.zoom-indicator{position:fixed;top:60px;right:12px;z-index:200;background:rgba(0,0,0,0.7);color:white;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .3s;}
+.zoom-indicator.show{opacity:1;}
+
+/* Field highlight in input mode */
+.field-highlight-pulse{animation:fieldPulse 1.5s ease-in-out;}
+@keyframes fieldPulse{0%{box-shadow:0 0 0 0 rgba(74,144,217,0.5);}50%{box-shadow:0 0 0 8px rgba(74,144,217,0.15);}100%{box-shadow:0 0 0 0 rgba(74,144,217,0)}}
+
+/* ===== PDF Page Container ===== */
+.pdf-section{position:relative;overflow:hidden;}
+.pdf-scroll-wrap{transition:transform 0.3s ease;transform-origin:0 0;will-change:transform;}
+.pdf-page-wrap{position:relative;margin-bottom:16px;background:white;box-shadow:0 2px 12px rgba(0,0,0,0.1);border-radius:4px;overflow:visible;}
 .pdf-page-wrap canvas{display:block;width:100%;height:auto;}
 .pdf-fields-overlay{position:absolute;top:0;left:0;width:100%;height:100%;}
 
-/* Form Fields on PDF */
-.pdf-field{position:absolute;z-index:10;}
-.pdf-field-text input{width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 6px;font-size:13px;background:rgba(255,255,255,0.92);outline:none;transition:border-color .2s;}
-.pdf-field-text input:focus{border-color:#1565c0;box-shadow:0 0 0 3px rgba(74,144,217,0.2);}
-.pdf-field-checkbox{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.92);border:2px solid #4A90D9;border-radius:4px;padding:2px 6px;cursor:pointer;}
-.pdf-field-checkbox input[type="checkbox"]{width:18px;height:18px;accent-color:#4A90D9;cursor:pointer;flex-shrink:0;}
-.pdf-field-checkbox label{font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.pdf-field-select select{width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 4px;font-size:13px;background:rgba(255,255,255,0.92);outline:none;}
-.pdf-field-date input{width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 6px;font-size:13px;background:rgba(255,255,255,0.92);outline:none;}
+/* Page indicator */
+.page-indicator{text-align:center;font-size:11px;color:#888;margin:-8px 0 8px;font-weight:600;}
+
+/* ===== Form Fields on PDF ===== */
+.pdf-field{position:absolute;z-index:10;transition:box-shadow .2s;}
+.pdf-field-text input{width:100%;height:100%;border:2px solid #4A90D9;border-radius:5px;padding:2px 6px;font-size:14px;background:rgba(255,255,255,0.95);outline:none;transition:border-color .2s,-webkit-appearance .2s;}
+.pdf-field-text input:focus{border-color:#1565c0;box-shadow:0 0 0 3px rgba(74,144,217,0.25);}
+.pdf-field-checkbox{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.95);border:2px solid #4A90D9;border-radius:5px;padding:4px 8px;cursor:pointer;min-height:36px;}
+.pdf-field-checkbox input[type="checkbox"]{width:22px;height:22px;accent-color:#4A90D9;cursor:pointer;flex-shrink:0;}
+.pdf-field-checkbox label{font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdf-field-select select{width:100%;height:100%;border:2px solid #4A90D9;border-radius:5px;padding:2px 6px;font-size:14px;background:rgba(255,255,255,0.95);outline:none;min-height:36px;}
+.pdf-field-date input{width:100%;height:100%;border:2px solid #4A90D9;border-radius:5px;padding:2px 6px;font-size:14px;background:rgba(255,255,255,0.95);outline:none;min-height:36px;}
 
 /* Signature field */
-.pdf-field-signature{border:2px solid #e53935;border-radius:6px;background:rgba(255,255,255,0.95);overflow:hidden;cursor:crosshair;}
+.pdf-field-signature{border:2px solid #e53935;border-radius:6px;background:rgba(255,255,255,0.97);overflow:hidden;cursor:crosshair;min-height:50px;}
 .pdf-field-signature canvas{display:block;width:100%;height:100%;touch-action:none;}
-.sig-label{position:absolute;top:-18px;left:0;font-size:10px;color:#e53935;font-weight:700;white-space:nowrap;}
-.sig-clear-btn{position:absolute;top:-18px;right:0;font-size:10px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;padding:0 6px;cursor:pointer;color:#e53935;line-height:16px;}
+.sig-label{position:absolute;top:-20px;left:0;font-size:11px;color:#e53935;font-weight:700;white-space:nowrap;}
+.sig-clear-btn{position:absolute;top:-20px;right:0;font-size:11px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:5px;padding:1px 8px;cursor:pointer;color:#e53935;line-height:18px;}
 
-/* Non-PDF fields section (below PDF) */
+/* ===== Non-PDF fields section ===== */
 .extra-fields{margin-top:8px;}
 .field-group{margin-bottom:16px;}
-.field-label{font-size:13px;font-weight:700;margin-bottom:6px;display:block;color:#333;}
+.field-label{font-size:14px;font-weight:700;margin-bottom:8px;display:block;color:#333;}
 .field-label .req{color:#e53935;margin-left:2px;}
-.field-input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:14px;transition:border-color .2s;outline:none;background:white;}
+.field-input{width:100%;padding:14px 16px;border:1.5px solid #ddd;border-radius:12px;font-size:16px;transition:border-color .2s;outline:none;background:white;-webkit-appearance:none;}
 .field-input:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.12);}
 
-/* Standalone signature (not on PDF) */
+/* Standalone signature */
 .standalone-sig{border:2px dashed #ccc;border-radius:12px;overflow:hidden;position:relative;background:#fafafa;touch-action:none;}
 .standalone-sig canvas{display:block;width:100%;}
 .standalone-sig-actions{display:flex;gap:8px;margin-top:8px;}
-.standalone-sig-clear{border:1px solid #ddd;background:white;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;}
+.standalone-sig-clear{border:1px solid #ddd;background:white;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;}
 
-/* Submit */
-.submit-section{position:sticky;bottom:0;background:white;padding:16px;margin:0 -12px;box-shadow:0 -4px 20px rgba(0,0,0,0.1);z-index:50;}
-.submit-btn{width:100%;padding:16px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;}
-.submit-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(74,144,217,0.3);}
-.submit-btn:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none;}
-.submit-note{text-align:center;font-size:11px;color:#999;margin-top:8px;}
+/* ===== Submit ===== */
+.submit-section{position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 16px;box-shadow:0 -4px 20px rgba(0,0,0,0.12);z-index:90;}
+.submit-inner{max-width:900px;margin:0 auto;}
+.submit-btn{width:100%;padding:16px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.submit-btn:active{transform:scale(0.98);}
+.submit-btn:disabled{background:#ccc;cursor:not-allowed;transform:none;}
+.submit-note{text-align:center;font-size:11px;color:#999;margin-top:6px;}
 
-/* Loading / Error / Success */
+/* ===== Loading / Error / Success ===== */
 .loading{text-align:center;padding:80px 20px;}
 .loading .spinner{width:40px;height:40px;border:3px solid #eee;border-top-color:#4A90D9;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -70,20 +90,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .success-page .emoji{font-size:64px;margin-bottom:16px;}
 .success-page h2{font-size:22px;margin-bottom:8px;color:#2e7d32;}
 
-/* Page indicator */
-.page-indicator{text-align:center;font-size:12px;color:#888;margin:-16px 0 12px;font-weight:600;}
-
-/* Tooltip for required fields */
+/* Field error */
 .field-error{border-color:#e53935!important;animation:shake 0.3s;}
 @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
 
+/* ===== Back to overview button (shown in input mode) ===== */
+.back-overview-btn{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);z-index:95;background:rgba(0,0,0,0.75);color:white;border:none;border-radius:20px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;display:none;-webkit-tap-highlight-color:transparent;backdrop-filter:blur(4px);}
+.back-overview-btn.show{display:block;}
+
+/* ===== Field navigation in input mode ===== */
+.field-nav{position:fixed;bottom:76px;right:12px;z-index:95;display:none;flex-direction:column;gap:6px;}
+.field-nav.show{display:flex;}
+.field-nav-btn{width:40px;height:40px;border-radius:50%;background:rgba(74,144,217,0.9);color:white;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.2);-webkit-tap-highlight-color:transparent;}
+.field-nav-btn:active{transform:scale(0.9);}
+
+/* ===== Mobile Responsive ===== */
 @media(max-width:640px){
-    .container{padding:8px 6px 60px;}
-    .card{padding:14px 12px;border-radius:12px;}
-    .doc-header h1{font-size:18px;}
-    .pdf-field-text input,.pdf-field-select select,.pdf-field-date input{font-size:11px;padding:1px 4px;}
-    .pdf-field-checkbox label{font-size:10px;}
-    .pdf-field-checkbox input[type="checkbox"]{width:14px;height:14px;}
+    .container{padding:8px 6px 90px;}
+    .card{padding:12px 10px;border-radius:10px;}
+    .doc-header h1{font-size:16px;}
+    .mode-toggle-bar{margin:0 -6px 6px;padding:6px;}
+    .mode-btn{padding:8px 6px;font-size:12px;}
 }
 </style>
 </head>
@@ -94,6 +121,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
         <p>문서를 불러오는 중...</p>
     </div>
 </div>
+<div class="zoom-indicator" id="zoomIndicator"></div>
 
 <script>
 const token = location.pathname.split('/doc/')[1];
@@ -101,6 +129,14 @@ let docData = null;
 let pdfDoc = null;
 let signatureCanvases = {};
 let pageScales = {};
+
+// View mode state
+let viewMode = 'overview'; // 'overview' or 'input'
+let currentZoom = 1;
+let currentTranslateX = 0;
+let currentTranslateY = 0;
+let fieldsList = []; // ordered list of interactive fields for navigation
+let currentFieldIdx = -1;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -141,23 +177,46 @@ async function renderDocument() {
         html += `<div class="card"><div class="desc">${esc(docData.description).replace(/\n/g, '<br>')}</div></div>`;
     }
 
-    // PDF pages container
-    html += `<div id="pdfPagesContainer"></div>`;
+    // Mode toggle bar
+    html += `<div class="mode-toggle-bar" id="modeToggleBar">
+        <button class="mode-btn active" id="btnOverview" onclick="setViewMode('overview')">
+            <span class="mode-icon">📋</span>전체 보기
+        </button>
+        <button class="mode-btn" id="btnInput" onclick="setViewMode('input')">
+            <span class="mode-icon">✏️</span>확대 입력
+        </button>
+    </div>`;
 
-    // Extra fields (fields not placed on PDF)
+    // PDF pages container
+    html += `<div class="pdf-section" id="pdfSection">
+        <div class="pdf-scroll-wrap" id="pdfScrollWrap">
+            <div id="pdfPagesContainer"></div>
+        </div>
+    </div>`;
+
+    // Extra fields (not placed on PDF)
     const extraFields = (docData.fields || []).filter(f => !f.page && f.page !== 0);
     if (extraFields.length > 0) {
-        html += `<div class="card extra-fields">`;
-        extraFields.forEach(f => {
-            html += renderExtraField(f);
-        });
+        html += `<div class="card extra-fields" id="extraFieldsSection">`;
+        extraFields.forEach(f => { html += renderExtraField(f); });
         html += `</div>`;
     }
 
     // Submit section
     html += `<div class="submit-section">
-        <button class="submit-btn" onclick="submitForm()" id="submitBtn">✅ 작성 완료 · 제출하기</button>
-        <div class="submit-note">${docData.deadline ? '📅 마감: ' + docData.deadline : ''} · 제출 후 수정이 불가합니다</div>
+        <div class="submit-inner">
+            <button class="submit-btn" onclick="submitForm()" id="submitBtn">✅ 작성 완료 · 제출하기</button>
+            <div class="submit-note">${docData.deadline ? '📅 마감: ' + docData.deadline : ''} · 제출 후 수정 불가</div>
+        </div>
+    </div>`;
+
+    // Back to overview button (shown in input mode)
+    html += `<button class="back-overview-btn" id="backOverviewBtn" onclick="setViewMode('overview')">📋 전체 보기로 돌아가기</button>`;
+
+    // Field navigation arrows
+    html += `<div class="field-nav" id="fieldNav">
+        <button class="field-nav-btn" onclick="navigateField(-1)" title="이전 항목">▲</button>
+        <button class="field-nav-btn" onclick="navigateField(1)" title="다음 항목">▼</button>
     </div>`;
 
     app.innerHTML = html;
@@ -175,13 +234,14 @@ async function renderDocument() {
         }
     }
 
-    // Init signature canvases
+    // Init signature canvases after DOM is ready
     setTimeout(() => {
         (docData.fields || []).filter(f => f.type === 'signature').forEach(f => {
             if (f.page !== undefined && f.page !== null) initPdfSigCanvas(f.id);
             else initStandaloneSigCanvas(f.id);
         });
-    }, 300);
+        buildFieldsList();
+    }, 400);
 }
 
 async function renderPdfPages() {
@@ -194,7 +254,6 @@ async function renderPdfPages() {
 
     let html = '';
     for (let idx = 0; idx < pagesToRender.length; idx++) {
-        const pageNum = pagesToRender[idx];
         html += `<div class="page-indicator">${idx + 1} / ${pagesToRender.length} 페이지</div>`;
         html += `<div class="pdf-page-wrap" id="pageWrap_${idx}">
             <canvas id="pdfCanvas_${idx}"></canvas>
@@ -203,7 +262,6 @@ async function renderPdfPages() {
     }
     container.innerHTML = html;
 
-    // Render each page
     for (let idx = 0; idx < pagesToRender.length; idx++) {
         const pageNum = pagesToRender[idx];
         if (pageNum < 1 || pageNum > totalPages) continue;
@@ -211,7 +269,6 @@ async function renderPdfPages() {
         const canvas = document.getElementById('pdfCanvas_' + idx);
         const ctx = canvas.getContext('2d');
 
-        // Scale to fit container width
         const containerWidth = canvas.parentElement.clientWidth;
         const viewport0 = page.getViewport({ scale: 1 });
         const scale = containerWidth / viewport0.width;
@@ -222,8 +279,6 @@ async function renderPdfPages() {
         pageScales[idx] = { scale, width: viewport.width, height: viewport.height, origW: viewport0.width, origH: viewport0.height };
 
         await page.render({ canvasContext: ctx, viewport }).promise;
-
-        // Render form fields for this page
         renderPageFields(idx);
     }
 }
@@ -238,7 +293,6 @@ function renderPageFields(pageIdx) {
     let html = '';
 
     fields.forEach(f => {
-        // Position as percentage of page
         const left = f.x + '%';
         const top = f.y + '%';
         const width = f.width + '%';
@@ -246,28 +300,31 @@ function renderPageFields(pageIdx) {
         const style = `left:${left};top:${top};width:${width};height:${height};`;
 
         if (f.type === 'text') {
-            html += `<div class="pdf-field pdf-field-text" style="${style}">
-                <input type="text" id="field_${f.id}" placeholder="${esc(f.placeholder || f.label || '')}" title="${esc(f.label || '')}">
+            html += `<div class="pdf-field pdf-field-text" style="${style}" data-field-id="${f.id}">
+                <input type="text" id="field_${f.id}" placeholder="${esc(f.placeholder || f.label || '')}" title="${esc(f.label || '')}"
+                    onfocus="onFieldFocus(this,'${f.id}')" onblur="onFieldBlur()">
             </div>`;
         } else if (f.type === 'checkbox') {
-            html += `<div class="pdf-field pdf-field-checkbox" style="${style}">
+            html += `<div class="pdf-field pdf-field-checkbox" style="${style}" data-field-id="${f.id}" onclick="onFieldTap('${f.id}')">
                 <input type="checkbox" id="field_${f.id}">
                 <label for="field_${f.id}">${esc(f.checkLabel || f.label || '')}</label>
             </div>`;
         } else if (f.type === 'signature') {
-            html += `<div class="pdf-field pdf-field-signature" style="${style}" id="sigWrap_${f.id}">
+            html += `<div class="pdf-field pdf-field-signature" style="${style}" id="sigWrap_${f.id}" data-field-id="${f.id}">
                 <span class="sig-label">${esc(f.label || '서명')}</span>
                 <button class="sig-clear-btn" onclick="clearPdfSig('${f.id}')">지우기</button>
                 <canvas id="sigCanvas_${f.id}"></canvas>
             </div>`;
         } else if (f.type === 'date') {
-            html += `<div class="pdf-field pdf-field-date" style="${style}">
-                <input type="date" id="field_${f.id}" value="${new Date().toISOString().slice(0, 10)}" title="${esc(f.label || '')}">
+            html += `<div class="pdf-field pdf-field-date" style="${style}" data-field-id="${f.id}">
+                <input type="date" id="field_${f.id}" value="${new Date().toISOString().slice(0, 10)}" title="${esc(f.label || '')}"
+                    onfocus="onFieldFocus(this,'${f.id}')" onblur="onFieldBlur()">
             </div>`;
         } else if (f.type === 'select') {
             const opts = (f.options || '').split(',').map(o => o.trim()).filter(Boolean);
-            html += `<div class="pdf-field pdf-field-select" style="${style}">
-                <select id="field_${f.id}" title="${esc(f.label || '')}">
+            html += `<div class="pdf-field pdf-field-select" style="${style}" data-field-id="${f.id}">
+                <select id="field_${f.id}" title="${esc(f.label || '')}"
+                    onfocus="onFieldFocus(this,'${f.id}')" onblur="onFieldBlur()">
                     <option value="">${esc(f.label || '선택')}</option>
                     ${opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
                 </select>
@@ -300,23 +357,188 @@ function renderExtraField(f) {
             </select>`;
         }
         if (f.type === 'checkbox') {
-            html += `<div style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:#fafafa;border-radius:10px;">
-                <input type="checkbox" id="field_${f.id}" style="width:20px;height:20px;accent-color:#4A90D9;">
-                <label for="field_${f.id}" style="font-size:14px;line-height:1.5;cursor:pointer;">${esc(f.checkLabel || '동의합니다')}</label>
+            html += `<div style="display:flex;align-items:flex-start;gap:10px;padding:14px;background:#fafafa;border-radius:10px;">
+                <input type="checkbox" id="field_${f.id}" style="width:24px;height:24px;accent-color:#4A90D9;flex-shrink:0;">
+                <label for="field_${f.id}" style="font-size:15px;line-height:1.5;cursor:pointer;">${esc(f.checkLabel || '동의합니다')}</label>
             </div>`;
         }
         if (f.type === 'signature') {
             html += `<div class="standalone-sig" id="sigContainer_${f.id}">
-                <canvas id="sigCanvas_${f.id}" height="150"></canvas>
+                <canvas id="sigCanvas_${f.id}" height="160"></canvas>
             </div>
             <div class="standalone-sig-actions">
                 <button class="standalone-sig-clear" onclick="clearStandaloneSig('${f.id}')">🗑️ 지우기</button>
-                <span style="font-size:11px;color:#999;line-height:32px;">터치 또는 마우스로 서명하세요</span>
+                <span style="font-size:12px;color:#999;line-height:32px;">터치로 서명하세요</span>
             </div>`;
         }
     }
     html += `</div>`;
     return html;
+}
+
+// ===== View Mode System =====
+function setViewMode(mode) {
+    viewMode = mode;
+    const btnO = document.getElementById('btnOverview');
+    const btnI = document.getElementById('btnInput');
+    const backBtn = document.getElementById('backOverviewBtn');
+    const fieldNav = document.getElementById('fieldNav');
+
+    if (mode === 'overview') {
+        btnO.classList.add('active');
+        btnI.classList.remove('active');
+        backBtn.classList.remove('show');
+        fieldNav.classList.remove('show');
+        resetZoom();
+    } else {
+        btnO.classList.remove('active');
+        btnI.classList.add('active');
+        backBtn.classList.add('show');
+        fieldNav.classList.add('show');
+        // Auto-zoom to first field if available
+        if (fieldsList.length > 0) {
+            currentFieldIdx = 0;
+            zoomToField(fieldsList[0].id);
+        }
+    }
+}
+
+function resetZoom() {
+    const wrap = document.getElementById('pdfScrollWrap');
+    if (!wrap) return;
+    currentZoom = 1;
+    currentTranslateX = 0;
+    currentTranslateY = 0;
+    wrap.style.transform = 'scale(1) translate(0,0)';
+    wrap.style.transformOrigin = '0 0';
+    showZoomLevel(100);
+}
+
+function zoomToField(fieldId) {
+    const fieldEl = document.querySelector('[data-field-id="' + fieldId + '"]');
+    if (!fieldEl) return;
+
+    const section = document.getElementById('pdfSection');
+    const wrap = document.getElementById('pdfScrollWrap');
+    if (!section || !wrap) return;
+
+    // Get field position relative to the pdfScrollWrap
+    const fieldRect = fieldEl.getBoundingClientRect();
+    const sectionRect = section.getBoundingClientRect();
+
+    // First reset transform to get accurate positions
+    wrap.style.transition = 'none';
+    wrap.style.transform = 'scale(1) translate(0,0)';
+
+    // Force reflow
+    wrap.offsetHeight;
+
+    const fieldRect2 = fieldEl.getBoundingClientRect();
+    const sectionRect2 = section.getBoundingClientRect();
+
+    // Calculate field center relative to scroll wrap
+    const fieldCenterX = fieldRect2.left - sectionRect2.left + fieldRect2.width / 2;
+    const fieldCenterY = fieldRect2.top - sectionRect2.top + fieldRect2.height / 2;
+
+    // Zoom level - make fields comfortably large
+    const zoom = 2.2;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+
+    // Calculate translate to center the field in the viewport
+    let tx = viewW / 2 - fieldCenterX * zoom;
+    let ty = viewH / 2.5 - fieldCenterY * zoom;
+
+    // Clamp so we don't go too far
+    const wrapW = wrap.scrollWidth * zoom;
+    const wrapH = wrap.scrollHeight * zoom;
+    tx = Math.min(0, Math.max(tx, viewW - wrapW));
+    // Don't clamp Y too aggressively - allow some overflow for scroll
+
+    currentZoom = zoom;
+    currentTranslateX = tx;
+    currentTranslateY = ty;
+
+    wrap.style.transition = 'transform 0.35s ease';
+    wrap.style.transformOrigin = '0 0';
+    wrap.style.transform = `scale(${zoom}) translate(${tx / zoom}px, ${ty / zoom}px)`;
+
+    showZoomLevel(Math.round(zoom * 100));
+
+    // Highlight the field
+    fieldEl.classList.remove('field-highlight-pulse');
+    void fieldEl.offsetWidth;
+    fieldEl.classList.add('field-highlight-pulse');
+
+    // Scroll the page so the section is visible
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showZoomLevel(pct) {
+    const el = document.getElementById('zoomIndicator');
+    if (!el) return;
+    el.textContent = pct + '%';
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 1500);
+}
+
+// ===== Field Focus/Blur (auto-zoom in input mode) =====
+function onFieldFocus(el, fieldId) {
+    if (viewMode === 'overview') {
+        // In overview mode, auto-switch to input mode and zoom
+        setViewMode('input');
+        setTimeout(() => zoomToField(fieldId), 50);
+    } else {
+        zoomToField(fieldId);
+    }
+    // Update current field index
+    const idx = fieldsList.findIndex(f => f.id === fieldId);
+    if (idx >= 0) currentFieldIdx = idx;
+}
+
+function onFieldBlur() {
+    // Don't auto-reset zoom on blur - user might navigate to next field
+}
+
+function onFieldTap(fieldId) {
+    if (viewMode === 'input') {
+        zoomToField(fieldId);
+    }
+    const idx = fieldsList.findIndex(f => f.id === fieldId);
+    if (idx >= 0) currentFieldIdx = idx;
+}
+
+// ===== Field Navigation =====
+function buildFieldsList() {
+    fieldsList = [];
+    if (!docData || !docData.fields) return;
+
+    // Collect PDF-overlaid fields in page order, then extra fields
+    const pdfFields = docData.fields.filter(f => f.page !== undefined && f.page !== null && f.type !== 'label');
+    pdfFields.sort((a, b) => {
+        if (a.page !== b.page) return a.page - b.page;
+        return a.y - b.y; // top to bottom within same page
+    });
+    const extraFields = docData.fields.filter(f => (f.page === undefined || f.page === null) && f.type !== 'label');
+
+    fieldsList = [...pdfFields, ...extraFields];
+}
+
+function navigateField(dir) {
+    if (fieldsList.length === 0) return;
+    currentFieldIdx += dir;
+    if (currentFieldIdx < 0) currentFieldIdx = 0;
+    if (currentFieldIdx >= fieldsList.length) currentFieldIdx = fieldsList.length - 1;
+
+    const f = fieldsList[currentFieldIdx];
+    zoomToField(f.id);
+
+    // Focus the input element if possible
+    const inputEl = document.getElementById('field_' + f.id);
+    if (inputEl && (inputEl.tagName === 'INPUT' || inputEl.tagName === 'SELECT')) {
+        setTimeout(() => inputEl.focus(), 400);
+    }
 }
 
 // ===== Signature on PDF =====
@@ -341,9 +563,25 @@ function initPdfSigCanvas(fieldId) {
         return { x: (t.clientX - r.left) * (canvas.width / r.width), y: (t.clientY - r.top) * (canvas.height / r.height) };
     }
 
-    function start(e) { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
-    function move(e) { if (!drawing) return; e.preventDefault(); hasSigned = true; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
-    function end() { drawing = false; }
+    function start(e) {
+        e.preventDefault(); e.stopPropagation();
+        drawing = true;
+        const p = getPos(e);
+        ctx.beginPath(); ctx.moveTo(p.x, p.y);
+        // If in overview and user starts drawing signature, switch to input mode
+        if (viewMode === 'overview') {
+            setViewMode('input');
+            setTimeout(() => zoomToField(fieldId), 50);
+        }
+    }
+    function move(e) {
+        if (!drawing) return;
+        e.preventDefault(); e.stopPropagation();
+        hasSigned = true;
+        const p = getPos(e);
+        ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    }
+    function end(e) { if (e) e.stopPropagation(); drawing = false; }
 
     canvas.addEventListener('mousedown', start);
     canvas.addEventListener('mousemove', move);
@@ -363,7 +601,7 @@ function clearPdfSig(fieldId) {
     sc.reset();
 }
 
-// ===== Standalone signature (not on PDF) =====
+// ===== Standalone signature =====
 function initStandaloneSigCanvas(fieldId) {
     const canvas = document.getElementById('sigCanvas_' + fieldId);
     if (!canvas) return;
@@ -409,6 +647,10 @@ function clearStandaloneSig(fieldId) {
 let submitting = false;
 async function submitForm() {
     if (submitting) return;
+
+    // If zoomed, reset first
+    if (viewMode === 'input') setViewMode('overview');
+
     const values = {};
     let valid = true;
     let firstInvalid = null;
@@ -501,9 +743,8 @@ function markError(el) {
     setTimeout(() => el.classList.remove('field-error'), 1500);
 }
 
-// Utilities
+// ===== Utilities =====
 function base64ToUint8Array(base64) {
-    // Handle data URL or raw base64
     const raw = base64.includes(',') ? base64.split(',')[1] : base64;
     const binary = atob(raw);
     const arr = new Uint8Array(binary.length);
@@ -513,12 +754,14 @@ function base64ToUint8Array(base64) {
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// Handle resize - re-render PDF field positions
+// ===== Resize handler =====
 let resizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(async () => {
         if (pdfDoc && docData) {
+            // Reset zoom before re-rendering
+            if (viewMode === 'input') resetZoom();
             await renderPdfPages();
             setTimeout(() => {
                 (docData.fields || []).filter(f => f.type === 'signature' && (f.page !== undefined && f.page !== null)).forEach(f => initPdfSigCanvas(f.id));
@@ -526,6 +769,10 @@ window.addEventListener('resize', () => {
         }
     }, 300);
 });
+
+// Prevent pinch zoom on the page (we handle zoom ourselves)
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
 
 init();
 </script>
