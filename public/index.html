@@ -3935,7 +3935,7 @@ let _pendingConfirmAction=null;
 function openModal(id){document.getElementById(id).classList.add('active');document.body.style.overflow='hidden';}
 function executeConfirmAction(){if(_pendingConfirmAction)_pendingConfirmAction();}
 function closeModal(id){document.getElementById(id).classList.remove('active');document.body.style.overflow='';}
-document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){e.target.classList.remove('active');document.body.style.overflow='';}});
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){const noClose=['tdistCreateModal','esignCreateModal','collectionCreateModal','newsModal','trainingEditModal','itemModal','sectionModal'];if(noClose.includes(e.target.id))return;e.target.classList.remove('active');document.body.style.overflow='';}});
 document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){document.querySelectorAll('.modal-overlay.active').forEach(m=>{m.classList.remove('active');document.body.style.overflow='';});clearGlobalSearch();}
     if((e.ctrlKey||e.metaKey)&&(e.key==='f'||e.key==='F'||e.key==='p'||e.key==='P')){e.preventDefault();document.getElementById('globalSearchInput').focus();}
