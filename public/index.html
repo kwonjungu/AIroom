@@ -6456,24 +6456,48 @@ function tdistShowSubs(data){
 }
 
 // ===== PDF 다운로드 (원본 PDF + 입력값 합성) =====
+function _textToPng(text,fw,fh){
+    const scale=2;
+    const c=document.createElement('canvas');
+    c.width=Math.max(Math.round(fw*scale),4);
+    c.height=Math.max(Math.round(fh*scale),4);
+    const ctx=c.getContext('2d');
+    const fs=Math.min(Math.max(fh*0.55,8),18)*scale;
+    ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+    ctx.fillStyle='#000099';
+    ctx.textBaseline='middle';
+    ctx.fillText(String(text),4*scale,c.height/2);
+    const dataUrl=c.toDataURL('image/png');
+    const raw=dataUrl.split(',')[1];
+    return Uint8Array.from(atob(raw),ch=>ch.charCodeAt(0));
+}
+function _checkToPng(fw,fh){
+    const scale=2;
+    const c=document.createElement('canvas');
+    const s=Math.max(Math.round(Math.min(fw,fh)*scale),4);
+    c.width=s;c.height=s;
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#e8f5e9';ctx.fillRect(0,0,s,s);
+    ctx.strokeStyle='#2e7d32';ctx.lineWidth=s*0.12;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(s*0.2,s*0.5);ctx.lineTo(s*0.42,s*0.72);ctx.lineTo(s*0.8,s*0.28);ctx.stroke();
+    const dataUrl=c.toDataURL('image/png');
+    const raw=dataUrl.split(',')[1];
+    return Uint8Array.from(atob(raw),ch=>ch.charCodeAt(0));
+}
 async function tdistDownloadSubPdf(subIdx){
     if(!tdistCurrentSubsData||!tdistCurrentSubsData.pdfData){showToast('PDF 데이터가 없습니다','error');return;}
     const{pdfData,pdfPages,fields,submissions,title}=tdistCurrentSubsData;
     const sub=submissions[subIdx];if(!sub){showToast('제출 데이터를 찾을 수 없습니다','error');return;}
     try{
         showToast('PDF 생성 중...','success');
-        // Load original PDF with pdf-lib
         const raw=pdfData.includes(',')?pdfData.split(',')[1]:pdfData;
         const pdfBytes=Uint8Array.from(atob(raw),c=>c.charCodeAt(0));
         const srcDoc=await PDFLib.PDFDocument.load(pdfBytes,{ignoreEncryption:true});
         const newDoc=await PDFLib.PDFDocument.create();
-        // Copy selected pages
         const pages=pdfPages&&pdfPages.length>0?pdfPages:Array.from({length:srcDoc.getPageCount()},(_,i)=>i+1);
         const copiedPages=await newDoc.copyPages(srcDoc,pages.map(p=>p-1));
         copiedPages.forEach(p=>newDoc.addPage(p));
-        // Embed font for text
-        const font=await newDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-        // Draw field values on each page
+        // Draw field values using canvas-rendered PNG images (supports Korean)
         for(let pi=0;pi<pages.length;pi++){
             const page=newDoc.getPage(pi);
             const{width:pw,height:ph}=page.getSize();
@@ -6481,19 +6505,19 @@ async function tdistDownloadSubPdf(subIdx){
             for(const f of pageFields){
                 const v=sub.values?sub.values[f.id]:undefined;
                 if(v===undefined||v===''||v===false)continue;
-                // Convert % to PDF coordinates (PDF origin is bottom-left)
                 const fx=pw*(f.x/100);
                 const fy=ph-ph*(f.y/100)-ph*(f.height/100);
                 const fw=pw*(f.width/100);
                 const fh=ph*(f.height/100);
                 if(f.type==='text'||f.type==='date'||f.type==='select'){
-                    const fontSize=Math.min(Math.max(fh*0.5,8),16);
-                    page.drawText(String(v),{x:fx+4,y:fy+fh*0.3,size:fontSize,font,color:PDFLib.rgb(0,0,0.6)});
-                }else if(f.type==='checkbox'){
-                    if(v){
-                        page.drawText('V',{x:fx+fw*0.15,y:fy+fh*0.15,size:Math.min(fh*0.7,18),font,color:PDFLib.rgb(0,0.4,0)});
-                        page.drawRectangle({x:fx,y:fy,width:fh,height:fh,borderColor:PDFLib.rgb(0,0.4,0),borderWidth:1.5,color:PDFLib.rgb(0.9,1,0.9),opacity:0.3});
-                    }
+                    const imgBytes=_textToPng(String(v),fw,fh);
+                    const img=await newDoc.embedPng(imgBytes);
+                    page.drawImage(img,{x:fx,y:fy,width:fw,height:fh});
+                }else if(f.type==='checkbox'&&v){
+                    const imgBytes=_checkToPng(fw,fh);
+                    const img=await newDoc.embedPng(imgBytes);
+                    const s=Math.min(fw,fh);
+                    page.drawImage(img,{x:fx,y:fy,width:s,height:s});
                 }else if(f.type==='signature'&&v){
                     try{
                         const sigRaw=v.split(',')[1];
