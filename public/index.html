@@ -6456,20 +6456,27 @@ function tdistShowSubs(data){
 }
 
 // ===== PDF 다운로드 (원본 PDF + 입력값 합성) =====
-function _textToPng(text,fw,fh){
+function _textToPng(text,fw,fh,bgWhite){
     const scale=2;
     const c=document.createElement('canvas');
     c.width=Math.max(Math.round(fw*scale),4);
     c.height=Math.max(Math.round(fh*scale),4);
     const ctx=c.getContext('2d');
+    if(bgWhite){ctx.fillStyle='#ffffff';ctx.fillRect(0,0,c.width,c.height);}
     const fs=Math.min(Math.max(fh*0.55,8),18)*scale;
-    ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-    ctx.fillStyle='#000099';
+    ctx.font=fs+'px "Noto Sans KR",sans-serif';
+    ctx.fillStyle='#000000';
     ctx.textBaseline='middle';
     ctx.fillText(String(text),4*scale,c.height/2);
     const dataUrl=c.toDataURL('image/png');
     const raw=dataUrl.split(',')[1];
     return Uint8Array.from(atob(raw),ch=>ch.charCodeAt(0));
+}
+function _formatDate(v){
+    if(!v)return '';
+    const parts=v.split('-');
+    if(parts.length===3)return parts[0]+'년 '+parseInt(parts[1])+'월 '+parseInt(parts[2])+'일';
+    return v;
 }
 function _checkToPng(fw,fh){
     const scale=2;
@@ -6510,8 +6517,11 @@ async function tdistDownloadSubPdf(subIdx){
                 const fw=pw*(f.width/100);
                 const fh=ph*(f.height/100);
                 if(f.type==='text'||f.type==='date'||f.type==='select'){
-                    const imgBytes=_textToPng(String(v),fw,fh);
+                    const displayVal=f.type==='date'?_formatDate(String(v)):String(v);
+                    const useBg=f.type==='date';
+                    const imgBytes=_textToPng(displayVal,fw,fh,useBg);
                     const img=await newDoc.embedPng(imgBytes);
+                    if(useBg){page.drawRectangle({x:fx,y:fy,width:fw,height:fh,color:PDFLib.rgb(1,1,1)});}
                     page.drawImage(img,{x:fx,y:fy,width:fw,height:fh});
                 }else if(f.type==='checkbox'&&v){
                     const imgBytes=_checkToPng(fw,fh);

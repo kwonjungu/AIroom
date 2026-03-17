@@ -25,23 +25,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .page-indicator{text-align:center;font-size:11px;color:#999;margin:4px 0;font-weight:600;}
 
 /* ===== Form Fields on PDF ===== */
-.pdf-field{position:absolute;z-index:10;}
+.pdf-field{position:absolute;z-index:10;box-sizing:border-box;}
 .pdf-field-text input,.pdf-field-date input,.pdf-field-select select{
-    width:100%;height:100%;border:2px solid #4A90D9;border-radius:4px;padding:2px 5px;
-    font-size:15px;background:rgba(255,255,255,0.95);outline:none;min-height:32px;
+    width:100%;height:100%;border:1px solid rgba(74,144,217,0.5);border-radius:2px;padding:1px 3px;
+    font-size:inherit;background:rgba(255,255,255,0.85);outline:none;box-sizing:border-box;
 }
 .pdf-field-text input:focus,.pdf-field-date input:focus,.pdf-field-select select:focus{
-    border-color:#1565c0;box-shadow:0 0 0 3px rgba(74,144,217,0.3);
+    border-color:#1565c0;background:rgba(255,255,255,0.95);box-shadow:0 0 0 2px rgba(74,144,217,0.25);
 }
-.pdf-field-checkbox{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.95);border:2px solid #4A90D9;border-radius:4px;padding:4px 6px;cursor:pointer;min-height:32px;}
-.pdf-field-checkbox input[type="checkbox"]{width:22px;height:22px;accent-color:#4A90D9;cursor:pointer;flex-shrink:0;}
-.pdf-field-checkbox label{font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdf-field-checkbox{display:flex;align-items:center;gap:3px;background:rgba(255,255,255,0.8);border:1px solid rgba(74,144,217,0.5);border-radius:2px;padding:1px 3px;cursor:pointer;}
+.pdf-field-checkbox input[type="checkbox"]{width:16px;height:16px;accent-color:#4A90D9;cursor:pointer;flex-shrink:0;}
+.pdf-field-checkbox label{font-size:11px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* Signature field */
-.pdf-field-signature{border:2px solid #e53935;border-radius:5px;background:rgba(255,255,255,0.97);overflow:hidden;cursor:crosshair;min-height:44px;}
+.pdf-field-signature{border:1px solid rgba(229,57,53,0.5);border-radius:2px;background:rgba(255,255,255,0.9);overflow:hidden;cursor:crosshair;}
 .pdf-field-signature canvas{display:block;width:100%;height:100%;touch-action:none;}
-.sig-label{position:absolute;top:-18px;left:0;font-size:10px;color:#e53935;font-weight:700;white-space:nowrap;}
-.sig-clear-btn{position:absolute;top:-18px;right:0;font-size:10px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:4px;padding:1px 6px;cursor:pointer;color:#e53935;}
+.sig-label{position:absolute;top:-14px;left:0;font-size:9px;color:#e53935;font-weight:700;white-space:nowrap;}
+.sig-clear-btn{position:absolute;top:-14px;right:0;font-size:9px;background:#fff5f5;border:1px solid #ffcdd2;border-radius:3px;padding:0 4px;cursor:pointer;color:#e53935;line-height:14px;}
 
 /* Extra fields */
 .field-group{margin-bottom:14px;}
