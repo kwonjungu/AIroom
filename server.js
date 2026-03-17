@@ -125,8 +125,14 @@ const DATA_ROUTES = [
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
     app.get(`/api/${p}`, async (req, res) => {
-        try { res.json(await readData(file) || fallback); }
-        catch (e) { res.json(fallback); }
+        try {
+            const data = await readData(file);
+            res.json(data !== null && data !== undefined ? data : fallback);
+        }
+        catch (e) {
+            console.error('GET /api/'+p+' 실패:', e.message);
+            res.status(500).json({ error: '데이터 로딩 실패', _fallback: true });
+        }
     });
     app.post(`/api/${p}`, async (req, res) => {
         try { await writeData(file, req.body); res.json({ success: true }); }

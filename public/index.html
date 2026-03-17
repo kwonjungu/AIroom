@@ -1688,6 +1688,7 @@ function loadFromLocal(){
 }
 function isEmptyData(d){return !d||((Array.isArray(d)&&d.length===0)||(typeof d==='object'&&Object.keys(d).length===0));}
 
+const _API_FAIL=Symbol('api_fail');
 async function api(m,u,b,_retry=0){
     try{
         const o={method:m,headers:{'Content-Type':'application/json'}};
@@ -1695,8 +1696,8 @@ async function api(m,u,b,_retry=0){
         const r=await fetch(u,o);
         if(!r.ok){
             const errText=await r.text().catch(()=>'');
-            // POST 실패 시 재시도 (최대 2회)
-            if(m!=='GET'&&_retry<2){
+            // 재시도 (최대 2회)
+            if(_retry<2){
                 console.warn('API 재시도 ('+(_retry+1)+'/2):',u);
                 await new Promise(r=>setTimeout(r,1000*(_retry+1)));
                 return api(m,u,b,_retry+1);
@@ -1704,19 +1705,20 @@ async function api(m,u,b,_retry=0){
             throw new Error(`서버 오류 (${r.status}): ${errText}`);
         }
         const data=await r.json();
+        if(data&&data._fallback){console.warn('서버에서 fallback 응답:',u);return _API_FAIL;}
         if(m!=='GET')setTimeout(saveToLocal,100);
         return data;
     }catch(e){
         console.error('API 오류:',m,u,e);
-        // POST 실패 시 재시도 (네트워크 오류)
-        if(m!=='GET'&&_retry<2){
+        // 재시도 (네트워크 오류)
+        if(_retry<2){
             console.warn('API 네트워크 재시도 ('+(_retry+1)+'/2):',u);
             await new Promise(r=>setTimeout(r,1000*(_retry+1)));
             return api(m,u,b,_retry+1);
         }
         if(m!=='GET')showToast('서버 저장 실패 (로컬 백업 중)','error');
         setTimeout(saveToLocal,100);
-        return null;
+        return _API_FAIL;
     }
 }
 
@@ -1730,30 +1732,37 @@ async function init(){
             api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news'),
             api('GET','/api/collections'),api('GET','/api/esign-docs'),api('GET','/api/tdist-docs')
         ]);
-        categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
-        staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
-        tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];esignDocs=results[10]||[];tdistDocs=results[11]||[];
-        // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
-        let restored=false;
-        if(backup){
-            function tryRestore(cur,bk,apiPath,name){
-                if(isEmptyData(cur)&&!isEmptyData(bk)){api('POST',apiPath,bk);console.log('백업에서 복원:',name);restored=true;return bk;}return cur;
+        let serverFail=0,restored=0;
+        function pick(res,bkKey,fallback,apiPath){
+            // 서버 실패(_API_FAIL) → 백업에서 복원 (서버에 다시 저장)
+            if(res===_API_FAIL){
+                serverFail++;
+                const bk=backup?backup[bkKey]:null;
+                if(!isEmptyData(bk)){api('POST',apiPath,bk);console.log('서버실패→백업복원:',bkKey);restored++;return bk;}
+                return fallback;
             }
-            categories=tryRestore(categories,backup.categories,'/api/categories','categories');
-            links=tryRestore(links,backup.links,'/api/links','links');
-            trainings=tryRestore(trainings,backup.trainings,'/api/trainings','trainings');
-            staff=tryRestore(staff,backup.staff,'/api/staff','staff');
-            trainingRecords=tryRestore(trainingRecords,backup.trainingRecords,'/api/training-records','trainingRecords');
-            sections=tryRestore(sections,backup.sections,'/api/sections','sections');
-            schedules=tryRestore(schedules,backup.schedules,'/api/schedules','schedules');
-            tabsConfig=tryRestore(tabsConfig,backup.tabsConfig,'/api/tabs','tabsConfig');
-            newsPosts=tryRestore(newsPosts,backup.newsPosts,'/api/news','newsPosts');
-            collections=tryRestore(collections,backup.collections,'/api/collections','collections');
-            esignDocs=tryRestore(esignDocs,backup.esignDocs,'/api/esign-docs','esignDocs');
-            tdistDocs=tryRestore(tdistDocs,backup.tdistDocs,'/api/tdist-docs','tdistDocs');
-            if(restored)showToast('서버 데이터가 비어 백업에서 복원했습니다','success');
+            // 서버 빈 데이터 → 백업에서 복원
+            if(isEmptyData(res)){
+                const bk=backup?backup[bkKey]:null;
+                if(!isEmptyData(bk)){api('POST',apiPath,bk);console.log('빈데이터→백업복원:',bkKey);restored++;return bk;}
+            }
+            return res||fallback;
         }
+        categories=pick(results[0],'categories',[],'/api/categories');
+        links=pick(results[1],'links',[],'/api/links');
+        trainings=pick(results[2],'trainings',[],'/api/trainings');
+        staff=pick(results[3],'staff',[],'/api/staff');
+        trainingRecords=pick(results[4],'trainingRecords',{},'/api/training-records');
+        sections=pick(results[5],'sections',[],'/api/sections');
+        schedules=pick(results[6],'schedules',[],'/api/schedules');
+        tabsConfig=pick(results[7],'tabsConfig',[],'/api/tabs');
+        newsPosts=pick(results[8],'newsPosts',[],'/api/news');
+        collections=pick(results[9],'collections',[],'/api/collections');
+        esignDocs=pick(results[10],'esignDocs',[],'/api/esign-docs');
+        tdistDocs=pick(results[11],'tdistDocs',[],'/api/tdist-docs');
+        if(serverFail>0)showToast('서버 연결 일부 실패 ('+serverFail+'건) - 백업에서 복원','error');
+        else if(restored>0)showToast('서버 데이터가 비어 백업에서 복원했습니다','success');
         saveToLocal();
     }catch(e){
         console.error('초기화 오류:',e);
