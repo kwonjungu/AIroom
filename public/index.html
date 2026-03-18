@@ -6145,6 +6145,7 @@ function closeAiTool(){
     document.getElementById('aiToolWorkspace').innerHTML='';
     document.getElementById('aiToolCards').style.display='';
     document.getElementById('aiKeySetup').style.display='';
+    document.removeEventListener('paste',schHandlePaste);
 }
 
 // --- 1. 가정통신문 자동 작성기 ---
@@ -6593,9 +6594,10 @@ function renderAiSchedule(ws){
                 <div style="width:36px;height:36px;border-radius:50%;background:#ef6c00;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📅</div>
                 <div style="background:#fff3e0;border-radius:0 14px 14px 14px;padding:14px 16px;max-width:80%;font-size:14px;line-height:1.7;">
                     학교 일정 추가 도우미입니다!<br><br>
-                    아래 방법 중 하나로 일정을 입력해주세요:<br>
+                    아래 방법으로 일정을 입력해주세요:<br>
                     <b>1)</b> 텍스트로 직접 입력 (예: "3/25 현장체험학습, 4/1 개학식")<br>
-                    <b>2)</b> 아래 버튼으로 PDF나 사진 업로드<br><br>
+                    <b>2)</b> 사진/PDF를 <b>Ctrl+V로 붙여넣기</b> 또는 드래그<br>
+                    <b>3)</b> 아래 버튼으로 파일 업로드<br><br>
                     일정을 추출한 후 확인을 받고 등록합니다.
                 </div>
             </div>
@@ -6610,12 +6612,105 @@ function renderAiSchedule(ws){
                 </label>
             </div>
             <div style="display:flex;gap:8px;">
-                <input type="text" id="schChatInput" placeholder="일정 내용을 입력하세요..." onkeydown="if(event.key==='Enter')sendSchChat()" style="flex:1;padding:12px 16px;border:2px solid #ddd;border-radius:12px;font-size:14px;outline:none;">
+                <input type="text" id="schChatInput" placeholder="텍스트 입력 또는 Ctrl+V로 사진 붙여넣기..." onkeydown="if(event.key==='Enter')sendSchChat()" style="flex:1;padding:12px 16px;border:2px solid #ddd;border-radius:12px;font-size:14px;outline:none;">
                 <button onclick="sendSchChat()" id="schSendBtn" style="padding:12px 20px;background:#ef6c00;color:white;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;">전송</button>
             </div>
         </div>
     </div>`;
     document.getElementById('schChatInput').focus();
+    // 붙여넣기 (Ctrl+V) 이벤트
+    document.addEventListener('paste',schHandlePaste);
+    // 드래그앤드롭
+    const chatArea=document.getElementById('schChatArea');
+    chatArea.addEventListener('dragover',e=>{e.preventDefault();chatArea.style.background='#fff8e1';});
+    chatArea.addEventListener('dragleave',()=>{chatArea.style.background='';});
+    chatArea.addEventListener('drop',e=>{e.preventDefault();chatArea.style.background='';schHandleDrop(e);});
+}
+
+function schHandlePaste(e){
+    // AI 일정 도구가 열려있을 때만
+    if(!document.getElementById('schChatArea'))return;
+    const items=e.clipboardData?.items;
+    if(!items)return;
+    for(const item of items){
+        if(item.type.startsWith('image/')){
+            e.preventDefault();
+            const file=item.getAsFile();
+            if(file) schProcessImage(file);
+            return;
+        }
+    }
+}
+
+function schHandleDrop(e){
+    const files=e.dataTransfer?.files;
+    if(!files||!files.length)return;
+    const file=files[0];
+    if(file.type.startsWith('image/')) schProcessImage(file);
+    else if(file.type==='application/pdf') schProcessPdfFile(file);
+}
+
+function schProcessImage(file){
+    appendSchMsg('user','📷 이미지 붙여넣기');
+    const reader=new FileReader();
+    reader.onload=async function(){
+        const base64=reader.result;
+        // 이미지 미리보기 표시
+        const area=document.getElementById('schChatArea');
+        const div=document.createElement('div');
+        div.style.cssText='display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse;';
+        div.innerHTML=`
+            <div style="width:36px;height:36px;border-radius:50%;background:#1565c0;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>
+            <div style="background:#e3f2fd;border-radius:14px 0 14px 14px;padding:8px;max-width:300px;">
+                <img src="${base64}" style="max-width:100%;border-radius:8px;">
+            </div>`;
+        area.appendChild(div);
+        area.scrollTop=area.scrollHeight;
+
+        // Tesseract.js OCR 시도 (CDN 로드)
+        appendSchMsg('bot','사진에서 텍스트를 추출하고 있습니다... ⏳');
+        try{
+            if(!window.Tesseract){
+                await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+            }
+            const result=await Tesseract.recognize(base64,'kor+eng',{});
+            const text=result.data.text.trim();
+            // "추출 중" 메시지 제거
+            const msgs=area.querySelectorAll(':scope > div');
+            for(let i=msgs.length-1;i>=0;i--){
+                if(msgs[i].textContent.includes('텍스트를 추출하고')){msgs[i].remove();break;}
+            }
+            if(text.length<5){
+                appendSchMsg('bot','사진에서 텍스트를 충분히 인식하지 못했습니다.\n사진 속 일정 내용을 직접 입력해주세요.');
+                return;
+            }
+            appendSchMsg('bot','사진에서 텍스트를 추출했습니다. 일정을 분석합니다...');
+            schChat.push({role:'user',content:'다음 사진에서 추출한 텍스트에서 일정을 추출해줘:\n\n'+text.substring(0,3000)});
+            await processSchAI();
+        }catch(ex){
+            const msgs=area.querySelectorAll(':scope > div');
+            for(let i=msgs.length-1;i>=0;i--){
+                if(msgs[i].textContent.includes('텍스트를 추출하고')){msgs[i].remove();break;}
+            }
+            appendSchMsg('bot','OCR 처리 중 오류가 발생했습니다.\n사진 속 일정 내용을 텍스트로 직접 입력해주세요.');
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function schProcessPdfFile(file){
+    // 기존 PDF 핸들러 재사용
+    const fakeEvent={target:{files:[file],value:'x'}};
+    schHandleFile(fakeEvent,'pdf');
+}
+
+function loadScript(src){
+    return new Promise((resolve,reject)=>{
+        if(document.querySelector('script[src="'+src+'"]'))return resolve();
+        const s=document.createElement('script');
+        s.src=src;s.onload=resolve;s.onerror=reject;
+        document.head.appendChild(s);
+    });
 }
 
 async function schHandleFile(e,type){
