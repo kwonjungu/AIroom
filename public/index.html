@@ -33,14 +33,17 @@
         .font-size-btn:hover{background:rgba(255,255,255,0.3);}
         .font-size-btn.active{background:rgba(255,255,255,0.35);border-color:white;box-shadow:0 0 8px rgba(255,255,255,0.3);}
         .font-size-label{font-size:10px;opacity:0.7;margin-right:4px;white-space:nowrap;}
-        /* Zoom levels — 기본 1.0, 버튼으로 1.0/1.2/1.4/1.6배 */
-        body.zoom-12x{zoom:1.2;}
-        body.zoom-14x{zoom:1.4;}
-        body.zoom-16x{zoom:1.6;}
+        /* Font-size levels — 본문만 확대, 탭/헤더는 고정 */
+        body.fs-12x .page{font-size:calc(1rem * 1.2);}
+        body.fs-14x .page{font-size:calc(1rem * 1.4);}
+        body.fs-16x .page{font-size:calc(1rem * 1.6);}
+        body.fs-12x .page .section-item-text,
+        body.fs-12x .page p,body.fs-12x .page li,body.fs-12x .page td,body.fs-12x .page th,body.fs-12x .page label,body.fs-12x .page span:not(.pdf-tool-icon){font-size:inherit;}
+        body.fs-14x .page .section-item-text,
+        body.fs-14x .page p,body.fs-14x .page li,body.fs-14x .page td,body.fs-14x .page th,body.fs-14x .page label,body.fs-14x .page span:not(.pdf-tool-icon){font-size:inherit;}
+        body.fs-16x .page .section-item-text,
+        body.fs-16x .page p,body.fs-16x .page li,body.fs-16x .page td,body.fs-16x .page th,body.fs-16x .page label,body.fs-16x .page span:not(.pdf-tool-icon){font-size:inherit;}
         @media(max-width:768px){
-            body.zoom-12x{zoom:1.1;}
-            body.zoom-14x{zoom:1.2;}
-            body.zoom-16x{zoom:1.4;}
             .font-size-selector{position:static;justify-content:center;margin-bottom:4px;}
             .font-size-label{display:none;}
         }
@@ -67,7 +70,7 @@
 
         /* Main Tabs */
         .main-tabs{max-width:960px;margin:0 auto;padding:8px 24px 0;display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid var(--border);}
-        .main-tab{padding:11px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;white-space:nowrap;}
+        .main-tab{padding:11px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;white-space:nowrap;flex-shrink:0;}
         .main-tab:hover{color:var(--primary);background:var(--primary-light);}
         .main-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-light);}
 
@@ -453,9 +456,10 @@
             .page{padding:12px 10px 40px;}
             .school-info{padding:8px 10px;}
             .school-info-inner{flex-direction:column;align-items:flex-start;padding:10px 14px;font-size:12px;}
-            .main-tabs-wrapper{padding:6px 10px 0;}
-            .main-tabs{padding-left:10px;padding-right:10px;gap:3px;}
-            .main-tab{padding:7px 10px;font-size:11px;}
+            .main-tabs-wrapper{padding:6px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+            .main-tabs-wrapper::-webkit-scrollbar{display:none;}
+            .main-tabs{padding:0 10px;gap:2px;flex-wrap:nowrap;min-width:max-content;}
+            .main-tab{padding:8px 12px;font-size:11px;flex-shrink:0;}
             .tab-add-btn{padding:7px 10px;font-size:11px;}
             .links-grid{grid-template-columns:1fr;}
             .stats-row{grid-template-columns:repeat(2,1fr);}
@@ -504,7 +508,7 @@
         }
         @media(max-width:400px){
             .header-title h1{font-size:16px;}
-            .main-tab{padding:7px 8px;font-size:10px;}
+            .main-tab{padding:7px 10px;font-size:10px;}
             .schedule-table td{padding:3px 2px;font-size:10px;min-height:auto;}
             .schedule-day-num{font-size:11px;margin-bottom:2px;}
             .schedule-item{font-size:9px;padding:1px 3px;margin-bottom:2px;}
@@ -609,7 +613,7 @@
         .tdist-field-props input,.tdist-field-props select{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;width:100%;}
 
         /* Tab admin controls */
-        .main-tabs-wrapper{max-width:960px;margin:0 auto;padding:8px 24px 0;}
+        .main-tabs-wrapper{max-width:960px;margin:0 auto;padding:8px 24px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
         .main-tabs{overflow-x:visible;flex-wrap:wrap;}
         .main-tab-wrap{position:relative;display:inline-flex;align-items:center;}
         .tab-move-btns{display:none;gap:1px;align-items:center;margin-right:2px;}
@@ -1781,6 +1785,17 @@ async function api(m,u,b,_retry=0){
 }
 
 async function init(){
+    // 저장된 글자 크기 복원
+    const savedFs=localStorage.getItem('airoom_fontsize');
+    if(savedFs&&savedFs!=='normal'){
+        document.body.classList.add('fs-'+savedFs);
+        setTimeout(()=>{
+            const btns=document.querySelectorAll('.font-size-btn');
+            btns.forEach(b=>b.classList.remove('active'));
+            const idx={normal:0,'12x':1,'14x':2,'16x':3}[savedFs]||0;
+            if(btns[idx])btns[idx].classList.add('active');
+        },0);
+    }
     initFirebase(); // Firebase Storage 비동기 초기화 (병렬)
     loadBanner(); // 배너 이미지 로드
     try{
@@ -1852,7 +1867,16 @@ function switchPage(p,btn){
     document.querySelectorAll('.main-tab').forEach(x=>x.classList.remove('active'));
     const page=document.getElementById('page-'+p);
     if(page)page.classList.add('active');
-    if(btn)btn.classList.add('active');
+    if(btn){
+        btn.classList.add('active');
+        // 모바일: 활성 탭이 보이도록 자동 스크롤
+        setTimeout(()=>{
+            const wrapper=document.querySelector('.main-tabs-wrapper');
+            if(wrapper&&wrapper.scrollWidth>wrapper.clientWidth){
+                btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+            }
+        },50);
+    }
     activeTabId=p;
     if(p==='schedule')renderSchedule();
     if(p==='news')renderNews();
@@ -2484,12 +2508,13 @@ function toggleAdmin(){
 
 // ===== 글씨 크기 =====
 function setFontSize(size,btn){
-    document.body.classList.remove('zoom-12x','zoom-14x','zoom-16x');
-    if(size==='12x') document.body.classList.add('zoom-12x');
-    else if(size==='14x') document.body.classList.add('zoom-14x');
-    else if(size==='16x') document.body.classList.add('zoom-16x');
+    document.body.classList.remove('fs-12x','fs-14x','fs-16x');
+    if(size==='12x') document.body.classList.add('fs-12x');
+    else if(size==='14x') document.body.classList.add('fs-14x');
+    else if(size==='16x') document.body.classList.add('fs-16x');
     document.querySelectorAll('.font-size-btn').forEach(b=>b.classList.remove('active'));
     if(btn) btn.classList.add('active');
+    localStorage.setItem('airoom_fontsize',size);
 }
 
 // ===== 서버 사용량 확인 =====
