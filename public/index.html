@@ -33,17 +33,14 @@
         .font-size-btn:hover{background:rgba(255,255,255,0.3);}
         .font-size-btn.active{background:rgba(255,255,255,0.35);border-color:white;box-shadow:0 0 8px rgba(255,255,255,0.3);}
         .font-size-label{font-size:10px;opacity:0.7;margin-right:4px;white-space:nowrap;}
-        /* Font-size levels — 본문만 확대, 탭/헤더는 고정 */
-        body.fs-12x .page{font-size:calc(1rem * 1.2);}
-        body.fs-14x .page{font-size:calc(1rem * 1.4);}
-        body.fs-16x .page{font-size:calc(1rem * 1.6);}
-        body.fs-12x .page .section-item-text,
-        body.fs-12x .page p,body.fs-12x .page li,body.fs-12x .page td,body.fs-12x .page th,body.fs-12x .page label,body.fs-12x .page span:not(.pdf-tool-icon){font-size:inherit;}
-        body.fs-14x .page .section-item-text,
-        body.fs-14x .page p,body.fs-14x .page li,body.fs-14x .page td,body.fs-14x .page th,body.fs-14x .page label,body.fs-14x .page span:not(.pdf-tool-icon){font-size:inherit;}
-        body.fs-16x .page .section-item-text,
-        body.fs-16x .page p,body.fs-16x .page li,body.fs-16x .page td,body.fs-16x .page th,body.fs-16x .page label,body.fs-16x .page span:not(.pdf-tool-icon){font-size:inherit;}
+        /* Zoom levels — 기본 1.0, 버튼으로 1.0/1.2/1.4/1.6배 */
+        body.zoom-12x{zoom:1.2;}
+        body.zoom-14x{zoom:1.4;}
+        body.zoom-16x{zoom:1.6;}
         @media(max-width:768px){
+            body.zoom-12x{zoom:1.1;}
+            body.zoom-14x{zoom:1.2;}
+            body.zoom-16x{zoom:1.4;}
             .font-size-selector{position:static;justify-content:center;margin-bottom:4px;}
             .font-size-label{display:none;}
         }
@@ -1788,7 +1785,7 @@ async function init(){
     // 저장된 글자 크기 복원
     const savedFs=localStorage.getItem('airoom_fontsize');
     if(savedFs&&savedFs!=='normal'){
-        document.body.classList.add('fs-'+savedFs);
+        document.body.classList.add('zoom-'+savedFs);
         setTimeout(()=>{
             const btns=document.querySelectorAll('.font-size-btn');
             btns.forEach(b=>b.classList.remove('active'));
@@ -2508,10 +2505,10 @@ function toggleAdmin(){
 
 // ===== 글씨 크기 =====
 function setFontSize(size,btn){
-    document.body.classList.remove('fs-12x','fs-14x','fs-16x');
-    if(size==='12x') document.body.classList.add('fs-12x');
-    else if(size==='14x') document.body.classList.add('fs-14x');
-    else if(size==='16x') document.body.classList.add('fs-16x');
+    document.body.classList.remove('zoom-12x','zoom-14x','zoom-16x');
+    if(size==='12x') document.body.classList.add('zoom-12x');
+    else if(size==='14x') document.body.classList.add('zoom-14x');
+    else if(size==='16x') document.body.classList.add('zoom-16x');
     document.querySelectorAll('.font-size-btn').forEach(b=>b.classList.remove('active'));
     if(btn) btn.classList.add('active');
     localStorage.setItem('airoom_fontsize',size);
@@ -7474,6 +7471,13 @@ function startTutorial(){
     renderTutStep();
 }
 
+function getZoomLevel(){
+    if(document.body.classList.contains('zoom-16x')) return window.innerWidth<=768?1.4:1.6;
+    if(document.body.classList.contains('zoom-14x')) return window.innerWidth<=768?1.2:1.4;
+    if(document.body.classList.contains('zoom-12x')) return window.innerWidth<=768?1.1:1.2;
+    return 1;
+}
+
 function renderTutStep(){
     let overlay=document.getElementById('tutorialOverlay');
     if(!overlay){
@@ -7487,14 +7491,17 @@ function renderTutStep(){
     const step=TUTORIAL_STEPS[tutStep];
     if(step.action)step.action();
 
-    // 타겟 하이라이트 위치 계산
+    const zoom=getZoomLevel();
+    // 타겟 하이라이트 위치 계산 (zoom 보정)
     let highlightStyle='display:none;';
     if(step.target){
         const el=document.querySelector(step.target);
         if(el){
             const r=el.getBoundingClientRect();
-            highlightStyle=`display:block;top:${r.top-6}px;left:${r.left-6}px;width:${r.width+12}px;height:${r.height+12}px;`;
-            // 스크롤 위치 조정
+            // zoom 적용 시 getBoundingClientRect은 zoom 후 좌표를 반환
+            // fixed 요소는 zoom 전 좌표 기준이므로 /zoom 보정
+            const t=r.top/zoom-6, l=r.left/zoom-6, w=r.width/zoom+12, h=r.height/zoom+12;
+            highlightStyle=`display:block;top:${t}px;left:${l}px;width:${w}px;height:${h}px;`;
             if(r.top<0||r.bottom>window.innerHeight){
                 el.scrollIntoView({behavior:'smooth',block:'center'});
             }
@@ -7503,24 +7510,35 @@ function renderTutStep(){
 
     const isFirst=tutStep===0;
     const isLast=tutStep===TUTORIAL_STEPS.length-1;
+    // 카드 크기도 zoom 보정
+    const cardBottom=Math.round(30/zoom);
+    const cardPadX=Math.round(28/zoom);
+    const cardPadY=Math.round(24/zoom);
+    const cardMaxW=Math.round(440/zoom);
+    const titleFs=Math.round(16/zoom);
+    const textFs=Math.round(14/zoom);
+    const btnFs=Math.round(13/zoom);
+    const dotW=Math.round(8/zoom);
+    const dotWActive=Math.round(20/zoom);
+    const dotH=Math.round(8/zoom);
     overlay.innerHTML=`
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;" onclick="endTutorial()"></div>
-        <div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:12px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);transition:all .3s;"></div>
-        <div style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:white;border-radius:16px;padding:24px 28px;max-width:440px;width:90%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <span style="font-size:16px;font-weight:800;">${esc(step.title)}</span>
-                <span style="font-size:12px;color:#999;">${tutStep+1} / ${TUTORIAL_STEPS.length}</span>
+        <div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:${Math.round(12/zoom)}px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);transition:all .3s;"></div>
+        <div style="position:fixed;bottom:${cardBottom}px;left:50%;transform:translateX(-50%);background:white;border-radius:${Math.round(16/zoom)}px;padding:${cardPadY}px ${cardPadX}px;max-width:${cardMaxW}px;width:${Math.round(90/zoom)}%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${Math.round(10/zoom)}px;">
+                <span style="font-size:${titleFs}px;font-weight:800;">${esc(step.title)}</span>
+                <span style="font-size:${Math.round(12/zoom)}px;color:#999;">${tutStep+1} / ${TUTORIAL_STEPS.length}</span>
             </div>
-            <p style="font-size:14px;line-height:1.7;color:#444;margin:0 0 16px;white-space:pre-line;">${esc(step.text)}</p>
-            <div style="display:flex;gap:8px;justify-content:space-between;">
-                <button onclick="endTutorial()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;color:#999;">건너뛰기</button>
-                <div style="display:flex;gap:8px;">
-                    ${isFirst?'':`<button onclick="tutPrev()" style="padding:8px 18px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:600;">← 이전</button>`}
-                    <button onclick="${isLast?'endTutorial()':'tutNext()'}" style="padding:8px 22px;border:none;border-radius:8px;background:#4A90D9;color:white;cursor:pointer;font-size:13px;font-weight:700;">${isLast?'완료 ✓':'다음 →'}</button>
+            <p style="font-size:${textFs}px;line-height:1.7;color:#444;margin:0 0 ${Math.round(16/zoom)}px;white-space:pre-line;">${esc(step.text)}</p>
+            <div style="display:flex;gap:${dotW}px;justify-content:space-between;">
+                <button onclick="endTutorial()" style="padding:${Math.round(8/zoom)}px ${Math.round(16/zoom)}px;border:1px solid #ddd;border-radius:${dotW}px;background:white;cursor:pointer;font-size:${btnFs}px;color:#999;">건너뛰기</button>
+                <div style="display:flex;gap:${dotW}px;">
+                    ${isFirst?'':`<button onclick="tutPrev()" style="padding:${Math.round(8/zoom)}px ${Math.round(18/zoom)}px;border:1px solid #ddd;border-radius:${dotW}px;background:white;cursor:pointer;font-size:${btnFs}px;font-weight:600;">← 이전</button>`}
+                    <button onclick="${isLast?'endTutorial()':'tutNext()'}" style="padding:${Math.round(8/zoom)}px ${Math.round(22/zoom)}px;border:none;border-radius:${dotW}px;background:#4A90D9;color:white;cursor:pointer;font-size:${btnFs}px;font-weight:700;">${isLast?'완료 ✓':'다음 →'}</button>
                 </div>
             </div>
-            <div style="display:flex;gap:4px;justify-content:center;margin-top:12px;">
-                ${TUTORIAL_STEPS.map((_,i)=>`<div style="width:${i===tutStep?'20px':'8px'};height:8px;border-radius:4px;background:${i===tutStep?'#4A90D9':i<tutStep?'#a5d6a7':'#ddd'};transition:all .2s;"></div>`).join('')}
+            <div style="display:flex;gap:${Math.round(4/zoom)}px;justify-content:center;margin-top:${Math.round(12/zoom)}px;">
+                ${TUTORIAL_STEPS.map((_,i)=>`<div style="width:${i===tutStep?dotWActive:dotW}px;height:${dotH}px;border-radius:${Math.round(4/zoom)}px;background:${i===tutStep?'#4A90D9':i<tutStep?'#a5d6a7':'#ddd'};transition:all .2s;"></div>`).join('')}
             </div>
         </div>`;
 }
