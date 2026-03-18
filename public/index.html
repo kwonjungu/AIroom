@@ -7449,20 +7449,34 @@ function tdistExportCSV(){
 
 // ===== 튜토리얼 (사용 방법) =====
 const TUTORIAL_STEPS=[
-    {title:'환영합니다! 🏫',text:'백암초 AI 교무실 사용법을 안내합니다.\n한 단계씩 화살표를 눌러 진행하세요.',target:null},
+    {title:'환영합니다! 🏫',text:'백암초 AI 교무실 사용법을 안내합니다.\n"다음 →" 버튼을 눌러 한 단계씩 진행하세요.',target:null},
     {title:'상단 탭 📑',text:'화면 상단의 탭으로 각 기능에 접근합니다.\n탭을 클릭하면 해당 페이지로 이동합니다.',target:'#mainTabs'},
-    {title:'학교 일정 📅',text:'월별/주별/일별 일정을 관리합니다.\n일정 추가, 수정, 삭제가 가능합니다.',target:'#mainTabs',action:()=>switchPage('schedule')},
-    {title:'교무실 홈 🏠',text:'교무실의 메인 화면입니다.\n각 부서별 공지사항과 주요 정보를 확인할 수 있습니다.',target:'#mainTabs',action:()=>switchPage('home')},
-    {title:'관리 모드 🔧',text:'"🔧 관리" 버튼을 누르면 관리 모드가 활성화됩니다.\n관리 모드에서만 내용 추가/수정/삭제가 가능합니다.',target:'#btnAdmin'},
-    {title:'관리 모드 기능 ✅',text:'관리 모드 ON 상태에서:\n• 섹션/항목 추가, 수정, 삭제\n• 탭 순서 변경, 탭 추가/삭제\n• 배경 이미지 변경\n• 링크 편집 등 모든 편집 기능 사용',target:'#btnAdmin'},
-    {title:'통합 검색 🔍',text:'검색창에 키워드를 입력하면\n모든 탭의 내용을 한번에 검색합니다.',target:'#globalSearchInput'},
-    {title:'링크 모음 🔗',text:'자주 사용하는 웹사이트 링크를 정리합니다.\n관리 모드에서 추가/수정이 가능합니다.',target:'#mainTabs',action:()=>switchPage('links')},
+
+    // 학교 일정
+    {title:'학교 일정 📅',text:'월간/주간/일간/월중행사 4가지 뷰로\n학교 일정을 관리합니다.',target:'#mainTabs',action:()=>switchPage('schedule')},
+    {title:'일정 추가 방법 ➕',text:'관리 모드(🔧)를 켠 후\n달력의 날짜 칸에 있는 "+" 버튼을 클릭하면\n해당 날짜에 새 일정을 추가할 수 있습니다.',target:'.schedule-table',action:()=>switchPage('schedule')},
+    {title:'일정 인쇄 🖨️',text:'오른쪽 위 "🖨 인쇄" 버튼을 누르면\n현재 보고 있는 일정표를 바로 인쇄합니다.\n월간/주간/일간 모두 인쇄 가능합니다.',target:'.schedule-print-btn',action:()=>switchPage('schedule')},
+
+    // 교무실 홈
+    {title:'교무실 홈 🏠',text:'각 부서별 공지사항, 업무 정보 등을\n섹션으로 정리해 볼 수 있는 메인 화면입니다.',target:'#mainTabs',action:()=>switchPage('home')},
+    {title:'탭 추가 방법 📌',text:'관리 모드(🔧)를 켠 후\n탭 줄 맨 오른쪽의 "➕ 탭 추가" 버튼을 클릭!\n부서별, 업무별로 탭을 자유롭게 만들 수 있습니다.',target:'#mainTabs'},
+    {title:'섹션 추가 📋',text:'관리 모드에서 각 탭 안에\n"➕ 섹션 추가" 버튼으로 영역을 만들고\n그 안에 항목들을 추가할 수 있습니다.',target:'#mainTabs',action:()=>switchPage('home')},
+    {title:'탭 순서·삭제 ↔️',text:'관리 모드에서 각 탭 옆의\n◀▶ 버튼으로 순서를 변경하고\n✕ 버튼으로 삭제할 수 있습니다.',target:'#mainTabs'},
+
+    // 관리 모드
+    {title:'관리 모드 🔧',text:'오른쪽 위 "🔧 관리" 버튼을 누르면\n관리 모드가 켜집니다.\n모든 편집 기능은 관리 모드에서만 보입니다.',target:'#btnAdmin'},
+    {title:'관리 모드 기능 ✅',text:'관리 모드 ON 상태에서 할 수 있는 것:\n• 일정 추가/수정/삭제\n• 섹션·항목 추가/편집/삭제\n• 탭 추가/순서 변경/삭제\n• 배경 이미지 변경\n• 링크 추가/편집',target:'#btnAdmin'},
+
+    // 기타 기능
+    {title:'통합 검색 🔍',text:'검색창에 키워드를 입력하면\n모든 탭의 내용을 한번에 검색합니다.\n일정, 링크, 섹션 항목 모두 검색됩니다.',target:'#globalSearchInput'},
+    {title:'연수 관리 📋',text:'교직원 연수 이수 현황을 관리합니다.\n연수별 체크리스트와 이수 기록을 한눈에!',target:'#mainTabs',action:()=>switchPage('training')},
     {title:'자료 집계 📦',text:'학부모 설문, 자료 수집 등을 관리합니다.\n링크를 공유하면 학부모가 직접 제출합니다.',target:'#mainTabs',action:()=>switchPage('collection')},
-    {title:'PDF 도구 🛠️',text:'PDF 합치기, 분할, 압축, 이미지 변환,\n서명 생성기, 도장 생성기 등을 사용합니다.',target:'#mainTabs',action:()=>switchPage('pdftools')},
-    {title:'AI 실험실 🤖',text:'무료 AI 모델로 가정통신문 작성,\n문서 요약, 번역, 문법 교정이 가능합니다.\nGroq API 키(무료)가 필요합니다.',target:'#mainTabs',action:()=>switchPage('ailab')},
-    {title:'글씨 크기 조절',text:'헤더 왼쪽의 "가" 버튼으로\n글씨 크기를 1.0~1.6배로 조절합니다.\n시력이 불편한 분께 유용합니다.',target:'.font-size-selector'},
-    {title:'서버 현황 📊',text:'"📊 서버현황" 버튼으로 서버 상태,\nRedis 연결, 데이터 용량을 확인합니다.',target:'.btn-server-status'},
-    {title:'사용법 안내 완료! 🎉',text:'이제 자유롭게 사용해보세요!\n언제든 "❓ 사용법" 버튼으로 다시 볼 수 있습니다.',target:null}
+    {title:'학교 소식 📰',text:'학교 소식과 공지사항을 작성하고 관리합니다.\n사진 첨부도 가능합니다.',target:'#mainTabs',action:()=>switchPage('news')},
+    {title:'링크 모음 🔗',text:'자주 사용하는 웹사이트 링크를 카드 형태로 정리!\n관리 모드에서 추가/수정/삭제가 가능합니다.',target:'#mainTabs',action:()=>switchPage('links')},
+    {title:'PDF 도구 🛠️',text:'PDF 합치기, 분할, 압축, 회전,\n이미지 변환, 사진 스캔,\n서명 생성기, 도장 생성기까지!',target:'#mainTabs',action:()=>switchPage('pdftools')},
+    {title:'AI 실험실 🤖',text:'AI 가정통신문 자동 작성,\n문서 요약, 한↔영 번역, 문법 교정까지!\n도구 카드를 클릭하면 바로 사용 가능합니다.',target:'#mainTabs',action:()=>switchPage('ailab')},
+    {title:'글씨 크기 조절',text:'왼쪽 위의 "가" 버튼으로\n화면 크기를 1.0~1.6배로 조절합니다.\n시력이 불편한 분께 유용합니다.',target:'.font-size-selector'},
+    {title:'사용법 안내 완료! 🎉',text:'이제 자유롭게 사용해보세요!\n언제든 왼쪽 위 "❓ 사용법" 버튼으로\n다시 볼 수 있습니다.',target:null}
 ];
 
 let tutStep=-1;
@@ -7522,8 +7536,8 @@ function renderTutStep(){
     const dotWActive=Math.round(20/zoom);
     const dotH=Math.round(8/zoom);
     overlay.innerHTML=`
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;" onclick="endTutorial()"></div>
-        <div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:${Math.round(12/zoom)}px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);transition:all .3s;"></div>
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:10000;" onclick="endTutorial()"></div>
+        <div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:${Math.round(12/zoom)}px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.25);transition:all .3s;"></div>
         <div style="position:fixed;bottom:${cardBottom}px;left:50%;transform:translateX(-50%);background:white;border-radius:${Math.round(16/zoom)}px;padding:${cardPadY}px ${cardPadX}px;max-width:${cardMaxW}px;width:${Math.round(90/zoom)}%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${Math.round(10/zoom)}px;">
                 <span style="font-size:${titleFs}px;font-weight:800;">${esc(step.title)}</span>
