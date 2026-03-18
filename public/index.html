@@ -6086,10 +6086,25 @@ async function pdfScan(){
 
 // ===== AI 기능 실험실 =====
 let aiApiKey=localStorage.getItem('ailab_groq_key')||'';
+let aiHasServerKey=false;
 
-function initAiLab(){
-    const inp=document.getElementById('aiApiKeyInput');
-    if(inp&&aiApiKey){inp.value=aiApiKey;updateAiKeyStatus(true);}
+async function initAiLab(){
+    // 서버에 키가 미리 설정되어 있는지 확인
+    try{
+        const st=await fetch('/api/ai/status').then(r=>r.json());
+        aiHasServerKey=st.hasServerKey;
+    }catch(e){}
+    const setup=document.getElementById('aiKeySetup');
+    if(aiHasServerKey&&setup){
+        setup.innerHTML=`<div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">✅</span>
+            <div><div style="font-size:15px;font-weight:700;color:#2e7d32;">AI 서비스 준비 완료</div>
+            <div style="font-size:12px;color:#666;">서버에 API 키가 설정되어 있습니다. 바로 사용 가능!</div></div>
+        </div>`;
+    } else {
+        const inp=document.getElementById('aiApiKeyInput');
+        if(inp&&aiApiKey){inp.value=aiApiKey;updateAiKeyStatus(true);}
+    }
 }
 
 function saveAiApiKey(){
@@ -6108,11 +6123,13 @@ function updateAiKeyStatus(ok){
 }
 
 async function callAI(messages,opts={}){
-    if(!aiApiKey){showToast('먼저 Groq API 키를 설정하세요','error');return null;}
+    if(!aiHasServerKey&&!aiApiKey){showToast('먼저 Groq API 키를 설정하세요','error');return null;}
     try{
+        const headers={'Content-Type':'application/json'};
+        if(!aiHasServerKey)headers['X-AI-Key']=aiApiKey;
         const res=await fetch('/api/ai/chat',{
             method:'POST',
-            headers:{'Content-Type':'application/json','X-AI-Key':aiApiKey},
+            headers,
             body:JSON.stringify({model:opts.model||'llama-3.3-70b-versatile',messages,temperature:opts.temperature??0.7,max_tokens:opts.max_tokens||4096})
         });
         const data=await res.json();
@@ -6125,7 +6142,7 @@ async function callAI(messages,opts={}){
 }
 
 function openAiTool(tool){
-    if(!aiApiKey){showToast('먼저 Groq API 키를 설정하세요','error');return;}
+    if(!aiHasServerKey&&!aiApiKey){showToast('먼저 Groq API 키를 설정하세요','error');return;}
     const ws=document.getElementById('aiToolWorkspace');
     document.getElementById('aiToolCards').style.display='none';
     document.getElementById('aiKeySetup').style.display='none';

@@ -329,8 +329,13 @@ app.get('/doc/:token', (req, res) => {
 });
 
 // ===== AI 프록시 (Groq API) =====
+// 환경변수에 키가 있으면 서버 키 우선 사용, 없으면 클라이언트 키 사용
+app.get('/api/ai/status', (req, res) => {
+    res.json({ hasServerKey: !!process.env.GROQ_API_KEY });
+});
+
 app.post('/api/ai/chat', async (req, res) => {
-    const apiKey = req.headers['x-ai-key'];
+    const apiKey = process.env.GROQ_API_KEY || req.headers['x-ai-key'];
     if (!apiKey) return res.status(400).json({ error: 'API 키가 필요합니다.' });
     try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
