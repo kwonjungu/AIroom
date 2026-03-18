@@ -728,6 +728,7 @@
     <header class="header">
         <div class="header-inner">
             <div class="font-size-selector">
+                <button onclick="startTutorial()" style="padding:4px 10px;border:1px solid rgba(255,255,255,0.4);border-radius:6px;background:rgba(255,255,255,0.15);color:white;font-size:11px;font-weight:700;cursor:pointer;margin-right:6px;" title="사용 방법 안내">❓ 사용법</button>
                 <span class="font-size-label">글씨</span>
                 <button class="font-size-btn active" onclick="setFontSize('normal',this)" title="표준">가</button>
                 <button class="font-size-btn" onclick="setFontSize('12x',this)" title="1.2배">가</button>
@@ -7451,6 +7452,85 @@ function tdistExportCSV(){
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download=title+'_제출현황.csv';a.click();
 }
+
+// ===== 튜토리얼 (사용 방법) =====
+const TUTORIAL_STEPS=[
+    {title:'환영합니다! 🏫',text:'백암초 AI 교무실 사용법을 안내합니다.\n한 단계씩 화살표를 눌러 진행하세요.',target:null},
+    {title:'상단 탭 📑',text:'화면 상단의 탭으로 각 기능에 접근합니다.\n탭을 클릭하면 해당 페이지로 이동합니다.',target:'#mainTabs'},
+    {title:'학교 일정 📅',text:'월별/주별/일별 일정을 관리합니다.\n일정 추가, 수정, 삭제가 가능합니다.',target:'#mainTabs',action:()=>switchPage('schedule')},
+    {title:'교무실 홈 🏠',text:'교무실의 메인 화면입니다.\n각 부서별 공지사항과 주요 정보를 확인할 수 있습니다.',target:'#mainTabs',action:()=>switchPage('home')},
+    {title:'관리 모드 🔧',text:'"🔧 관리" 버튼을 누르면 관리 모드가 활성화됩니다.\n관리 모드에서만 내용 추가/수정/삭제가 가능합니다.',target:'#btnAdmin'},
+    {title:'관리 모드 기능 ✅',text:'관리 모드 ON 상태에서:\n• 섹션/항목 추가, 수정, 삭제\n• 탭 순서 변경, 탭 추가/삭제\n• 배경 이미지 변경\n• 링크 편집 등 모든 편집 기능 사용',target:'#btnAdmin'},
+    {title:'통합 검색 🔍',text:'검색창에 키워드를 입력하면\n모든 탭의 내용을 한번에 검색합니다.',target:'#globalSearchInput'},
+    {title:'링크 모음 🔗',text:'자주 사용하는 웹사이트 링크를 정리합니다.\n관리 모드에서 추가/수정이 가능합니다.',target:'#mainTabs',action:()=>switchPage('links')},
+    {title:'자료 집계 📦',text:'학부모 설문, 자료 수집 등을 관리합니다.\n링크를 공유하면 학부모가 직접 제출합니다.',target:'#mainTabs',action:()=>switchPage('collection')},
+    {title:'PDF 도구 🛠️',text:'PDF 합치기, 분할, 압축, 이미지 변환,\n서명 생성기, 도장 생성기 등을 사용합니다.',target:'#mainTabs',action:()=>switchPage('pdftools')},
+    {title:'AI 실험실 🤖',text:'무료 AI 모델로 가정통신문 작성,\n문서 요약, 번역, 문법 교정이 가능합니다.\nGroq API 키(무료)가 필요합니다.',target:'#mainTabs',action:()=>switchPage('ailab')},
+    {title:'글씨 크기 조절',text:'헤더 왼쪽의 "가" 버튼으로\n글씨 크기를 1.0~1.6배로 조절합니다.\n시력이 불편한 분께 유용합니다.',target:'.font-size-selector'},
+    {title:'서버 현황 📊',text:'"📊 서버현황" 버튼으로 서버 상태,\nRedis 연결, 데이터 용량을 확인합니다.',target:'.btn-server-status'},
+    {title:'사용법 안내 완료! 🎉',text:'이제 자유롭게 사용해보세요!\n언제든 "❓ 사용법" 버튼으로 다시 볼 수 있습니다.',target:null}
+];
+
+let tutStep=-1;
+function startTutorial(){
+    tutStep=0;
+    renderTutStep();
+}
+
+function renderTutStep(){
+    let overlay=document.getElementById('tutorialOverlay');
+    if(!overlay){
+        overlay=document.createElement('div');
+        overlay.id='tutorialOverlay';
+        document.body.appendChild(overlay);
+    }
+    if(tutStep<0||tutStep>=TUTORIAL_STEPS.length){
+        overlay.remove();tutStep=-1;return;
+    }
+    const step=TUTORIAL_STEPS[tutStep];
+    if(step.action)step.action();
+
+    // 타겟 하이라이트 위치 계산
+    let highlightStyle='display:none;';
+    if(step.target){
+        const el=document.querySelector(step.target);
+        if(el){
+            const r=el.getBoundingClientRect();
+            highlightStyle=`display:block;top:${r.top-6}px;left:${r.left-6}px;width:${r.width+12}px;height:${r.height+12}px;`;
+            // 스크롤 위치 조정
+            if(r.top<0||r.bottom>window.innerHeight){
+                el.scrollIntoView({behavior:'smooth',block:'center'});
+            }
+        }
+    }
+
+    const isFirst=tutStep===0;
+    const isLast=tutStep===TUTORIAL_STEPS.length-1;
+    overlay.innerHTML=`
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;" onclick="endTutorial()"></div>
+        <div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:12px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);transition:all .3s;"></div>
+        <div style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:white;border-radius:16px;padding:24px 28px;max-width:440px;width:90%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <span style="font-size:16px;font-weight:800;">${esc(step.title)}</span>
+                <span style="font-size:12px;color:#999;">${tutStep+1} / ${TUTORIAL_STEPS.length}</span>
+            </div>
+            <p style="font-size:14px;line-height:1.7;color:#444;margin:0 0 16px;white-space:pre-line;">${esc(step.text)}</p>
+            <div style="display:flex;gap:8px;justify-content:space-between;">
+                <button onclick="endTutorial()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;color:#999;">건너뛰기</button>
+                <div style="display:flex;gap:8px;">
+                    ${isFirst?'':`<button onclick="tutPrev()" style="padding:8px 18px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:600;">← 이전</button>`}
+                    <button onclick="${isLast?'endTutorial()':'tutNext()'}" style="padding:8px 22px;border:none;border-radius:8px;background:#4A90D9;color:white;cursor:pointer;font-size:13px;font-weight:700;">${isLast?'완료 ✓':'다음 →'}</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:4px;justify-content:center;margin-top:12px;">
+                ${TUTORIAL_STEPS.map((_,i)=>`<div style="width:${i===tutStep?'20px':'8px'};height:8px;border-radius:4px;background:${i===tutStep?'#4A90D9':i<tutStep?'#a5d6a7':'#ddd'};transition:all .2s;"></div>`).join('')}
+            </div>
+        </div>`;
+}
+
+function tutNext(){tutStep++;renderTutStep();}
+function tutPrev(){tutStep--;renderTutStep();}
+function endTutorial(){tutStep=-1;const o=document.getElementById('tutorialOverlay');if(o)o.remove();}
 
 init();
 </script>
