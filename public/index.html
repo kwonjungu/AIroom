@@ -1287,6 +1287,11 @@
                 <h3>알림장 작성</h3><p>간단한 내용만 입력하면 AI가 질문하며 완성된 알림장을 만들어줍니다.</p>
                 <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00897b;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
             </div>
+            <div class="pdf-tool-card" onclick="openAiTool('scheduleAi')" style="--card-color:#ef6c00">
+                <div class="pdf-tool-icon" style="background:#ef6c00;">📅</div>
+                <h3>일정 추가하기</h3><p>PDF, 사진, 텍스트에서 일정을 추출하여 학교 일정에 등록합니다.</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#ef6c00;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
         </div>
 
         <!-- AI 도구 워크스페이스 -->
@@ -6133,6 +6138,7 @@ function openAiTool(tool){
     else if(tool==='translate')renderAiTranslate(ws);
     else if(tool==='grammar')renderAiGrammar(ws);
     else if(tool==='notice')renderAiNotice(ws);
+    else if(tool==='scheduleAi')renderAiSchedule(ws);
 }
 
 function closeAiTool(){
@@ -6568,6 +6574,263 @@ function appendNoticeDraft(text){
         </div>`;
     area.appendChild(div);
     area.scrollTop=area.scrollHeight;
+}
+
+// --- 6. AI 일정 추가하기 (챗봇 형식) ---
+let schChat=[];
+let schPendingItems=[];
+
+function renderAiSchedule(ws){
+    schChat=[];
+    schPendingItems=[];
+    ws.innerHTML=`<div style="background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 280px);min-height:500px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;flex-shrink:0;">
+            <h3 style="margin:0;font-size:18px;">📅 AI 일정 추가하기</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div id="schChatArea" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:36px;height:36px;border-radius:50%;background:#ef6c00;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📅</div>
+                <div style="background:#fff3e0;border-radius:0 14px 14px 14px;padding:14px 16px;max-width:80%;font-size:14px;line-height:1.7;">
+                    학교 일정 추가 도우미입니다!<br><br>
+                    아래 방법 중 하나로 일정을 입력해주세요:<br>
+                    <b>1)</b> 텍스트로 직접 입력 (예: "3/25 현장체험학습, 4/1 개학식")<br>
+                    <b>2)</b> 아래 버튼으로 PDF나 사진 업로드<br><br>
+                    일정을 추출한 후 확인을 받고 등록합니다.
+                </div>
+            </div>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid #eee;flex-shrink:0;background:#fafafa;">
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <label style="padding:8px 14px;background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;color:#ef6c00;">
+                    📄 PDF 업로드<input type="file" accept=".pdf" style="display:none" onchange="schHandleFile(event,'pdf')">
+                </label>
+                <label style="padding:8px 14px;background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;color:#1565c0;">
+                    📷 사진 업로드<input type="file" accept="image/*" style="display:none" onchange="schHandleFile(event,'image')">
+                </label>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="schChatInput" placeholder="일정 내용을 입력하세요..." onkeydown="if(event.key==='Enter')sendSchChat()" style="flex:1;padding:12px 16px;border:2px solid #ddd;border-radius:12px;font-size:14px;outline:none;">
+                <button onclick="sendSchChat()" id="schSendBtn" style="padding:12px 20px;background:#ef6c00;color:white;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;">전송</button>
+            </div>
+        </div>
+    </div>`;
+    document.getElementById('schChatInput').focus();
+}
+
+async function schHandleFile(e,type){
+    const file=e.target.files[0];
+    if(!file)return;
+    appendSchMsg('user','📎 파일 업로드: '+file.name);
+
+    if(type==='image'){
+        // 이미지 → base64 → OCR 대신 AI에게 텍스트 추출 요청
+        const reader=new FileReader();
+        reader.onload=async function(){
+            const base64=reader.result;
+            appendSchMsg('bot','사진을 분석 중입니다... ⏳');
+            // 이미지는 직접 분석 불가 → 사용자에게 텍스트 입력 요청
+            const lastMsg=document.querySelector('#schChatArea > div:last-child');
+            if(lastMsg)lastMsg.remove();
+            appendSchMsg('bot','사진 속 일정 내용을 텍스트로 입력해주시면\n해당 내용에서 일정을 추출하겠습니다.\n\n(예: "3/25 현장체험학습, 3/28 학부모상담, 4/1 개학식")');
+        };
+        reader.readAsDataURL(file);
+    } else if(type==='pdf'){
+        // PDF → 텍스트 추출 (pdf.js 사용)
+        appendSchMsg('bot','PDF를 분석 중입니다... ⏳');
+        try{
+            const arrayBuf=await file.arrayBuffer();
+            const pdf=await pdfjsLib.getDocument({data:arrayBuf}).promise;
+            let fullText='';
+            for(let i=1;i<=Math.min(pdf.numPages,10);i++){
+                const page=await pdf.getPage(i);
+                const tc=await page.getTextContent();
+                fullText+=tc.items.map(it=>it.str).join(' ')+'\n';
+            }
+            // 마지막 "분석 중" 메시지 제거
+            const lastMsg=document.querySelector('#schChatArea > div:last-child');
+            if(lastMsg)lastMsg.remove();
+
+            if(fullText.trim().length<10){
+                appendSchMsg('bot','PDF에서 텍스트를 추출하지 못했습니다.\n사진(스캔) PDF인 경우 텍스트를 직접 입력해주세요.');
+                return;
+            }
+            appendSchMsg('bot','PDF에서 텍스트를 추출했습니다. 일정을 분석합니다...');
+            // AI에게 일정 추출 요청
+            schChat.push({role:'user',content:'다음 PDF 텍스트에서 일정을 추출해줘:\n\n'+fullText.substring(0,3000)});
+            await processSchAI();
+        }catch(ex){
+            const lastMsg=document.querySelector('#schChatArea > div:last-child');
+            if(lastMsg)lastMsg.remove();
+            appendSchMsg('bot','PDF 분석 중 오류가 발생했습니다.\n텍스트로 직접 입력해주세요.');
+        }
+    }
+    e.target.value='';
+}
+
+async function sendSchChat(){
+    const input=document.getElementById('schChatInput');
+    const msg=input.value.trim();
+    if(!msg)return;
+    input.value='';
+    appendSchMsg('user',msg);
+    schChat.push({role:'user',content:msg});
+    await processSchAI();
+    input.focus();
+}
+
+async function processSchAI(){
+    const btn=document.getElementById('schSendBtn');
+    btn.disabled=true;btn.textContent='⏳';
+
+    const today=new Date();
+    const year=today.getFullYear();
+    const systemPrompt=`당신은 한국 초등학교 일정 추출 도우미입니다.
+오늘 날짜: ${today.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'})}
+올해 연도: ${year}
+
+역할:
+1. 사용자가 텍스트, PDF 내용 등을 입력하면 그 안에서 학교 일정을 추출합니다.
+2. 추출한 일정을 사용자에게 보여주고 확인을 받습니다.
+3. 빠진 정보가 있으면 질문합니다.
+
+일정 추출 후 반드시 아래 JSON 형식으로 출력:
+
+===일정===
+[
+  {"date":"${year}-MM-DD","text":"일정 내용","emoji":"적절한 이모지 1개"},
+  {"date":"${year}-MM-DD","text":"일정 내용","emoji":"적절한 이모지 1개"}
+]
+===끝===
+
+규칙:
+- date는 반드시 ${year}-MM-DD 형식 (올해 기준)
+- 월/일만 있으면 올해 ${year}년으로 설정
+- text는 간결하게 (예: "현장체험학습", "학부모 상담주간")
+- emoji는 일정에 맞는 이모지 1개 (예: 🏫, 📝, 🎒, 🏃, 📞, 🎉, 🔔)
+- JSON 앞뒤에 확인 메시지 추가 (예: "다음 일정을 추출했습니다. 등록할까요?")
+- 사용자가 "등록해줘", "네", "확인" 등 동의하면 ===등록=== 태그 출력
+- 수정 요청 시 수정된 JSON을 같은 형식으로 다시 출력
+- 정보가 부족하면 짧게 질문`;
+
+    const messages=[{role:'system',content:systemPrompt},...schChat];
+    const result=await callAI(messages,{temperature:0.3});
+    btn.disabled=false;btn.textContent='전송';
+
+    if(!result)return;
+    schChat.push({role:'assistant',content:result});
+
+    // 일정 JSON 추출
+    const jsonMatch=result.match(/===일정===([\s\S]*?)===끝===/);
+    if(jsonMatch){
+        try{
+            const items=JSON.parse(jsonMatch[1].trim());
+            schPendingItems=items;
+            const beforeJson=result.split('===일정===')[0].trim();
+            const afterJson=result.split('===끝===')[1]?.trim()||'';
+            if(beforeJson) appendSchMsg('bot',beforeJson);
+            appendSchSchedulePreview(items);
+            if(afterJson) appendSchMsg('bot',afterJson);
+        }catch(e){
+            appendSchMsg('bot',result.replace(/===일정===[\s\S]*?===끝===/,'[일정 데이터 파싱 오류]'));
+        }
+        return;
+    }
+
+    // 등록 확인
+    if(result.includes('===등록===')){
+        const cleanMsg=result.replace('===등록===','').trim();
+        if(cleanMsg) appendSchMsg('bot',cleanMsg);
+        if(schPendingItems.length>0){
+            await registerScheduleItems(schPendingItems);
+        }
+        return;
+    }
+
+    appendSchMsg('bot',result);
+}
+
+function appendSchMsg(type,text){
+    const area=document.getElementById('schChatArea');
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;gap:10px;align-items:flex-start;'+(type==='user'?'flex-direction:row-reverse;':'');
+    const icon=type==='user'?'👤':'📅';
+    const bg=type==='user'?'#e3f2fd':'#fff3e0';
+    const radius=type==='user'?'14px 0 14px 14px':'0 14px 14px 14px';
+    const iconBg=type==='user'?'#1565c0':'#ef6c00';
+    div.innerHTML=`
+        <div style="width:36px;height:36px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icon}</div>
+        <div style="background:${bg};border-radius:${radius};padding:14px 16px;max-width:80%;font-size:14px;line-height:1.7;white-space:pre-wrap;">${esc(text)}</div>`;
+    area.appendChild(div);
+    area.scrollTop=area.scrollHeight;
+}
+
+function appendSchSchedulePreview(items){
+    const area=document.getElementById('schChatArea');
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;gap:10px;align-items:flex-start;';
+
+    let tableRows=items.map((it,i)=>{
+        const d=it.date||'';
+        const parts=d.split('-');
+        const dateDisplay=parts.length===3?`${parseInt(parts[1])}/${parseInt(parts[2])}`:'?';
+        const dow=['일','월','화','수','목','금','토'];
+        let dowStr='';
+        try{const dt=new Date(d);dowStr='('+dow[dt.getDay()]+')';}catch(e){}
+        return `<tr style="border-bottom:1px solid #e0e0e0;">
+            <td style="padding:8px 10px;white-space:nowrap;font-weight:600;color:#ef6c00;">${dateDisplay}${dowStr}</td>
+            <td style="padding:8px 10px;">${it.emoji||''} ${esc(it.text||'')}</td>
+            <td style="padding:8px 6px;"><button onclick="removeSchItem(${i})" style="border:none;background:none;cursor:pointer;font-size:14px;color:#e53935;" title="삭제">✕</button></td>
+        </tr>`;
+    }).join('');
+
+    div.innerHTML=`
+        <div style="width:36px;height:36px;border-radius:50%;background:#ef6c00;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📋</div>
+        <div style="flex:1;max-width:85%;">
+            <div style="background:white;border:2px solid #ffcc80;border-radius:0 14px 14px 14px;overflow:hidden;">
+                <div style="background:#fff3e0;padding:10px 14px;font-size:13px;font-weight:700;color:#ef6c00;">추출된 일정 (${items.length}건)</div>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    ${tableRows}
+                </table>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button onclick="confirmSchRegister()" style="padding:10px 20px;background:#ef6c00;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;">✅ 학교 일정에 등록</button>
+                <button onclick="document.getElementById('schChatInput').value='수정할게요';sendSchChat()" style="padding:10px 16px;background:white;border:1px solid #ddd;border-radius:10px;font-size:13px;cursor:pointer;">✏️ 수정 요청</button>
+                <button onclick="document.getElementById('schChatInput').value='일정 더 추가할게요';sendSchChat()" style="padding:10px 16px;background:white;border:1px solid #ddd;border-radius:10px;font-size:13px;cursor:pointer;">➕ 더 추가</button>
+            </div>
+        </div>`;
+    area.appendChild(div);
+    area.scrollTop=area.scrollHeight;
+}
+
+function removeSchItem(idx){
+    schPendingItems.splice(idx,1);
+    // 미리보기 다시 렌더링 (마지막 미리보기 교체)
+    const area=document.getElementById('schChatArea');
+    const previews=area.querySelectorAll('div[style*="flex-start"]');
+    // 마지막 미리보기 찾아서 교체
+    for(let i=previews.length-1;i>=0;i--){
+        if(previews[i].querySelector('table')){
+            previews[i].remove();
+            break;
+        }
+    }
+    if(schPendingItems.length>0) appendSchSchedulePreview(schPendingItems);
+    else appendSchMsg('bot','모든 일정이 삭제되었습니다. 새로 입력해주세요.');
+}
+
+async function confirmSchRegister(){
+    if(schPendingItems.length===0){showToast('등록할 일정이 없습니다','error');return;}
+    let added=0;
+    for(const it of schPendingItems){
+        if(it.date&&it.text){
+            await addScheduleItem(it.date,it.text,'',it.emoji||'');
+            added++;
+        }
+    }
+    appendSchMsg('bot',`✅ ${added}건의 일정이 학교 일정에 등록되었습니다!\n\n"학교 일정" 탭에서 확인하세요.`);
+    schPendingItems=[];
+    showToast(added+'건 일정 등록 완료!','success');
 }
 
 // AI 결과 복사
