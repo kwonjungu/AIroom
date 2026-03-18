@@ -6,6 +6,15 @@ const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
 // Upstash 직접 or Vercel 마켓플레이스(KV_REST_API_*) 둘 다 지원
+// .env 파일 로드 (있으면)
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+    fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
+        const m = line.match(/^([^#=]+)=(.*)$/);
+        if (m && !process.env[m[1].trim()]) process.env[m[1].trim()] = m[2].trim();
+    });
+}
+
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const HAS_REDIS = !!(REDIS_URL && REDIS_TOKEN);
