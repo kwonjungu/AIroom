@@ -5832,8 +5832,8 @@ function applyScanFilter(imageData){
         }
     }
 
-    // === 2단계: 히스토그램 분석 + 자동 밝기/대비 ===
-    let autoBright=0,autoContrast=0;
+    // === 2단계: 자동 레벨 스트레칭 (배경을 흰색으로) ===
+    let autoLo=0,autoHi=255;
     if(mode==='auto'||mode==='bw'||mode==='gray'){
         const hist=new Int32Array(256);
         const total=w*h;
@@ -5841,20 +5841,26 @@ function applyScanFilter(imageData){
             const g=Math.round(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]);
             hist[Math.min(255,Math.max(0,g))]++;
         }
-        // 상하위 1% 클리핑으로 자동 레벨 보정
-        const clip=Math.round(total*0.01);
-        let lo=0,hi=255,accLo=0,accHi=0;
-        for(let i=0;i<256;i++){accLo+=hist[i];if(accLo>=clip){lo=i;break;}}
-        for(let i=255;i>=0;i--){accHi+=hist[i];if(accHi>=clip){hi=i;break;}}
-        if(hi>lo){
-            const range=hi-lo;
-            autoBright=Math.round(-lo*255/range+128-128);
-            autoContrast=Math.round(Math.max(0,(255/range-1)*80));
+        // 상위 0.5%, 하위 0.5% 클리핑
+        const clipLo=Math.round(total*0.005),clipHi=Math.round(total*0.005);
+        let accLo=0,accHi=0;
+        for(let i=0;i<256;i++){accLo+=hist[i];if(accLo>=clipLo){autoLo=i;break;}}
+        for(let i=255;i>=0;i--){accHi+=hist[i];if(accHi>=clipHi){autoHi=i;break;}}
+        if(autoHi<=autoLo){autoLo=0;autoHi=255;}
+        // 직접 레벨 스트레칭 적용 (배경→흰색, 글자→검정)
+        const range=autoHi-autoLo;
+        if(range>10){
+            for(let i=0;i<d.length;i+=4){
+                d[i]=Math.max(0,Math.min(255,(d[i]-autoLo)*255/range));
+                d[i+1]=Math.max(0,Math.min(255,(d[i+1]-autoLo)*255/range));
+                d[i+2]=Math.max(0,Math.min(255,(d[i+2]-autoLo)*255/range));
+            }
         }
     }
 
-    const totalBright=bright+autoBright;
-    const totalContrast=contrast+autoContrast;
+    // 사용자 밝기/대비 적용
+    const totalBright=bright+15; // 기본 +15 밝기 부스트
+    const totalContrast=contrast+10; // 기본 +10 대비 부스트
     const factor=(259*(totalContrast+255))/(255*(259-totalContrast));
 
     // === 3단계: 밝기/대비/모드 적용 ===
