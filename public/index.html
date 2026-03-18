@@ -1240,6 +1240,58 @@
         </div>
     </div></div>
 
+    <!-- ===== AI LAB (AI 기능 실험실) PAGE ===== -->
+    <div class="page" id="page-ailab">
+        <div style="text-align:center;margin-bottom:20px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">🤖 AI 기능 실험실</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">무료 AI 모델(Groq + Llama 3)을 활용한 학교 업무 도구</p>
+        </div>
+
+        <!-- API 키 설정 -->
+        <div id="aiKeySetup" style="background:linear-gradient(135deg,#fff3e0,#fce4ec);border-radius:14px;padding:20px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <span style="font-size:24px;">🔑</span>
+                <div>
+                    <div style="font-size:15px;font-weight:700;">Groq API 키 설정</div>
+                    <div style="font-size:12px;color:#666;">무료 가입 후 API 키를 발급받으세요 (완전 무료)</div>
+                </div>
+                <a href="https://console.groq.com/keys" target="_blank" style="margin-left:auto;padding:8px 16px;background:#e53935;color:white;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;">Groq 가입 →</a>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <input type="password" id="aiApiKeyInput" placeholder="gsk_xxxxxxxx..." style="flex:1;padding:10px 14px;border:2px solid #ddd;border-radius:10px;font-size:14px;font-family:monospace;">
+                <button onclick="saveAiApiKey()" style="padding:10px 20px;background:#4A90D9;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;">저장</button>
+            </div>
+            <div id="aiKeyStatus" style="margin-top:8px;font-size:12px;"></div>
+        </div>
+
+        <!-- AI 도구 카드 그리드 -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;" id="aiToolCards">
+            <div class="pdf-tool-card" onclick="openAiTool('letter')" style="--card-color:#e53935">
+                <div class="pdf-tool-icon" style="background:#e53935;">📝</div>
+                <h3>가정통신문 작성</h3><p>키워드만 입력하면 가정통신문을 자동 생성합니다.</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#e53935;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
+            <div class="pdf-tool-card" onclick="openAiTool('summarize')" style="--card-color:#43a047">
+                <div class="pdf-tool-icon" style="background:#43a047;">📋</div>
+                <h3>문서 요약</h3><p>긴 텍스트를 핵심만 간결하게 요약합니다.</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#43a047;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
+            <div class="pdf-tool-card" onclick="openAiTool('translate')" style="--card-color:#1565c0">
+                <div class="pdf-tool-icon" style="background:#1565c0;">🌐</div>
+                <h3>번역기</h3><p>한국어↔영어 자동 번역. 다문화 가정 안내문에 활용!</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
+            <div class="pdf-tool-card" onclick="openAiTool('grammar')" style="--card-color:#8e24aa">
+                <div class="pdf-tool-icon" style="background:#8e24aa;">✏️</div>
+                <h3>문법 교정</h3><p>맞춤법과 어색한 표현을 자동으로 교정합니다.</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#8e24aa;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
+        </div>
+
+        <!-- AI 도구 워크스페이스 -->
+        <div id="aiToolWorkspace" style="margin-top:20px;"></div>
+    </div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1556,7 +1608,8 @@ const DEFAULT_TABS=[
     {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8},
     {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
     {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
-    {id:'tdist',title:'교사 배포',icon:'📤',type:'builtin',order:11}
+    {id:'tdist',title:'교사 배포',icon:'📤',type:'builtin',order:11},
+    {id:'ailab',title:'AI 실험실',icon:'🤖',type:'builtin',order:12}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1811,6 +1864,7 @@ function switchPage(p,btn){
     if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
     if(p==='esign')renderEsignList();
     if(p==='tdist')renderTdistList();
+    if(p==='ailab')initAiLab();
 }
 
 // ===== SCHEDULE =====
@@ -6027,6 +6081,352 @@ async function pdfScan(){
         if(results.length===1) pdfShowResult(results[0].name,results[0].blob);
         else pdfShowResultMulti(results);
     }
+}
+
+// ===== AI 기능 실험실 =====
+let aiApiKey=localStorage.getItem('ailab_groq_key')||'';
+
+function initAiLab(){
+    const inp=document.getElementById('aiApiKeyInput');
+    if(inp&&aiApiKey){inp.value=aiApiKey;updateAiKeyStatus(true);}
+}
+
+function saveAiApiKey(){
+    const key=document.getElementById('aiApiKeyInput').value.trim();
+    if(!key){showToast('API 키를 입력하세요','error');return;}
+    aiApiKey=key;
+    localStorage.setItem('ailab_groq_key',key);
+    updateAiKeyStatus(true);
+    showToast('API 키 저장 완료!','success');
+}
+
+function updateAiKeyStatus(ok){
+    const el=document.getElementById('aiKeyStatus');
+    if(!el)return;
+    el.innerHTML=ok?'<span style="color:#2e7d32;">✅ API 키가 설정되었습니다.</span>':'<span style="color:#e53935;">❌ API 키를 설정해주세요.</span>';
+}
+
+async function callAI(messages,opts={}){
+    if(!aiApiKey){showToast('먼저 Groq API 키를 설정하세요','error');return null;}
+    try{
+        const res=await fetch('/api/ai/chat',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-AI-Key':aiApiKey},
+            body:JSON.stringify({model:opts.model||'llama-3.3-70b-versatile',messages,temperature:opts.temperature??0.7,max_tokens:opts.max_tokens||4096})
+        });
+        const data=await res.json();
+        if(!res.ok){
+            const errMsg=data?.error?.message||data?.error||'AI 호출 실패';
+            showToast(errMsg,'error');return null;
+        }
+        return data.choices?.[0]?.message?.content||'';
+    }catch(e){showToast('네트워크 오류: '+e.message,'error');return null;}
+}
+
+function openAiTool(tool){
+    if(!aiApiKey){showToast('먼저 Groq API 키를 설정하세요','error');return;}
+    const ws=document.getElementById('aiToolWorkspace');
+    document.getElementById('aiToolCards').style.display='none';
+    document.getElementById('aiKeySetup').style.display='none';
+    if(tool==='letter')renderAiLetter(ws);
+    else if(tool==='summarize')renderAiSummarize(ws);
+    else if(tool==='translate')renderAiTranslate(ws);
+    else if(tool==='grammar')renderAiGrammar(ws);
+}
+
+function closeAiTool(){
+    document.getElementById('aiToolWorkspace').innerHTML='';
+    document.getElementById('aiToolCards').style.display='';
+    document.getElementById('aiKeySetup').style.display='';
+}
+
+// --- 1. 가정통신문 자동 작성기 ---
+function renderAiLetter(ws){
+    ws.innerHTML=`<div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:18px;">📝 가정통신문 자동 작성</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">학교 이름</label>
+            <input type="text" id="aiLetterSchool" placeholder="예: 용인동부초등학교" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;"></div>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">행사/주제</label>
+            <input type="text" id="aiLetterTopic" placeholder="예: 현장체험학습, 수학여행, 학부모 상담주간" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">날짜</label>
+            <input type="text" id="aiLetterDate" placeholder="예: 2026년 3월 25일" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;"></div>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">장소</label>
+            <input type="text" id="aiLetterPlace" placeholder="예: 서울대공원" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;"></div>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">대상</label>
+            <input type="text" id="aiLetterTarget" placeholder="예: 3학년 학부모님" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;"></div>
+        </div>
+        <div style="margin-bottom:12px;"><label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">추가 요청 사항 (선택)</label>
+        <textarea id="aiLetterExtra" rows="2" placeholder="예: 준비물 안내 포함, 동의서 회신 문구 포함" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;resize:vertical;"></textarea></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <select id="aiLetterTone" style="padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+                <option value="공손하고 격식있는">공손하고 격식있는 톤</option>
+                <option value="따뜻하고 친근한">따뜻하고 친근한 톤</option>
+                <option value="간결하고 사무적인">간결하고 사무적인 톤</option>
+            </select>
+            <button onclick="generateLetter()" id="aiLetterBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#e53935,#d32f2f);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">🤖 가정통신문 생성</button>
+        </div>
+        <div id="aiLetterResult" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:14px;font-weight:700;">📄 생성 결과</span>
+                <button onclick="copyAiResult('aiLetterOutput')" style="padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">📋 복사</button>
+            </div>
+            <div id="aiLetterOutput" style="background:#f8f9fa;border:1px solid #eee;border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;max-height:500px;overflow-y:auto;"></div>
+        </div>
+    </div>`;
+}
+
+async function generateLetter(){
+    const school=document.getElementById('aiLetterSchool').value.trim();
+    const topic=document.getElementById('aiLetterTopic').value.trim();
+    const date=document.getElementById('aiLetterDate').value.trim();
+    const place=document.getElementById('aiLetterPlace').value.trim();
+    const target=document.getElementById('aiLetterTarget').value.trim();
+    const extra=document.getElementById('aiLetterExtra').value.trim();
+    const tone=document.getElementById('aiLetterTone').value;
+    if(!topic){showToast('행사/주제를 입력하세요','error');return;}
+    const btn=document.getElementById('aiLetterBtn');
+    btn.disabled=true;btn.textContent='⏳ 생성 중...';
+    const prompt=`당신은 한국 초등학교 가정통신문 전문 작성자입니다. 아래 정보를 바탕으로 가정통신문을 작성해주세요.
+
+정보:
+- 학교: ${school||'(미입력)'}
+- 행사/주제: ${topic}
+- 날짜: ${date||'(미정)'}
+- 장소: ${place||'(미정)'}
+- 대상: ${target||'학부모님'}
+- 톤: ${tone}
+${extra?'- 추가 요청: '+extra:''}
+
+형식 요구사항:
+1. 제목은 "가정통신문" 또는 적절한 제목
+2. 인사말로 시작
+3. 행사/안내 내용을 명확하게 작성
+4. 필요시 준비물, 일정, 유의사항 포함
+5. 회신 또는 동의서 안내 (필요한 경우)
+6. 마무리 인사와 학교장 이름
+7. 실제 한국 초등학교에서 사용하는 형식으로 작성
+
+가정통신문만 출력하세요. 설명이나 부연은 불필요합니다.`;
+    const result=await callAI([{role:'user',content:prompt}],{temperature:0.7});
+    btn.disabled=false;btn.textContent='🤖 가정통신문 생성';
+    if(result){
+        document.getElementById('aiLetterResult').style.display='';
+        document.getElementById('aiLetterOutput').textContent=result;
+    }
+}
+
+// --- 2. 문서 요약기 ---
+function renderAiSummarize(ws){
+    ws.innerHTML=`<div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:18px;">📋 문서 요약</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">요약할 텍스트를 붙여넣기 하세요</label>
+            <textarea id="aiSummarizeInput" rows="10" placeholder="공문, 안내문, 기사 등 긴 텍스트를 여기에 붙여넣으세요..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-size:14px;resize:vertical;line-height:1.7;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <select id="aiSummarizeLevel" style="padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+                <option value="1줄">한 줄 요약</option>
+                <option value="3줄" selected>3줄 요약</option>
+                <option value="5줄">5줄 요약</option>
+                <option value="핵심 키워드">핵심 키워드 추출</option>
+            </select>
+            <button onclick="generateSummary()" id="aiSummarizeBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#43a047,#2e7d32);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">🤖 요약하기</button>
+        </div>
+        <div id="aiSummarizeResult" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:14px;font-weight:700;">📋 요약 결과</span>
+                <button onclick="copyAiResult('aiSummarizeOutput')" style="padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">📋 복사</button>
+            </div>
+            <div id="aiSummarizeOutput" style="background:#f1f8e9;border:1px solid #c8e6c9;border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;"></div>
+        </div>
+    </div>`;
+}
+
+async function generateSummary(){
+    const text=document.getElementById('aiSummarizeInput').value.trim();
+    const level=document.getElementById('aiSummarizeLevel').value;
+    if(!text){showToast('요약할 텍스트를 입력하세요','error');return;}
+    if(text.length<30){showToast('텍스트가 너무 짧습니다','error');return;}
+    const btn=document.getElementById('aiSummarizeBtn');
+    btn.disabled=true;btn.textContent='⏳ 요약 중...';
+    let instruction='';
+    if(level==='핵심 키워드')instruction='아래 텍스트에서 핵심 키워드 5~10개를 추출하고, 각 키워드에 대해 한 줄 설명을 붙여주세요.';
+    else instruction=`아래 텍스트를 ${level}로 요약해주세요. 핵심 내용만 간결하게 작성하세요.`;
+    const result=await callAI([{role:'user',content:instruction+'\n\n---\n'+text}],{temperature:0.3});
+    btn.disabled=false;btn.textContent='🤖 요약하기';
+    if(result){
+        document.getElementById('aiSummarizeResult').style.display='';
+        document.getElementById('aiSummarizeOutput').textContent=result;
+    }
+}
+
+// --- 3. 번역기 ---
+function renderAiTranslate(ws){
+    ws.innerHTML=`<div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:18px;">🌐 번역기</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+            <select id="aiTransFrom" style="padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:600;">
+                <option value="한국어">🇰🇷 한국어</option>
+                <option value="영어">🇺🇸 영어</option>
+                <option value="중국어">🇨🇳 중국어</option>
+                <option value="일본어">🇯🇵 일본어</option>
+                <option value="베트남어">🇻🇳 베트남어</option>
+            </select>
+            <button onclick="swapTranslateLanguage()" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:18px;" title="언어 교체">⇄</button>
+            <select id="aiTransTo" style="padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:600;">
+                <option value="영어">🇺🇸 영어</option>
+                <option value="한국어">🇰🇷 한국어</option>
+                <option value="중국어">🇨🇳 중국어</option>
+                <option value="일본어">🇯🇵 일본어</option>
+                <option value="베트남어">🇻🇳 베트남어</option>
+            </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">원문</label>
+                <textarea id="aiTransInput" rows="8" placeholder="번역할 텍스트를 입력하세요..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-size:14px;resize:vertical;line-height:1.7;"></textarea>
+            </div>
+            <div>
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">번역 결과</label>
+                <div id="aiTransOutput" style="min-height:196px;background:#e3f2fd;border:2px solid #bbdefb;border-radius:10px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;color:#333;">번역 결과가 여기에 표시됩니다...</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <button onclick="generateTranslation()" id="aiTransBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#1565c0,#0d47a1);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">🌐 번역하기</button>
+            <button onclick="copyAiResult('aiTransOutput')" style="padding:12px 20px;border:1px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:13px;">📋 복사</button>
+        </div>
+    </div>`;
+}
+
+function swapTranslateLanguage(){
+    const from=document.getElementById('aiTransFrom');
+    const to=document.getElementById('aiTransTo');
+    const tmp=from.value;from.value=to.value;to.value=tmp;
+}
+
+async function generateTranslation(){
+    const text=document.getElementById('aiTransInput').value.trim();
+    const fromLang=document.getElementById('aiTransFrom').value;
+    const toLang=document.getElementById('aiTransTo').value;
+    if(!text){showToast('번역할 텍스트를 입력하세요','error');return;}
+    if(fromLang===toLang){showToast('출발 언어와 도착 언어가 같습니다','error');return;}
+    const btn=document.getElementById('aiTransBtn');
+    btn.disabled=true;btn.textContent='⏳ 번역 중...';
+    const prompt=`다음 텍스트를 ${fromLang}에서 ${toLang}로 번역해주세요.
+번역문만 출력하세요. 설명이나 부연 없이 번역 결과만 작성하세요.
+학교/교육 관련 문서라면 적절한 교육 용어를 사용하세요.
+
+원문:
+${text}`;
+    const result=await callAI([{role:'user',content:prompt}],{temperature:0.3});
+    btn.disabled=false;btn.textContent='🌐 번역하기';
+    if(result){
+        document.getElementById('aiTransOutput').textContent=result;
+    }
+}
+
+// --- 4. 문법 교정기 ---
+function renderAiGrammar(ws){
+    ws.innerHTML=`<div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:18px;">✏️ 문법 교정기</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">교정할 텍스트</label>
+            <textarea id="aiGrammarInput" rows="8" placeholder="맞춤법이나 문법을 확인하고 싶은 텍스트를 입력하세요..." style="width:100%;padding:14px;border:2px solid #ddd;border-radius:10px;font-size:14px;resize:vertical;line-height:1.7;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <select id="aiGrammarMode" style="padding:10px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+                <option value="교정">맞춤법 + 문법 교정</option>
+                <option value="윤문">문장 다듬기 (윤문)</option>
+                <option value="공문체">공문서 형식으로 변환</option>
+            </select>
+            <button onclick="generateGrammar()" id="aiGrammarBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#8e24aa,#6a1b9a);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">✏️ 교정하기</button>
+        </div>
+        <div id="aiGrammarResult" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:14px;font-weight:700;">✅ 교정 결과</span>
+                <button onclick="copyAiResult('aiGrammarCorrected')" style="padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">📋 복사</button>
+            </div>
+            <div id="aiGrammarCorrected" style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;margin-bottom:12px;"></div>
+            <div id="aiGrammarExplain" style="background:#fafafa;border:1px solid #eee;border-radius:12px;padding:16px;font-size:13px;line-height:1.7;white-space:pre-wrap;"></div>
+        </div>
+    </div>`;
+}
+
+async function generateGrammar(){
+    const text=document.getElementById('aiGrammarInput').value.trim();
+    const mode=document.getElementById('aiGrammarMode').value;
+    if(!text){showToast('교정할 텍스트를 입력하세요','error');return;}
+    const btn=document.getElementById('aiGrammarBtn');
+    btn.disabled=true;btn.textContent='⏳ 교정 중...';
+    let instruction='';
+    if(mode==='교정'){
+        instruction=`다음 한국어 텍스트의 맞춤법과 문법을 교정해주세요.
+
+출력 형식:
+[교정된 텍스트]
+(교정된 전체 텍스트를 여기에 작성)
+
+[수정 사항]
+- 수정1: (원문) → (수정) - 이유
+- 수정2: (원문) → (수정) - 이유
+...
+
+수정 사항이 없으면 "맞춤법 오류 없음"이라고 표시하세요.`;
+    } else if(mode==='윤문'){
+        instruction=`다음 한국어 텍스트의 문장을 자연스럽고 매끄럽게 다듬어주세요. 의미는 유지하되 가독성과 표현을 개선하세요.
+
+출력 형식:
+[다듬어진 텍스트]
+(개선된 전체 텍스트)
+
+[변경 내용]
+- 변경 사항 요약`;
+    } else {
+        instruction=`다음 텍스트를 한국 관공서 공문서 형식으로 변환해주세요. 격식있는 공문서체를 사용하세요.
+
+출력 형식:
+[공문서 형식]
+(공문서 스타일로 변환된 텍스트)
+
+[변환 요약]
+- 주요 변환 사항`;
+    }
+    const result=await callAI([{role:'user',content:instruction+'\n\n원문:\n'+text}],{temperature:0.3});
+    btn.disabled=false;btn.textContent='✏️ 교정하기';
+    if(result){
+        document.getElementById('aiGrammarResult').style.display='';
+        // 교정 텍스트와 설명 분리
+        const parts=result.split(/\[수정 사항\]|\[변경 내용\]|\[변환 요약\]/);
+        const corrected=(parts[0]||'').replace(/^\[교정된 텍스트\]|\[다듬어진 텍스트\]|\[공문서 형식\]/g,'').trim();
+        const explain=(parts[1]||'').trim();
+        document.getElementById('aiGrammarCorrected').textContent=corrected;
+        document.getElementById('aiGrammarExplain').textContent=explain?'📝 '+explain:'';
+        document.getElementById('aiGrammarExplain').style.display=explain?'':'none';
+    }
+}
+
+// AI 결과 복사
+function copyAiResult(elementId){
+    const el=document.getElementById(elementId);
+    if(!el)return;
+    navigator.clipboard.writeText(el.textContent).then(()=>{
+        showToast('클립보드에 복사되었습니다','success');
+    }).catch(()=>{showToast('복사 실패','error');});
 }
 
 // ===== 서명 생성기 =====

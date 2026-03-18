@@ -328,6 +328,24 @@ app.get('/doc/:token', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'doc.html'));
 });
 
+// ===== AI 프록시 (Groq API) =====
+app.post('/api/ai/chat', async (req, res) => {
+    const apiKey = req.headers['x-ai-key'];
+    if (!apiKey) return res.status(400).json({ error: 'API 키가 필요합니다.' });
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify(req.body)
+        });
+        const data = await response.json();
+        if (!response.ok) return res.status(response.status).json(data);
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: 'AI API 호출 실패: ' + e.message });
+    }
+});
+
 // 메인 페이지
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
