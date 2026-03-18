@@ -7966,7 +7966,7 @@ const TUTORIAL_STEPS=[
 
     // 학교 일정
     {title:'학교 일정 📅',text:'월간/주간/일간/월중행사 4가지 뷰로\n학교 일정을 확인합니다.',target:'#page-schedule',action:()=>switchPage('schedule')},
-    {title:'[관리 모드] 일정 추가 ➕',text:'관리 모드에서 할 수 있는 기능입니다.\n\n달력의 날짜 칸에 있는 "+" 버튼을 클릭하면\n해당 날짜에 새 일정을 추가할 수 있습니다.\n일정 수정·삭제도 관리 모드에서만 가능합니다.',target:'.schedule-table',action:()=>switchPage('schedule')},
+    {title:'일정 추가 ➕',text:'달력의 날짜 칸에 있는 "+" 버튼을 클릭하면\n해당 날짜에 새 일정을 추가할 수 있습니다.\n\n일정 수정·삭제도 가능합니다.',target:'.schedule-table',action:()=>switchPage('schedule')},
     {title:'일정 인쇄 🖨️',text:'오른쪽 위 "🖨 인쇄" 버튼을 누르면\n현재 보고 있는 일정표를 바로 인쇄합니다.\n월간/주간/일간 모두 인쇄 가능합니다.',target:'.schedule-print-btn',action:()=>switchPage('schedule')},
 
     // 교무실 홈
@@ -7974,7 +7974,7 @@ const TUTORIAL_STEPS=[
 
     // 관리 모드 설명
     {title:'관리 모드란? 🔧',text:'오른쪽 위 "🔧 관리" 버튼을 누르면\n관리 모드가 켜집니다.\n\n관리 모드를 켜야만 편집·추가·삭제 등\n관리 기능이 화면에 나타납니다.',target:'#btnAdmin'},
-    {title:'[관리 모드] 주요 기능 ✅',text:'관리 모드에서 할 수 있는 기능 목록:\n\n• 일정 추가/수정/삭제\n• 섹션·항목 추가/편집/삭제\n• 탭 추가/순서 변경/삭제\n• 배경 이미지 변경\n• 링크 추가/편집/삭제 및 카테고리 관리\n• 연수 추가/수정/삭제 및 인원 관리\n• 학교 소식 작성/편집/삭제\n• 서버 상태 확인\n• 전체 데이터 내보내기/가져오기',target:'#btnAdmin'},
+    {title:'[관리 모드] 주요 기능 ✅',text:'관리 모드에서 할 수 있는 기능 목록:\n\n• 섹션·항목 추가/편집/삭제\n• 탭 추가/순서 변경/삭제\n• 배경 이미지 변경\n• 링크 추가/편집/삭제 및 카테고리 관리\n• 연수 추가/수정/삭제 및 인원 관리\n• 학교 소식 작성/편집/삭제\n• 서버 상태 확인\n• 전체 데이터 내보내기/가져오기',target:'#btnAdmin'},
 
     // 관리 모드 세부 기능
     {title:'[관리 모드] 탭 추가 📌',text:'관리 모드에서 할 수 있는 기능입니다.\n\n탭 줄 맨 오른쪽의 "➕ 탭 추가" 버튼을 클릭!\n부서별, 업무별로 탭을 자유롭게 만들 수 있습니다.',target:'.tab-add-btn'},
@@ -8010,7 +8010,7 @@ const TUTORIAL_STEPS=[
     {title:'PDF 도구 🛠️',text:'다양한 PDF 편집 도구를 제공합니다.\n\n• 합치기 / 분할 / 압축 / 회전\n• 이미지 → PDF / PDF → 이미지 변환\n• 비밀번호 보호 / 페이지 번호 추가\n• 사진 스캔 (도장·서명 추출 포함)\n• 서명 생성기 / 도장 생성기',target:'#page-pdftools',action:()=>switchPage('pdftools')},
 
     // AI 실험실
-    {title:'AI 실험실 🤖',text:'무료 AI(Groq + Llama 3)를 활용한\n학교 업무 도구입니다.\n\n• 가정통신문 자동 작성\n• 알림장 작성\n• 문서 요약 / 번역 / 문법 교정\n• AI 일정 추가 (PDF·사진·텍스트에서\n  일정을 추출하여 자동 등록)',target:'#page-ailab',action:()=>switchPage('ailab')},
+    {title:'AI 실험실 🤖',text:'무료 AI(Groq + Llama 3)를 활용한\n학교 업무 도구입니다.\n\n• 가정통신문 자동 작성\n• 알림장 작성\n• 문서 요약 / 번역 / 문법 교정\n• AI 일정 추가 — PDF 파일, 화면 캡처,\n  텍스트에서 일정을 추출하여 자동 등록',target:'#page-ailab',action:()=>switchPage('ailab')},
 
     // 편의 기능
     {title:'글씨 크기 조절',text:'왼쪽 위의 "가" 버튼으로\n화면 크기를 1.0~1.6배로 조절합니다.\n시력이 불편한 분께 유용합니다.',target:'.font-size-selector'},
