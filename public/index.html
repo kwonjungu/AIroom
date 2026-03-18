@@ -5807,22 +5807,27 @@ function applyScanFilter(imageData){
                 blockAvg[by*bw+bx]=cnt>0?sum/cnt:128;
             }
         }
+        // 전체 평균 밝기 계산
+        let globalSum=0;
+        for(let i=0;i<w*h;i++) globalSum+=gray[i];
+        const globalAvg=globalSum/(w*h);
         // 쌍선형 보간으로 부드러운 배경 추정 → 그림자 제거
         for(let y=0;y<h;y++){
             const fy=y/blockSize-0.5;
             const by0=Math.max(0,Math.floor(fy)),by1=Math.min(bh-1,by0+1);
-            const ty=fy-by0;
+            const ty=Math.max(0,Math.min(1,fy-by0));
             for(let x=0;x<w;x++){
                 const fx=x/blockSize-0.5;
                 const bx0=Math.max(0,Math.floor(fx)),bx1=Math.min(bw-1,bx0+1);
-                const tx=fx-bx0;
+                const tx=Math.max(0,Math.min(1,fx-bx0));
                 const bg=blockAvg[by0*bw+bx0]*(1-tx)*(1-ty)+blockAvg[by0*bw+bx1]*tx*(1-ty)+
                           blockAvg[by1*bw+bx0]*(1-tx)*ty+blockAvg[by1*bw+bx1]*tx*ty;
-                const ratio=bg>1?128/bg:1;
+                // 배경 밝기 차이만큼 보정 (밝은 곳은 그대로, 어두운 곳(그림자)만 밝게)
+                const diff=globalAvg-bg;
                 const idx=y*w+x;
-                d[idx*4]=Math.min(255,d[idx*4]*ratio);
-                d[idx*4+1]=Math.min(255,d[idx*4+1]*ratio);
-                d[idx*4+2]=Math.min(255,d[idx*4+2]*ratio);
+                d[idx*4]=Math.max(0,Math.min(255,d[idx*4]+diff));
+                d[idx*4+1]=Math.max(0,Math.min(255,d[idx*4+1]+diff));
+                d[idx*4+2]=Math.max(0,Math.min(255,d[idx*4+2]+diff));
             }
         }
     }
