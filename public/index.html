@@ -1282,6 +1282,11 @@
                 <h3>문법 교정</h3><p>맞춤법과 어색한 표현을 자동으로 교정합니다.</p>
                 <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#8e24aa;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
             </div>
+            <div class="pdf-tool-card" onclick="openAiTool('notice')" style="--card-color:#00897b">
+                <div class="pdf-tool-icon" style="background:#00897b;">📢</div>
+                <h3>알림장 작성</h3><p>간단한 내용만 입력하면 AI가 질문하며 완성된 알림장을 만들어줍니다.</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00897b;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
         </div>
 
         <!-- AI 도구 워크스페이스 -->
@@ -6127,6 +6132,7 @@ function openAiTool(tool){
     else if(tool==='summarize')renderAiSummarize(ws);
     else if(tool==='translate')renderAiTranslate(ws);
     else if(tool==='grammar')renderAiGrammar(ws);
+    else if(tool==='notice')renderAiNotice(ws);
 }
 
 function closeAiTool(){
@@ -6413,6 +6419,142 @@ async function generateGrammar(){
         document.getElementById('aiGrammarExplain').textContent=explain?'📝 '+explain:'';
         document.getElementById('aiGrammarExplain').style.display=explain?'':'none';
     }
+}
+
+// --- 5. 알림장 작성기 (챗봇 형식) ---
+let noticeChat=[];
+let noticeDraft='';
+
+function renderAiNotice(ws){
+    noticeChat=[];
+    noticeDraft='';
+    ws.innerHTML=`<div style="background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 280px);min-height:500px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;flex-shrink:0;">
+            <h3 style="margin:0;font-size:18px;">📢 알림장 작성 도우미</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div id="noticeChatArea" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+                <div style="width:36px;height:36px;border-radius:50%;background:#00897b;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🤖</div>
+                <div style="background:#f0faf8;border-radius:0 14px 14px 14px;padding:14px 16px;max-width:80%;font-size:14px;line-height:1.7;">
+                    안녕하세요! 알림장 작성 도우미입니다.<br><br>
+                    알림장에 넣을 <b>간단한 내용</b>을 입력해주세요.<br>
+                    예) "내일 현장체험학습 준비물 챙겨오기", "금요일 단축수업"<br><br>
+                    빠진 내용이 있으면 제가 질문할게요!
+                </div>
+            </div>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid #eee;display:flex;gap:8px;flex-shrink:0;background:#fafafa;">
+            <input type="text" id="noticeChatInput" placeholder="알림장 내용을 입력하세요..." onkeydown="if(event.key==='Enter')sendNoticeChat()" style="flex:1;padding:12px 16px;border:2px solid #ddd;border-radius:12px;font-size:14px;outline:none;">
+            <button onclick="sendNoticeChat()" id="noticeSendBtn" style="padding:12px 20px;background:#00897b;color:white;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;">전송</button>
+        </div>
+    </div>`;
+    document.getElementById('noticeChatInput').focus();
+}
+
+async function sendNoticeChat(){
+    const input=document.getElementById('noticeChatInput');
+    const msg=input.value.trim();
+    if(!msg)return;
+    input.value='';
+
+    // 사용자 메시지 표시
+    appendNoticeMsg('user',msg);
+
+    const btn=document.getElementById('noticeSendBtn');
+    btn.disabled=true;btn.textContent='⏳';
+
+    // 대화 히스토리 구성
+    noticeChat.push({role:'user',content:msg});
+
+    const systemPrompt=`당신은 한국 초등학교 알림장 작성 전문 도우미입니다.
+
+역할:
+1. 사용자가 간단한 내용을 입력하면, 빠진 정보가 있는지 판단합니다.
+2. 빠진 정보가 있으면 한 번에 1~2개만 친근하게 질문합니다.
+3. 충분한 정보가 모이면 정리된 알림장을 작성합니다.
+
+빠질 수 있는 정보 예시:
+- 날짜, 요일
+- 준비물
+- 시간
+- 장소
+- 주의사항
+- 회신 여부
+
+응답 규칙:
+- 질문할 때: 자연스럽고 친근하게 1~2개만 물어보세요. 말투는 "~할까요?", "~인가요?" 형식.
+- 완성할 때: 반드시 아래 형식으로 출력하세요:
+
+===알림장===
+[여기에 완성된 알림장 내용]
+===끝===
+
+- 알림장 형식: 날짜, 제목, 본문(항목별 정리), 인사말 포함
+- 사용자가 "완성해줘", "이대로 작성해줘" 등을 말하면 바로 완성하세요.
+- 알림장 완성 후에도 수정 요청이 오면 수정본을 같은 형식으로 출력하세요.`;
+
+    const messages=[{role:'system',content:systemPrompt},...noticeChat];
+    const result=await callAI(messages,{temperature:0.6});
+
+    btn.disabled=false;btn.textContent='전송';
+
+    if(result){
+        noticeChat.push({role:'assistant',content:result});
+
+        // 알림장 완성 여부 확인
+        if(result.includes('===알림장===')){
+            const match=result.match(/===알림장===([\s\S]*?)===끝===/);
+            if(match){
+                noticeDraft=match[1].trim();
+                // 알림장 앞뒤의 대화 부분과 알림장을 분리
+                const beforeNotice=result.split('===알림장===')[0].trim();
+                if(beforeNotice) appendNoticeMsg('bot',beforeNotice);
+                appendNoticeDraft(noticeDraft);
+            } else {
+                appendNoticeMsg('bot',result);
+            }
+        } else {
+            appendNoticeMsg('bot',result);
+        }
+    }
+    input.focus();
+}
+
+function appendNoticeMsg(type,text){
+    const area=document.getElementById('noticeChatArea');
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;gap:10px;align-items:flex-start;'+(type==='user'?'flex-direction:row-reverse;':'');
+
+    const icon=type==='user'?'👤':'🤖';
+    const bg=type==='user'?'#e3f2fd':'#f0faf8';
+    const radius=type==='user'?'14px 0 14px 14px':'0 14px 14px 14px';
+    const iconBg=type==='user'?'#1565c0':'#00897b';
+
+    div.innerHTML=`
+        <div style="width:36px;height:36px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${icon}</div>
+        <div style="background:${bg};border-radius:${radius};padding:14px 16px;max-width:80%;font-size:14px;line-height:1.7;white-space:pre-wrap;">${esc(text)}</div>`;
+    area.appendChild(div);
+    area.scrollTop=area.scrollHeight;
+}
+
+function appendNoticeDraft(text){
+    const area=document.getElementById('noticeChatArea');
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;gap:10px;align-items:flex-start;';
+    div.innerHTML=`
+        <div style="width:36px;height:36px;border-radius:50%;background:#00897b;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📢</div>
+        <div style="flex:1;max-width:85%;">
+            <div style="background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:2px solid #a5d6a7;border-radius:0 14px 14px 14px;padding:18px 20px;font-size:14px;line-height:1.8;white-space:pre-wrap;" id="noticeDraftText">${esc(text)}</div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                <button onclick="copyAiResult('noticeDraftText')" style="padding:8px 16px;background:white;border:1px solid #a5d6a7;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;color:#2e7d32;">📋 복사</button>
+                <button onclick="document.getElementById('noticeChatInput').value='조금 더 간결하게 수정해줘';sendNoticeChat()" style="padding:8px 16px;background:white;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;">✂️ 간결하게</button>
+                <button onclick="document.getElementById('noticeChatInput').value='좀 더 자세하게 수정해줘';sendNoticeChat()" style="padding:8px 16px;background:white;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;">📝 자세하게</button>
+                <button onclick="document.getElementById('noticeChatInput').value='더 친근한 말투로 바꿔줘';sendNoticeChat()" style="padding:8px 16px;background:white;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;">💬 친근하게</button>
+            </div>
+        </div>`;
+    area.appendChild(div);
+    area.scrollTop=area.scrollHeight;
 }
 
 // AI 결과 복사
@@ -7450,31 +7592,31 @@ function tdistExportCSV(){
 // ===== 튜토리얼 (사용 방법) =====
 const TUTORIAL_STEPS=[
     {title:'환영합니다! 🏫',text:'백암초 AI 교무실 사용법을 안내합니다.\n"다음 →" 버튼을 눌러 한 단계씩 진행하세요.',target:null},
-    {title:'상단 탭 📑',text:'화면 상단의 탭으로 각 기능에 접근합니다.\n탭을 클릭하면 해당 페이지로 이동합니다.',target:'#mainTabs'},
 
     // 학교 일정
-    {title:'학교 일정 📅',text:'월간/주간/일간/월중행사 4가지 뷰로\n학교 일정을 관리합니다.',target:'#mainTabs',action:()=>switchPage('schedule')},
+    {title:'학교 일정 📅',text:'월간/주간/일간/월중행사 4가지 뷰로\n학교 일정을 관리합니다.',target:'#page-schedule',action:()=>switchPage('schedule')},
     {title:'일정 추가 방법 ➕',text:'관리 모드(🔧)를 켠 후\n달력의 날짜 칸에 있는 "+" 버튼을 클릭하면\n해당 날짜에 새 일정을 추가할 수 있습니다.',target:'.schedule-table',action:()=>switchPage('schedule')},
     {title:'일정 인쇄 🖨️',text:'오른쪽 위 "🖨 인쇄" 버튼을 누르면\n현재 보고 있는 일정표를 바로 인쇄합니다.\n월간/주간/일간 모두 인쇄 가능합니다.',target:'.schedule-print-btn',action:()=>switchPage('schedule')},
 
     // 교무실 홈
-    {title:'교무실 홈 🏠',text:'각 부서별 공지사항, 업무 정보 등을\n섹션으로 정리해 볼 수 있는 메인 화면입니다.',target:'#mainTabs',action:()=>switchPage('home')},
-    {title:'탭 추가 방법 📌',text:'관리 모드(🔧)를 켠 후\n탭 줄 맨 오른쪽의 "➕ 탭 추가" 버튼을 클릭!\n부서별, 업무별로 탭을 자유롭게 만들 수 있습니다.',target:'#mainTabs'},
-    {title:'섹션 추가 📋',text:'관리 모드에서 각 탭 안에\n"➕ 섹션 추가" 버튼으로 영역을 만들고\n그 안에 항목들을 추가할 수 있습니다.',target:'#mainTabs',action:()=>switchPage('home')},
-    {title:'탭 순서·삭제 ↔️',text:'관리 모드에서 각 탭 옆의\n◀▶ 버튼으로 순서를 변경하고\n✕ 버튼으로 삭제할 수 있습니다.',target:'#mainTabs'},
+    {title:'교무실 홈 🏠',text:'각 부서별 공지사항, 업무 정보 등을\n섹션으로 정리해 볼 수 있는 메인 화면입니다.',target:'#page-home',action:()=>switchPage('home')},
 
     // 관리 모드
     {title:'관리 모드 🔧',text:'오른쪽 위 "🔧 관리" 버튼을 누르면\n관리 모드가 켜집니다.\n모든 편집 기능은 관리 모드에서만 보입니다.',target:'#btnAdmin'},
     {title:'관리 모드 기능 ✅',text:'관리 모드 ON 상태에서 할 수 있는 것:\n• 일정 추가/수정/삭제\n• 섹션·항목 추가/편집/삭제\n• 탭 추가/순서 변경/삭제\n• 배경 이미지 변경\n• 링크 추가/편집',target:'#btnAdmin'},
+    {title:'탭 추가 방법 📌',text:'관리 모드(🔧)를 켠 후\n탭 줄 맨 오른쪽의 "➕ 탭 추가" 버튼을 클릭!\n부서별, 업무별로 탭을 자유롭게 만들 수 있습니다.',target:'.tab-add-btn'},
+    {title:'섹션 추가 📋',text:'관리 모드에서 각 탭 안에\n"➕ 섹션 추가" 버튼으로 영역을 만들고\n그 안에 항목들을 추가할 수 있습니다.',target:'#page-home',action:()=>switchPage('home')},
+    {title:'탭 순서·삭제 ↔️',text:'관리 모드에서 각 탭 이름 옆의\n◀▶ 버튼으로 순서를 변경하고\n✕ 버튼으로 삭제할 수 있습니다.',target:'.main-tabs-wrapper'},
 
     // 기타 기능
     {title:'통합 검색 🔍',text:'검색창에 키워드를 입력하면\n모든 탭의 내용을 한번에 검색합니다.\n일정, 링크, 섹션 항목 모두 검색됩니다.',target:'#globalSearchInput'},
-    {title:'연수 관리 📋',text:'교직원 연수 이수 현황을 관리합니다.\n연수별 체크리스트와 이수 기록을 한눈에!',target:'#mainTabs',action:()=>switchPage('training')},
-    {title:'자료 집계 📦',text:'학부모 설문, 자료 수집 등을 관리합니다.\n링크를 공유하면 학부모가 직접 제출합니다.',target:'#mainTabs',action:()=>switchPage('collection')},
-    {title:'학교 소식 📰',text:'학교 소식과 공지사항을 작성하고 관리합니다.\n사진 첨부도 가능합니다.',target:'#mainTabs',action:()=>switchPage('news')},
-    {title:'링크 모음 🔗',text:'자주 사용하는 웹사이트 링크를 카드 형태로 정리!\n관리 모드에서 추가/수정/삭제가 가능합니다.',target:'#mainTabs',action:()=>switchPage('links')},
-    {title:'PDF 도구 🛠️',text:'PDF 합치기, 분할, 압축, 회전,\n이미지 변환, 사진 스캔,\n서명 생성기, 도장 생성기까지!',target:'#mainTabs',action:()=>switchPage('pdftools')},
-    {title:'AI 실험실 🤖',text:'AI 가정통신문 자동 작성,\n문서 요약, 한↔영 번역, 문법 교정까지!\n도구 카드를 클릭하면 바로 사용 가능합니다.',target:'#mainTabs',action:()=>switchPage('ailab')},
+    {title:'연수 관리 📋',text:'교직원 연수 이수 현황을 관리합니다.\n연수별 체크리스트와 이수 기록을 한눈에!',target:'#page-training',action:()=>switchPage('training')},
+    {title:'자료 집계 📦',text:'학교 내부 자료를 수집·집계합니다.\n교직원 간 자료 취합에 활용하세요.',target:'#page-collection',action:()=>switchPage('collection')},
+    {title:'학교 소식 📰',text:'학교 소식과 공지사항을 작성하고 관리합니다.\n사진 첨부도 가능합니다.',target:'#page-news',action:()=>switchPage('news')},
+    {title:'링크 모음 🔗',text:'자주 사용하는 웹사이트 링크를 카드 형태로 정리!\n관리 모드에서 추가/수정/삭제가 가능합니다.',target:'#page-links',action:()=>switchPage('links')},
+    {title:'PDF 도구 🛠️',text:'PDF 합치기, 분할, 압축, 회전,\n이미지 변환, 사진 스캔,\n서명 생성기, 도장 생성기까지!',target:'#page-pdftools',action:()=>switchPage('pdftools')},
+    {title:'교사 배포 📤',text:'PDF를 업로드하고 입력 필드를 배치하여\n학부모용 문서를 배포합니다.\n링크를 공유하면 학부모가 직접 작성·제출합니다.',target:'#page-tdist',action:()=>switchPage('tdist')},
+    {title:'AI 실험실 🤖',text:'AI 가정통신문 자동 작성, 알림장 작성,\n문서 요약, 번역, 문법 교정까지!\n도구 카드를 클릭하면 바로 사용 가능합니다.',target:'#page-ailab',action:()=>switchPage('ailab')},
     {title:'글씨 크기 조절',text:'왼쪽 위의 "가" 버튼으로\n화면 크기를 1.0~1.6배로 조절합니다.\n시력이 불편한 분께 유용합니다.',target:'.font-size-selector'},
     {title:'사용법 안내 완료! 🎉',text:'이제 자유롭게 사용해보세요!\n언제든 왼쪽 위 "❓ 사용법" 버튼으로\n다시 볼 수 있습니다.',target:null}
 ];
@@ -7508,14 +7650,18 @@ function renderTutStep(){
     const zoom=getZoomLevel();
     // 타겟 하이라이트 위치 계산 (zoom 보정)
     let highlightStyle='display:none;';
+    let showHighlight=false;
     if(step.target){
         const el=document.querySelector(step.target);
         if(el){
             const r=el.getBoundingClientRect();
-            // zoom 적용 시 getBoundingClientRect은 zoom 후 좌표를 반환
-            // fixed 요소는 zoom 전 좌표 기준이므로 /zoom 보정
-            const t=r.top/zoom-6, l=r.left/zoom-6, w=r.width/zoom+12, h=r.height/zoom+12;
-            highlightStyle=`display:block;top:${t}px;left:${l}px;width:${w}px;height:${h}px;`;
+            // 너무 큰 요소(페이지 전체 등)는 하이라이트 안 함
+            const tooLarge=r.height/zoom>300;
+            if(!tooLarge){
+                showHighlight=true;
+                const t=r.top/zoom-6, l=r.left/zoom-6, w=r.width/zoom+12, h=r.height/zoom+12;
+                highlightStyle=`display:block;top:${t}px;left:${l}px;width:${w}px;height:${h}px;`;
+            }
             if(r.top<0||r.bottom>window.innerHeight){
                 el.scrollIntoView({behavior:'smooth',block:'center'});
             }
@@ -7536,8 +7682,8 @@ function renderTutStep(){
     const dotWActive=Math.round(20/zoom);
     const dotH=Math.round(8/zoom);
     overlay.innerHTML=`
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:10000;" onclick="endTutorial()"></div>
-        <div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:${Math.round(12/zoom)}px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.25);transition:all .3s;"></div>
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,${showHighlight?'0.1':'0.2'});z-index:10000;" onclick="endTutorial()"></div>
+        ${showHighlight?`<div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:${Math.round(12/zoom)}px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.2);transition:all .3s;"></div>`:''}
         <div style="position:fixed;bottom:${cardBottom}px;left:50%;transform:translateX(-50%);background:white;border-radius:${Math.round(16/zoom)}px;padding:${cardPadY}px ${cardPadX}px;max-width:${cardMaxW}px;width:${Math.round(90/zoom)}%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${Math.round(10/zoom)}px;">
                 <span style="font-size:${titleFs}px;font-weight:800;">${esc(step.title)}</span>
