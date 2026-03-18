@@ -5592,54 +5592,88 @@ function setupScanDrag(){
 
 function scanAutoDetect(){
     if(!scanOrigBitmap)return;
-    // 엣지 감지로 문서 영역 자동 찾기
     const W=scanOrigBitmap.width,H=scanOrigBitmap.height;
     const tmpC=document.createElement('canvas');
-    const sw=Math.min(400,W),sh=Math.round(H*(sw/W));
+    const sw=Math.min(500,W),sh=Math.round(H*(sw/W));
     tmpC.width=sw;tmpC.height=sh;
     const ctx=tmpC.getContext('2d');
     ctx.drawImage(scanOrigBitmap,0,0,sw,sh);
     const imgData=ctx.getImageData(0,0,sw,sh);
     const d=imgData.data;
-    // 그레이스케일 + Sobel 엣지
+    // 그레이스케일 + 가우시안 블러 + Canny 근사
     const gray=new Float32Array(sw*sh);
     for(let i=0;i<sw*sh;i++) gray[i]=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
-    const edges=new Float32Array(sw*sh);
+    // 3x3 가우시안 블러
+    const blurred=new Float32Array(sw*sh);
     for(let y=1;y<sh-1;y++){
         for(let x=1;x<sw-1;x++){
-            const gx=-gray[(y-1)*sw+x-1]+gray[(y-1)*sw+x+1]-2*gray[y*sw+x-1]+2*gray[y*sw+x+1]-gray[(y+1)*sw+x-1]+gray[(y+1)*sw+x+1];
-            const gy=-gray[(y-1)*sw+x-1]-2*gray[(y-1)*sw+x]-gray[(y-1)*sw+x+1]+gray[(y+1)*sw+x-1]+2*gray[(y+1)*sw+x]+gray[(y+1)*sw+x+1];
-            edges[y*sw+x]=Math.sqrt(gx*gx+gy*gy);
+            blurred[y*sw+x]=(gray[(y-1)*sw+x-1]+gray[(y-1)*sw+x]*2+gray[(y-1)*sw+x+1]+
+                gray[y*sw+x-1]*2+gray[y*sw+x]*4+gray[y*sw+x+1]*2+
+                gray[(y+1)*sw+x-1]+gray[(y+1)*sw+x]*2+gray[(y+1)*sw+x+1])/16;
         }
     }
-    // 엣지 강도로 문서 경계 찾기 (상/하/좌/우 각 방향 스캔)
-    const threshold=50;
+    // Sobel 엣지 + 방향
+    const edges=new Float32Array(sw*sh);
+    const angles=new Float32Array(sw*sh);
+    for(let y=1;y<sh-1;y++){
+        for(let x=1;x<sw-1;x++){
+            const gx=-blurred[(y-1)*sw+x-1]+blurred[(y-1)*sw+x+1]-2*blurred[y*sw+x-1]+2*blurred[y*sw+x+1]-blurred[(y+1)*sw+x-1]+blurred[(y+1)*sw+x+1];
+            const gy=-blurred[(y-1)*sw+x-1]-2*blurred[(y-1)*sw+x]-blurred[(y-1)*sw+x+1]+blurred[(y+1)*sw+x-1]+2*blurred[(y+1)*sw+x]+blurred[(y+1)*sw+x+1];
+            edges[y*sw+x]=Math.sqrt(gx*gx+gy*gy);
+            angles[y*sw+x]=Math.atan2(gy,gx);
+        }
+    }
+    // 비최대 억제 (NMS) - 더 깔끔한 엣지
+    const nms=new Float32Array(sw*sh);
+    for(let y=1;y<sh-1;y++){
+        for(let x=1;x<sw-1;x++){
+            const a=angles[y*sw+x];
+            const mag=edges[y*sw+x];
+            let dx=Math.round(Math.cos(a)),dy=Math.round(Math.sin(a));
+            const n1=edges[(y+dy)*sw+(x+dx)]||0;
+            const n2=edges[(y-dy)*sw+(x-dx)]||0;
+            nms[y*sw+x]=(mag>=n1&&mag>=n2)?mag:0;
+        }
+    }
+    // 이중 임계값
+    let maxEdge=0;
+    for(let i=0;i<sw*sh;i++) if(nms[i]>maxEdge) maxEdge=nms[i];
+    const hiThresh=maxEdge*0.15,loThresh=maxEdge*0.05;
+    const strong=new Uint8Array(sw*sh);
+    for(let i=0;i<sw*sh;i++) strong[i]=nms[i]>hiThresh?2:nms[i]>loThresh?1:0;
+    // 윤곽 기반 사각형 감지: 강한 엣지 점들을 수집하여 최대 사각형 찾기
+    const edgePts=[];
+    for(let y=2;y<sh-2;y++) for(let x=2;x<sw-2;x++) if(strong[y*sw+x]>=2) edgePts.push({x,y});
     const scaleX=W/sw,scaleY=H/sh;
-    let top=sh*0.05,bottom=sh*0.95,left=sw*0.05,right=sw*0.95;
-    // 상단 경계
-    for(let y=Math.round(sh*0.02);y<sh*0.4;y++){
-        let edgeCount=0;
-        for(let x=Math.round(sw*0.1);x<sw*0.9;x++) if(edges[y*sw+x]>threshold)edgeCount++;
-        if(edgeCount>sw*0.15){top=y;break;}
+    // 상/하/좌/우 최외곽 엣지 라인 찾기 (투표 기반)
+    const margin=Math.round(sw*0.02);
+    function findEdgeLine(pts,axis,dir,range0,range1){
+        // axis='h'이면 수평선(y값), 'v'이면 수직선(x값) 탐색
+        const isH=axis==='h';
+        const buckets=isH?sh:sw;
+        const votes=new Float32Array(buckets);
+        pts.forEach(p=>{
+            const v=isH?p.y:p.x;
+            const other=isH?p.x:p.y;
+            const otherMax=isH?sw:sh;
+            if(other>otherMax*0.08&&other<otherMax*0.92) votes[v]+=1;
+        });
+        // 가우시안 스무딩
+        const smooth=new Float32Array(buckets);
+        for(let i=2;i<buckets-2;i++) smooth[i]=(votes[i-2]+votes[i-1]*2+votes[i]*4+votes[i+1]*2+votes[i+2])/10;
+        let bestIdx=dir>0?Math.round(range0):Math.round(range1);
+        let bestVal=0;
+        const start=Math.round(range0),end=Math.round(range1);
+        for(let i=start;dir>0?i<=end:i>=end;i+=dir){
+            if(smooth[i]>bestVal){bestVal=smooth[i];bestIdx=i;}
+        }
+        return bestVal>2?bestIdx:(dir>0?Math.round(range0):Math.round(range1));
     }
-    // 하단 경계
-    for(let y=sh-Math.round(sh*0.02);y>sh*0.6;y--){
-        let edgeCount=0;
-        for(let x=Math.round(sw*0.1);x<sw*0.9;x++) if(edges[y*sw+x]>threshold)edgeCount++;
-        if(edgeCount>sw*0.15){bottom=y;break;}
-    }
-    // 좌측 경계
-    for(let x=Math.round(sw*0.02);x<sw*0.4;x++){
-        let edgeCount=0;
-        for(let y=Math.round(sh*0.1);y<sh*0.9;y++) if(edges[y*sw+x]>threshold)edgeCount++;
-        if(edgeCount>sh*0.15){left=x;break;}
-    }
-    // 우측 경계
-    for(let x=sw-Math.round(sw*0.02);x>sw*0.6;x--){
-        let edgeCount=0;
-        for(let y=Math.round(sh*0.1);y<sh*0.9;y++) if(edges[y*sw+x]>threshold)edgeCount++;
-        if(edgeCount>sh*0.15){right=x;break;}
-    }
+    const top=findEdgeLine(edgePts,'h',1,sh*0.02,sh*0.35);
+    const bottom=findEdgeLine(edgePts,'h',-1,sh*0.98,sh*0.65);
+    const left=findEdgeLine(edgePts,'v',1,sw*0.02,sw*0.35);
+    const right=findEdgeLine(edgePts,'v',-1,sw*0.98,sw*0.65);
+    // 경계 보정: 에지 근처에서 가장 밝기 변화가 큰 점 미세 조정
     scanCorners=[
         {x:left*scaleX,y:top*scaleY},
         {x:right*scaleX,y:top*scaleY},
@@ -5751,85 +5785,165 @@ function scanFinish(){
 }
 
 function applyScanFilter(imageData){
-    const d=imageData.data;
+    const w=imageData.width,h=imageData.height,d=imageData.data;
     const mode=document.getElementById('scanMode')?.value||'auto';
     const bright=parseInt(document.getElementById('scanBright')?.value||'0');
     const contrast=parseInt(document.getElementById('scanContrast')?.value||'0');
-    // 자동 보정: 밝기/대비 자동 계산
+
+    // === 1단계: 그림자 제거 (로컬 밝기 정규화) ===
+    if(mode==='auto'||mode==='bw'||mode==='gray'){
+        const blockSize=Math.max(16,Math.round(Math.min(w,h)/20));
+        const gray=new Float32Array(w*h);
+        for(let i=0;i<w*h;i++) gray[i]=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+        // 블록별 평균 밝기 계산 (다운샘플)
+        const bw=Math.ceil(w/blockSize),bh=Math.ceil(h/blockSize);
+        const blockAvg=new Float32Array(bw*bh);
+        for(let by=0;by<bh;by++){
+            for(let bx=0;bx<bw;bx++){
+                let sum=0,cnt=0;
+                const y0=by*blockSize,y1=Math.min(y0+blockSize,h);
+                const x0=bx*blockSize,x1=Math.min(x0+blockSize,w);
+                for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){sum+=gray[y*w+x];cnt++;}
+                blockAvg[by*bw+bx]=cnt>0?sum/cnt:128;
+            }
+        }
+        // 쌍선형 보간으로 부드러운 배경 추정 → 그림자 제거
+        for(let y=0;y<h;y++){
+            const fy=y/blockSize-0.5;
+            const by0=Math.max(0,Math.floor(fy)),by1=Math.min(bh-1,by0+1);
+            const ty=fy-by0;
+            for(let x=0;x<w;x++){
+                const fx=x/blockSize-0.5;
+                const bx0=Math.max(0,Math.floor(fx)),bx1=Math.min(bw-1,bx0+1);
+                const tx=fx-bx0;
+                const bg=blockAvg[by0*bw+bx0]*(1-tx)*(1-ty)+blockAvg[by0*bw+bx1]*tx*(1-ty)+
+                          blockAvg[by1*bw+bx0]*(1-tx)*ty+blockAvg[by1*bw+bx1]*tx*ty;
+                const ratio=bg>1?128/bg:1;
+                const idx=y*w+x;
+                d[idx*4]=Math.min(255,d[idx*4]*ratio);
+                d[idx*4+1]=Math.min(255,d[idx*4+1]*ratio);
+                d[idx*4+2]=Math.min(255,d[idx*4+2]*ratio);
+            }
+        }
+    }
+
+    // === 2단계: 히스토그램 분석 + 자동 밝기/대비 ===
     let autoBright=0,autoContrast=0;
     if(mode==='auto'||mode==='bw'||mode==='gray'){
-        // 히스토그램 분석
-        let sum=0,min=255,max=0;
+        const hist=new Int32Array(256);
+        const total=w*h;
         for(let i=0;i<d.length;i+=4){
-            const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-            sum+=g;if(g<min)min=g;if(g>max)max=g;
+            const g=Math.round(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]);
+            hist[Math.min(255,Math.max(0,g))]++;
         }
-        const avg=sum/(d.length/4);
-        autoBright=Math.round((128-avg)*0.5);
-        autoContrast=Math.round(Math.max(0,(200-max+min)*0.3));
+        // 상하위 1% 클리핑으로 자동 레벨 보정
+        const clip=Math.round(total*0.01);
+        let lo=0,hi=255,accLo=0,accHi=0;
+        for(let i=0;i<256;i++){accLo+=hist[i];if(accLo>=clip){lo=i;break;}}
+        for(let i=255;i>=0;i--){accHi+=hist[i];if(accHi>=clip){hi=i;break;}}
+        if(hi>lo){
+            const range=hi-lo;
+            autoBright=Math.round(-lo*255/range+128-128);
+            autoContrast=Math.round(Math.max(0,(255/range-1)*80));
+        }
     }
+
     const totalBright=bright+autoBright;
     const totalContrast=contrast+autoContrast;
     const factor=(259*(totalContrast+255))/(255*(259-totalContrast));
-    for(let i=0;i<d.length;i+=4){
-        let r=d[i],g=d[i+1],b=d[i+2];
-        // 밝기
-        r+=totalBright;g+=totalBright;b+=totalBright;
-        // 대비
-        r=factor*(r-128)+128;
-        g=factor*(g-128)+128;
-        b=factor*(b-128)+128;
-        if(mode==='bw'){
-            const gray=0.299*r+0.587*g+0.114*b;
-            const bw=gray>140?255:0;
-            r=g=b=bw;
-        } else if(mode==='gray'){
-            const gray=0.299*r+0.587*g+0.114*b;
-            r=g=b=gray;
-        } else if(mode==='stamp'){
-            // 도장/서명 추출: 빨간색/파란색 강조, 나머지 흰색
-            const gray=0.299*r+0.587*g+0.114*b;
-            const isRed=r>100&&r>g*1.4&&r>b*1.4;
-            const isBlue=b>100&&b>r*1.2&&b>g*1.1;
-            const isDark=gray<80;
-            if(isRed){r=Math.min(255,r*1.3);g=g*0.3;b=b*0.3;}
-            else if(isBlue){r=r*0.3;g=g*0.3;b=Math.min(255,b*1.3);}
-            else if(isDark){r=g=b=Math.max(0,gray*0.5);}
-            else{r=g=b=255;}
-        } else if(mode==='color'){
-            // 컬러 선명하게: 채도 올리기
-            const gray=0.299*r+0.587*g+0.114*b;
-            const sat=1.4;
-            r=gray+sat*(r-gray);
-            g=gray+sat*(g-gray);
-            b=gray+sat*(b-gray);
+
+    // === 3단계: 밝기/대비/모드 적용 ===
+    if(mode==='bw'){
+        // 적응적 이진화 (로컬 블록 기반 - Sauvola 방식)
+        const gray2=new Float32Array(w*h);
+        for(let i=0;i<w*h;i++){
+            let v=0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2];
+            v+=totalBright;v=factor*(v-128)+128;
+            gray2[i]=Math.max(0,Math.min(255,v));
         }
-        // 클램프
-        d[i]=Math.max(0,Math.min(255,r));
-        d[i+1]=Math.max(0,Math.min(255,g));
-        d[i+2]=Math.max(0,Math.min(255,b));
+        // 적분 이미지 (integral image)
+        const intImg=new Float64Array(w*h);
+        const intSq=new Float64Array(w*h);
+        for(let y=0;y<h;y++){
+            let rowSum=0,rowSumSq=0;
+            for(let x=0;x<w;x++){
+                const v=gray2[y*w+x];
+                rowSum+=v;rowSumSq+=v*v;
+                intImg[y*w+x]=rowSum+(y>0?intImg[(y-1)*w+x]:0);
+                intSq[y*w+x]=rowSumSq+(y>0?intSq[(y-1)*w+x]:0);
+            }
+        }
+        const bsz=Math.max(15,Math.round(Math.min(w,h)/25))|1;
+        const half=bsz>>1;
+        const k=0.08; // Sauvola parameter
+        for(let y=0;y<h;y++){
+            for(let x=0;x<w;x++){
+                const y0=Math.max(0,y-half),y1=Math.min(h-1,y+half);
+                const x0=Math.max(0,x-half),x1=Math.min(w-1,x+half);
+                const cnt=(y1-y0+1)*(x1-x0+1);
+                let sum=intImg[y1*w+x1];
+                let sumSq=intSq[y1*w+x1];
+                if(y0>0){sum-=intImg[(y0-1)*w+x1];sumSq-=intSq[(y0-1)*w+x1];}
+                if(x0>0){sum-=intImg[y1*w+(x0-1)];sumSq-=intSq[y1*w+(x0-1)];}
+                if(y0>0&&x0>0){sum+=intImg[(y0-1)*w+(x0-1)];sumSq+=intSq[(y0-1)*w+(x0-1)];}
+                const mean=sum/cnt;
+                const variance=sumSq/cnt-mean*mean;
+                const std=Math.sqrt(Math.max(0,variance));
+                const threshold=mean*(1+k*(std/128-1));
+                const bw=gray2[y*w+x]>threshold?255:0;
+                const idx=(y*w+x)*4;
+                d[idx]=d[idx+1]=d[idx+2]=bw;
+            }
+        }
+    } else {
+        for(let i=0;i<d.length;i+=4){
+            let r=d[i],g=d[i+1],b=d[i+2];
+            r+=totalBright;g+=totalBright;b+=totalBright;
+            r=factor*(r-128)+128;g=factor*(g-128)+128;b=factor*(b-128)+128;
+            if(mode==='gray'){
+                const gray=0.299*r+0.587*g+0.114*b;
+                r=g=b=gray;
+            } else if(mode==='stamp'){
+                const gray=0.299*r+0.587*g+0.114*b;
+                const isRed=r>100&&r>g*1.4&&r>b*1.4;
+                const isBlue=b>100&&b>r*1.2&&b>g*1.1;
+                const isDark=gray<80;
+                if(isRed){r=Math.min(255,r*1.3);g=g*0.3;b=b*0.3;}
+                else if(isBlue){r=r*0.3;g=g*0.3;b=Math.min(255,b*1.3);}
+                else if(isDark){r=g=b=Math.max(0,gray*0.5);}
+                else{r=g=b=255;}
+            } else if(mode==='color'){
+                const gray=0.299*r+0.587*g+0.114*b;
+                const sat=1.4;
+                r=gray+sat*(r-gray);g=gray+sat*(g-gray);b=gray+sat*(b-gray);
+            }
+            d[i]=Math.max(0,Math.min(255,r));
+            d[i+1]=Math.max(0,Math.min(255,g));
+            d[i+2]=Math.max(0,Math.min(255,b));
+        }
     }
-    // 언샤프 마스크 (선명도) - auto/bw/gray 모드
-    if(mode==='auto'||mode==='bw'||mode==='gray'||mode==='color'){
-        sharpenImageData(imageData);
-    }
+
+    // === 4단계: 선명화 (강화된 언샤프 마스크) ===
+    if(mode!=='stamp') sharpenImageData(imageData);
 }
 
 function sharpenImageData(imageData){
     const w=imageData.width,h=imageData.height,d=imageData.data;
     const copy=new Uint8ClampedArray(d);
-    // 간단한 언샤프 마스크
-    const kernel=[0,-1,0,-1,5,-1,0,-1,0];
+    // 강화된 언샤프 마스크: 중심 가중치 높임
+    const amount=0.6;
     for(let y=1;y<h-1;y++){
         for(let x=1;x<w-1;x++){
             for(let c=0;c<3;c++){
-                let val=0;
-                for(let ky=-1;ky<=1;ky++){
-                    for(let kx=-1;kx<=1;kx++){
-                        val+=copy[((y+ky)*w+(x+kx))*4+c]*kernel[(ky+1)*3+(kx+1)];
-                    }
-                }
-                d[(y*w+x)*4+c]=Math.max(0,Math.min(255,val));
+                const idx=(y*w+x)*4+c;
+                const center=copy[idx];
+                // 주변 평균 (3x3 가우시안 근사)
+                const blur=(
+                    copy[((y-1)*w+x-1)*4+c]+copy[((y-1)*w+x)*4+c]*2+copy[((y-1)*w+x+1)*4+c]+
+                    copy[(y*w+x-1)*4+c]*2+center*4+copy[(y*w+x+1)*4+c]*2+
+                    copy[((y+1)*w+x-1)*4+c]+copy[((y+1)*w+x)*4+c]*2+copy[((y+1)*w+x+1)*4+c]
+                )/16;
+                d[idx]=Math.max(0,Math.min(255,center+amount*(center-blur)));
             }
         }
     }
