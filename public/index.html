@@ -1021,6 +1021,16 @@
                     <h3>사진 스캔</h3><p>사진을 스캔한 것처럼 깔끔하게 변환합니다. 자동 보정!</p>
                     <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00acc1;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
                 </div>
+                <div class="pdf-tool-card" onclick="openSignatureGen()">
+                    <div class="pdf-tool-icon" style="background:#1565c0;">✍️</div>
+                    <h3>서명 생성기</h3><p>이름을 입력하면 손글씨 스타일의 서명 이미지를 생성합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#1565c0;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openStampGen()">
+                    <div class="pdf-tool-icon" style="background:#c62828;">🔴</div>
+                    <h3>도장 생성기</h3><p>한국어/영어 이름으로 공식 도장 이미지를 생성합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#c62828;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
             </div>
         </div>
         <div id="pdfToolsWorkspace"></div>
@@ -6017,6 +6027,295 @@ async function pdfScan(){
         if(results.length===1) pdfShowResult(results[0].name,results[0].blob);
         else pdfShowResultMulti(results);
     }
+}
+
+// ===== 서명 생성기 =====
+function openSignatureGen(){
+    document.getElementById('pdfToolsMain').style.display='none';
+    const ws=document.getElementById('pdfToolsWorkspace');
+    ws.innerHTML=`<div class="pdf-workspace active">
+        <div class="pdf-ws-header"><span style="font-size:18px;font-weight:800;">✍️ 서명 생성기</span><button class="pdf-back-btn" onclick="closePdfTool()">← 도구 목록</button></div>
+        <div style="padding:20px;max-width:700px;margin:0 auto;">
+            <div style="margin-bottom:16px;">
+                <label style="font-size:14px;font-weight:700;display:block;margin-bottom:6px;">이름 입력</label>
+                <input type="text" id="sigGenName" placeholder="예: 홍길동 / Hong Gildong" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:10px;font-size:18px;outline:none;" oninput="renderSignatures()">
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                <label style="font-size:13px;font-weight:600;">색상:</label>
+                <label><input type="radio" name="sigColor" value="#1a1a1a" checked onchange="renderSignatures()"> 검정</label>
+                <label><input type="radio" name="sigColor" value="#1565c0" onchange="renderSignatures()"> 파랑</label>
+                <label><input type="radio" name="sigColor" value="#0d47a1" onchange="renderSignatures()"> 남색</label>
+            </div>
+            <div id="sigGenResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;"></div>
+        </div>
+    </div>`;
+}
+
+const SIG_FONTS=[
+    {name:'필기체 1',family:'cursive',style:'italic',weight:'400',slant:true},
+    {name:'필기체 2',family:'"Segoe Script","Comic Sans MS",cursive',style:'normal',weight:'700',slant:false},
+    {name:'필기체 3',family:'"Brush Script MT","Segoe Script",cursive',style:'italic',weight:'400',slant:true},
+    {name:'굵은 서명',family:'"Noto Sans KR",sans-serif',style:'normal',weight:'900',slant:true},
+    {name:'부드러운',family:'Georgia,"Noto Serif KR",serif',style:'italic',weight:'400',slant:false},
+    {name:'캘리그라피',family:'"Segoe UI","Noto Sans KR",sans-serif',style:'italic',weight:'700',slant:true},
+];
+
+function renderSignatures(){
+    const name=document.getElementById('sigGenName')?.value?.trim();
+    const container=document.getElementById('sigGenResults');
+    if(!container)return;
+    if(!name){container.innerHTML='<p style="color:#999;grid-column:1/-1;text-align:center;padding:40px;">이름을 입력하세요</p>';return;}
+    const color=document.querySelector('input[name="sigColor"]:checked')?.value||'#1a1a1a';
+    let html='';
+    SIG_FONTS.forEach((font,i)=>{
+        const cId='sigCanvas_'+i;
+        html+=`<div style="background:white;border:1px solid #eee;border-radius:12px;padding:12px;text-align:center;">
+            <div style="font-size:11px;color:#888;margin-bottom:8px;">${esc(font.name)}</div>
+            <canvas id="${cId}" style="width:100%;border:1px dashed #ddd;border-radius:8px;margin-bottom:8px;"></canvas>
+            <button onclick="downloadSigCanvas('${cId}','${esc(name)}')" style="padding:6px 16px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">다운로드 (PNG)</button>
+        </div>`;
+    });
+    container.innerHTML=html;
+    // 캔버스에 서명 렌더링
+    setTimeout(()=>{
+        SIG_FONTS.forEach((font,i)=>{
+            const c=document.getElementById('sigCanvas_'+i);
+            if(!c)return;
+            const dpr=window.devicePixelRatio||1;
+            const cw=c.parentElement.clientWidth-24;
+            c.style.width=cw+'px';c.style.height='80px';
+            c.width=cw*dpr;c.height=80*dpr;
+            const ctx=c.getContext('2d');
+            ctx.scale(dpr,dpr);
+            ctx.clearRect(0,0,cw,80);
+            // 서명 스타일
+            const fontSize=Math.min(42,cw/(name.length*0.8));
+            if(font.slant){ctx.setTransform(1,0,-0.15,1,12,0);ctx.scale(dpr,dpr);}
+            ctx.font=font.style+' '+font.weight+' '+fontSize+'px '+font.family;
+            ctx.fillStyle=color;
+            ctx.textBaseline='middle';
+            ctx.textAlign='center';
+            ctx.fillText(name,cw/2,44);
+            // 밑줄 (서명 느낌)
+            const tw=ctx.measureText(name).width;
+            ctx.strokeStyle=color;
+            ctx.lineWidth=1.5;
+            ctx.globalAlpha=0.4;
+            ctx.beginPath();
+            const ux=cw/2-tw/2-5,uy=62;
+            ctx.moveTo(ux,uy);
+            // 약간 흔들리는 밑줄
+            for(let x=0;x<=tw+10;x+=3){
+                ctx.lineTo(ux+x,uy+Math.sin(x*0.15)*1.5);
+            }
+            ctx.stroke();
+            ctx.globalAlpha=1;
+            ctx.setTransform(dpr,0,0,dpr,0,0);
+        });
+    },50);
+}
+
+function downloadSigCanvas(canvasId,name){
+    const c=document.getElementById(canvasId);
+    if(!c)return;
+    const a=document.createElement('a');
+    a.download=name+'_서명.png';
+    a.href=c.toDataURL('image/png');
+    a.click();
+    showToast('서명 이미지 다운로드 완료','success');
+}
+
+// ===== 도장 생성기 =====
+function openStampGen(){
+    document.getElementById('pdfToolsMain').style.display='none';
+    const ws=document.getElementById('pdfToolsWorkspace');
+    ws.innerHTML=`<div class="pdf-workspace active">
+        <div class="pdf-ws-header"><span style="font-size:18px;font-weight:800;">🔴 도장 생성기</span><button class="pdf-back-btn" onclick="closePdfTool()">← 도구 목록</button></div>
+        <div style="padding:20px;max-width:700px;margin:0 auto;">
+            <div style="margin-bottom:16px;">
+                <label style="font-size:14px;font-weight:700;display:block;margin-bottom:6px;">이름 입력 (한국어/영어)</label>
+                <input type="text" id="stampGenName" placeholder="예: 홍길동 / Hong" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:10px;font-size:18px;outline:none;" oninput="renderStamps()">
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                <label style="font-size:13px;font-weight:600;">색상:</label>
+                <label><input type="radio" name="stampColor" value="#c62828" checked onchange="renderStamps()"> 빨강</label>
+                <label><input type="radio" name="stampColor" value="#1565c0" onchange="renderStamps()"> 파랑</label>
+                <label><input type="radio" name="stampColor" value="#2e7d32" onchange="renderStamps()"> 초록</label>
+                <label><input type="radio" name="stampColor" value="#1a1a1a" onchange="renderStamps()"> 검정</label>
+            </div>
+            <div id="stampGenResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;"></div>
+        </div>
+    </div>`;
+}
+
+const STAMP_STYLES=[
+    {name:'원형 도장',shape:'circle',border:true},
+    {name:'사각 도장',shape:'rect',border:true},
+    {name:'세로 도장',shape:'vertical',border:true},
+    {name:'원형 (테두리 없음)',shape:'circle',border:false},
+    {name:'타원 도장',shape:'oval',border:true},
+    {name:'이중 원형',shape:'double',border:true},
+];
+
+function renderStamps(){
+    const name=document.getElementById('stampGenName')?.value?.trim();
+    const container=document.getElementById('stampGenResults');
+    if(!container)return;
+    if(!name){container.innerHTML='<p style="color:#999;grid-column:1/-1;text-align:center;padding:40px;">이름을 입력하세요</p>';return;}
+    const color=document.querySelector('input[name="stampColor"]:checked')?.value||'#c62828';
+    let html='';
+    STAMP_STYLES.forEach((st,i)=>{
+        const cId='stampCanvas_'+i;
+        html+=`<div style="background:white;border:1px solid #eee;border-radius:12px;padding:12px;text-align:center;">
+            <div style="font-size:11px;color:#888;margin-bottom:8px;">${esc(st.name)}</div>
+            <canvas id="${cId}" style="margin:0 auto 8px;display:block;"></canvas>
+            <button onclick="downloadStampCanvas('${cId}','${esc(name)}')" style="padding:6px 16px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">다운로드 (PNG)</button>
+        </div>`;
+    });
+    container.innerHTML=html;
+    setTimeout(()=>{
+        STAMP_STYLES.forEach((st,i)=>{
+            const c=document.getElementById('stampCanvas_'+i);
+            if(!c)return;
+            drawStamp(c,name,color,st);
+        });
+    },50);
+}
+
+function drawStamp(canvas,name,color,style){
+    const dpr=window.devicePixelRatio||1;
+    const size=150;
+    const isKorean=/[가-힣]/.test(name);
+    const chars=name.split('');
+
+    if(style.shape==='vertical'){
+        canvas.width=80*dpr;canvas.height=(40+chars.length*38)*dpr;
+        canvas.style.width='80px';canvas.style.height=(40+chars.length*38)+'px';
+    } else if(style.shape==='oval'){
+        canvas.width=size*1.4*dpr;canvas.height=size*dpr;
+        canvas.style.width=(size*1.4)+'px';canvas.style.height=size+'px';
+    } else {
+        canvas.width=size*dpr;canvas.height=size*dpr;
+        canvas.style.width=size+'px';canvas.style.height=size+'px';
+    }
+    const ctx=canvas.getContext('2d');
+    ctx.scale(dpr,dpr);
+    const w=canvas.width/dpr,h=canvas.height/dpr;
+    const cx=w/2,cy=h/2;
+    ctx.fillStyle=color;
+    ctx.strokeStyle=color;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+
+    if(style.shape==='circle'){
+        const r=size/2-6;
+        if(style.border){ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();}
+        // 글자 배치
+        if(isKorean&&chars.length<=4){
+            // 한국어: 2x2 또는 세로 배치
+            if(chars.length<=2){
+                const fs=r*0.8;
+                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(name,cx,cy+2);
+            } else if(chars.length===3){
+                const fs=r*0.55;
+                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+                // 위 1, 아래 2
+                ctx.fillText(chars[0],cx,cy-fs*0.5);
+                ctx.fillText(chars[1]+chars[2],cx,cy+fs*0.55);
+            } else {
+                const fs=r*0.48;
+                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars[0]+chars[1],cx,cy-fs*0.5);
+                ctx.fillText(chars[2]+chars[3],cx,cy+fs*0.55);
+            }
+        } else {
+            const fs=Math.min(r*0.8,r*1.6/name.length);
+            ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
+            ctx.fillText(name,cx,cy+2);
+        }
+    } else if(style.shape==='rect'){
+        const pad=6;
+        if(style.border){ctx.lineWidth=3;ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);}
+        if(isKorean&&chars.length<=4){
+            if(chars.length<=2){
+                const fs=50;
+                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(name,cx,cy+2);
+            } else if(chars.length===3){
+                const fs=36;
+                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars[0],cx,cy-fs*0.5);
+                ctx.fillText(chars[1]+chars[2],cx,cy+fs*0.55);
+            } else {
+                const fs=32;
+                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars[0]+chars[1],cx,cy-fs*0.5);
+                ctx.fillText(chars[2]+chars[3],cx,cy+fs*0.55);
+            }
+        } else {
+            const fs=Math.min(50,130/name.length);
+            ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
+            ctx.fillText(name,cx,cy+2);
+        }
+    } else if(style.shape==='vertical'){
+        const pad=6;
+        if(style.border){ctx.lineWidth=3;ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);}
+        const fs=Math.min(32,60/1);
+        ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+        chars.forEach((ch,i)=>{
+            ctx.fillText(ch,cx,24+i*38);
+        });
+    } else if(style.shape==='oval'){
+        const rx=w/2-6,ry=h/2-6;
+        if(style.border){ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.stroke();}
+        const fs=Math.min(45,rx*1.4/name.length);
+        ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
+        ctx.fillText(name,cx,cy+2);
+    } else if(style.shape==='double'){
+        const r1=size/2-4,r2=size/2-10;
+        ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cx,cy,r1,0,Math.PI*2);ctx.stroke();
+        ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,r2,0,Math.PI*2);ctx.stroke();
+        if(isKorean&&chars.length<=4){
+            if(chars.length<=2){
+                ctx.font='bold 44px "Noto Sans KR",sans-serif';
+                ctx.fillText(name,cx,cy+2);
+            } else if(chars.length===3){
+                ctx.font='bold 30px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars[0],cx,cy-16);
+                ctx.fillText(chars[1]+chars[2],cx,cy+18);
+            } else {
+                ctx.font='bold 26px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars[0]+chars[1],cx,cy-14);
+                ctx.fillText(chars[2]+chars[3],cx,cy+16);
+            }
+        } else {
+            const fs=Math.min(40,r2*1.4/name.length);
+            ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
+            ctx.fillText(name,cx,cy+2);
+        }
+    }
+    // 도장 질감 효과 (약간 거친 느낌)
+    const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const dd=imgData.data;
+    for(let i=0;i<dd.length;i+=4){
+        if(dd[i+3]>0){
+            // 랜덤 투명도 변화로 도장 질감
+            const noise=Math.random()*0.2+0.8;
+            dd[i+3]=Math.round(dd[i+3]*noise);
+        }
+    }
+    ctx.putImageData(imgData,0,0);
+}
+
+function downloadStampCanvas(canvasId,name){
+    const c=document.getElementById(canvasId);
+    if(!c)return;
+    const a=document.createElement('a');
+    a.download=name+'_도장.png';
+    a.href=c.toDataURL('image/png');
+    a.click();
+    showToast('도장 이미지 다운로드 완료','success');
 }
 
 // ===== TDIST (교사 배포) =====
