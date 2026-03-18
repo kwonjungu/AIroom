@@ -8066,6 +8066,7 @@ function renderTutStep(){
 
     const isFirst=tutStep===0;
     const isLast=tutStep===TUTORIAL_STEPS.length-1;
+    const isAdminStep=step.title.includes('[관리 모드]');
     // 카드 크기도 zoom 보정
     const cardBottom=Math.round(30/zoom);
     const cardPadX=Math.round(28/zoom);
@@ -8080,7 +8081,8 @@ function renderTutStep(){
     overlay.innerHTML=`
         <div style="position:fixed;inset:0;background:rgba(0,0,0,${showHighlight?'0.1':'0.2'});z-index:10000;" onclick="endTutorial()"></div>
         ${showHighlight?`<div style="position:fixed;${highlightStyle}border:3px solid #FFD600;border-radius:${Math.round(12/zoom)}px;z-index:10001;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.2);transition:all .3s;"></div>`:''}
-        <div style="position:fixed;bottom:${cardBottom}px;left:50%;transform:translateX(-50%);background:white;border-radius:${Math.round(16/zoom)}px;padding:${cardPadY}px ${cardPadX}px;max-width:${cardMaxW}px;width:${Math.round(90/zoom)}%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+        <div style="position:fixed;bottom:${cardBottom}px;left:50%;transform:translateX(-50%);background:${isAdminStep?'#FFFDE7':'white'};border-radius:${Math.round(16/zoom)}px;padding:${cardPadY}px ${cardPadX}px;max-width:${cardMaxW}px;width:${Math.round(90/zoom)}%;z-index:10002;box-shadow:0 8px 40px rgba(0,0,0,0.3);${isAdminStep?`border:2px solid #FFD54F;`:''}">
+            ${isAdminStep?`<div style="display:inline-block;background:#FFD54F;color:#5D4037;font-size:${Math.round(11/zoom)}px;font-weight:800;padding:2px ${Math.round(8/zoom)}px;border-radius:${Math.round(4/zoom)}px;margin-bottom:${Math.round(6/zoom)}px;">🔧 관리 모드 기능</div>`:''}
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${Math.round(10/zoom)}px;">
                 <span style="font-size:${titleFs}px;font-weight:800;">${esc(step.title)}</span>
                 <span style="font-size:${Math.round(12/zoom)}px;color:#999;">${tutStep+1} / ${TUTORIAL_STEPS.length}</span>
