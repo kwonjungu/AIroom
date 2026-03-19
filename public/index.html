@@ -7308,10 +7308,10 @@ function drawStamp(canvas,name,color,style,density,rotation){
                 ctx.fillText(chars2[0],cx2,cy2-fs*0.45);
                 ctx.fillText(chars2[1],cx2,cy2+fs*0.55);
             } else if(chars2.length===3){
-                const fs=maxH*0.4;
+                // 가로 1행으로 배치
+                const fs=Math.min(maxH*0.55, maxW*0.9/3);
                 ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
-                ctx.fillText(chars2[0],cx2,cy2-fs*0.7);
-                ctx.fillText(chars2[1]+chars2[2],cx2,cy2+fs*0.5);
+                ctx.fillText(nm,cx2,cy2+2);
             } else {
                 const fs=maxH*0.36;
                 ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
