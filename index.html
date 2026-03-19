@@ -19,7 +19,7 @@
         body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
         /* Header */
-        .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);background-size:cover;background-position:center;position:relative;}
+        .header{background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(74,144,217,0.3);background-size:cover;background-position:center;}
         .header.has-bg-image::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.35);}
         .header.has-bg-image .header-inner{position:relative;z-index:1;}
         .header-bg-btn{position:absolute;bottom:8px;right:24px;padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.4);background:rgba(0,0,0,0.3);color:white;cursor:pointer;font-size:11px;font-weight:600;display:none;align-items:center;gap:4px;transition:all .15s;z-index:2;}
@@ -37,10 +37,21 @@
         body.zoom-12x{zoom:1.2;}
         body.zoom-14x{zoom:1.4;}
         body.zoom-16x{zoom:1.6;}
+        /* Firefox fallback (zoom 미지원) */
+        @supports not (zoom:1.2) {
+            body.zoom-12x{transform:scale(1.2);transform-origin:top left;width:83.33%;}
+            body.zoom-14x{transform:scale(1.4);transform-origin:top left;width:71.43%;}
+            body.zoom-16x{transform:scale(1.6);transform-origin:top left;width:62.5%;}
+        }
         @media(max-width:768px){
             body.zoom-12x{zoom:1.1;}
             body.zoom-14x{zoom:1.2;}
             body.zoom-16x{zoom:1.4;}
+            @supports not (zoom:1.1) {
+                body.zoom-12x{transform:scale(1.1);transform-origin:top left;width:90.91%;}
+                body.zoom-14x{transform:scale(1.2);transform-origin:top left;width:83.33%;}
+                body.zoom-16x{transform:scale(1.4);transform-origin:top left;width:71.43%;}
+            }
             .font-size-selector{position:static;justify-content:center;margin-bottom:4px;}
             .font-size-label{display:none;}
         }
@@ -1440,7 +1451,8 @@ function applyBanner(){
     const header=document.querySelector('.header');
     if(bannerData&&bannerData.url){
         header.classList.add('has-bg-image');
-        header.style.backgroundImage=`url('${bannerData.url}')`;
+        const safeUrl = bannerData.url.replace(/['"\\()]/g, '');
+        header.style.backgroundImage=`url('${safeUrl}')`;
     } else {
         header.classList.remove('has-bg-image');
         header.style.backgroundImage='';
@@ -4603,7 +4615,7 @@ function handleColFileSelect(e){
     listEl.innerHTML=pendingColFiles.map(f=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;">📄 ${esc(f.name)} <span style="color:var(--text-light);">(${formatFileSize(f.size)})</span></div>`).join('');
 }
 
-function formatFileSize(b){return b<1024?(b+'B'):b<1024*1024?((b/1024).toFixed(1)+'KB'):((b/1024/1024).toFixed(1)+'MB');}
+// formatFileSize는 상단(섹션)에서 이미 정의됨 — 중복 제거
 
 function fileToBase64(file){
     return new Promise((resolve,reject)=>{

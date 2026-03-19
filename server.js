@@ -365,5 +365,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Vercel용 내보내기 (중요: app.listen이 없어야 함)
+// 로컬 개발용: app.listen
+if (!IS_VERCEL) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`서버 실행 중: http://localhost:${PORT}`);
+        console.log(`Redis 연결: ${HAS_REDIS ? '활성' : '비활성 (파일 모드)'}`);
+    });
+}
+
+// Vercel용 내보내기
 module.exports = app;
