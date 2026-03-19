@@ -95,6 +95,10 @@ function showError(msg) {
 
 function renderForm() {
     const app = document.getElementById('app');
+    // 배경색 적용
+    if (docData.bgColor && docData.bgColor !== '#ffffff') {
+        document.body.style.background = docData.bgColor;
+    }
     let html = '';
     // 헤더
     html += `<div class="header">

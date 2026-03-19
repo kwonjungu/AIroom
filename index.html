@@ -1013,6 +1013,7 @@
                 <div class="form-group"><label>마감일</label><input type="date" id="esignDeadline"></div>
             </div>
             <div class="form-group"><label>안내 문구</label><textarea id="esignDesc" rows="2" placeholder="학부모에게 보여질 안내 문구 (선택)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;"></textarea></div>
+            <div class="form-group"><label>배경색</label><div style="display:flex;align-items:center;gap:10px;"><input type="color" id="esignBgColor" value="#ffffff" oninput="document.getElementById('esignBgColorLabel').textContent=this.value" style="width:40px;height:40px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer;"><span id="esignBgColorLabel" style="font-size:13px;color:var(--text-light);">#ffffff</span><button type="button" class="btn btn-secondary" onclick="document.getElementById('esignBgColor').value='#ffffff';document.getElementById('esignBgColorLabel').textContent='#ffffff';" style="font-size:12px;padding:4px 10px;">초기화</button></div></div>
 
             <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
             <h3 style="font-size:15px;margin:0 0 12px;">📝 문서 본문 편집</h3>
@@ -4197,6 +4198,8 @@ function openEsignCreate(){
     const dl=new Date();dl.setDate(dl.getDate()+7);
     document.getElementById('esignDeadline').value=fmtDate(dl);
     document.getElementById('esignDesc').value='';
+    document.getElementById('esignBgColor').value='#ffffff';
+    document.getElementById('esignBgColorLabel').textContent='#ffffff';
     document.getElementById('esignModalTitle').textContent='✍️ 전자서명 문서 만들기';
     esignEditorFields=[];
     renderEsignEditor();
@@ -4210,6 +4213,8 @@ function openEsignEdit(id){
     document.getElementById('esignManager').value=doc.manager;
     document.getElementById('esignDeadline').value=doc.deadline||'';
     document.getElementById('esignDesc').value=doc.description||'';
+    document.getElementById('esignBgColor').value=doc.bgColor||'#ffffff';
+    document.getElementById('esignBgColorLabel').textContent=doc.bgColor||'#ffffff';
     document.getElementById('esignModalTitle').textContent='✏️ 문서 수정';
     esignEditorFields=JSON.parse(JSON.stringify(doc.fields||[]));
     renderEsignEditor();
@@ -4281,6 +4286,7 @@ async function submitEsignCreate(){
         doc.title=title;doc.manager=manager;
         doc.deadline=document.getElementById('esignDeadline').value;
         doc.description=document.getElementById('esignDesc').value.trim();
+        doc.bgColor=document.getElementById('esignBgColor').value;
         doc.fields=JSON.parse(JSON.stringify(esignEditorFields));
     } else {
         // 신규 생성
@@ -4290,6 +4296,7 @@ async function submitEsignCreate(){
             title,manager,
             deadline:document.getElementById('esignDeadline').value,
             description:document.getElementById('esignDesc').value.trim(),
+            bgColor:document.getElementById('esignBgColor').value,
             fields:JSON.parse(JSON.stringify(esignEditorFields)),
             status:'open',
             submissions:[],
