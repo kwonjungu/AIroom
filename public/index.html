@@ -810,9 +810,14 @@
         <div class="training-header">
             <h2>🔔 교직원 필수 연수 목록 일원화</h2>
             <p>담당선생님들께서 연수목록과 등록부를 점검하여 수정, 보완해주세요 &mdash; 법정의무교육과정 (중앙교육연수원)</p>
+            <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+                <a href="https://www.neti.go.kr/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:white;border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:all .2s;">🏫 중앙교육연수원</a>
+                <a href="https://www.gtie.go.kr/" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:white;border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:all .2s;">🏫 경기도남부교육연수원</a>
+            </div>
         </div>
         <div class="training-sub-tabs">
             <button class="training-sub-tab active" onclick="switchTrainingTab('v2',this)">📋 이수 관리</button>
+            <button class="training-sub-tab" onclick="switchTrainingTab('checklist-view',this)">📝 연수 체크리스트</button>
             <button class="training-sub-tab" onclick="switchTrainingTab('mycheck',this)">📂 (구) 내 이수 확인</button>
         </div>
         <div id="training-checklist" style="display:none">
@@ -846,6 +851,25 @@
                 <table><thead><tr>
                     <th style="width:36px">순</th><th>직위</th><th>성명</th><th>연수기관 / 이수번호</th><th style="width:70px">이수확인</th><th style="width:70px">이수증</th>
                 </tr></thead><tbody id="regTableBody"></tbody></table>
+            </div></div>
+        </div>
+
+        <!-- 연수 체크리스트 (단순 확인용) -->
+        <div id="training-checklist-view" style="display:none">
+            <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:24px;margin-bottom:16px;">
+                <h3 style="margin:0 0 6px 0;font-size:18px;">📝 필수 연수 체크리스트</h3>
+                <p style="margin:0;font-size:13px;color:var(--text-light);">들어야 하는 연수 목록을 확인하세요.</p>
+            </div>
+            <div class="filter-row" style="margin-bottom:12px;">
+                <span class="filter-label">필터:</span>
+                <button class="filter-chip active" onclick="setChecklistViewFilter('all',this)">전체</button>
+                <button class="filter-chip" onclick="setChecklistViewFilter('교원',this)">교원</button>
+                <button class="filter-chip" onclick="setChecklistViewFilter('교직원',this)">교직원</button>
+            </div>
+            <div class="table-wrapper"><div class="table-scroll">
+                <table><thead><tr>
+                    <th style="width:36px">순</th><th>연수명</th><th>자체연수</th><th>연수 방법</th><th>이수 주기</th><th>대상자</th><th>이수시간</th><th>실시일</th><th>업무부서</th><th>담당자</th>
+                </tr></thead><tbody id="checklistViewBody"></tbody></table>
             </div></div>
         </div>
 
@@ -3387,9 +3411,31 @@ function switchTrainingTab(tab,btn){
     document.querySelectorAll('.training-sub-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
     document.getElementById('training-checklist').style.display='none';
     document.getElementById('training-register').style.display='none';
+    document.getElementById('training-checklist-view').style.display=tab==='checklist-view'?'block':'none';
     document.getElementById('training-v2').style.display=tab==='v2'?'block':'none';
     document.getElementById('training-mycheck').style.display=tab==='mycheck'?'block':'none';
+    if(tab==='checklist-view')renderChecklistView();
     if(tab==='mycheck')renderMyCheck();
+}
+let checklistViewFilter='all';
+function setChecklistViewFilter(f,btn){checklistViewFilter=f;document.querySelectorAll('#training-checklist-view .filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderChecklistView();}
+function renderChecklistView(){
+    let f=trainings;
+    if(checklistViewFilter==='교원')f=trainings.filter(t=>t.target==='교원');
+    else if(checklistViewFilter==='교직원')f=trainings.filter(t=>t.target==='교직원');
+    document.getElementById('checklistViewBody').innerHTML=f.map(t=>{
+        const mb=t.method.includes('온라인')?'badge-online':t.method.includes('이수증')?'badge-submit':t.method.includes('자체')?'badge-self':'badge-group';
+        return `<tr>
+            <td style="text-align:center;font-weight:600">${t.no}</td>
+            <td style="font-weight:600">${esc(t.name)}</td>
+            <td><span class="badge ${t.selfTraining?'badge-possible':'badge-impossible'}">${t.selfTraining?'가능':'불가'}</span></td>
+            <td><span class="badge ${mb}">${esc(t.method)}</span></td>
+            <td>${esc(t.cycle)}</td>
+            <td><span class="badge ${t.target==='교원'?'badge-teacher':'badge-all'}">${esc(t.target)}</span></td>
+            <td>${esc(t.hours)}</td><td>${esc(t.date||'-')}</td>
+            <td>${esc(t.department)}</td><td>${esc(t.manager)}</td>
+        </tr>`;
+    }).join('');
 }
 function populateRegSelect(){
     document.getElementById('regTrainingSelect').innerHTML=trainings.map(t=>`<option value="${t.id}">${t.no}. ${t.name}</option>`).join('');
