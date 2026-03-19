@@ -812,12 +812,10 @@
             <p>담당선생님들께서 연수목록과 등록부를 점검하여 수정, 보완해주세요 &mdash; 법정의무교육과정 (중앙교육연수원)</p>
         </div>
         <div class="training-sub-tabs">
-            <button class="training-sub-tab active" onclick="switchTrainingTab('checklist',this)">📝 필수 연수 체크리스트</button>
-            <button class="training-sub-tab" onclick="switchTrainingTab('register',this)">📋 연수 등록부</button>
-            <button class="training-sub-tab" onclick="switchTrainingTab('v2',this)">🆕 이수 관리</button>
-            <button class="training-sub-tab" onclick="switchTrainingTab('mycheck',this)">📂 (구) 이수 관리</button>
+            <button class="training-sub-tab active" onclick="switchTrainingTab('v2',this)">📋 이수 관리</button>
+            <button class="training-sub-tab" onclick="switchTrainingTab('mycheck',this)">📂 (구) 내 이수 확인</button>
         </div>
-        <div id="training-checklist">
+        <div id="training-checklist" style="display:none">
             <div class="progress-section" id="trainingProgress"></div>
             <div class="filter-row">
                 <span class="filter-label">필터:</span>
@@ -852,10 +850,24 @@
         </div>
 
         <!-- 이수 관리 v2 탭 -->
-        <div id="training-v2" style="display:none">
-            <!-- 섹션 1: 이수증 제출 및 자동 등록 -->
+        <div id="training-v2">
+            <!-- 섹션 1: 사용 방법 안내 (간소화) -->
+            <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:28px;">📄</span>
+                    <div>
+                        <h3 style="margin:0 0 4px 0;font-size:18px;">📖 사용 방법</h3>
+                        <p style="margin:0;font-size:15px;color:var(--text);line-height:1.6;"><strong>PDF파일을 인식합니다.</strong> 이수증을 <strong>PDF로 올려주세요.</strong></p>
+                    </div>
+                </div>
+                <div class="callout" style="background:#FFF9E6;border-left:4px solid #F0C000;padding:12px 16px;margin-top:14px;font-size:13px;">
+                    ⚠️ 이수증을 사진으로 찍은 경우, <strong>PDF로 변환</strong> 후 업로드해주세요. (PDF 외 형식은 인식되지 않습니다)
+                </div>
+            </div>
+
+            <!-- 섹션 2: 이수증 제출하기 -->
             <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:28px;margin-bottom:24px;">
-                <h3 style="margin:0 0 8px 0;font-size:20px;">📤 이수증 제출하기 &amp; 자동 등록</h3>
+                <h3 style="margin:0 0 8px 0;font-size:20px;">📤 이수증 제출하기</h3>
                 <p style="color:var(--text-light);margin:0 0 20px 0;font-size:14px;">아래 구글 설문을 통해 이수증(PDF)을 제출하면, 자동으로 스프레드시트에 등록됩니다.</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
                     <a href="https://docs.google.com/forms/d/e/1FAIpQLSekCinYZOYCAgVIEftGP8ckSVy7DUYJy1T07cECGZxzdi8iNg/viewform" target="_blank" class="btn btn-primary" style="font-size:15px;padding:12px 24px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">📝 이수증 제출 (구글 설문 열기)</a>
@@ -866,88 +878,15 @@
                 </div>
             </div>
 
-            <!-- 섹션 2: 이수 현황 확인 -->
+            <!-- 섹션 3: 이수 현황 -->
             <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:28px;margin-bottom:24px;">
-                <h3 style="margin:0 0 8px 0;font-size:20px;">📊 이수 현황 확인하기</h3>
+                <h3 style="margin:0 0 8px 0;font-size:20px;">📊 이수 현황</h3>
                 <p style="color:var(--text-light);margin:0 0 20px 0;font-size:14px;">아래에서 전체 교직원의 연수 이수 현황을 실시간으로 확인할 수 있습니다.</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
                     <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vTHaP461evN1iU6NEYoscmZfqzVYuzktENMmTS1daAjqBIOOTBZnwH15n7ibJCf4g1kGG53YsRaGg-I/pubhtml?gid=925775191&single=true" target="_blank" class="btn btn-secondary" style="font-size:14px;padding:10px 20px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">📋 이수 현황 시트 새 탭에서 열기 ↗</a>
                 </div>
                 <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
                     <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTHaP461evN1iU6NEYoscmZfqzVYuzktENMmTS1daAjqBIOOTBZnwH15n7ibJCf4g1kGG53YsRaGg-I/pubhtml?gid=925775191&single=true&widget=true&headers=false" style="width:100%;height:480px;border:none;"></iframe>
-                </div>
-            </div>
-
-            <!-- 섹션 3: 사용 방법 안내 -->
-            <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:28px;margin-bottom:24px;">
-                <h3 style="margin:0 0 16px 0;font-size:20px;">📖 사용 방법 안내</h3>
-
-                <!-- STEP 1 -->
-                <div style="background:#F8F9FA;border-radius:10px;padding:20px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                        <span style="background:var(--primary);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0;">1</span>
-                        <h4 style="margin:0;font-size:16px;">이수증 제출하기 (구글 설문)</h4>
-                    </div>
-                    <div style="font-size:14px;color:#444;line-height:1.7;">
-                        <p style="margin:0 0 10px 0;">위의 <strong>「📝 이수증 제출」</strong> 버튼을 클릭하면 아래와 같은 구글 설문이 열립니다.</p>
-                        <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;">
-                            <p style="margin:0 0 8px 0;font-weight:600;color:var(--primary);">📌 설문 작성 방법:</p>
-                            <ol style="margin:0;padding-left:20px;line-height:2;">
-                                <li><strong>성함</strong> — 본인의 이름을 정확히 입력합니다.</li>
-                                <li><strong>연수 이수증 사진</strong> — 이수증 파일(PDF)을 업로드합니다. (최대 10MB)</li>
-                                <li><strong>제출</strong> 버튼을 눌러 제출합니다.</li>
-                            </ol>
-                        </div>
-                        <div class="callout" style="background:#FFF9E6;border-left:4px solid #F0C000;padding:12px 16px;margin-top:8px;">
-                            ⚠️ <strong>주의사항:</strong> 파일은 <strong>PDF 형식</strong>만 지원됩니다. 이수증을 사진으로 찍은 경우, PDF로 변환 후 업로드해주세요.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STEP 2 -->
-                <div style="background:#F8F9FA;border-radius:10px;padding:20px;margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                        <span style="background:var(--primary);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0;">2</span>
-                        <h4 style="margin:0;font-size:16px;">자동 등록 과정</h4>
-                    </div>
-                    <div style="font-size:14px;color:#444;line-height:1.7;">
-                        <p style="margin:0 0 10px 0;">제출이 완료되면 다음 과정이 <strong>자동으로</strong> 진행됩니다:</p>
-                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:13px;">
-                            <span style="background:#E8F5E9;padding:8px 14px;border-radius:20px;font-weight:500;">📤 설문 제출</span>
-                            <span style="color:var(--text-light);">→</span>
-                            <span style="background:#E3F2FD;padding:8px 14px;border-radius:20px;font-weight:500;">🤖 앱스크립트 자동 감지</span>
-                            <span style="color:var(--text-light);">→</span>
-                            <span style="background:#FFF3E0;padding:8px 14px;border-radius:20px;font-weight:500;">📄 PDF 스캔 &amp; 분석</span>
-                            <span style="color:var(--text-light);">→</span>
-                            <span style="background:#F3E5F5;padding:8px 14px;border-radius:20px;font-weight:500;">✅ 스프레드시트 자동 등록</span>
-                        </div>
-                        <div class="callout" style="background:#E8F5E9;border-left:4px solid var(--success);padding:12px 16px;margin-top:8px;">
-                            ✅ 별도 작업 없이 제출만 하면 자동으로 이수 현황에 반영됩니다!
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STEP 3 -->
-                <div style="background:#F8F9FA;border-radius:10px;padding:20px;">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-                        <span style="background:var(--primary);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0;">3</span>
-                        <h4 style="margin:0;font-size:16px;">이수 현황 확인하기</h4>
-                    </div>
-                    <div style="font-size:14px;color:#444;line-height:1.7;">
-                        <p style="margin:0 0 10px 0;">위의 <strong>「📊 이수 현황 확인하기」</strong> 섹션에서 임베드된 스프레드시트를 통해 이수 현황을 바로 확인할 수 있습니다.</p>
-                        <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;">
-                            <p style="margin:0 0 8px 0;font-weight:600;color:var(--primary);">📌 현황표 보는 방법:</p>
-                            <ul style="margin:0;padding-left:20px;line-height:2;">
-                                <li><strong>순번 / 성명</strong> — 제출한 교직원 이름과 순번</li>
-                                <li><strong>이수번호</strong> — PDF에서 자동 추출된 이수번호 (예: 제 경기도교육청 남부연수원-원격(상시)-2025-106967 호)</li>
-                                <li><strong>이수날짜</strong> — 이수 완료 날짜</li>
-                                <li><strong>각 연수 항목 (교육활동침해, 인성, 학교폭력 등)</strong> — 해당 연수 이수 여부가 <strong>v</strong> 표시로 자동 체크됩니다.</li>
-                            </ul>
-                        </div>
-                        <div class="callout" style="background:#EBF5FB;border-left:4px solid var(--primary);padding:12px 16px;margin-top:8px;">
-                            💡 <strong>팁:</strong> 새 탭에서 열기 버튼을 눌러 더 넓은 화면에서 확인하실 수 있습니다.
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -3379,11 +3318,10 @@ async function toggleTrainingComplete(tid){
 
 function switchTrainingTab(tab,btn){
     document.querySelectorAll('.training-sub-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
-    document.getElementById('training-checklist').style.display=tab==='checklist'?'block':'none';
-    document.getElementById('training-register').style.display=tab==='register'?'block':'none';
+    document.getElementById('training-checklist').style.display='none';
+    document.getElementById('training-register').style.display='none';
     document.getElementById('training-v2').style.display=tab==='v2'?'block':'none';
     document.getElementById('training-mycheck').style.display=tab==='mycheck'?'block':'none';
-    if(tab==='register')renderRegisterTable();
     if(tab==='mycheck')renderMyCheck();
 }
 function populateRegSelect(){
@@ -6470,10 +6408,17 @@ function renderAiGrammar(ws){
         <div id="aiGrammarResult" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <span style="font-size:14px;font-weight:700;">✅ 교정 결과</span>
-                <button onclick="copyAiResult('aiGrammarCorrected')" style="padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">📋 복사</button>
+                <div style="display:flex;gap:6px;">
+                    <button id="aiGrammarCopyClean" onclick="copyAiResult('aiGrammarCorrectedOnly')" style="display:none;padding:6px 14px;border:1px solid #8e24aa;border-radius:8px;background:#f3e5f5;font-size:12px;cursor:pointer;font-weight:600;color:#8e24aa;">📄 교정문만 복사</button>
+                    <button onclick="copyAiResult('aiGrammarCorrected')" style="padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">📋 전체 복사</button>
+                </div>
             </div>
-            <div id="aiGrammarCorrected" style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;margin-bottom:12px;"></div>
-            <div id="aiGrammarExplain" style="background:#fafafa;border:1px solid #eee;border-radius:12px;padding:16px;font-size:13px;line-height:1.7;white-space:pre-wrap;"></div>
+            <div id="aiGrammarCorrectedOnly" style="background:#f3e5f5;border:2px solid #ce93d8;border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;margin-bottom:12px;"></div>
+            <div id="aiGrammarCorrected" style="display:none;"></div>
+            <details style="margin-bottom:12px;">
+                <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);padding:8px 0;">📝 수정 사항 보기</summary>
+                <div id="aiGrammarExplain" style="background:#fafafa;border:1px solid #eee;border-radius:12px;padding:16px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-top:8px;"></div>
+            </details>
         </div>
     </div>`;
 }
@@ -6488,16 +6433,16 @@ async function generateGrammar(){
     if(mode==='교정'){
         instruction=`다음 한국어 텍스트의 맞춤법과 문법을 교정해주세요.
 
+중요: [교정된 텍스트] 영역에는 교정된 텍스트만 작성하세요. 설명, 코멘트, 부연설명은 절대 넣지 마세요.
+
 출력 형식:
 [교정된 텍스트]
-(교정된 전체 텍스트를 여기에 작성)
+(교정된 전체 텍스트만 여기에 작성. 설명 금지.)
 
 [수정 사항]
 - 수정1: (원문) → (수정) - 이유
 - 수정2: (원문) → (수정) - 이유
-...
-
-수정 사항이 없으면 "맞춤법 오류 없음"이라고 표시하세요.`;
+(수정 사항이 없으면 "수정 사항 없음"이라고만 작성)`;
     } else if(mode==='윤문'){
         instruction=`다음 한국어 텍스트의 문장을 자연스럽고 매끄럽게 다듬어주세요. 의미는 유지하되 가독성과 표현을 개선하세요.
 
@@ -6523,11 +6468,14 @@ async function generateGrammar(){
         document.getElementById('aiGrammarResult').style.display='';
         // 교정 텍스트와 설명 분리
         const parts=result.split(/\[수정 사항\]|\[변경 내용\]|\[변환 요약\]/);
-        const corrected=(parts[0]||'').replace(/^\[교정된 텍스트\]|\[다듬어진 텍스트\]|\[공문서 형식\]/g,'').trim();
+        let corrected=(parts[0]||'').replace(/^\[교정된 텍스트\]|\[다듬어진 텍스트\]|\[공문서 형식\]/g,'').trim();
+        // 괄호 안 부연설명 제거 (교정된 텍스트에서 AI 코멘트 분리)
+        corrected=corrected.replace(/\n*\(교정된 전체[\s\S]*$/,'').replace(/\n*\(수정 사항[이가]? 없[습으][\s\S]*$/,'').replace(/\n*수정 사항[이가]? 없[습으].*$/,'').replace(/\n*맞춤법 오류 없음.*$/,'').trim();
         const explain=(parts[1]||'').trim();
-        document.getElementById('aiGrammarCorrected').textContent=corrected;
-        document.getElementById('aiGrammarExplain').textContent=explain?'📝 '+explain:'';
-        document.getElementById('aiGrammarExplain').style.display=explain?'':'none';
+        document.getElementById('aiGrammarCorrectedOnly').textContent=corrected;
+        document.getElementById('aiGrammarCorrected').textContent=result;
+        document.getElementById('aiGrammarExplain').textContent=explain?explain:'수정 사항 없음';
+        document.getElementById('aiGrammarCopyClean').style.display='';
     }
 }
 
@@ -8419,5 +8367,14 @@ function endTutorial(){tutStep=-1;const o=document.getElementById('tutorialOverl
 
 init();
 </script>
+
+<!-- 하단 저작권 및 경고 문구 -->
+<footer style="max-width:960px;margin:0 auto;padding:20px 24px 40px;text-align:center;">
+    <div style="background:linear-gradient(135deg,#f8f9fa,#e9ecef);border:1px solid #dee2e6;border-radius:12px;padding:20px 24px;">
+        <p style="margin:0 0 6px 0;font-size:13px;font-weight:700;color:#495057;">본 페이지는 백암초등학교의 고유 도메인입니다.</p>
+        <p style="margin:0 0 10px 0;font-size:12px;color:#868e96;line-height:1.6;">무단 수정, 복제, 재배포를 금지합니다. 본 시스템의 콘텐츠 및 구조에 대한 모든 권리는 백암초등학교에 있습니다.</p>
+        <p style="margin:0;font-size:11px;color:#adb5bd;">2026.03.10 제작</p>
+    </div>
+</footer>
 </body>
 </html>

@@ -776,8 +776,8 @@
             <p>담당선생님들께서 연수목록과 등록부를 점검하여 수정, 보완해주세요 &mdash; 법정의무교육과정 (중앙교육연수원)</p>
         </div>
         <div class="training-sub-tabs">
-            <button class="training-sub-tab active" onclick="switchTrainingTab('checklist',this)">📝 필수 연수 체크리스트</button>
-            <button class="training-sub-tab" onclick="switchTrainingTab('register',this)">📋 연수 등록부</button>
+            <button class="training-sub-tab active" onclick="switchTrainingTab('checklist',this)">📋 연수 체크리스트</button>
+            <button class="training-sub-tab" onclick="switchTrainingTab('register',this)">📊 이수 현황</button>
             <button class="training-sub-tab" onclick="switchTrainingTab('mycheck',this)">👤 내 이수 확인</button>
         </div>
         <div id="training-checklist">
@@ -5682,5 +5682,14 @@ async function pdfScan(){
 
 init();
 </script>
+
+<!-- 하단 저작권 및 경고 문구 -->
+<footer style="max-width:960px;margin:0 auto;padding:20px 24px 40px;text-align:center;">
+    <div style="background:linear-gradient(135deg,#f8f9fa,#e9ecef);border:1px solid #dee2e6;border-radius:12px;padding:20px 24px;">
+        <p style="margin:0 0 6px 0;font-size:13px;font-weight:700;color:#495057;">본 페이지는 백암초등학교의 고유 도메인입니다.</p>
+        <p style="margin:0 0 10px 0;font-size:12px;color:#868e96;line-height:1.6;">무단 수정, 복제, 재배포를 금지합니다. 본 시스템의 콘텐츠 및 구조에 대한 모든 권리는 백암초등학교에 있습니다.</p>
+        <p style="margin:0;font-size:11px;color:#adb5bd;">2026.03.10 제작</p>
+    </div>
+</footer>
 </body>
 </html>
