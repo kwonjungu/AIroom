@@ -851,17 +851,77 @@
 
         <!-- 이수 관리 v2 탭 -->
         <div id="training-v2">
-            <!-- 섹션 1: 사용 방법 안내 (간소화) -->
-            <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <span style="font-size:28px;">📄</span>
-                    <div>
-                        <h3 style="margin:0 0 4px 0;font-size:18px;">📖 사용 방법</h3>
-                        <p style="margin:0;font-size:15px;color:var(--text);line-height:1.6;"><strong>PDF파일을 인식합니다.</strong> 이수증을 <strong>PDF로 올려주세요.</strong></p>
+            <!-- 섹션 1: 사용 방법 안내 -->
+            <div style="background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:28px;margin-bottom:24px;">
+                <h3 style="margin:0 0 8px 0;font-size:20px;">📖 사용 방법 안내</h3>
+                <p style="margin:0 0 20px 0;font-size:15px;color:var(--primary);font-weight:700;">PDF파일을 인식합니다. 이수증을 PDF로 올려주세요.</p>
+
+                <!-- STEP 1 -->
+                <div style="background:#F8F9FA;border-radius:10px;padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <span style="background:var(--primary);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0;">1</span>
+                        <h4 style="margin:0;font-size:16px;">이수증 제출하기 (구글 설문)</h4>
+                    </div>
+                    <div style="font-size:14px;color:#444;line-height:1.7;">
+                        <p style="margin:0 0 10px 0;">아래의 <strong>「📝 이수증 제출」</strong> 버튼을 클릭하면 구글 설문이 열립니다.</p>
+                        <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;">
+                            <p style="margin:0 0 8px 0;font-weight:600;color:var(--primary);">📌 설문 작성 방법:</p>
+                            <ol style="margin:0;padding-left:20px;line-height:2;">
+                                <li><strong>성함</strong> — 본인의 이름을 정확히 입력합니다.</li>
+                                <li><strong>연수 이수증 사진</strong> — 이수증 파일(PDF)을 업로드합니다. (최대 10MB)</li>
+                                <li><strong>제출</strong> 버튼을 눌러 제출합니다.</li>
+                            </ol>
+                        </div>
+                        <div class="callout" style="background:#FFF9E6;border-left:4px solid #F0C000;padding:12px 16px;margin-top:8px;">
+                            ⚠️ <strong>주의사항:</strong> 파일은 <strong>PDF 형식</strong>만 지원됩니다. 이수증을 사진으로 찍은 경우, PDF로 변환 후 업로드해주세요.
+                        </div>
                     </div>
                 </div>
-                <div class="callout" style="background:#FFF9E6;border-left:4px solid #F0C000;padding:12px 16px;margin-top:14px;font-size:13px;">
-                    ⚠️ 이수증을 사진으로 찍은 경우, <strong>PDF로 변환</strong> 후 업로드해주세요. (PDF 외 형식은 인식되지 않습니다)
+
+                <!-- STEP 2 -->
+                <div style="background:#F8F9FA;border-radius:10px;padding:20px;margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <span style="background:var(--primary);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0;">2</span>
+                        <h4 style="margin:0;font-size:16px;">자동 등록 과정</h4>
+                    </div>
+                    <div style="font-size:14px;color:#444;line-height:1.7;">
+                        <p style="margin:0 0 10px 0;">제출이 완료되면 다음 과정이 <strong>자동으로</strong> 진행됩니다:</p>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;font-size:13px;">
+                            <span style="background:#E8F5E9;padding:8px 14px;border-radius:20px;font-weight:500;">📤 설문 제출</span>
+                            <span style="color:var(--text-light);">→</span>
+                            <span style="background:#E3F2FD;padding:8px 14px;border-radius:20px;font-weight:500;">🤖 앱스크립트 자동 감지</span>
+                            <span style="color:var(--text-light);">→</span>
+                            <span style="background:#FFF3E0;padding:8px 14px;border-radius:20px;font-weight:500;">📄 PDF 스캔 &amp; 분석</span>
+                            <span style="color:var(--text-light);">→</span>
+                            <span style="background:#F3E5F5;padding:8px 14px;border-radius:20px;font-weight:500;">✅ 스프레드시트 자동 등록</span>
+                        </div>
+                        <div class="callout" style="background:#E8F5E9;border-left:4px solid var(--success);padding:12px 16px;margin-top:8px;">
+                            ✅ 별도 작업 없이 제출만 하면 자동으로 이수 현황에 반영됩니다!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div style="background:#F8F9FA;border-radius:10px;padding:20px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <span style="background:var(--primary);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0;">3</span>
+                        <h4 style="margin:0;font-size:16px;">이수 현황 확인하기</h4>
+                    </div>
+                    <div style="font-size:14px;color:#444;line-height:1.7;">
+                        <p style="margin:0 0 10px 0;">아래의 <strong>「📊 이수 현황」</strong> 섹션에서 임베드된 스프레드시트를 통해 이수 현황을 바로 확인할 수 있습니다.</p>
+                        <div style="background:white;border:1px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;">
+                            <p style="margin:0 0 8px 0;font-weight:600;color:var(--primary);">📌 현황표 보는 방법:</p>
+                            <ul style="margin:0;padding-left:20px;line-height:2;">
+                                <li><strong>순번 / 성명</strong> — 제출한 교직원 이름과 순번</li>
+                                <li><strong>이수번호</strong> — PDF에서 자동 추출된 이수번호</li>
+                                <li><strong>이수날짜</strong> — 이수 완료 날짜</li>
+                                <li><strong>각 연수 항목</strong> — 해당 연수 이수 여부가 <strong>v</strong> 표시로 자동 체크됩니다.</li>
+                            </ul>
+                        </div>
+                        <div class="callout" style="background:#EBF5FB;border-left:4px solid var(--primary);padding:12px 16px;margin-top:8px;">
+                            💡 <strong>팁:</strong> 새 탭에서 열기 버튼을 눌러 더 넓은 화면에서 확인하실 수 있습니다.
+                        </div>
+                    </div>
                 </div>
             </div>
 
