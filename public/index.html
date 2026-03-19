@@ -6955,8 +6955,28 @@ function openSignatureGen(){
                 <label><input type="radio" name="sigColor" value="#0d47a1" onchange="renderSignatures()"> 남색</label>
             </div>
             <div id="sigGenResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;"></div>
+
+            <div style="margin-top:28px;border-top:2px solid #eee;padding-top:20px;">
+                <h3 style="font-size:16px;font-weight:800;margin:0 0 12px;">🖊️ 직접 서명 그리기</h3>
+                <p style="font-size:12px;color:#888;margin:0 0 12px;">마우스 또는 터치로 직접 서명을 그려보세요.</p>
+                <div style="display:flex;gap:10px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+                    <label style="font-size:13px;font-weight:600;">펜 색상:</label>
+                    <label><input type="radio" name="drawSigColor" value="#1a1a1a" checked> 검정</label>
+                    <label><input type="radio" name="drawSigColor" value="#1565c0"> 파랑</label>
+                    <label><input type="radio" name="drawSigColor" value="#0d47a1"> 남색</label>
+                    <label style="font-size:13px;font-weight:600;margin-left:16px;">펜 굵기:</label>
+                    <input type="range" id="drawSigWidth" min="1" max="6" value="2.5" step="0.5" style="width:80px;">
+                </div>
+                <canvas id="sigDrawCanvas" style="width:100%;height:200px;border:2px dashed #ccc;border-radius:12px;cursor:crosshair;background:white;touch-action:none;"></canvas>
+                <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+                    <button onclick="clearSigDrawCanvas()" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:white;font-size:13px;cursor:pointer;">🗑️ 지우기</button>
+                    <button onclick="undoSigDraw()" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:white;font-size:13px;cursor:pointer;">↩️ 되돌리기</button>
+                    <button onclick="downloadSigDraw()" style="padding:8px 20px;border:1px solid #4CAF50;border-radius:8px;background:#4CAF50;color:white;font-size:13px;cursor:pointer;font-weight:600;">💾 이미지 저장 (PNG)</button>
+                </div>
+            </div>
         </div>
     </div>`;
+    setTimeout(initSigDrawCanvas,100);
 }
 
 const SIG_FONTS=[
@@ -7004,20 +7024,6 @@ function renderSignatures(){
             ctx.textBaseline='middle';
             ctx.textAlign='center';
             ctx.fillText(name,cw/2,44);
-            // 밑줄 (서명 느낌)
-            const tw=ctx.measureText(name).width;
-            ctx.strokeStyle=color;
-            ctx.lineWidth=1.5;
-            ctx.globalAlpha=0.4;
-            ctx.beginPath();
-            const ux=cw/2-tw/2-5,uy=62;
-            ctx.moveTo(ux,uy);
-            // 약간 흔들리는 밑줄
-            for(let x=0;x<=tw+10;x+=3){
-                ctx.lineTo(ux+x,uy+Math.sin(x*0.15)*1.5);
-            }
-            ctx.stroke();
-            ctx.globalAlpha=1;
             ctx.setTransform(dpr,0,0,dpr,0,0);
         });
     },50);
@@ -7033,36 +7039,149 @@ function downloadSigCanvas(canvasId,name){
     showToast('서명 이미지 다운로드 완료','success');
 }
 
-// ===== 도장 생성기 =====
+// ===== 직접 서명 그리기 =====
+let sigDrawHistory=[];
+let sigDrawing=false;
+function initSigDrawCanvas(){
+    const c=document.getElementById('sigDrawCanvas');
+    if(!c)return;
+    const dpr=window.devicePixelRatio||1;
+    const rect=c.getBoundingClientRect();
+    c.width=rect.width*dpr;c.height=rect.height*dpr;
+    const ctx=c.getContext('2d');
+    ctx.scale(dpr,dpr);
+    ctx.lineCap='round';ctx.lineJoin='round';
+    sigDrawHistory=[];
+    saveDrawState(c);
+
+    function getPos(e){
+        const r=c.getBoundingClientRect();
+        const t=e.touches?e.touches[0]:e;
+        return {x:t.clientX-r.left,y:t.clientY-r.top};
+    }
+    function getColor(){return document.querySelector('input[name="drawSigColor"]:checked')?.value||'#1a1a1a';}
+    function getWidth(){return parseFloat(document.getElementById('drawSigWidth')?.value||2.5);}
+
+    c.onmousedown=c.ontouchstart=function(e){
+        e.preventDefault();sigDrawing=true;
+        const p=getPos(e);
+        ctx.beginPath();ctx.moveTo(p.x,p.y);
+        ctx.strokeStyle=getColor();ctx.lineWidth=getWidth();
+    };
+    c.onmousemove=c.ontouchmove=function(e){
+        if(!sigDrawing)return;e.preventDefault();
+        const p=getPos(e);
+        ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);
+    };
+    c.onmouseup=c.onmouseleave=c.ontouchend=c.ontouchcancel=function(){
+        if(sigDrawing){sigDrawing=false;saveDrawState(c);}
+    };
+}
+function saveDrawState(c){
+    if(!c)c=document.getElementById('sigDrawCanvas');
+    if(!c)return;
+    sigDrawHistory.push(c.toDataURL());
+    if(sigDrawHistory.length>30)sigDrawHistory.shift();
+}
+function undoSigDraw(){
+    const c=document.getElementById('sigDrawCanvas');
+    if(!c||sigDrawHistory.length<=1)return;
+    sigDrawHistory.pop();
+    const img=new Image();
+    img.onload=function(){
+        const ctx=c.getContext('2d');
+        const dpr=window.devicePixelRatio||1;
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.clearRect(0,0,c.width,c.height);
+        ctx.drawImage(img,0,0);
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        ctx.lineCap='round';ctx.lineJoin='round';
+    };
+    img.src=sigDrawHistory[sigDrawHistory.length-1];
+}
+function clearSigDrawCanvas(){
+    const c=document.getElementById('sigDrawCanvas');
+    if(!c)return;
+    const dpr=window.devicePixelRatio||1;
+    const ctx=c.getContext('2d');
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineCap='round';ctx.lineJoin='round';
+    sigDrawHistory=[];saveDrawState(c);
+}
+function downloadSigDraw(){
+    const c=document.getElementById('sigDrawCanvas');
+    if(!c)return;
+    // 빈 캔버스 체크
+    const ctx=c.getContext('2d');
+    const d=ctx.getImageData(0,0,c.width,c.height).data;
+    let empty=true;
+    for(let i=3;i<d.length;i+=4){if(d[i]>0){empty=false;break;}}
+    if(empty){showToast('먼저 서명을 그려주세요','error');return;}
+    // 내용 영역만 크롭하여 저장
+    const imgData=ctx.getImageData(0,0,c.width,c.height);
+    let minX=c.width,minY=c.height,maxX=0,maxY=0;
+    for(let y=0;y<c.height;y++){
+        for(let x=0;x<c.width;x++){
+            if(imgData.data[(y*c.width+x)*4+3]>0){
+                if(x<minX)minX=x;if(x>maxX)maxX=x;
+                if(y<minY)minY=y;if(y>maxY)maxY=y;
+            }
+        }
+    }
+    const pad=20;
+    minX=Math.max(0,minX-pad);minY=Math.max(0,minY-pad);
+    maxX=Math.min(c.width,maxX+pad);maxY=Math.min(c.height,maxY+pad);
+    const cw=maxX-minX,ch=maxY-minY;
+    const tc=document.createElement('canvas');
+    tc.width=cw;tc.height=ch;
+    tc.getContext('2d').drawImage(c,minX,minY,cw,ch,0,0,cw,ch);
+    const a=document.createElement('a');
+    a.download='서명_'+new Date().toISOString().slice(0,10)+'.png';
+    a.href=tc.toDataURL('image/png');
+    a.click();
+    showToast('서명 이미지 다운로드 완료','success');
+}
+
+// ===== 도장 생성기 (리얼 도장) =====
 function openStampGen(){
     document.getElementById('pdfToolsMain').style.display='none';
     const ws=document.getElementById('pdfToolsWorkspace');
     ws.innerHTML=`<div class="pdf-workspace active">
         <div class="pdf-ws-header"><span style="font-size:18px;font-weight:800;">🔴 도장 생성기</span><button class="pdf-back-btn" onclick="closePdfTool()">← 도구 목록</button></div>
-        <div style="padding:20px;max-width:700px;margin:0 auto;">
+        <div style="padding:20px;max-width:800px;margin:0 auto;">
             <div style="margin-bottom:16px;">
                 <label style="font-size:14px;font-weight:700;display:block;margin-bottom:6px;">이름 입력 (한국어/영어)</label>
                 <input type="text" id="stampGenName" placeholder="예: 홍길동 / Hong" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:10px;font-size:18px;outline:none;" oninput="renderStamps()">
             </div>
-            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-                <label style="font-size:13px;font-weight:600;">색상:</label>
-                <label><input type="radio" name="stampColor" value="#c62828" checked onchange="renderStamps()"> 빨강</label>
-                <label><input type="radio" name="stampColor" value="#1565c0" onchange="renderStamps()"> 파랑</label>
-                <label><input type="radio" name="stampColor" value="#2e7d32" onchange="renderStamps()"> 초록</label>
-                <label><input type="radio" name="stampColor" value="#1a1a1a" onchange="renderStamps()"> 검정</label>
+            <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+                <label style="font-size:13px;font-weight:600;">잉크 색상:</label>
+                <label style="cursor:pointer;"><input type="radio" name="stampColor" value="#b71c1c" checked onchange="renderStamps()"> <span style="color:#b71c1c;">● 주홍</span></label>
+                <label style="cursor:pointer;"><input type="radio" name="stampColor" value="#d32f2f" onchange="renderStamps()"> <span style="color:#d32f2f;">● 빨강</span></label>
+                <label style="cursor:pointer;"><input type="radio" name="stampColor" value="#0d47a1" onchange="renderStamps()"> <span style="color:#0d47a1;">● 파랑</span></label>
+                <label style="cursor:pointer;"><input type="radio" name="stampColor" value="#1a1a1a" onchange="renderStamps()"> <span style="color:#1a1a1a;">● 검정</span></label>
             </div>
-            <div id="stampGenResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;"></div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                <label style="font-size:13px;font-weight:600;">잉크 농도:</label>
+                <input type="range" id="stampInkDensity" min="0.5" max="1" value="0.85" step="0.05" style="width:120px;" oninput="renderStamps()">
+                <span id="stampInkLabel" style="font-size:12px;color:#888;">85%</span>
+                <label style="font-size:13px;font-weight:600;margin-left:16px;">회전:</label>
+                <input type="range" id="stampRotation" min="-15" max="15" value="0" step="1" style="width:100px;" oninput="renderStamps()">
+                <span id="stampRotLabel" style="font-size:12px;color:#888;">0°</span>
+            </div>
+            <div id="stampGenResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;"></div>
         </div>
     </div>`;
 }
 
 const STAMP_STYLES=[
-    {name:'원형 도장',shape:'circle',border:true},
-    {name:'사각 도장',shape:'rect',border:true},
-    {name:'세로 도장',shape:'vertical',border:true},
+    {name:'원형 인감',shape:'circle',border:true,thick:3.5},
+    {name:'이중 원형 인감',shape:'double',border:true},
+    {name:'사각 인감',shape:'rect',border:true,thick:3},
+    {name:'세로 인감',shape:'vertical',border:true,thick:3},
+    {name:'타원 인감',shape:'oval',border:true,thick:3},
     {name:'원형 (테두리 없음)',shape:'circle',border:false},
-    {name:'타원 도장',shape:'oval',border:true},
-    {name:'이중 원형',shape:'double',border:true},
 ];
 
 function renderStamps(){
@@ -7070,14 +7189,21 @@ function renderStamps(){
     const container=document.getElementById('stampGenResults');
     if(!container)return;
     if(!name){container.innerHTML='<p style="color:#999;grid-column:1/-1;text-align:center;padding:40px;">이름을 입력하세요</p>';return;}
-    const color=document.querySelector('input[name="stampColor"]:checked')?.value||'#c62828';
+    const color=document.querySelector('input[name="stampColor"]:checked')?.value||'#b71c1c';
+    const density=parseFloat(document.getElementById('stampInkDensity')?.value||0.85);
+    const rot=parseInt(document.getElementById('stampRotation')?.value||0);
+    document.getElementById('stampInkLabel').textContent=Math.round(density*100)+'%';
+    document.getElementById('stampRotLabel').textContent=rot+'°';
+
     let html='';
     STAMP_STYLES.forEach((st,i)=>{
         const cId='stampCanvas_'+i;
-        html+=`<div style="background:white;border:1px solid #eee;border-radius:12px;padding:12px;text-align:center;">
-            <div style="font-size:11px;color:#888;margin-bottom:8px;">${esc(st.name)}</div>
-            <canvas id="${cId}" style="margin:0 auto 8px;display:block;"></canvas>
-            <button onclick="downloadStampCanvas('${cId}','${esc(name)}')" style="padding:6px 16px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;cursor:pointer;">다운로드 (PNG)</button>
+        html+=`<div style="background:#fafafa;border-radius:14px;padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div style="font-size:12px;color:#777;margin-bottom:10px;font-weight:600;">${esc(st.name)}</div>
+            <div style="display:flex;align-items:center;justify-content:center;min-height:170px;">
+                <canvas id="${cId}" style="display:block;"></canvas>
+            </div>
+            <button onclick="downloadStampCanvas('${cId}','${esc(name)}')" style="margin-top:10px;padding:8px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#e53935,#c62828);color:white;font-size:12px;cursor:pointer;font-weight:600;box-shadow:0 2px 6px rgba(198,40,40,0.3);transition:transform .15s;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">📥 다운로드 (PNG)</button>
         </div>`;
     });
     container.innerHTML=html;
@@ -7085,134 +7211,214 @@ function renderStamps(){
         STAMP_STYLES.forEach((st,i)=>{
             const c=document.getElementById('stampCanvas_'+i);
             if(!c)return;
-            drawStamp(c,name,color,st);
+            drawStamp(c,name,color,st,density,rot);
         });
     },50);
 }
 
-function drawStamp(canvas,name,color,style){
+function drawStamp(canvas,name,color,style,density,rotation){
     const dpr=window.devicePixelRatio||1;
-    const size=150;
+    const size=160;
     const isKorean=/[가-힣]/.test(name);
     const chars=name.split('');
 
+    // 캔버스 크기 설정 (회전 공간 포함)
+    const margin=20;
     if(style.shape==='vertical'){
-        canvas.width=80*dpr;canvas.height=(40+chars.length*38)*dpr;
-        canvas.style.width='80px';canvas.style.height=(40+chars.length*38)+'px';
+        const vw=90,vh=50+chars.length*42;
+        canvas.width=(vw+margin*2)*dpr;canvas.height=(vh+margin*2)*dpr;
+        canvas.style.width=(vw+margin*2)+'px';canvas.style.height=(vh+margin*2)+'px';
     } else if(style.shape==='oval'){
-        canvas.width=size*1.4*dpr;canvas.height=size*dpr;
-        canvas.style.width=(size*1.4)+'px';canvas.style.height=size+'px';
+        canvas.width=(size*1.4+margin*2)*dpr;canvas.height=(size+margin*2)*dpr;
+        canvas.style.width=(size*1.4+margin*2)+'px';canvas.style.height=(size+margin*2)+'px';
     } else {
-        canvas.width=size*dpr;canvas.height=size*dpr;
-        canvas.style.width=size+'px';canvas.style.height=size+'px';
+        canvas.width=(size+margin*2)*dpr;canvas.height=(size+margin*2)*dpr;
+        canvas.style.width=(size+margin*2)+'px';canvas.style.height=(size+margin*2)+'px';
     }
     const ctx=canvas.getContext('2d');
     ctx.scale(dpr,dpr);
     const w=canvas.width/dpr,h=canvas.height/dpr;
     const cx=w/2,cy=h/2;
-    ctx.fillStyle=color;
-    ctx.strokeStyle=color;
+
+    // 회전 적용
+    if(rotation){
+        ctx.translate(cx,cy);
+        ctx.rotate(rotation*Math.PI/180);
+        ctx.translate(-cx,-cy);
+    }
+
+    // 색상 파싱 (RGB)
+    const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
+
     ctx.textAlign='center';
     ctx.textBaseline='middle';
 
+    // 도장 테두리를 약간 불규칙하게 그리는 함수
+    function drawRoughCircle(x,y,radius,lineW){
+        ctx.lineWidth=lineW;
+        ctx.strokeStyle=color;
+        ctx.beginPath();
+        for(let a=0;a<Math.PI*2;a+=0.02){
+            const jitter=(Math.random()-0.5)*1.2;
+            const rx=x+Math.cos(a)*(radius+jitter);
+            const ry=y+Math.sin(a)*(radius+jitter);
+            if(a===0)ctx.moveTo(rx,ry);
+            else ctx.lineTo(rx,ry);
+        }
+        ctx.closePath();ctx.stroke();
+    }
+    function drawRoughRect(x,y,rw,rh,lineW){
+        ctx.lineWidth=lineW;ctx.strokeStyle=color;
+        ctx.beginPath();
+        // 위
+        for(let i=0;i<=rw;i+=2){ctx.lineTo(x+i,y+(Math.random()-0.5)*0.8);}
+        // 오른쪽
+        for(let i=0;i<=rh;i+=2){ctx.lineTo(x+rw+(Math.random()-0.5)*0.8,y+i);}
+        // 아래
+        for(let i=rw;i>=0;i-=2){ctx.lineTo(x+i,y+rh+(Math.random()-0.5)*0.8);}
+        // 왼쪽
+        for(let i=rh;i>=0;i-=2){ctx.lineTo(x+(Math.random()-0.5)*0.8,y+i);}
+        ctx.closePath();ctx.stroke();
+    }
+    function drawRoughEllipse(x,y,rx,ry,lineW){
+        ctx.lineWidth=lineW;ctx.strokeStyle=color;
+        ctx.beginPath();
+        for(let a=0;a<Math.PI*2;a+=0.02){
+            const jitter=(Math.random()-0.5)*1.0;
+            const px=x+Math.cos(a)*(rx+jitter);
+            const py=y+Math.sin(a)*(ry+jitter);
+            if(a===0)ctx.moveTo(px,py);
+            else ctx.lineTo(px,py);
+        }
+        ctx.closePath();ctx.stroke();
+    }
+
+    // 글자 그리기 (전서체 느낌)
+    function drawStampText(nm,cx2,cy2,maxW,maxH,chars2,isKr){
+        ctx.fillStyle=color;
+        if(isKr&&chars2.length<=4){
+            if(chars2.length===1){
+                const fs=maxH*0.7;
+                ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(nm,cx2,cy2+2);
+            } else if(chars2.length===2){
+                const fs=maxH*0.55;
+                ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
+                // 세로 배치
+                ctx.fillText(chars2[0],cx2,cy2-fs*0.45);
+                ctx.fillText(chars2[1],cx2,cy2+fs*0.55);
+            } else if(chars2.length===3){
+                const fs=maxH*0.4;
+                ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars2[0],cx2,cy2-fs*0.7);
+                ctx.fillText(chars2[1]+chars2[2],cx2,cy2+fs*0.5);
+            } else {
+                const fs=maxH*0.36;
+                ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
+                ctx.fillText(chars2[0]+chars2[1],cx2,cy2-fs*0.45);
+                ctx.fillText(chars2[2]+chars2[3],cx2,cy2+fs*0.55);
+            }
+        } else {
+            const fs=Math.min(maxH*0.5,maxW*0.9/nm.length);
+            ctx.font='900 '+fs+'px "Noto Sans KR",Arial,sans-serif';
+            ctx.fillText(nm,cx2,cy2+2);
+        }
+    }
+
     if(style.shape==='circle'){
-        const r=size/2-6;
-        if(style.border){ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();}
-        // 글자 배치
-        if(isKorean&&chars.length<=4){
-            // 한국어: 2x2 또는 세로 배치
-            if(chars.length<=2){
-                const fs=r*0.8;
-                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-                ctx.fillText(name,cx,cy+2);
-            } else if(chars.length===3){
-                const fs=r*0.55;
-                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-                // 위 1, 아래 2
-                ctx.fillText(chars[0],cx,cy-fs*0.5);
-                ctx.fillText(chars[1]+chars[2],cx,cy+fs*0.55);
-            } else {
-                const fs=r*0.48;
-                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-                ctx.fillText(chars[0]+chars[1],cx,cy-fs*0.5);
-                ctx.fillText(chars[2]+chars[3],cx,cy+fs*0.55);
-            }
-        } else {
-            const fs=Math.min(r*0.8,r*1.6/name.length);
-            ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
-            ctx.fillText(name,cx,cy+2);
-        }
+        const rad=size/2-8;
+        if(style.border)drawRoughCircle(cx,cy,rad,style.thick||3.5);
+        drawStampText(name,cx,cy,rad*1.6,rad*1.6,chars,isKorean);
     } else if(style.shape==='rect'){
-        const pad=6;
-        if(style.border){ctx.lineWidth=3;ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);}
-        if(isKorean&&chars.length<=4){
-            if(chars.length<=2){
-                const fs=50;
-                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-                ctx.fillText(name,cx,cy+2);
-            } else if(chars.length===3){
-                const fs=36;
-                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-                ctx.fillText(chars[0],cx,cy-fs*0.5);
-                ctx.fillText(chars[1]+chars[2],cx,cy+fs*0.55);
-            } else {
-                const fs=32;
-                ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
-                ctx.fillText(chars[0]+chars[1],cx,cy-fs*0.5);
-                ctx.fillText(chars[2]+chars[3],cx,cy+fs*0.55);
-            }
-        } else {
-            const fs=Math.min(50,130/name.length);
-            ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
-            ctx.fillText(name,cx,cy+2);
-        }
+        const pad=margin+4;
+        const rw=size-8,rh=size-8;
+        if(style.border)drawRoughRect(cx-rw/2,cy-rh/2,rw,rh,style.thick||3);
+        drawStampText(name,cx,cy,rw*0.85,rh*0.85,chars,isKorean);
     } else if(style.shape==='vertical'){
-        const pad=6;
-        if(style.border){ctx.lineWidth=3;ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);}
-        const fs=Math.min(32,60/1);
-        ctx.font='bold '+fs+'px "Noto Sans KR",sans-serif';
+        const vw=90-8,vh=50+chars.length*42-8;
+        if(style.border)drawRoughRect(cx-vw/2,cy-vh/2,vw,vh,style.thick||3);
+        const fs=Math.min(36,vw*0.65);
+        ctx.font='900 '+fs+'px "Noto Sans KR",sans-serif';
+        ctx.fillStyle=color;
+        const startY=cy-(chars.length-1)*20;
         chars.forEach((ch,i)=>{
-            ctx.fillText(ch,cx,24+i*38);
+            ctx.fillText(ch,cx,startY+i*40);
         });
     } else if(style.shape==='oval'){
-        const rx=w/2-6,ry=h/2-6;
-        if(style.border){ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);ctx.stroke();}
-        const fs=Math.min(45,rx*1.4/name.length);
-        ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
-        ctx.fillText(name,cx,cy+2);
+        const rx=size*0.7-6,ry=size/2-8;
+        if(style.border)drawRoughEllipse(cx,cy,rx,ry,style.thick||3);
+        const maxW=rx*1.6,maxH=ry*1.6;
+        drawStampText(name,cx,cy,maxW,maxH,chars,isKorean);
     } else if(style.shape==='double'){
-        const r1=size/2-4,r2=size/2-10;
-        ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(cx,cy,r1,0,Math.PI*2);ctx.stroke();
-        ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,r2,0,Math.PI*2);ctx.stroke();
-        if(isKorean&&chars.length<=4){
-            if(chars.length<=2){
-                ctx.font='bold 44px "Noto Sans KR",sans-serif';
-                ctx.fillText(name,cx,cy+2);
-            } else if(chars.length===3){
-                ctx.font='bold 30px "Noto Sans KR",sans-serif';
-                ctx.fillText(chars[0],cx,cy-16);
-                ctx.fillText(chars[1]+chars[2],cx,cy+18);
-            } else {
-                ctx.font='bold 26px "Noto Sans KR",sans-serif';
-                ctx.fillText(chars[0]+chars[1],cx,cy-14);
-                ctx.fillText(chars[2]+chars[3],cx,cy+16);
-            }
-        } else {
-            const fs=Math.min(40,r2*1.4/name.length);
-            ctx.font='bold '+fs+'px "Noto Sans KR",Arial,sans-serif';
-            ctx.fillText(name,cx,cy+2);
-        }
+        const r1=size/2-5,r2=size/2-13;
+        drawRoughCircle(cx,cy,r1,2.5);
+        drawRoughCircle(cx,cy,r2,1.5);
+        drawStampText(name,cx,cy,r2*1.5,r2*1.5,chars,isKorean);
     }
-    // 도장 질감 효과 (약간 거친 느낌)
+
+    // === 리얼 잉크 질감 효과 ===
     const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
     const dd=imgData.data;
+    const cWidth=canvas.width,cHeight=canvas.height;
+
+    // 1) 잉크 농도에 따른 불균일한 잉크 분포
     for(let i=0;i<dd.length;i+=4){
         if(dd[i+3]>0){
-            // 랜덤 투명도 변화로 도장 질감
-            const noise=Math.random()*0.2+0.8;
-            dd[i+3]=Math.round(dd[i+3]*noise);
+            // 큰 패치 노이즈 (잉크 뭉침)
+            const px=(i/4)%cWidth, py=Math.floor((i/4)/cWidth);
+            const patchNoise=Math.sin(px*0.05)*Math.cos(py*0.05)*0.15;
+            // 세밀한 노이즈 (종이 질감)
+            const fineNoise=(Math.random()-0.5)*0.3;
+            // 가장자리 얇아지는 효과
+            const distFromCenter=Math.sqrt(Math.pow(px-cWidth/2,2)+Math.pow(py-cHeight/2,2))/(cWidth/2);
+            const edgeFade=distFromCenter>0.7?(1-(distFromCenter-0.7)*0.5):1;
+
+            let alpha=dd[i+3]/255;
+            alpha*=(density+patchNoise+fineNoise)*edgeFade;
+            alpha=Math.max(0,Math.min(1,alpha));
+
+            // 잉크가 살짝 번지는 느낌 - 색상 미세 변화
+            dd[i]=Math.min(255,Math.max(0,r+Math.round((Math.random()-0.5)*15)));
+            dd[i+1]=Math.min(255,Math.max(0,g+Math.round((Math.random()-0.5)*10)));
+            dd[i+2]=Math.min(255,Math.max(0,b+Math.round((Math.random()-0.5)*10)));
+            dd[i+3]=Math.round(alpha*255);
         }
     }
+
+    // 2) 랜덤 잉크 빠짐 (종이 위에 찍었을 때 잉크가 안 묻은 부분)
+    const skipCount=Math.round(cWidth*cHeight*0.003*(1-density));
+    for(let s=0;s<skipCount;s++){
+        const sx=Math.floor(Math.random()*cWidth);
+        const sy=Math.floor(Math.random()*cHeight);
+        const sr=Math.floor(Math.random()*3)+1;
+        for(let dy=-sr;dy<=sr;dy++){
+            for(let dx=-sr;dx<=sr;dx++){
+                if(dx*dx+dy*dy<=sr*sr){
+                    const idx=((sy+dy)*cWidth+(sx+dx))*4;
+                    if(idx>=0&&idx<dd.length&&dd[idx+3]>0){
+                        dd[idx+3]=Math.round(dd[idx+3]*0.15);
+                    }
+                }
+            }
+        }
+    }
+
+    // 3) 잉크 뭉침 스팟 (진한 부분)
+    const blobCount=Math.round(cWidth*cHeight*0.0005*density);
+    for(let bl=0;bl<blobCount;bl++){
+        const bx=Math.floor(Math.random()*cWidth);
+        const by=Math.floor(Math.random()*cHeight);
+        const br=Math.floor(Math.random()*2)+1;
+        for(let dy=-br;dy<=br;dy++){
+            for(let dx=-br;dx<=br;dx++){
+                const idx=((by+dy)*cWidth+(bx+dx))*4;
+                if(idx>=0&&idx<dd.length&&dd[idx+3]>50){
+                    dd[idx+3]=Math.min(255,dd[idx+3]+40);
+                }
+            }
+        }
+    }
+
     ctx.putImageData(imgData,0,0);
 }
 
