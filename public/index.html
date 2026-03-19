@@ -8123,8 +8123,11 @@ async function tdistDownloadSubPdf(subIdx){
                         const sigRaw=v.split(',')[1];
                         const sigBytes=Uint8Array.from(atob(sigRaw),c=>c.charCodeAt(0));
                         const sigImg=await newDoc.embedPng(sigBytes);
-                        const sigDims=sigImg.scaleToFit(fw,fh);
-                        page.drawImage(sigImg,{x:fx,y:fy,width:sigDims.width,height:sigDims.height});
+                        // 서명을 필드 영역에 꽉 차게 그림 (비율 유지)
+                        const sigDims=sigImg.scaleToFit(fw*1.2,fh*1.2);
+                        const sigX=fx+(fw-sigDims.width)/2;
+                        const sigY=fy+(fh-sigDims.height)/2;
+                        page.drawImage(sigImg,{x:sigX,y:sigY,width:sigDims.width,height:sigDims.height});
                     }catch(sigErr){console.warn('서명 삽입 실패:',sigErr);}
                 }
             }
