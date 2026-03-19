@@ -7196,9 +7196,15 @@ function renderSignatures(){
 function downloadSigCanvas(canvasId,name){
     const c=document.getElementById(canvasId);
     if(!c)return;
+    const tc=document.createElement('canvas');
+    tc.width=c.width;tc.height=c.height;
+    const tctx=tc.getContext('2d');
+    tctx.fillStyle='#ffffff';
+    tctx.fillRect(0,0,tc.width,tc.height);
+    tctx.drawImage(c,0,0);
     const a=document.createElement('a');
     a.download=name+'_서명.png';
-    a.href=c.toDataURL('image/png');
+    a.href=tc.toDataURL('image/png');
     a.click();
     showToast('서명 이미지 다운로드 완료','success');
 }
@@ -7300,7 +7306,10 @@ function downloadSigDraw(){
     const cw=maxX-minX,ch=maxY-minY;
     const tc=document.createElement('canvas');
     tc.width=cw;tc.height=ch;
-    tc.getContext('2d').drawImage(c,minX,minY,cw,ch,0,0,cw,ch);
+    const tctx=tc.getContext('2d');
+    tctx.fillStyle='#ffffff';
+    tctx.fillRect(0,0,cw,ch);
+    tctx.drawImage(c,minX,minY,cw,ch,0,0,cw,ch);
     const a=document.createElement('a');
     a.download='서명_'+new Date().toISOString().slice(0,10)+'.png';
     a.href=tc.toDataURL('image/png');
