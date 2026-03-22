@@ -1161,6 +1161,16 @@
                     <h3>사진 스캔</h3><p>사진을 스캔한 것처럼 깔끔하게 변환합니다. 자동 보정!</p>
                     <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00acc1;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
                 </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('pptx2pdf')">
+                    <div class="pdf-tool-icon" style="background:#d84315;">📊</div>
+                    <h3>PPTX → PDF</h3><p>파워포인트(PPTX) 파일을 PDF로 변환합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#d84315;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
+                <div class="pdf-tool-card" onclick="openPdfTool('hwpx2pdf')">
+                    <div class="pdf-tool-icon" style="background:#0277bd;">📝</div>
+                    <h3>HWPX → PDF</h3><p>한글(HWPX) 파일을 PDF로 변환합니다.</p>
+                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#0277bd;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+                </div>
                 <div class="pdf-tool-card" onclick="openSignatureGen()">
                     <div class="pdf-tool-icon" style="background:#1565c0;">✍️</div>
                     <h3>서명 생성기</h3><p>이름을 입력하면 손글씨 스타일의 서명 이미지를 생성합니다.</p>
@@ -5239,7 +5249,9 @@ const PDF_TOOLS={
     rotate:{title:'PDF 회전',icon:'🔄',color:'#00897b',accept:'.pdf',multi:false,desc:'회전할 PDF 파일을 선택하세요'},
     protect:{title:'PDF 보호',icon:'🔒',color:'#5c6bc0',accept:'.pdf',multi:false,desc:'암호를 설정할 PDF를 선택하세요'},
     pagenumber:{title:'페이지 번호',icon:'🔢',color:'#6d4c41',accept:'.pdf',multi:false,desc:'번호를 삽입할 PDF를 선택하세요'},
-    scan:{title:'사진 스캔',icon:'📸',color:'#00acc1',accept:'image/*',multi:true,desc:'스캔할 사진을 선택하세요 (JPG, PNG)'}
+    scan:{title:'사진 스캔',icon:'📸',color:'#00acc1',accept:'image/*',multi:true,desc:'스캔할 사진을 선택하세요 (JPG, PNG)'},
+    pptx2pdf:{title:'PPTX → PDF',icon:'📊',color:'#d84315',accept:'.pptx',multi:false,desc:'변환할 PPTX 파일을 선택하세요'},
+    hwpx2pdf:{title:'HWPX → PDF',icon:'📝',color:'#0277bd',accept:'.hwpx',multi:false,desc:'변환할 HWPX 파일을 선택하세요'}
 };
 let pdfToolFiles=[];
 let pdfToolCurrent=null;
@@ -5346,6 +5358,10 @@ async function addPdfFiles(files){
     for(const file of files){
         if(pdfToolCurrent==='img2pdf'||pdfToolCurrent==='scan'){
             if(!file.type.startsWith('image/')){showToast(file.name+': 이미지 파일만 가능','error');continue;}
+        } else if(pdfToolCurrent==='pptx2pdf'){
+            if(!file.name.toLowerCase().endsWith('.pptx')){showToast(file.name+': PPTX 파일만 가능','error');continue;}
+        } else if(pdfToolCurrent==='hwpx2pdf'){
+            if(!file.name.toLowerCase().endsWith('.hwpx')){showToast(file.name+': HWPX 파일만 가능','error');continue;}
         } else {
             if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){showToast(file.name+': PDF 파일만 가능','error');continue;}
         }
@@ -5374,7 +5390,7 @@ function renderPdfFiles(){
     }
     bar.style.display='flex';
     list.innerHTML=pdfToolFiles.map((f,i)=>`<div class="pdf-file-item">
-        <div class="file-icon">${pdfToolCurrent==='img2pdf'?'IMG':'PDF'}</div>
+        <div class="file-icon">${pdfToolCurrent==='img2pdf'?'IMG':pdfToolCurrent==='pptx2pdf'?'PPT':pdfToolCurrent==='hwpx2pdf'?'HWP':'PDF'}</div>
         <div class="file-info"><div class="file-name">${esc(f.name)}</div><div class="file-size">${formatFileSize(f.size)}${f.pageCount?' · '+f.pageCount+'페이지':''}</div></div>
         ${pdfToolCurrent==='merge'&&pdfToolFiles.length>1?`<button class="file-remove" onclick="movePdfFile(${i},-1)" title="위로">⬆️</button><button class="file-remove" onclick="movePdfFile(${i},1)" title="아래로">⬇️</button>`:''}
         <button class="file-remove" onclick="removePdfFile(${i})" title="삭제">✕</button>
@@ -5520,6 +5536,8 @@ async function processPdfTool(){
             case 'protect': await pdfProtect(); break;
             case 'pagenumber': await pdfPageNumber(); break;
             case 'scan': await pdfScan(); break;
+            case 'pptx2pdf': await pdfPptx2Pdf(); break;
+            case 'hwpx2pdf': await pdfHwpx2Pdf(); break;
         }
     }catch(e){
         showToast('처리 실패: '+e.message,'error');
@@ -5735,6 +5753,301 @@ async function pdfPageNumber(){
     pdfShowProgress(95,'파일 생성 중...');
     const bytes=await doc.save();
     const name=pdfToolFiles[0].name.replace('.pdf','')+'_numbered.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== PPTX → PDF =====
+async function pdfPptx2Pdf(){
+    pdfShowProgress(5,'PPTX 파일 분석 중...');
+    const zip=await JSZip.loadAsync(pdfToolFiles[0].data);
+    // 프레젠테이션 정보 파싱
+    let slideWidth=9144000,slideHeight=6858000; // 기본 10x7.5 인치 (EMU)
+    const presXml=zip.file('ppt/presentation.xml');
+    if(presXml){
+        const presTxt=await presXml.async('text');
+        const swM=presTxt.match(/cx="(\d+)"/);
+        const shM=presTxt.match(/cy="(\d+)"/);
+        if(swM)slideWidth=parseInt(swM[1]);
+        if(shM)slideHeight=parseInt(shM[1]);
+    }
+    // 슬라이드 파일 목록 수집
+    const slideFiles=[];
+    zip.folder('ppt/slides').forEach((path,file)=>{
+        const m=path.match(/^slide(\d+)\.xml$/);
+        if(m)slideFiles.push({num:parseInt(m[1]),file});
+    });
+    slideFiles.sort((a,b)=>a.num-b.num);
+    if(slideFiles.length===0){showToast('슬라이드를 찾을 수 없습니다','error');return;}
+    // EMU를 pt로 변환 (1pt = 12700 EMU)
+    const pW=slideWidth/12700;
+    const pH=slideHeight/12700;
+    const doc=await PDFLib.PDFDocument.create();
+    const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+    // 슬라이드 관계 파싱 (이미지 참조용)
+    async function getSlideRels(slideNum){
+        const relsFile=zip.file('ppt/slides/_rels/slide'+slideNum+'.xml.rels');
+        if(!relsFile)return{};
+        const relsTxt=await relsFile.async('text');
+        const rels={};
+        const re=/<Relationship[^>]*Id="([^"]*)"[^>]*Target="([^"]*)"[^>]*Type="([^"]*)"/g;
+        let rm;
+        while((rm=re.exec(relsTxt))!==null){
+            rels[rm[1]]={target:rm[2],type:rm[3]};
+        }
+        return rels;
+    }
+    for(let i=0;i<slideFiles.length;i++){
+        pdfShowProgress(5+85*(i/slideFiles.length),'슬라이드 '+(i+1)+'/'+slideFiles.length+' 변환 중...');
+        const xmlTxt=await slideFiles[i].file.async('text');
+        const rels=await getSlideRels(slideFiles[i].num);
+        const page=doc.addPage([pW,pH]);
+        // 배경 흰색
+        page.drawRectangle({x:0,y:0,width:pW,height:pH,color:PDFLib.rgb(1,1,1)});
+        // 이미지 추출 및 배치
+        const blipRe=/<a:blip[^>]*r:embed="([^"]*)"[^\/]*\/?>|<a:blip[^>]*r:embed="([^"]*)"[^>]*>/g;
+        const spTreeMatch=xmlTxt.match(/<p:spTree[\s\S]*<\/p:spTree>/);
+        if(spTreeMatch){
+            // 각 sp(shape) 파싱
+            const spRe=/<p:sp[\s>][\s\S]*?<\/p:sp>|<p:pic[\s>][\s\S]*?<\/p:pic>/g;
+            let spMatch;
+            while((spMatch=spRe.exec(spTreeMatch[0]))!==null){
+                const spXml=spMatch[0];
+                // 위치/크기 정보
+                const offXM=spXml.match(/<a:off[^>]*x="(\d+)"[^>]*y="(\d+)"/);
+                const extM=spXml.match(/<a:ext[^>]*cx="(\d+)"[^>]*cy="(\d+)"/);
+                if(!offXM||!extM)continue;
+                const sx=parseInt(offXM[1])/12700;
+                const sy=parseInt(offXM[2])/12700;
+                const sw=parseInt(extM[1])/12700;
+                const sh=parseInt(extM[2])/12700;
+                // 이미지 처리
+                const blipM=spXml.match(/r:embed="([^"]*)"/);
+                if(blipM&&spXml.includes('a:blip')){
+                    const rel=rels[blipM[1]];
+                    if(rel){
+                        let imgPath=rel.target;
+                        if(imgPath.startsWith('..'))imgPath='ppt'+imgPath.substring(2);
+                        else if(!imgPath.startsWith('ppt'))imgPath='ppt/slides/'+imgPath;
+                        const imgFile=zip.file(imgPath);
+                        if(imgFile){
+                            try{
+                                const imgData=await imgFile.async('uint8array');
+                                const lower=imgPath.toLowerCase();
+                                let pdfImg;
+                                if(lower.endsWith('.png'))pdfImg=await doc.embedPng(imgData);
+                                else if(lower.endsWith('.jpg')||lower.endsWith('.jpeg'))pdfImg=await doc.embedJpg(imgData);
+                                else{
+                                    // 기타 형식 → canvas를 통해 PNG 변환
+                                    const blob=new Blob([imgData]);
+                                    const bitmap=await createImageBitmap(blob);
+                                    const cvs=document.createElement('canvas');
+                                    cvs.width=bitmap.width;cvs.height=bitmap.height;
+                                    const ctx2=cvs.getContext('2d');
+                                    ctx2.drawImage(bitmap,0,0);
+                                    const pngUrl=cvs.toDataURL('image/png');
+                                    const pngBytes=Uint8Array.from(atob(pngUrl.split(',')[1]),c=>c.charCodeAt(0));
+                                    pdfImg=await doc.embedPng(pngBytes);
+                                }
+                                page.drawImage(pdfImg,{x:sx,y:pH-sy-sh,width:sw,height:sh});
+                            }catch(e){}
+                        }
+                    }
+                }
+                // 텍스트 처리
+                const txBodyM=spXml.match(/<p:txBody[\s\S]*?<\/p:txBody>/);
+                if(txBodyM){
+                    const paragraphs=txBodyM[0].match(/<a:p[\s>][\s\S]*?<\/a:p>/g)||[];
+                    let textY=sy;
+                    for(const para of paragraphs){
+                        const runs=para.match(/<a:r[\s>][\s\S]*?<\/a:r>/g)||[];
+                        let lineText='';
+                        let fontSize=12;
+                        let isBold=false;
+                        for(const run of runs){
+                            const tM=run.match(/<a:t>([\s\S]*?)<\/a:t>/);
+                            if(tM)lineText+=tM[1];
+                            const szM=run.match(/sz="(\d+)"/);
+                            if(szM)fontSize=parseInt(szM[1])/100;
+                            if(run.includes('b="1"'))isBold=true;
+                        }
+                        // 단락 속성에서 폰트 크기
+                        const defSzM=para.match(/sz="(\d+)"/);
+                        if(defSzM&&!runs.some(r=>r.match(/sz="/)))fontSize=parseInt(defSzM[1])/100;
+                        lineText=lineText.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+                        if(lineText.trim()){
+                            const drawSize=Math.min(Math.max(fontSize,6),72);
+                            try{
+                                // Helvetica로 그릴 수 있는 문자만 필터링
+                                const safeText=lineText.replace(/[^\x20-\x7E]/g,'?');
+                                page.drawText(safeText,{x:sx+4,y:pH-textY-drawSize,size:drawSize,font,color:PDFLib.rgb(0,0,0)});
+                            }catch(e){}
+                        }
+                        textY+=fontSize*1.4;
+                    }
+                }
+            }
+        }
+    }
+    pdfShowProgress(95,'PDF 생성 중...');
+    const bytes=await doc.save();
+    const name=pdfToolFiles[0].name.replace(/\.pptx$/i,'')+'_converted.pdf';
+    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
+}
+
+// ===== HWPX → PDF =====
+async function pdfHwpx2Pdf(){
+    pdfShowProgress(5,'HWPX 파일 분석 중...');
+    const zip=await JSZip.loadAsync(pdfToolFiles[0].data);
+    const doc=await PDFLib.PDFDocument.create();
+    const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+    // HWPX 섹션 파일 찾기
+    const sectionFiles=[];
+    zip.folder('Contents').forEach((path,file)=>{
+        const m=path.match(/^section(\d+)\.xml$/i);
+        if(m)sectionFiles.push({num:parseInt(m[1]),file});
+    });
+    // content.hpf 에서 섹션 순서 확인
+    if(sectionFiles.length===0){
+        // Contents 폴더 내 모든 XML 파일 시도
+        zip.folder('Contents').forEach((path,file)=>{
+            if(path.endsWith('.xml')&&!path.includes('/'))sectionFiles.push({num:sectionFiles.length,file});
+        });
+    }
+    sectionFiles.sort((a,b)=>a.num-b.num);
+    if(sectionFiles.length===0){showToast('HWPX 내용을 찾을 수 없습니다','error');return;}
+    // 기본 A4 크기 (pt)
+    const defaultW=595.28,defaultH=841.89;
+    for(let s=0;s<sectionFiles.length;s++){
+        pdfShowProgress(5+85*(s/sectionFiles.length),'섹션 '+(s+1)+'/'+sectionFiles.length+' 변환 중...');
+        const xmlTxt=await sectionFiles[s].file.async('text');
+        // 용지 크기 파싱 (HWPX는 HWP 단위 사용, 1 HWP unit = 1/7200 inch = 0.1pt)
+        let pageW=defaultW,pageH=defaultH;
+        const pagePrM=xmlTxt.match(/<hp:pagePr[\s\S]*?<\/hp:pagePr>|<hp:pagePr[^\/]*\/>/);
+        if(pagePrM){
+            const wM=pagePrM[0].match(/width="(\d+)"/);
+            const hM=pagePrM[0].match(/height="(\d+)"/);
+            if(wM)pageW=parseInt(wM[1])/20; // HWPX 단위: 1/20 pt가 아닌 1/100 mm → pt 변환
+            if(hM)pageH=parseInt(hM[1])/20;
+            // 페이지가 너무 작거나 크면 A4로 폴백
+            if(pageW<100||pageW>2000||pageH<100||pageH>3000){pageW=defaultW;pageH=defaultH;}
+        }
+        let page=doc.addPage([pageW,pageH]);
+        page.drawRectangle({x:0,y:0,width:pageW,height:pageH,color:PDFLib.rgb(1,1,1)});
+        // 여백 설정
+        let marginLeft=56.7,marginTop=56.7; // 기본 20mm
+        const marginM=xmlTxt.match(/<hp:margin[^>]*left="(\d+)"[^>]*top="(\d+)"/);
+        if(marginM){
+            marginLeft=parseInt(marginM[1])/20;
+            marginTop=parseInt(marginM[2])/20;
+            if(marginLeft<0||marginLeft>200)marginLeft=56.7;
+            if(marginTop<0||marginTop>200)marginTop=56.7;
+        }
+        // 이미지 관계 파싱
+        const imgRels={};
+        const relsFile=zip.file('Contents/_rels/section'+(s===0?'0':s)+'.xml.rels')||zip.file('Contents/_rels/section'+(s+1)+'.xml.rels');
+        if(relsFile){
+            const relsTxt=await relsFile.async('text');
+            const re=/<Relationship[^>]*Id="([^"]*)"[^>]*Target="([^"]*)"/g;
+            let rm;
+            while((rm=re.exec(relsTxt))!==null)imgRels[rm[1]]=rm[2];
+        }
+        // 단락 추출
+        const paragraphs=xmlTxt.match(/<hp:p[\s>][\s\S]*?<\/hp:p>/g)||[];
+        let curY=marginTop;
+        const maxY=pageH-marginTop;
+        const textAreaW=pageW-marginLeft*2;
+        for(const para of paragraphs){
+            // 단락 속성 파싱
+            let fontSize=10;
+            let lineSpacing=1.6;
+            // 런(텍스트 조각) 추출
+            const runs=para.match(/<hp:run[\s>][\s\S]*?<\/hp:run>/g)||[];
+            let lineText='';
+            for(const run of runs){
+                // 텍스트 추출 - hp:t 태그에서
+                const tMatches=run.match(/<hp:t>([\s\S]*?)<\/hp:t>/g)||[];
+                for(const tM of tMatches){
+                    const txt=tM.replace(/<\/?hp:t>/g,'');
+                    lineText+=txt;
+                }
+                // 폰트 크기
+                const szM=run.match(/sz="(\d+)"/);
+                if(szM){
+                    const sz=parseInt(szM[1]);
+                    if(sz>0&&sz<10000)fontSize=sz/100; // HWPX: 100분의 1pt
+                }
+                // 이미지 처리
+                const imgRefM=run.match(/r:id="([^"]*)"/)||run.match(/binaryItemIDRef="([^"]*)"/);
+                if(imgRefM){
+                    let imgPath=imgRels[imgRefM[1]];
+                    if(!imgPath){
+                        // BinData 폴더에서 직접 찾기
+                        const binId=imgRefM[1];
+                        const possiblePaths=['BinData/'+binId,'Contents/BinData/'+binId];
+                        for(const pp of possiblePaths){
+                            if(zip.file(pp)){imgPath=pp;break;}
+                        }
+                    }
+                    if(imgPath){
+                        if(!imgPath.startsWith('Contents')&&!imgPath.startsWith('BinData'))imgPath='Contents/'+imgPath;
+                        const imgFile=zip.file(imgPath)||zip.file(imgPath.replace('Contents/',''));
+                        if(imgFile){
+                            try{
+                                const imgData=await imgFile.async('uint8array');
+                                const lower=imgPath.toLowerCase();
+                                let pdfImg;
+                                if(lower.endsWith('.png'))pdfImg=await doc.embedPng(imgData);
+                                else if(lower.endsWith('.jpg')||lower.endsWith('.jpeg'))pdfImg=await doc.embedJpg(imgData);
+                                else{
+                                    const blob=new Blob([imgData]);
+                                    const bitmap=await createImageBitmap(blob);
+                                    const cvs=document.createElement('canvas');
+                                    cvs.width=bitmap.width;cvs.height=bitmap.height;
+                                    const ctx2=cvs.getContext('2d');
+                                    ctx2.drawImage(bitmap,0,0);
+                                    const pngUrl=cvs.toDataURL('image/png');
+                                    const pngBytes=Uint8Array.from(atob(pngUrl.split(',')[1]),c=>c.charCodeAt(0));
+                                    pdfImg=await doc.embedPng(pngBytes);
+                                }
+                                // 이미지 크기 계산
+                                const imgW=Math.min(pdfImg.width*0.75,textAreaW);
+                                const imgH=imgW*(pdfImg.height/pdfImg.width);
+                                if(curY+imgH>maxY){page=doc.addPage([pageW,pageH]);page.drawRectangle({x:0,y:0,width:pageW,height:pageH,color:PDFLib.rgb(1,1,1)});curY=marginTop;}
+                                page.drawImage(pdfImg,{x:marginLeft,y:pageH-curY-imgH,width:imgW,height:imgH});
+                                curY+=imgH+8;
+                            }catch(e){}
+                        }
+                    }
+                }
+            }
+            // 텍스트 그리기
+            lineText=lineText.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
+            if(lineText){
+                const drawSize=Math.min(Math.max(fontSize,6),48);
+                const lineH=drawSize*lineSpacing;
+                // 줄바꿈 처리 (텍스트가 길 경우)
+                const safeText=lineText.replace(/[^\x20-\x7E]/g,'?');
+                const charsPerLine=Math.floor(textAreaW/(drawSize*0.5))||60;
+                const lines=[];
+                for(let ci=0;ci<safeText.length;ci+=charsPerLine){
+                    lines.push(safeText.substring(ci,ci+charsPerLine));
+                }
+                for(const line of lines){
+                    if(curY+lineH>maxY){page=doc.addPage([pageW,pageH]);page.drawRectangle({x:0,y:0,width:pageW,height:pageH,color:PDFLib.rgb(1,1,1)});curY=marginTop;}
+                    try{
+                        page.drawText(line,{x:marginLeft,y:pageH-curY-drawSize,size:drawSize,font,color:PDFLib.rgb(0,0,0)});
+                    }catch(e){}
+                    curY+=lineH;
+                }
+            } else {
+                // 빈 줄
+                curY+=fontSize*lineSpacing;
+            }
+        }
+    }
+    pdfShowProgress(95,'PDF 생성 중...');
+    const bytes=await doc.save();
+    const name=pdfToolFiles[0].name.replace(/\.hwpx$/i,'')+'_converted.pdf';
     pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
 }
 
