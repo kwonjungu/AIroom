@@ -5756,19 +5756,19 @@ async function pdfPageNumber(){
     pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
 }
 
-// ===== PPTX → PDF =====
+// ===== PPTX → PDF (캔버스 기반 렌더링 - 한글 지원) =====
 async function pdfPptx2Pdf(){
     pdfShowProgress(5,'PPTX 파일 분석 중...');
     const zip=await JSZip.loadAsync(pdfToolFiles[0].data);
     // 프레젠테이션 정보 파싱
-    let slideWidth=9144000,slideHeight=6858000; // 기본 10x7.5 인치 (EMU)
+    let slideWidthEMU=9144000,slideHeightEMU=6858000;
     const presXml=zip.file('ppt/presentation.xml');
     if(presXml){
         const presTxt=await presXml.async('text');
         const swM=presTxt.match(/cx="(\d+)"/);
         const shM=presTxt.match(/cy="(\d+)"/);
-        if(swM)slideWidth=parseInt(swM[1]);
-        if(shM)slideHeight=parseInt(shM[1]);
+        if(swM)slideWidthEMU=parseInt(swM[1]);
+        if(shM)slideHeightEMU=parseInt(shM[1]);
     }
     // 슬라이드 파일 목록 수집
     const slideFiles=[];
@@ -5778,78 +5778,109 @@ async function pdfPptx2Pdf(){
     });
     slideFiles.sort((a,b)=>a.num-b.num);
     if(slideFiles.length===0){showToast('슬라이드를 찾을 수 없습니다','error');return;}
-    // EMU를 pt로 변환 (1pt = 12700 EMU)
-    const pW=slideWidth/12700;
-    const pH=slideHeight/12700;
-    const doc=await PDFLib.PDFDocument.create();
-    const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
-    // 슬라이드 관계 파싱 (이미지 참조용)
+    // 캔버스 크기 (2x 해상도로 선명하게)
+    const SCALE=2;
+    const pW=slideWidthEMU/12700;
+    const pH=slideHeightEMU/12700;
+    const canvasW=Math.round(pW*SCALE);
+    const canvasH=Math.round(pH*SCALE);
+    // 슬라이드 관계 파싱
     async function getSlideRels(slideNum){
         const relsFile=zip.file('ppt/slides/_rels/slide'+slideNum+'.xml.rels');
         if(!relsFile)return{};
         const relsTxt=await relsFile.async('text');
         const rels={};
         const re=/<Relationship[^>]*Id="([^"]*)"[^>]*Target="([^"]*)"[^>]*Type="([^"]*)"/g;
-        let rm;
-        while((rm=re.exec(relsTxt))!==null){
-            rels[rm[1]]={target:rm[2],type:rm[3]};
-        }
+        let rm;while((rm=re.exec(relsTxt))!==null)rels[rm[1]]={target:rm[2],type:rm[3]};
         return rels;
     }
+    // 슬라이드 레이아웃에서 기본 텍스트 정보 가져오기
+    async function getLayoutShapes(slideNum,rels){
+        // 슬라이드 레이아웃 참조
+        for(const rId in rels){
+            if(rels[rId].type&&rels[rId].type.includes('slideLayout')){
+                let layoutPath=rels[rId].target;
+                if(layoutPath.startsWith('..'))layoutPath='ppt'+layoutPath.substring(2);
+                else if(!layoutPath.startsWith('ppt'))layoutPath='ppt/slides/'+layoutPath;
+                const layoutFile=zip.file(layoutPath);
+                if(layoutFile)return await layoutFile.async('text');
+            }
+        }
+        return '';
+    }
+    // XML 엔티티 디코딩
+    function decodeXml(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x([0-9a-fA-F]+);/g,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\d+);/g,(_,d)=>String.fromCharCode(parseInt(d)));}
+    // 색상 파싱
+    function parseColor(xml){
+        const srgbM=xml.match(/<a:srgbClr val="([^"]*)"/);
+        if(srgbM)return'#'+srgbM[1];
+        // 테마 색상은 기본 검정
+        return null;
+    }
+    // 이미지를 bitmap으로 로드
+    async function loadImageBitmap(zip,imgPath){
+        if(imgPath.startsWith('..'))imgPath='ppt'+imgPath.substring(2);
+        else if(!imgPath.startsWith('ppt'))imgPath='ppt/slides/'+imgPath;
+        const imgFile=zip.file(imgPath);
+        if(!imgFile)return null;
+        const imgData=await imgFile.async('uint8array');
+        try{
+            const blob=new Blob([imgData]);
+            return await createImageBitmap(blob);
+        }catch(e){return null;}
+    }
+
+    const doc=await PDFLib.PDFDocument.create();
+
     for(let i=0;i<slideFiles.length;i++){
         pdfShowProgress(5+85*(i/slideFiles.length),'슬라이드 '+(i+1)+'/'+slideFiles.length+' 변환 중...');
         const xmlTxt=await slideFiles[i].file.async('text');
         const rels=await getSlideRels(slideFiles[i].num);
-        const page=doc.addPage([pW,pH]);
-        // 배경 흰색
-        page.drawRectangle({x:0,y:0,width:pW,height:pH,color:PDFLib.rgb(1,1,1)});
-        // 이미지 추출 및 배치
-        const blipRe=/<a:blip[^>]*r:embed="([^"]*)"[^\/]*\/?>|<a:blip[^>]*r:embed="([^"]*)"[^>]*>/g;
+        // 캔버스 생성
+        const canvas=document.createElement('canvas');
+        canvas.width=canvasW;canvas.height=canvasH;
+        const ctx=canvas.getContext('2d');
+        // 배경
+        ctx.fillStyle='#ffffff';
+        // 슬라이드 배경색 파싱
+        const bgClrM=xmlTxt.match(/<p:bg[\s\S]*?<\/p:bg>/);
+        if(bgClrM){
+            const bgColor=parseColor(bgClrM[0]);
+            if(bgColor)ctx.fillStyle=bgColor;
+        }
+        ctx.fillRect(0,0,canvasW,canvasH);
+        // shape 파싱 (sp + pic + grpSp 내부)
         const spTreeMatch=xmlTxt.match(/<p:spTree[\s\S]*<\/p:spTree>/);
         if(spTreeMatch){
-            // 각 sp(shape) 파싱
             const spRe=/<p:sp[\s>][\s\S]*?<\/p:sp>|<p:pic[\s>][\s\S]*?<\/p:pic>/g;
             let spMatch;
             while((spMatch=spRe.exec(spTreeMatch[0]))!==null){
                 const spXml=spMatch[0];
-                // 위치/크기 정보
-                const offXM=spXml.match(/<a:off[^>]*x="(\d+)"[^>]*y="(\d+)"/);
+                // 위치/크기 (EMU → canvas px)
+                const offM=spXml.match(/<a:off[^>]*x="(\d+)"[^>]*y="(\d+)"/);
                 const extM=spXml.match(/<a:ext[^>]*cx="(\d+)"[^>]*cy="(\d+)"/);
-                if(!offXM||!extM)continue;
-                const sx=parseInt(offXM[1])/12700;
-                const sy=parseInt(offXM[2])/12700;
-                const sw=parseInt(extM[1])/12700;
-                const sh=parseInt(extM[2])/12700;
+                if(!offM||!extM)continue;
+                const sx=parseInt(offM[1])/12700*SCALE;
+                const sy=parseInt(offM[2])/12700*SCALE;
+                const sw=parseInt(extM[1])/12700*SCALE;
+                const sh=parseInt(extM[2])/12700*SCALE;
+                // 도형 배경 채우기
+                const solidFillM=spXml.match(/<a:solidFill>([\s\S]*?)<\/a:solidFill>/);
+                if(solidFillM&&!spXml.includes('a:blip')){
+                    const fillColor=parseColor(solidFillM[0]);
+                    if(fillColor){
+                        ctx.fillStyle=fillColor;
+                        ctx.fillRect(sx,sy,sw,sh);
+                    }
+                }
                 // 이미지 처리
-                const blipM=spXml.match(/r:embed="([^"]*)"/);
-                if(blipM&&spXml.includes('a:blip')){
+                const blipM=spXml.match(/<a:blip[^>]*r:embed="([^"]*)"/);
+                if(blipM){
                     const rel=rels[blipM[1]];
                     if(rel){
-                        let imgPath=rel.target;
-                        if(imgPath.startsWith('..'))imgPath='ppt'+imgPath.substring(2);
-                        else if(!imgPath.startsWith('ppt'))imgPath='ppt/slides/'+imgPath;
-                        const imgFile=zip.file(imgPath);
-                        if(imgFile){
-                            try{
-                                const imgData=await imgFile.async('uint8array');
-                                const lower=imgPath.toLowerCase();
-                                let pdfImg;
-                                if(lower.endsWith('.png'))pdfImg=await doc.embedPng(imgData);
-                                else if(lower.endsWith('.jpg')||lower.endsWith('.jpeg'))pdfImg=await doc.embedJpg(imgData);
-                                else{
-                                    // 기타 형식 → canvas를 통해 PNG 변환
-                                    const blob=new Blob([imgData]);
-                                    const bitmap=await createImageBitmap(blob);
-                                    const cvs=document.createElement('canvas');
-                                    cvs.width=bitmap.width;cvs.height=bitmap.height;
-                                    const ctx2=cvs.getContext('2d');
-                                    ctx2.drawImage(bitmap,0,0);
-                                    const pngUrl=cvs.toDataURL('image/png');
-                                    const pngBytes=Uint8Array.from(atob(pngUrl.split(',')[1]),c=>c.charCodeAt(0));
-                                    pdfImg=await doc.embedPng(pngBytes);
-                                }
-                                page.drawImage(pdfImg,{x:sx,y:pH-sy-sh,width:sw,height:sh});
-                            }catch(e){}
+                        const bitmap=await loadImageBitmap(zip,rel.target);
+                        if(bitmap){
+                            ctx.drawImage(bitmap,sx,sy,sw,sh);
                         }
                     }
                 }
@@ -5858,35 +5889,126 @@ async function pdfPptx2Pdf(){
                 if(txBodyM){
                     const paragraphs=txBodyM[0].match(/<a:p[\s>][\s\S]*?<\/a:p>/g)||[];
                     let textY=sy;
+                    const textPadding=4*SCALE;
+                    textY+=textPadding;
                     for(const para of paragraphs){
+                        // 단락 정렬
+                        let align='left';
+                        const algnM=para.match(/algn="([^"]*)"/);
+                        if(algnM){
+                            if(algnM[1]==='ctr')align='center';
+                            else if(algnM[1]==='r')align='right';
+                        }
                         const runs=para.match(/<a:r[\s>][\s\S]*?<\/a:r>/g)||[];
-                        let lineText='';
-                        let fontSize=12;
-                        let isBold=false;
+                        if(runs.length===0){textY+=14*SCALE;continue;}
+                        // 각 run의 텍스트와 스타일 수집
+                        let maxFontSize=12;
+                        const runData=[];
                         for(const run of runs){
                             const tM=run.match(/<a:t>([\s\S]*?)<\/a:t>/);
-                            if(tM)lineText+=tM[1];
-                            const szM=run.match(/sz="(\d+)"/);
-                            if(szM)fontSize=parseInt(szM[1])/100;
-                            if(run.includes('b="1"'))isBold=true;
+                            if(!tM)continue;
+                            let text=decodeXml(tM[1]);
+                            let fontSize=12;
+                            let bold=false;
+                            let italic=false;
+                            let color='#000000';
+                            const rPrM=run.match(/<a:rPr[^>]*>/);
+                            if(rPrM){
+                                const szM=rPrM[0].match(/sz="(\d+)"/);
+                                if(szM)fontSize=parseInt(szM[1])/100;
+                                if(rPrM[0].includes('b="1"'))bold=true;
+                                if(rPrM[0].includes('i="1"'))italic=true;
+                            }
+                            // run 내 색상
+                            const runColorM=run.match(/<a:solidFill>([\s\S]*?)<\/a:solidFill>/);
+                            if(runColorM){const c=parseColor(runColorM[0]);if(c)color=c;}
+                            if(fontSize>maxFontSize)maxFontSize=fontSize;
+                            runData.push({text,fontSize,bold,italic,color});
                         }
-                        // 단락 속성에서 폰트 크기
-                        const defSzM=para.match(/sz="(\d+)"/);
-                        if(defSzM&&!runs.some(r=>r.match(/sz="/)))fontSize=parseInt(defSzM[1])/100;
-                        lineText=lineText.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
-                        if(lineText.trim()){
-                            const drawSize=Math.min(Math.max(fontSize,6),72);
-                            try{
-                                // Helvetica로 그릴 수 있는 문자만 필터링
-                                const safeText=lineText.replace(/[^\x20-\x7E]/g,'?');
-                                page.drawText(safeText,{x:sx+4,y:pH-textY-drawSize,size:drawSize,font,color:PDFLib.rgb(0,0,0)});
-                            }catch(e){}
+                        // 단락의 기본 폰트 크기
+                        const defRPrM=para.match(/<a:defRPr[^>]*>/);
+                        if(defRPrM){
+                            const dszM=defRPrM[0].match(/sz="(\d+)"/);
+                            if(dszM){
+                                const dsz=parseInt(dszM[1])/100;
+                                runData.forEach(r=>{if(r.fontSize===12)r.fontSize=dsz;});
+                                if(dsz>maxFontSize)maxFontSize=dsz;
+                            }
                         }
-                        textY+=fontSize*1.4;
+                        // 전체 텍스트 결합하여 줄바꿈 처리
+                        const lineH=maxFontSize*SCALE*1.3;
+                        const availW=sw-textPadding*2;
+                        // 텍스트를 줄 단위로 분할
+                        let fullText='';
+                        runData.forEach(r=>fullText+=r.text);
+                        if(!fullText.trim()){textY+=lineH;continue;}
+                        // 줄바꿈 측정
+                        ctx.font=(maxFontSize*SCALE)+'px "맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+                        const words=fullText;
+                        const wrapLines=[];
+                        let curLine='';
+                        for(let ci=0;ci<words.length;ci++){
+                            const ch=words[ci];
+                            if(ch==='\n'){wrapLines.push(curLine);curLine='';continue;}
+                            const testLine=curLine+ch;
+                            if(ctx.measureText(testLine).width>availW&&curLine.length>0){
+                                wrapLines.push(curLine);curLine=ch;
+                            } else {curLine=testLine;}
+                        }
+                        if(curLine)wrapLines.push(curLine);
+                        // 각 줄 그리기
+                        for(const line of wrapLines){
+                            if(textY+lineH>sy+sh)break;
+                            // 각 run별 스타일로 그리기
+                            let drawX=sx+textPadding;
+                            if(align==='center')drawX=sx+(sw-ctx.measureText(line).width)/2;
+                            else if(align==='right')drawX=sx+sw-textPadding-ctx.measureText(line).width;
+                            // 간단히 전체 라인을 같은 스타일로 그림 (성능)
+                            let rd=runData[0]||{fontSize:12,bold:false,italic:false,color:'#000000'};
+                            const fontStyle=(rd.bold?'bold ':'')+(rd.italic?'italic ':'');
+                            ctx.font=fontStyle+(rd.fontSize*SCALE)+'px "맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+                            ctx.fillStyle=rd.color;
+                            // run별로 정확히 그리기
+                            let runOffset=0;
+                            let lineCharIdx=0;
+                            // 이 줄에 해당하는 부분만 그리기 (복잡한 multi-run은 전체 라인으로 대체)
+                            let currentRunIdx=0;
+                            let globalCharIdx=0;
+                            // 전체 텍스트에서 이 줄의 시작 위치 찾기
+                            let lineStartGlobal=0;
+                            for(let li=0;li<wrapLines.indexOf(line);li++)lineStartGlobal+=wrapLines[li].length;
+                            let cx2=drawX;
+                            let charCount=0;
+                            let rci=0;
+                            let rCharIdx=0;
+                            // 글로벌 인덱스까지 skip
+                            for(let g=0;g<lineStartGlobal;g++){
+                                rCharIdx++;
+                                while(rci<runData.length&&rCharIdx>=runData[rci].text.length){rCharIdx-=runData[rci].text.length;rci++;}
+                            }
+                            for(let lci=0;lci<line.length;lci++){
+                                if(rci>=runData.length)break;
+                                const r=runData[rci];
+                                const fs=(r.bold?'bold ':'')+(r.italic?'italic ':'');
+                                ctx.font=fs+(r.fontSize*SCALE)+'px "맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+                                ctx.fillStyle=r.color;
+                                ctx.fillText(line[lci],cx2,textY+maxFontSize*SCALE*0.85);
+                                cx2+=ctx.measureText(line[lci]).width;
+                                rCharIdx++;
+                                while(rci<runData.length&&rCharIdx>=runData[rci].text.length){rCharIdx-=runData[rci].text.length;rci++;}
+                            }
+                            textY+=lineH;
+                        }
                     }
                 }
             }
         }
+        // 캔버스 → JPEG → PDF 페이지
+        const jpgData=canvas.toDataURL('image/jpeg',0.92);
+        const jpgBytes=Uint8Array.from(atob(jpgData.split(',')[1]),c=>c.charCodeAt(0));
+        const pdfImg=await doc.embedJpg(jpgBytes);
+        const page=doc.addPage([pW,pH]);
+        page.drawImage(pdfImg,{x:0,y:0,width:pW,height:pH});
     }
     pdfShowProgress(95,'PDF 생성 중...');
     const bytes=await doc.save();
@@ -5894,156 +6016,229 @@ async function pdfPptx2Pdf(){
     pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
 }
 
-// ===== HWPX → PDF =====
+// ===== HWPX → PDF (캔버스 기반 렌더링 - 한글 지원) =====
 async function pdfHwpx2Pdf(){
     pdfShowProgress(5,'HWPX 파일 분석 중...');
     const zip=await JSZip.loadAsync(pdfToolFiles[0].data);
-    const doc=await PDFLib.PDFDocument.create();
-    const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
     // HWPX 섹션 파일 찾기
     const sectionFiles=[];
-    zip.folder('Contents').forEach((path,file)=>{
-        const m=path.match(/^section(\d+)\.xml$/i);
-        if(m)sectionFiles.push({num:parseInt(m[1]),file});
-    });
-    // content.hpf 에서 섹션 순서 확인
-    if(sectionFiles.length===0){
-        // Contents 폴더 내 모든 XML 파일 시도
-        zip.folder('Contents').forEach((path,file)=>{
-            if(path.endsWith('.xml')&&!path.includes('/'))sectionFiles.push({num:sectionFiles.length,file});
+    const contentsFolder=zip.folder('Contents');
+    if(contentsFolder){
+        contentsFolder.forEach((path,file)=>{
+            const m=path.match(/^section(\d+)\.xml$/i);
+            if(m)sectionFiles.push({num:parseInt(m[1]),file});
+        });
+    }
+    if(sectionFiles.length===0&&contentsFolder){
+        contentsFolder.forEach((path,file)=>{
+            if(path.endsWith('.xml')&&!path.includes('/')&&path.toLowerCase().startsWith('section'))
+                sectionFiles.push({num:sectionFiles.length,file});
         });
     }
     sectionFiles.sort((a,b)=>a.num-b.num);
     if(sectionFiles.length===0){showToast('HWPX 내용을 찾을 수 없습니다','error');return;}
-    // 기본 A4 크기 (pt)
-    const defaultW=595.28,defaultH=841.89;
+
+    function decodeXml(s){return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&#x([0-9a-fA-F]+);/g,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\d+);/g,(_,d)=>String.fromCharCode(parseInt(d)));}
+
+    // HWPX 단위: hwpunit (1/7200 inch) → px 변환 (96dpi 기준)
+    const SCALE=2;
+    const defaultWpt=595.28,defaultHpt=841.89; // A4 in pt
+
+    // BinData에서 이미지 로드
+    async function loadBinImage(itemId){
+        // 이미지 파일명은 content.hpf의 binData 항목에서 확인 가능
+        // 일반적으로 BinData/image1.jpg 등
+        const possiblePaths=[
+            'BinData/'+itemId,
+            'Contents/BinData/'+itemId,
+        ];
+        // 확장자 없을 경우 여러 확장자 시도
+        const exts=['','.jpg','.jpeg','.png','.gif','.bmp','.emf','.wmf'];
+        for(const base of possiblePaths){
+            for(const ext of exts){
+                const f=zip.file(base+ext);
+                if(f){
+                    try{
+                        const data=await f.async('uint8array');
+                        const blob=new Blob([data]);
+                        return await createImageBitmap(blob);
+                    }catch(e){}
+                }
+            }
+        }
+        return null;
+    }
+
+    const doc=await PDFLib.PDFDocument.create();
+
     for(let s=0;s<sectionFiles.length;s++){
         pdfShowProgress(5+85*(s/sectionFiles.length),'섹션 '+(s+1)+'/'+sectionFiles.length+' 변환 중...');
         const xmlTxt=await sectionFiles[s].file.async('text');
-        // 용지 크기 파싱 (HWPX는 HWP 단위 사용, 1 HWP unit = 1/7200 inch = 0.1pt)
-        let pageW=defaultW,pageH=defaultH;
-        const pagePrM=xmlTxt.match(/<hp:pagePr[\s\S]*?<\/hp:pagePr>|<hp:pagePr[^\/]*\/>/);
+
+        // 용지 크기 파싱 (hwpunit → pt: 1 hwpunit = 1/7200 inch, 1pt = 1/72 inch → 1 hwpunit = 0.01pt)
+        let pageWpt=defaultWpt,pageHpt=defaultHpt;
+        const pagePrM=xmlTxt.match(/<(?:hp:)?pagePr[\s\S]*?<\/(?:hp:)?pagePr>|<(?:hp:)?pagePr[^\/]*\/>/);
         if(pagePrM){
             const wM=pagePrM[0].match(/width="(\d+)"/);
             const hM=pagePrM[0].match(/height="(\d+)"/);
-            if(wM)pageW=parseInt(wM[1])/20; // HWPX 단위: 1/20 pt가 아닌 1/100 mm → pt 변환
-            if(hM)pageH=parseInt(hM[1])/20;
-            // 페이지가 너무 작거나 크면 A4로 폴백
-            if(pageW<100||pageW>2000||pageH<100||pageH>3000){pageW=defaultW;pageH=defaultH;}
+            if(wM&&hM){
+                const pw=parseInt(wM[1])/100;
+                const ph=parseInt(hM[1])/100;
+                if(pw>100&&pw<2000&&ph>100&&ph<3000){pageWpt=pw;pageHpt=ph;}
+            }
         }
-        let page=doc.addPage([pageW,pageH]);
-        page.drawRectangle({x:0,y:0,width:pageW,height:pageH,color:PDFLib.rgb(1,1,1)});
-        // 여백 설정
-        let marginLeft=56.7,marginTop=56.7; // 기본 20mm
-        const marginM=xmlTxt.match(/<hp:margin[^>]*left="(\d+)"[^>]*top="(\d+)"/);
+
+        // 여백 파싱
+        let mLeft=56.7,mTop=56.7,mRight=56.7,mBottom=56.7;
+        const marginM=xmlTxt.match(/<(?:hp:)?margin[^>]*(?:left|top|right|bottom)="[^"]*"[^>]*\/?>/);
         if(marginM){
-            marginLeft=parseInt(marginM[1])/20;
-            marginTop=parseInt(marginM[2])/20;
-            if(marginLeft<0||marginLeft>200)marginLeft=56.7;
-            if(marginTop<0||marginTop>200)marginTop=56.7;
+            const lM=marginM[0].match(/left="(\d+)"/);
+            const tM=marginM[0].match(/top="(\d+)"/);
+            const rM=marginM[0].match(/right="(\d+)"/);
+            const bM=marginM[0].match(/bottom="(\d+)"/);
+            if(lM)mLeft=Math.min(parseInt(lM[1])/100,200);
+            if(tM)mTop=Math.min(parseInt(tM[1])/100,200);
+            if(rM)mRight=Math.min(parseInt(rM[1])/100,200);
+            if(bM)mBottom=Math.min(parseInt(bM[1])/100,200);
         }
-        // 이미지 관계 파싱
-        const imgRels={};
-        const relsFile=zip.file('Contents/_rels/section'+(s===0?'0':s)+'.xml.rels')||zip.file('Contents/_rels/section'+(s+1)+'.xml.rels');
-        if(relsFile){
-            const relsTxt=await relsFile.async('text');
-            const re=/<Relationship[^>]*Id="([^"]*)"[^>]*Target="([^"]*)"/g;
-            let rm;
-            while((rm=re.exec(relsTxt))!==null)imgRels[rm[1]]=rm[2];
+
+        const canvasW=Math.round(pageWpt*SCALE);
+        const canvasH=Math.round(pageHpt*SCALE);
+        const textAreaW=(pageWpt-mLeft-mRight)*SCALE;
+        const maxY=(pageHpt-mBottom)*SCALE;
+        const startX=mLeft*SCALE;
+        const startY=mTop*SCALE;
+
+        let canvas=document.createElement('canvas');
+        canvas.width=canvasW;canvas.height=canvasH;
+        let ctx=canvas.getContext('2d');
+        ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvasW,canvasH);
+        let curY=startY;
+
+        // 새 페이지 시작
+        async function finishPage(){
+            const jpgData=canvas.toDataURL('image/jpeg',0.92);
+            const jpgBytes=Uint8Array.from(atob(jpgData.split(',')[1]),c=>c.charCodeAt(0));
+            const pdfImg=await doc.embedJpg(jpgBytes);
+            const page=doc.addPage([pageWpt,pageHpt]);
+            page.drawImage(pdfImg,{x:0,y:0,width:pageWpt,height:pageHpt});
         }
+        function newPage(){
+            canvas=document.createElement('canvas');
+            canvas.width=canvasW;canvas.height=canvasH;
+            ctx=canvas.getContext('2d');
+            ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvasW,canvasH);
+            curY=startY;
+        }
+
         // 단락 추출
-        const paragraphs=xmlTxt.match(/<hp:p[\s>][\s\S]*?<\/hp:p>/g)||[];
-        let curY=marginTop;
-        const maxY=pageH-marginTop;
-        const textAreaW=pageW-marginLeft*2;
+        const paragraphs=xmlTxt.match(/<(?:hp:)?p[\s>][\s\S]*?<\/(?:hp:)?p>/g)||[];
+
         for(const para of paragraphs){
-            // 단락 속성 파싱
+            // 폰트 크기 (기본 10pt)
             let fontSize=10;
-            let lineSpacing=1.6;
-            // 런(텍스트 조각) 추출
-            const runs=para.match(/<hp:run[\s>][\s\S]*?<\/hp:run>/g)||[];
+            let bold=false;
+            let italic=false;
+            let align='left';
+
+            // 단락 정렬
+            const algnM=para.match(/align="([^"]*)"/);
+            if(algnM){
+                const a=algnM[1].toLowerCase();
+                if(a==='center'||a==='centre')align='center';
+                else if(a==='right')align='right';
+                else if(a==='justify')align='left';
+            }
+
+            // 런(텍스트) 추출
+            const runs=para.match(/<(?:hp:)?run[\s>][\s\S]*?<\/(?:hp:)?run>/g)||[];
             let lineText='';
+            let runFontSize=10;
+
             for(const run of runs){
-                // 텍스트 추출 - hp:t 태그에서
-                const tMatches=run.match(/<hp:t>([\s\S]*?)<\/hp:t>/g)||[];
-                for(const tM of tMatches){
-                    const txt=tM.replace(/<\/?hp:t>/g,'');
-                    lineText+=txt;
-                }
-                // 폰트 크기
-                const szM=run.match(/sz="(\d+)"/);
-                if(szM){
-                    const sz=parseInt(szM[1]);
-                    if(sz>0&&sz<10000)fontSize=sz/100; // HWPX: 100분의 1pt
-                }
-                // 이미지 처리
-                const imgRefM=run.match(/r:id="([^"]*)"/)||run.match(/binaryItemIDRef="([^"]*)"/);
-                if(imgRefM){
-                    let imgPath=imgRels[imgRefM[1]];
-                    if(!imgPath){
-                        // BinData 폴더에서 직접 찾기
-                        const binId=imgRefM[1];
-                        const possiblePaths=['BinData/'+binId,'Contents/BinData/'+binId];
-                        for(const pp of possiblePaths){
-                            if(zip.file(pp)){imgPath=pp;break;}
-                        }
+                // charPr에서 폰트 정보
+                const charPrM=run.match(/<(?:hp:)?charPr[^>]*\/?>/);
+                if(charPrM){
+                    const szM=charPrM[0].match(/sz="(\d+)"/);
+                    if(szM){
+                        const sz=parseInt(szM[1]);
+                        if(sz>0&&sz<50000)runFontSize=sz/100;
                     }
-                    if(imgPath){
-                        if(!imgPath.startsWith('Contents')&&!imgPath.startsWith('BinData'))imgPath='Contents/'+imgPath;
-                        const imgFile=zip.file(imgPath)||zip.file(imgPath.replace('Contents/',''));
-                        if(imgFile){
-                            try{
-                                const imgData=await imgFile.async('uint8array');
-                                const lower=imgPath.toLowerCase();
-                                let pdfImg;
-                                if(lower.endsWith('.png'))pdfImg=await doc.embedPng(imgData);
-                                else if(lower.endsWith('.jpg')||lower.endsWith('.jpeg'))pdfImg=await doc.embedJpg(imgData);
-                                else{
-                                    const blob=new Blob([imgData]);
-                                    const bitmap=await createImageBitmap(blob);
-                                    const cvs=document.createElement('canvas');
-                                    cvs.width=bitmap.width;cvs.height=bitmap.height;
-                                    const ctx2=cvs.getContext('2d');
-                                    ctx2.drawImage(bitmap,0,0);
-                                    const pngUrl=cvs.toDataURL('image/png');
-                                    const pngBytes=Uint8Array.from(atob(pngUrl.split(',')[1]),c=>c.charCodeAt(0));
-                                    pdfImg=await doc.embedPng(pngBytes);
-                                }
-                                // 이미지 크기 계산
-                                const imgW=Math.min(pdfImg.width*0.75,textAreaW);
-                                const imgH=imgW*(pdfImg.height/pdfImg.width);
-                                if(curY+imgH>maxY){page=doc.addPage([pageW,pageH]);page.drawRectangle({x:0,y:0,width:pageW,height:pageH,color:PDFLib.rgb(1,1,1)});curY=marginTop;}
-                                page.drawImage(pdfImg,{x:marginLeft,y:pageH-curY-imgH,width:imgW,height:imgH});
-                                curY+=imgH+8;
-                            }catch(e){}
+                    if(charPrM[0].includes('bold="1"')||charPrM[0].includes('bold="true"'))bold=true;
+                    if(charPrM[0].includes('italic="1"')||charPrM[0].includes('italic="true"'))italic=true;
+                }
+                // 텍스트 추출
+                const tMatches=run.match(/<(?:hp:)?t[^a-zA-Z>]*>([\s\S]*?)<\/(?:hp:)?t>/g)||[];
+                for(const tTag of tMatches){
+                    const inner=tTag.replace(/<[^>]*>/g,'');
+                    lineText+=decodeXml(inner);
+                }
+                // 탭
+                if(run.includes('<hp:tab')||run.includes('<tab'))lineText+='\t';
+                // 줄바꿈
+                if(run.includes('<hp:br')||run.includes('<br'))lineText+='\n';
+            }
+
+            // 이미지 처리
+            const imgRefM=para.match(/binaryItemIDRef="([^"]*)"/g);
+            if(imgRefM){
+                for(const ref of imgRefM){
+                    const idM=ref.match(/binaryItemIDRef="([^"]*)"/);
+                    if(idM){
+                        const bitmap=await loadBinImage(idM[1]);
+                        if(bitmap){
+                            const imgW=Math.min(bitmap.width*SCALE*0.5,textAreaW);
+                            const imgH=imgW*(bitmap.height/bitmap.width);
+                            if(curY+imgH>maxY){await finishPage();newPage();}
+                            const imgX=align==='center'?startX+(textAreaW-imgW)/2:startX;
+                            ctx.drawImage(bitmap,imgX,curY,imgW,imgH);
+                            curY+=imgH+8*SCALE;
                         }
                     }
                 }
             }
-            // 텍스트 그리기
-            lineText=lineText.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").trim();
-            if(lineText){
-                const drawSize=Math.min(Math.max(fontSize,6),48);
-                const lineH=drawSize*lineSpacing;
-                // 줄바꿈 처리 (텍스트가 길 경우)
-                const safeText=lineText.replace(/[^\x20-\x7E]/g,'?');
-                const charsPerLine=Math.floor(textAreaW/(drawSize*0.5))||60;
-                const lines=[];
-                for(let ci=0;ci<safeText.length;ci+=charsPerLine){
-                    lines.push(safeText.substring(ci,ci+charsPerLine));
+
+            fontSize=runFontSize;
+            lineText=lineText.trim();
+            if(!lineText){curY+=fontSize*SCALE*1.2;continue;}
+
+            const drawSize=Math.min(Math.max(fontSize,6),48)*SCALE;
+            const lineH=drawSize*1.4;
+            const fontStyle=(bold?'bold ':'')+(italic?'italic ':'');
+            ctx.font=fontStyle+drawSize+'px "맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+            ctx.fillStyle='#000000';
+
+            // 줄바꿈 처리
+            const rawLines=lineText.split('\n');
+            for(const rawLine of rawLines){
+                if(!rawLine.trim()){curY+=lineH;continue;}
+                // 자동 줄바꿈
+                const wrapLines=[];
+                let curLine='';
+                for(let ci=0;ci<rawLine.length;ci++){
+                    const ch=rawLine[ci];
+                    const testLine=curLine+ch;
+                    if(ctx.measureText(testLine).width>textAreaW&&curLine.length>0){
+                        wrapLines.push(curLine);curLine=ch;
+                    } else curLine=testLine;
                 }
-                for(const line of lines){
-                    if(curY+lineH>maxY){page=doc.addPage([pageW,pageH]);page.drawRectangle({x:0,y:0,width:pageW,height:pageH,color:PDFLib.rgb(1,1,1)});curY=marginTop;}
-                    try{
-                        page.drawText(line,{x:marginLeft,y:pageH-curY-drawSize,size:drawSize,font,color:PDFLib.rgb(0,0,0)});
-                    }catch(e){}
+                if(curLine)wrapLines.push(curLine);
+
+                for(const wl of wrapLines){
+                    if(curY+lineH>maxY){await finishPage();newPage();
+                        ctx.font=fontStyle+drawSize+'px "맑은 고딕","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+                        ctx.fillStyle='#000000';
+                    }
+                    let drawX=startX;
+                    if(align==='center')drawX=startX+(textAreaW-ctx.measureText(wl).width)/2;
+                    else if(align==='right')drawX=startX+textAreaW-ctx.measureText(wl).width;
+                    ctx.fillText(wl,drawX,curY+drawSize*0.85);
                     curY+=lineH;
                 }
-            } else {
-                // 빈 줄
-                curY+=fontSize*lineSpacing;
             }
         }
+        // 마지막 페이지 저장
+        await finishPage();
     }
     pdfShowProgress(95,'PDF 생성 중...');
     const bytes=await doc.save();
