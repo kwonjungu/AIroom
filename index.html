@@ -1262,7 +1262,7 @@
     </div></div>
 
     <!-- Schedule Add Modal -->
-    <div class="modal-overlay" id="scheduleAddModal"><div class="modal" style="max-width:440px;">
+    <div class="modal-overlay" id="scheduleAddModal"><div class="modal" style="max-width:500px;">
         <div class="modal-header"><h2>📅 일정 추가</h2><button class="btn-close" onclick="closeModal('scheduleAddModal')">✕</button></div>
         <div class="modal-body">
             <input type="hidden" id="scheduleAddDate">
@@ -1270,8 +1270,17 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
-            <div class="form-group"><label>내용</label><input type="text" id="scheduleAddText" placeholder="일정 내용 입력"></div>
+            <div class="form-group"><label>행사명</label><input type="text" id="scheduleAddText" placeholder="행사명 입력"></div>
+            <div class="form-group"><label>세부 내용</label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력 (선택)"></div>
             <div class="form-group"><label>담당자</label><input type="text" id="scheduleAddManager" placeholder="담당자 (선택)"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+            <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleAddLink" placeholder="https:// 공지사항 링크 등"></div>
+            <div class="form-group"><label>📎 첨부파일 (선택)</label>
+                <div id="schAddFileArea" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <input type="file" id="schAddFileInput" onchange="handleSchAddFile(event)" style="font-size:12px;">
+                    <span id="schAddFileInfo" style="font-size:12px;color:var(--text-light);"></span>
+                </div>
+            </div>
         </div>
         <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('scheduleAddModal')">취소</button><button class="btn btn-primary" onclick="submitScheduleAdd()">추가</button></div>
     </div></div>
@@ -1285,7 +1294,8 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEditEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
-            <div class="form-group"><label>내용</label><input type="text" id="scheduleEditText" placeholder="일정 내용 입력"></div>
+            <div class="form-group"><label>행사명</label><input type="text" id="scheduleEditText" placeholder="행사명 입력"></div>
+            <div class="form-group"><label>세부 내용</label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력 (선택)"></div>
             <div class="form-group"><label>담당자</label><input type="text" id="scheduleEditManager" placeholder="담당자 (선택)"></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
             <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleEditLink" placeholder="https:// 공지사항 링크 등"></div>
@@ -1613,10 +1623,16 @@ function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart
 function getScheduleItems(dateStr){return schedules.filter(s=>s.date===dateStr);}
 function todayStr(){return fmtDate(new Date());}
 
-async function addScheduleItem(dateStr,text,manager,emoji){
+async function addScheduleItem(dateStr,text,manager,emoji,opts){
     if(!text.trim())return;
     pushUndo();
-    schedules.push({id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||'',emoji:emoji||''});
+    const item={id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||'',emoji:emoji||''};
+    if(opts){
+        if(opts.detail) item.detail=opts.detail;
+        if(opts.link) item.link=opts.link;
+        if(opts.fileUrl){item.fileUrl=opts.fileUrl;item.fileName=opts.fileName;item.filePath=opts.filePath;}
+    }
+    schedules.push(item);
     await api('POST','/api/schedules',schedules);
     saveToLocal();renderSchedule();
 }
@@ -1797,15 +1813,10 @@ function renderListView(el,titleEl){
         if(items.length===0){
             html+=`<td></td><td></td><td></td>`;
         } else {
-            // 행사: 이모지가 있는 항목의 텍스트 (주요 행사명)
-            const eventNames=items.filter(it=>it.emoji).map(it=>`<div class="event-name">${it.emoji} ${esc(it.text)}</div>`);
-            const detailItems=items.filter(it=>!it.emoji).map(it=>`<div class="event-detail-line">${esc(it.text)}</div>`);
-            // 이모지 없는 것도 행사에 포함 (행사가 비면)
-            if(eventNames.length===0){
-                const first=items[0];
-                eventNames.push(`<div class="event-name">${esc(first.text)}</div>`);
-                detailItems.shift();
-            }
+            // 행사: 행사명(text) 표시
+            const eventNames=items.map(it=>`<div class="event-name">${it.emoji?it.emoji+' ':''}${esc(it.text)}</div>`);
+            // 주요활동: 세부 내용(detail) 표시
+            const detailItems=items.map(it=>it.detail?`<div class="event-detail-line">${esc(it.detail)}</div>`:'').filter(Boolean);
             html+=`<td class="col-event">${eventNames.join('')}</td>`;
             html+=`<td class="col-detail">${detailItems.length?detailItems.join(''):'<span style="color:var(--text-light);">-</span>'}</td>`;
             // 담당자
@@ -1826,7 +1837,12 @@ function promptScheduleAdd(dateStr){
     const dayNames=['일','월','화','수','목','금','토'];
     document.getElementById('scheduleAddDateLabel').textContent=`${+m}월 ${+d}일 (${dayNames[dt.getDay()]})`;
     document.getElementById('scheduleAddText').value='';
+    document.getElementById('scheduleAddDetail').value='';
     document.getElementById('scheduleAddManager').value='';
+    document.getElementById('scheduleAddLink').value='';
+    schAddPendingFile=null;
+    document.getElementById('schAddFileInput').value='';
+    document.getElementById('schAddFileInfo').textContent='';
     document.getElementById('scheduleEmojiPicker').innerHTML=SCH_EMOJIS.map(e=>
         `<button type="button" class="sch-emoji-btn ${e===''?'selected':''}" onclick="selectSchEmoji('${e}',this)">${e||'없음'}</button>`
     ).join('');
@@ -1869,15 +1885,35 @@ function submitDayAdd(ds){
     addScheduleItem(ds,text,manager,newDayEmoji);
     newDayEmoji='';
 }
-function submitScheduleAdd(){
+async function submitScheduleAdd(){
     const dateStr=document.getElementById('scheduleAddDate').value;
     const text=document.getElementById('scheduleAddText').value;
+    const detail=document.getElementById('scheduleAddDetail').value;
     const manager=document.getElementById('scheduleAddManager').value;
-    if(!text.trim()){showToast('내용을 입력하세요','error');return;}
-    addScheduleItem(dateStr,text,manager,selectedSchEmoji);
+    const link=document.getElementById('scheduleAddLink').value.trim();
+    if(!text.trim()){showToast('행사명을 입력하세요','error');return;}
+    const opts={detail:detail.trim(),link:link};
+    // 파일 처리
+    if(schAddPendingFile&&firebaseStorage){
+        const tempId='sch_'+Date.now();
+        const storagePath='schedules/'+tempId+'/'+Date.now()+'_'+schAddPendingFile.name;
+        const url=await uploadToFirebase(schAddPendingFile,storagePath);
+        opts.fileUrl=url;opts.fileName=schAddPendingFile.name;opts.filePath=storagePath;
+    } else if(schAddPendingFile&&!firebaseStorage){
+        showToast('Firebase 미연결 — 파일 업로드 불가','error');
+    }
+    schAddPendingFile=null;
+    await addScheduleItem(dateStr,text,manager,selectedSchEmoji,opts);
     closeModal('scheduleAddModal');
 }
 
+let schAddPendingFile=null;
+function handleSchAddFile(e){
+    const file=e.target.files[0];if(!file)return;
+    if(file.size>5*1024*1024){showToast('파일 5MB 이하만 가능','error');e.target.value='';return;}
+    schAddPendingFile=file;
+    document.getElementById('schAddFileInfo').textContent='📎 '+file.name+' ('+formatFileSize(file.size)+')';
+}
 let selectedEditEmoji='';
 let schEditPendingFile=null;
 function openScheduleEdit(id){
@@ -1885,6 +1921,7 @@ function openScheduleEdit(id){
     document.getElementById('scheduleEditId').value=id;
     document.getElementById('scheduleEditDate').value=item.date;
     document.getElementById('scheduleEditText').value=item.text;
+    document.getElementById('scheduleEditDetail').value=item.detail||'';
     document.getElementById('scheduleEditManager').value=item.manager||'';
     document.getElementById('scheduleEditLink').value=item.link||'';
     selectedEditEmoji=item.emoji||'';
@@ -1925,6 +1962,7 @@ async function submitScheduleEdit(){
     pushUndo();
     item.date=document.getElementById('scheduleEditDate').value;
     item.text=document.getElementById('scheduleEditText').value;
+    item.detail=document.getElementById('scheduleEditDetail').value.trim();
     item.manager=document.getElementById('scheduleEditManager').value;
     item.emoji=selectedEditEmoji;
     item.link=document.getElementById('scheduleEditLink').value.trim()||'';
