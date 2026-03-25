@@ -1613,7 +1613,7 @@ function setScheduleView(v,btn){
     renderSchedule();
 }
 function scheduleNav(dir){
-    if(scheduleView==='month')scheduleDate.setMonth(scheduleDate.getMonth()+dir);
+    if(scheduleView==='month'||scheduleView==='list')scheduleDate.setMonth(scheduleDate.getMonth()+dir);
     else if(scheduleView==='week')scheduleDate.setDate(scheduleDate.getDate()+dir*7);
     else scheduleDate.setDate(scheduleDate.getDate()+dir);
     renderSchedule();
