@@ -1998,7 +1998,7 @@ function setScheduleView(v,btn){
     renderSchedule();
 }
 function scheduleNav(dir){
-    if(scheduleView==='month')scheduleDate.setMonth(scheduleDate.getMonth()+dir);
+    if(scheduleView==='month'||scheduleView==='list')scheduleDate.setMonth(scheduleDate.getMonth()+dir);
     else if(scheduleView==='week')scheduleDate.setDate(scheduleDate.getDate()+dir*7);
     else scheduleDate.setDate(scheduleDate.getDate()+dir);
     renderSchedule();
@@ -2453,12 +2453,11 @@ function printSchedule(mode){
             if(items.length===0){
                 html+=`<td style="border:1px solid #ccc;padding:6px;"></td><td style="border:1px solid #ccc;padding:6px;"></td><td style="border:1px solid #ccc;padding:6px;"></td>`;
             } else {
-                const eventNames=items.filter(it=>it.emoji).map(it=>it.emoji+' '+esc(it.text));
-                const details=items.filter(it=>!it.emoji).map(it=>esc(it.text));
-                if(eventNames.length===0&&items.length>0){eventNames.push(esc(items[0].text));details.shift();}
+                const eventNames=items.map(it=>(it.emoji?it.emoji+' ':'')+esc(it.text));
+                const detailItems=items.map(it=>it.detail?esc(it.detail):'').filter(Boolean);
                 const managers=[...new Set(items.map(it=>it.manager).filter(Boolean))];
                 html+=`<td style="border:1px solid #ccc;padding:6px;font-weight:600;color:#4A90D9;">${eventNames.join('<br>')}</td>`;
-                html+=`<td style="border:1px solid #ccc;padding:6px;">${details.join('<br>')||'-'}</td>`;
+                html+=`<td style="border:1px solid #ccc;padding:6px;">${detailItems.join('<br>')||'-'}</td>`;
                 html+=`<td style="border:1px solid #ccc;padding:6px;text-align:center;">${managers.map(m=>esc(m)).join('<br>')}</td>`;
             }
             html+=`</tr>`;
