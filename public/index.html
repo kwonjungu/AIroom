@@ -1588,9 +1588,9 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
-            <div class="form-group"><label>행사명</label><input type="text" id="scheduleAddText" placeholder="행사명 입력"></div>
-            <div class="form-group"><label>세부 내용</label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력 (선택)"></div>
-            <div class="form-group"><label>담당자</label><input type="text" id="scheduleAddManager" placeholder="담당자 (선택)"></div>
+            <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleAddText" placeholder="[교육부]신입생 오리엔테이션"></div>
+            <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력" required></div>
+            <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
             <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleAddLink" placeholder="https:// 공지사항 링크 등"></div>
             <div class="form-group"><label>📎 첨부파일 (선택)</label>
@@ -1612,9 +1612,9 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEditEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
-            <div class="form-group"><label>행사명</label><input type="text" id="scheduleEditText" placeholder="행사명 입력"></div>
-            <div class="form-group"><label>세부 내용</label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력 (선택)"></div>
-            <div class="form-group"><label>담당자</label><input type="text" id="scheduleEditManager" placeholder="담당자 (선택)"></div>
+            <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleEditText" placeholder="[교육부]신입생 오리엔테이션"></div>
+            <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력" required></div>
+            <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
             <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleEditLink" placeholder="https:// 공지사항 링크 등"></div>
             <div class="form-group"><label>📎 첨부파일 (선택)</label>
@@ -2277,6 +2277,8 @@ async function submitScheduleAdd(){
     const manager=document.getElementById('scheduleAddManager').value;
     const link=document.getElementById('scheduleAddLink').value.trim();
     if(!text.trim()){showToast('행사명을 입력하세요','error');return;}
+    if(!detail.trim()){showToast('세부 내용을 입력하세요','error');return;}
+    if(!manager.trim()){showToast('담당자를 입력하세요','error');return;}
     const opts={detail:detail.trim(),link:link};
     // 파일 처리
     if(schAddPendingFile&&firebaseStorage){
@@ -8838,7 +8840,7 @@ const TUTORIAL_STEPS=[
 
     // 학교 일정
     {title:'학교 일정 📅',text:'월간/주간/일간/월중행사 4가지 뷰로\n학교 일정을 확인합니다.',target:'#page-schedule',action:()=>switchPage('schedule')},
-    {title:'일정 추가 ➕',text:'달력의 날짜 칸에 있는 "+" 버튼을 클릭하면\n해당 날짜에 새 일정을 추가할 수 있습니다.\n\n일정 수정·삭제도 가능합니다.',target:'.schedule-table',action:()=>switchPage('schedule')},
+    {title:'일정 추가 ➕',text:'달력의 날짜 칸에 있는 "+" 버튼을 클릭하면\n해당 날짜에 새 일정을 추가할 수 있습니다.\n\n📝 행사명 입력양식: [부서명]행사 내용\n   예) [교육부]신입생 오리엔테이션\n\n⚠️ 세부 내용, 담당자는 필수 입력입니다.\n\n일정 수정·삭제도 가능합니다.',target:'.schedule-table',action:()=>switchPage('schedule')},
     {title:'일정 인쇄 🖨️',text:'오른쪽 위 "🖨 인쇄" 버튼을 누르면\n현재 보고 있는 일정표를 바로 인쇄합니다.\n월간/주간/일간 모두 인쇄 가능합니다.',target:'.schedule-print-btn',action:()=>switchPage('schedule')},
 
     // 교무실 홈

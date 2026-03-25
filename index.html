@@ -1270,9 +1270,9 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
-            <div class="form-group"><label>행사명</label><input type="text" id="scheduleAddText" placeholder="행사명 입력"></div>
-            <div class="form-group"><label>세부 내용</label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력 (선택)"></div>
-            <div class="form-group"><label>담당자</label><input type="text" id="scheduleAddManager" placeholder="담당자 (선택)"></div>
+            <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleAddText" placeholder="[교육부]신입생 오리엔테이션"></div>
+            <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력" required></div>
+            <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
             <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleAddLink" placeholder="https:// 공지사항 링크 등"></div>
             <div class="form-group"><label>📎 첨부파일 (선택)</label>
@@ -1294,9 +1294,9 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEditEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
-            <div class="form-group"><label>행사명</label><input type="text" id="scheduleEditText" placeholder="행사명 입력"></div>
-            <div class="form-group"><label>세부 내용</label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력 (선택)"></div>
-            <div class="form-group"><label>담당자</label><input type="text" id="scheduleEditManager" placeholder="담당자 (선택)"></div>
+            <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleEditText" placeholder="[교육부]신입생 오리엔테이션"></div>
+            <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력" required></div>
+            <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
             <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleEditLink" placeholder="https:// 공지사항 링크 등"></div>
             <div class="form-group"><label>📎 첨부파일 (선택)</label>
@@ -1892,6 +1892,8 @@ async function submitScheduleAdd(){
     const manager=document.getElementById('scheduleAddManager').value;
     const link=document.getElementById('scheduleAddLink').value.trim();
     if(!text.trim()){showToast('행사명을 입력하세요','error');return;}
+    if(!detail.trim()){showToast('세부 내용을 입력하세요','error');return;}
+    if(!manager.trim()){showToast('담당자를 입력하세요','error');return;}
     const opts={detail:detail.trim(),link:link};
     // 파일 처리
     if(schAddPendingFile&&firebaseStorage){
