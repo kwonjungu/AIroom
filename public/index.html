@@ -7639,7 +7639,7 @@ function renderAiPdfTranslator(ws){
             <div id="pdfTransControls" style="display:none;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;">
                 <button id="pdfTransStartBtn" onclick="pdfTransStart()" disabled style="padding:12px 28px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#0277bd,#01579b);color:white;box-shadow:0 4px 15px rgba(2,119,189,0.3);transition:all .2s;">🔄 번역 시작</button>
                 <button id="pdfTransToggleBtn" onclick="pdfTransToggle()" style="display:none;padding:12px 20px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;">👁️ 번역 숨기기</button>
-                <button id="pdfTransSaveBtn" onclick="pdfTransSaveImg()" style="display:none;padding:12px 20px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;">💾 이미지로 저장</button>
+                <button id="pdfTransSaveBtn" onclick="pdfTransSavePdf()" style="display:none;padding:12px 20px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;">💾 PDF로 저장</button>
             </div>
 
             <!-- 진행률 -->
@@ -7906,7 +7906,7 @@ function pdfTransToggle(){
     });
 }
 
-async function pdfTransSaveImg(){
+async function pdfTransSavePdf(){
     if(!window.html2canvas){
         const s=document.createElement('script');
         s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
@@ -7915,15 +7915,30 @@ async function pdfTransSaveImg(){
     }
     const wraps=document.getElementById('pdfTransViewer').querySelectorAll('[data-page-idx]');
     if(!wraps.length)return;
-    showToast('이미지 저장 준비 중...','info');
-    for(let i=0;i<wraps.length;i++){
-        try{
+    showToast('PDF 생성 중...','info');
+
+    try{
+        const{PDFDocument}=PDFLib;
+        const pdfDoc=await PDFDocument.create();
+
+        for(let i=0;i<wraps.length;i++){
             const canvas=await html2canvas(wraps[i],{scale:2,useCORS:true,backgroundColor:'#ffffff'});
-            const link=document.createElement('a');
-            link.download=`번역_${i+1}페이지.png`;link.href=canvas.toDataURL('image/png');link.click();
-        }catch(e){showToast('이미지 저장 실패: '+e.message,'error');}
-    }
-    showToast('이미지 저장 완료!','success');
+            const imgData=canvas.toDataURL('image/png');
+            const imgBytes=await fetch(imgData).then(r=>r.arrayBuffer());
+            const img=await pdfDoc.embedPng(imgBytes);
+            const page=pdfDoc.addPage([img.width/2,img.height/2]);
+            page.drawImage(img,{x:0,y:0,width:img.width/2,height:img.height/2});
+        }
+
+        const pdfBytes=await pdfDoc.save();
+        const blob=new Blob([pdfBytes],{type:'application/pdf'});
+        const link=document.createElement('a');
+        link.download='번역_가정통신문.pdf';
+        link.href=URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('PDF 저장 완료!','success');
+    }catch(e){showToast('PDF 저장 실패: '+e.message,'error');}
 }
 
 // AI 결과 복사

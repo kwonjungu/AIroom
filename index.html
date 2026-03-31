@@ -1081,7 +1081,7 @@
         <div id="translatorControls" class="translator-controls" style="display:none;">
             <button class="translator-btn translator-btn-primary" id="translatorStartBtn" onclick="startTranslation()" disabled>🔄 번역 시작</button>
             <button class="translator-btn translator-btn-secondary" id="translatorToggleBtn" onclick="toggleTranslation()" style="display:none;">👁️ 번역 숨기기</button>
-            <button class="translator-btn translator-btn-secondary" id="translatorSaveBtn" onclick="saveTranslationAsImage()" style="display:none;">💾 이미지로 저장</button>
+            <button class="translator-btn translator-btn-secondary" id="translatorSaveBtn" onclick="saveTranslationAsPdf()" style="display:none;">💾 PDF로 저장</button>
         </div>
 
         <!-- 진행률 -->
@@ -6173,8 +6173,7 @@ function scrollToTransPage(idx) {
     }
 }
 
-async function saveTranslationAsImage() {
-    // html2canvas CDN 동적 로드
+async function saveTranslationAsPdf() {
     if (!window.html2canvas) {
         const s = document.createElement('script');
         s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
@@ -6185,24 +6184,32 @@ async function saveTranslationAsImage() {
     const wraps = document.querySelectorAll('.translator-page-wrap');
     if (!wraps.length) return;
 
-    showToast('이미지 저장 준비 중...', 'info');
+    showToast('PDF 생성 중...', 'info');
 
-    for (let i = 0; i < wraps.length; i++) {
-        try {
-            const canvas = await html2canvas(wraps[i], {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff'
-            });
-            const link = document.createElement('a');
-            link.download = `번역_${i + 1}페이지.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        } catch (e) {
-            showToast('이미지 저장 실패: ' + e.message, 'error');
+    try {
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.create();
+
+        for (let i = 0; i < wraps.length; i++) {
+            const canvas = await html2canvas(wraps[i], { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+            const imgData = canvas.toDataURL('image/png');
+            const imgBytes = await fetch(imgData).then(r => r.arrayBuffer());
+            const img = await pdfDoc.embedPng(imgBytes);
+            const page = pdfDoc.addPage([img.width / 2, img.height / 2]);
+            page.drawImage(img, { x: 0, y: 0, width: img.width / 2, height: img.height / 2 });
         }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.download = '번역_가정통신문.pdf';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('PDF 저장 완료!', 'success');
+    } catch (e) {
+        showToast('PDF 저장 실패: ' + e.message, 'error');
     }
-    showToast('이미지 저장 완료!', 'success');
 }
 
 init();
