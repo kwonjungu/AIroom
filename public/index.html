@@ -7449,15 +7449,17 @@ async function processSchAI(){
 
 ===일정===
 [
-  {"date":"${year}-MM-DD","text":"일정 내용","emoji":"적절한 이모지 1개"},
-  {"date":"${year}-MM-DD","text":"일정 내용","emoji":"적절한 이모지 1개"}
+  {"date":"${year}-MM-DD","text":"[부서명]행사 내용","detail":"세부 내용","manager":"담당자","emoji":"적절한 이모지 1개"},
+  {"date":"${year}-MM-DD","text":"[부서명]행사 내용","detail":"세부 내용","manager":"담당자","emoji":"적절한 이모지 1개"}
 ]
 ===끝===
 
 규칙:
 - date는 반드시 ${year}-MM-DD 형식 (올해 기준)
 - 월/일만 있으면 올해 ${year}년으로 설정
-- text는 간결하게 (예: "현장체험학습", "학부모 상담주간")
+- text는 "[부서명]행사 내용" 형식 (예: "[교육부]현장체험학습", "[인성부]학부모 상담주간"). 부서명을 알 수 없으면 부서명 없이 행사 내용만 작성
+- detail은 세부 내용 (예: "3학년 대상, 오전 9시~12시"). 원문에서 관련 세부 정보를 추출. 없으면 행사명을 그대로 사용
+- manager는 담당자 (원문에서 추출 가능하면 입력, 없으면 빈 문자열 "")
 - emoji는 일정에 맞는 이모지 1개 (예: 🏫, 📝, 🎒, 🏃, 📞, 🎉, 🔔)
 - JSON 앞뒤에 확인 메시지 추가 (예: "다음 일정을 추출했습니다. 등록할까요?")
 - 사용자가 "등록해줘", "네", "확인" 등 동의하면 ===등록=== 태그 출력
@@ -7528,10 +7530,12 @@ function appendSchSchedulePreview(items){
         const dow=['일','월','화','수','목','금','토'];
         let dowStr='';
         try{const dt=new Date(d);dowStr='('+dow[dt.getDay()]+')';}catch(e){}
+        const detailHtml=it.detail?`<div style="font-size:11px;color:#666;margin-top:2px;">📋 ${esc(it.detail)}</div>`:'';
+        const managerHtml=it.manager?`<span style="font-size:11px;color:#1565c0;background:#e3f2fd;padding:1px 6px;border-radius:8px;margin-left:6px;">👤 ${esc(it.manager)}</span>`:'';
         return `<tr style="border-bottom:1px solid #e0e0e0;">
-            <td style="padding:8px 10px;white-space:nowrap;font-weight:600;color:#ef6c00;">${dateDisplay}${dowStr}</td>
-            <td style="padding:8px 10px;">${it.emoji||''} ${esc(it.text||'')}</td>
-            <td style="padding:8px 6px;"><button onclick="removeSchItem(${i})" style="border:none;background:none;cursor:pointer;font-size:14px;color:#e53935;" title="삭제">✕</button></td>
+            <td style="padding:8px 10px;white-space:nowrap;font-weight:600;color:#ef6c00;vertical-align:top;">${dateDisplay}${dowStr}</td>
+            <td style="padding:8px 10px;">${it.emoji||''} ${esc(it.text||'')}${managerHtml}${detailHtml}</td>
+            <td style="padding:8px 6px;vertical-align:top;"><button onclick="removeSchItem(${i})" style="border:none;background:none;cursor:pointer;font-size:14px;color:#e53935;" title="삭제">✕</button></td>
         </tr>`;
     }).join('');
 
@@ -7575,7 +7579,9 @@ async function confirmSchRegister(){
     let added=0;
     for(const it of schPendingItems){
         if(it.date&&it.text){
-            await addScheduleItem(it.date,it.text,'',it.emoji||'');
+            const opts={};
+            if(it.detail) opts.detail=it.detail;
+            await addScheduleItem(it.date,it.text,it.manager||'',it.emoji||'',opts);
             added++;
         }
     }
