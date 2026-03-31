@@ -1379,6 +1379,11 @@
                 <h3>일정 추가하기</h3><p>PDF, 사진, 텍스트에서 일정을 추출하여 학교 일정에 등록합니다.</p>
                 <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#ef6c00;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
             </div>
+            <div class="pdf-tool-card" onclick="openAiTool('pdfTranslator')" style="--card-color:#0277bd">
+                <div class="pdf-tool-icon" style="background:#0277bd;">📄</div>
+                <h3>가정통신문 번역</h3><p>PDF 가정통신문을 원본 양식 그대로 유지하며 다국어로 번역합니다.</p>
+                <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#0277bd;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
+            </div>
         </div>
 
         <!-- AI 도구 워크스페이스 -->
@@ -6785,6 +6790,7 @@ function openAiTool(tool){
     else if(tool==='grammar')renderAiGrammar(ws);
     else if(tool==='notice')renderAiNotice(ws);
     else if(tool==='scheduleAi')renderAiSchedule(ws);
+    else if(tool==='pdfTranslator')renderAiPdfTranslator(ws);
 }
 
 function closeAiTool(){
@@ -7588,6 +7594,291 @@ async function confirmSchRegister(){
     appendSchMsg('bot',`✅ ${added}건의 일정이 학교 일정에 등록되었습니다!\n\n"학교 일정" 탭에서 확인하세요.`);
     schPendingItems=[];
     showToast(added+'건 일정 등록 완료!','success');
+}
+
+// --- 7. 가정통신문 번역기 (PDF 레이아웃 유지 번역) ---
+let pdfTransState = { pdf:null, pages:[], blocks:[], translated:[], targetLang:null, overlayVisible:true };
+
+function renderAiPdfTranslator(ws){
+    pdfTransState = { pdf:null, pages:[], blocks:[], translated:[], targetLang:null, overlayVisible:true };
+    ws.innerHTML=`<div style="background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eee;">
+            <h3 style="margin:0;font-size:18px;">📄 가정통신문 번역기</h3>
+            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+        </div>
+        <div style="padding:20px;">
+            <p style="font-size:13px;color:#666;margin:0 0 16px;">PDF 가정통신문을 업로드하면 원본 양식을 유지한 채 다국어로 번역합니다. 파일은 서버로 전송되지 않습니다 (번역 텍스트만 전송).</p>
+
+            <!-- 업로드 -->
+            <div id="pdfTransUpload" style="border:3px dashed #ddd;border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;position:relative;transition:all .2s;" onmouseover="this.style.borderColor='#0277bd';this.style.background='#e1f5fe'" onmouseout="this.style.borderColor='#ddd';this.style.background=''" ondragover="event.preventDefault();this.style.borderColor='#0277bd';this.style.background='#e1f5fe'" ondragleave="this.style.borderColor='#ddd';this.style.background=''" ondrop="event.preventDefault();this.style.borderColor='#ddd';this.style.background='';pdfTransHandleFile(event.dataTransfer.files[0])">
+                <div style="font-size:48px;margin-bottom:8px;">📄</div>
+                <div style="font-size:15px;font-weight:600;">PDF 파일을 드래그하거나 클릭하세요</div>
+                <div style="font-size:12px;color:#999;margin-top:4px;">PDF 파일만 지원</div>
+                <input type="file" accept=".pdf,application/pdf" onchange="pdfTransHandleFile(this.files[0])" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </div>
+
+            <!-- 파일 정보 -->
+            <div id="pdfTransFileInfo" style="display:none;align-items:center;gap:12px;padding:12px 16px;background:#f5f5f5;border-radius:10px;margin-top:12px;">
+                <span style="font-size:20px;">📄</span>
+                <span id="pdfTransFileName" style="font-weight:700;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                <span id="pdfTransPageCount" style="font-size:12px;color:#999;"></span>
+                <button onclick="resetPdfTrans()" style="width:28px;height:28px;border-radius:6px;border:none;background:#ffe8e8;color:#e53935;cursor:pointer;font-size:14px;">✕</button>
+            </div>
+
+            <!-- 언어 선택 -->
+            <div id="pdfTransLangBar" style="display:none;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px;">
+                <button class="pdftr-lang-btn" onclick="pdfTransSelectLang('en',this)" style="padding:10px 18px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;">🇺🇸 영어</button>
+                <button class="pdftr-lang-btn" onclick="pdfTransSelectLang('zh',this)" style="padding:10px 18px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;">🇨🇳 중국어</button>
+                <button class="pdftr-lang-btn" onclick="pdfTransSelectLang('vi',this)" style="padding:10px 18px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;">🇻🇳 베트남어</button>
+                <button class="pdftr-lang-btn" onclick="pdfTransSelectLang('km',this)" style="padding:10px 18px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;">🇰🇭 캄보디아어</button>
+                <button class="pdftr-lang-btn" onclick="pdfTransSelectLang('ja',this)" style="padding:10px 18px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;">🇯🇵 일본어</button>
+                <button class="pdftr-lang-btn" onclick="pdfTransSelectLang('ru',this)" style="padding:10px 18px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;">🇷🇺 러시아어</button>
+            </div>
+
+            <!-- 버튼 -->
+            <div id="pdfTransControls" style="display:none;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px;">
+                <button id="pdfTransStartBtn" onclick="pdfTransStart()" disabled style="padding:12px 28px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#0277bd,#01579b);color:white;box-shadow:0 4px 15px rgba(2,119,189,0.3);transition:all .2s;">🔄 번역 시작</button>
+                <button id="pdfTransToggleBtn" onclick="pdfTransToggle()" style="display:none;padding:12px 20px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;">👁️ 번역 숨기기</button>
+                <button id="pdfTransSaveBtn" onclick="pdfTransSaveImg()" style="display:none;padding:12px 20px;border:2px solid #ddd;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;">💾 이미지로 저장</button>
+            </div>
+
+            <!-- 진행률 -->
+            <div id="pdfTransProgress" style="display:none;max-width:500px;margin:12px auto;">
+                <div style="height:8px;border-radius:4px;background:#e0e0e0;overflow:hidden;"><div id="pdfTransProgressFill" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#0277bd,#01579b);transition:width .3s;width:0%;"></div></div>
+                <div id="pdfTransProgressText" style="font-size:12px;color:#999;text-align:center;margin-top:4px;">준비 중...</div>
+            </div>
+
+            <!-- 페이지 네비게이션 -->
+            <div id="pdfTransPageNav" style="display:none;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0;"></div>
+
+            <!-- PDF 뷰어 -->
+            <div id="pdfTransViewer" style="display:none;background:#e0e0e0;border-radius:14px;overflow:auto;max-height:75vh;margin-top:12px;"></div>
+        </div>
+    </div>`;
+}
+
+function resetPdfTrans(){
+    pdfTransState={pdf:null,pages:[],blocks:[],translated:[],targetLang:null,overlayVisible:true};
+    document.getElementById('pdfTransUpload').style.display='';
+    document.getElementById('pdfTransFileInfo').style.display='none';
+    document.getElementById('pdfTransLangBar').style.display='none';
+    document.getElementById('pdfTransControls').style.display='none';
+    document.getElementById('pdfTransProgress').style.display='none';
+    document.getElementById('pdfTransPageNav').style.display='none';
+    document.getElementById('pdfTransViewer').style.display='none';
+    document.getElementById('pdfTransViewer').innerHTML='';
+    document.getElementById('pdfTransToggleBtn').style.display='none';
+    document.getElementById('pdfTransSaveBtn').style.display='none';
+    document.getElementById('pdfTransStartBtn').disabled=true;
+}
+
+async function pdfTransHandleFile(file){
+    if(!file||file.type!=='application/pdf'){showToast('PDF 파일만 업로드 가능합니다','error');return;}
+    const arrayBuffer=await file.arrayBuffer();
+    try{
+        const pdf=await pdfjsLib.getDocument({data:new Uint8Array(arrayBuffer),cMapUrl:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',cMapPacked:true}).promise;
+        pdfTransState.pdf=pdf;
+        pdfTransState.pages=[];pdfTransState.blocks=[];pdfTransState.translated=[];
+
+        document.getElementById('pdfTransUpload').style.display='none';
+        document.getElementById('pdfTransFileInfo').style.display='flex';
+        document.getElementById('pdfTransFileName').textContent=file.name;
+        document.getElementById('pdfTransPageCount').textContent=pdf.numPages+'페이지';
+        document.getElementById('pdfTransLangBar').style.display='flex';
+        document.getElementById('pdfTransControls').style.display='flex';
+
+        const viewer=document.getElementById('pdfTransViewer');
+        viewer.innerHTML='';viewer.style.display='block';
+
+        for(let i=1;i<=pdf.numPages;i++){
+            const page=await pdf.getPage(i);
+            const scale=1.5;
+            const viewport=page.getViewport({scale});
+            const canvas=document.createElement('canvas');
+            canvas.width=viewport.width;canvas.height=viewport.height;
+            await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+            const textContent=await page.getTextContent();
+            const textItems=textContent.items.filter(it=>it.str.trim());
+
+            const wrap=document.createElement('div');
+            wrap.style.cssText=`position:relative;margin:16px auto;box-shadow:0 2px 16px rgba(0,0,0,0.15);background:white;width:${viewport.width}px;height:${viewport.height}px;`;
+            wrap.dataset.pageIdx=i-1;
+            wrap.appendChild(canvas);
+            canvas.style.display='block';
+
+            const overlay=document.createElement('div');
+            overlay.id='pdfTransOverlay_'+(i-1);
+            overlay.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+            wrap.appendChild(overlay);
+            viewer.appendChild(wrap);
+
+            const items=textItems.map(it=>{
+                const tx=pdfjsLib.Util.transform(viewport.transform,it.transform);
+                return {str:it.str,x:tx[4],y:tx[5]-it.height*scale,width:it.width*scale,height:it.height*scale,fontSize:Math.abs(it.transform[0])*scale,fontName:it.fontName||''};
+            });
+            pdfTransState.pages.push({canvas,viewport,textItems:items});
+            pdfTransState.blocks.push(pdfTransGroupItems(items));
+        }
+
+        if(pdf.numPages>1){
+            const nav=document.getElementById('pdfTransPageNav');
+            nav.style.display='flex';nav.innerHTML='';
+            for(let i=0;i<pdf.numPages;i++){
+                const btn=document.createElement('button');
+                btn.style.cssText='padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;';
+                if(i===0)btn.style.cssText+='background:#0277bd;color:white;border-color:#0277bd;';
+                btn.textContent=(i+1)+'페이지';
+                btn.onclick=()=>{
+                    viewer.querySelectorAll('[data-page-idx]')[i]?.scrollIntoView({behavior:'smooth',block:'start'});
+                    nav.querySelectorAll('button').forEach((b,j)=>{b.style.background=j===i?'#0277bd':'white';b.style.color=j===i?'white':'';b.style.borderColor=j===i?'#0277bd':'#ddd';});
+                };
+                nav.appendChild(btn);
+            }
+        }
+        showToast('PDF 로드 완료! 언어를 선택하고 번역을 시작하세요.','success');
+    }catch(e){showToast('PDF 로드 실패: '+e.message,'error');}
+}
+
+function pdfTransGroupItems(items){
+    if(!items.length)return[];
+    const sorted=[...items].sort((a,b)=>a.y-b.y||a.x-b.x);
+    const lines=[];let currentLine=[sorted[0]];
+    for(let i=1;i<sorted.length;i++){
+        const prev=currentLine[currentLine.length-1],curr=sorted[i];
+        if(Math.abs(curr.y-prev.y)<Math.max(prev.fontSize,curr.fontSize)*0.6) currentLine.push(curr);
+        else{lines.push(currentLine);currentLine=[curr];}
+    }
+    lines.push(currentLine);
+
+    const blocks=[];
+    let curBlock={items:[...lines[0]],text:lines[0].map(it=>it.str).join(' ')};
+    for(let i=1;i<lines.length;i++){
+        const prevLine=lines[i-1],currLine=lines[i];
+        const prevBottom=Math.max(...prevLine.map(it=>it.y+it.height));
+        const currTop=Math.min(...currLine.map(it=>it.y));
+        const gap=currTop-prevBottom;
+        const avgFs=(prevLine[0].fontSize+currLine[0].fontSize)/2;
+        const prevMinX=Math.min(...prevLine.map(it=>it.x)),prevMaxX=Math.max(...prevLine.map(it=>it.x+it.width));
+        const currMinX=Math.min(...currLine.map(it=>it.x)),currMaxX=Math.max(...currLine.map(it=>it.x+it.width));
+        const xOverlap=Math.min(prevMaxX,currMaxX)-Math.max(prevMinX,currMinX);
+        const xRange=Math.max(prevMaxX,currMaxX)-Math.min(prevMinX,currMinX);
+        if(gap<avgFs*1.8&&xOverlap/xRange>0.3){
+            curBlock.items.push(...currLine);
+            curBlock.text+='\n'+currLine.map(it=>it.str).join(' ');
+        }else{blocks.push(pdfTransFinalizeBlock(curBlock));curBlock={items:[...currLine],text:currLine.map(it=>it.str).join(' ')};}
+    }
+    blocks.push(pdfTransFinalizeBlock(curBlock));
+    return blocks;
+}
+
+function pdfTransFinalizeBlock(block){
+    const xs=block.items.map(it=>it.x),ys=block.items.map(it=>it.y);
+    const rights=block.items.map(it=>it.x+it.width),bottoms=block.items.map(it=>it.y+it.height);
+    return{text:block.text,x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...rights)-Math.min(...xs),height:Math.max(...bottoms)-Math.min(...ys),fontSize:block.items[0].fontSize,items:block.items};
+}
+
+function pdfTransSelectLang(lang,btn){
+    pdfTransState.targetLang=lang;
+    document.querySelectorAll('.pdftr-lang-btn').forEach(b=>{b.style.borderColor='#ddd';b.style.background='white';b.style.color='';});
+    btn.style.borderColor='#0277bd';btn.style.background='#0277bd';btn.style.color='white';
+    document.getElementById('pdfTransStartBtn').disabled=false;
+}
+
+async function pdfTransStart(){
+    if(!pdfTransState.targetLang||!pdfTransState.blocks.length)return;
+    const startBtn=document.getElementById('pdfTransStartBtn');
+    startBtn.disabled=true;startBtn.textContent='⏳ 번역 중...';
+    const progress=document.getElementById('pdfTransProgress');
+    const fill=document.getElementById('pdfTransProgressFill');
+    const pText=document.getElementById('pdfTransProgressText');
+    progress.style.display='';
+    pdfTransState.translated=[];
+    const total=pdfTransState.blocks.length;
+
+    try{
+        for(let p=0;p<total;p++){
+            const pageBlocks=pdfTransState.blocks[p];
+            if(!pageBlocks.length){pdfTransState.translated.push([]);continue;}
+            fill.style.width=Math.round((p/total)*100)+'%';
+            pText.textContent=`${p+1}/${total} 페이지 번역 중...`;
+
+            const res=await fetch('/api/translate',{
+                method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({blocks:pageBlocks.map(b=>({text:b.text})),targetLang:pdfTransState.targetLang})
+            });
+            if(!res.ok){const err=await res.json();throw new Error(err.error||'번역 실패');}
+            const data=await res.json();
+            pdfTransState.translated.push(pageBlocks.map((b,i)=>({...b,translated:data.translations[i]?.translated||b.text})));
+        }
+        fill.style.width='100%';pText.textContent='번역 완료!';
+        pdfTransRenderOverlays();
+        startBtn.textContent='🔄 번역 시작';startBtn.disabled=false;
+        document.getElementById('pdfTransToggleBtn').style.display='';
+        document.getElementById('pdfTransSaveBtn').style.display='';
+        pdfTransState.overlayVisible=true;
+        showToast('번역이 완료되었습니다!','success');
+    }catch(e){
+        showToast('번역 오류: '+e.message,'error');
+        startBtn.textContent='🔄 번역 시작';startBtn.disabled=false;
+    }
+    setTimeout(()=>{progress.style.display='none';},2000);
+}
+
+function pdfTransRenderOverlays(){
+    for(let p=0;p<pdfTransState.translated.length;p++){
+        const overlay=document.getElementById('pdfTransOverlay_'+p);
+        if(!overlay)continue;
+        overlay.innerHTML='';overlay.classList.add('pdftr-visible');
+        for(const block of pdfTransState.translated[p]){
+            const div=document.createElement('div');
+            div.style.cssText=`position:absolute;background:white;overflow:hidden;line-height:1.3;white-space:pre-wrap;word-break:break-word;left:${block.x}px;top:${block.y}px;width:${block.width}px;height:${block.height}px;font-size:${block.fontSize}px;opacity:1;transition:opacity .3s;pointer-events:auto;`;
+            div.textContent=block.translated;
+            overlay.appendChild(div);
+            pdfTransFitText(div,block.width,block.height,block.fontSize);
+        }
+    }
+}
+
+function pdfTransFitText(el,maxW,maxH,origSize){
+    el.style.fontSize=origSize+'px';
+    if(el.scrollHeight<=maxH+1&&el.scrollWidth<=maxW+1)return;
+    let lo=4,hi=origSize,best=4;
+    for(let i=0;i<10;i++){
+        const mid=(lo+hi)/2;
+        el.style.fontSize=mid+'px';
+        if(el.scrollHeight<=maxH+1&&el.scrollWidth<=maxW+1){best=mid;lo=mid;}
+        else hi=mid;
+    }
+    el.style.fontSize=best+'px';
+}
+
+function pdfTransToggle(){
+    pdfTransState.overlayVisible=!pdfTransState.overlayVisible;
+    document.getElementById('pdfTransToggleBtn').textContent=pdfTransState.overlayVisible?'👁️ 번역 숨기기':'👁️ 번역 보기';
+    const viewer=document.getElementById('pdfTransViewer');
+    viewer.querySelectorAll('[id^="pdfTransOverlay_"]').forEach(ov=>{
+        ov.querySelectorAll('div').forEach(d=>{d.style.opacity=pdfTransState.overlayVisible?'1':'0';});
+    });
+}
+
+async function pdfTransSaveImg(){
+    if(!window.html2canvas){
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        document.head.appendChild(s);
+        await new Promise((r,j)=>{s.onload=r;s.onerror=j;});
+    }
+    const wraps=document.getElementById('pdfTransViewer').querySelectorAll('[data-page-idx]');
+    if(!wraps.length)return;
+    showToast('이미지 저장 준비 중...','info');
+    for(let i=0;i<wraps.length;i++){
+        try{
+            const canvas=await html2canvas(wraps[i],{scale:2,useCORS:true,backgroundColor:'#ffffff'});
+            const link=document.createElement('a');
+            link.download=`번역_${i+1}페이지.png`;link.href=canvas.toDataURL('image/png');link.click();
+        }catch(e){showToast('이미지 저장 실패: '+e.message,'error');}
+    }
+    showToast('이미지 저장 완료!','success');
 }
 
 // AI 결과 복사
@@ -8890,7 +9181,7 @@ const TUTORIAL_STEPS=[
     {title:'PDF 도구 🛠️',text:'다양한 PDF 편집 도구를 제공합니다.\n\n• 합치기 / 분할 / 압축 / 회전\n• 이미지 → PDF / PDF → 이미지 변환\n• 비밀번호 보호 / 페이지 번호 추가\n• 사진 스캔 (도장·서명 추출 포함)\n• 서명 생성기 / 도장 생성기',target:'#page-pdftools',action:()=>switchPage('pdftools')},
 
     // AI 실험실
-    {title:'AI 실험실 🤖',text:'무료 AI(Groq + Llama 3)를 활용한\n학교 업무 도구입니다.\n\n• 가정통신문 자동 작성\n• 알림장 작성\n• 문서 요약 / 번역 / 문법 교정\n• AI 일정 추가 — PDF 파일, 화면 캡처,\n  텍스트에서 일정을 추출하여 자동 등록',target:'#page-ailab',action:()=>switchPage('ailab')},
+    {title:'AI 실험실 🤖',text:'무료 AI(Groq + Llama 3)를 활용한\n학교 업무 도구입니다.\n\n• 가정통신문 자동 작성\n• 알림장 작성\n• 문서 요약 / 번역 / 문법 교정\n• AI 일정 추가 — PDF 파일, 화면 캡처,\n  텍스트에서 일정을 추출하여 자동 등록\n• 가정통신문 번역 — PDF 원본 양식 유지\n  다국어 번역 (6개 언어)',target:'#page-ailab',action:()=>switchPage('ailab')},
 
     // 편의 기능
     {title:'글씨 크기 조절',text:'왼쪽 위의 "가" 버튼으로\n화면 크기를 1.0~1.6배로 조절합니다.\n시력이 불편한 분께 유용합니다.',target:'.font-size-selector'},
