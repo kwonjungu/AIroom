@@ -693,6 +693,47 @@
         .pdf-rotate-btn:hover{background:var(--primary-light);border-color:var(--primary);}
         #scanCropContainer{touch-action:none;user-select:none;}
         @media(max-width:768px){.pdf-tools-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}.pdf-tool-card{padding:16px 14px;}.pdf-tool-icon{width:42px;height:42px;font-size:20px;}.pdf-workspace{padding:16px;}}
+
+        /* ===== 가정통신문 번역기 ===== */
+        .translator-upload-area{border:3px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:all .25s;background:var(--card-bg);position:relative;}
+        .translator-upload-area:hover,.translator-upload-area.dragover{border-color:var(--primary);background:var(--primary-light);}
+        .translator-upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+        .translator-upload-icon{font-size:48px;margin-bottom:12px;}
+        .translator-upload-text{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+        .translator-upload-hint{font-size:12px;color:var(--text-light);}
+        .translator-lang-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0;}
+        .translator-lang-btn{padding:10px 20px;border:2px solid var(--border);border-radius:var(--radius-sm);background:var(--card-bg);cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:6px;}
+        .translator-lang-btn:hover{border-color:var(--primary);background:var(--primary-light);}
+        .translator-lang-btn.active{border-color:var(--primary);background:var(--primary);color:white;}
+        .translator-controls{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:16px 0;}
+        .translator-btn{padding:12px 28px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;}
+        .translator-btn-primary{background:linear-gradient(135deg,#4A90D9,#6C5CE7);color:white;box-shadow:0 4px 15px rgba(74,144,217,0.3);}
+        .translator-btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(74,144,217,0.4);}
+        .translator-btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+        .translator-btn-secondary{background:var(--card-bg);color:var(--text);border:2px solid var(--border);}
+        .translator-btn-secondary:hover{border-color:var(--primary);color:var(--primary);}
+        .translator-progress{width:100%;max-width:500px;margin:12px auto;display:none;}
+        .translator-progress-bar{height:8px;border-radius:4px;background:var(--border);overflow:hidden;}
+        .translator-progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#4A90D9,#6C5CE7);transition:width .3s;width:0%;}
+        .translator-progress-text{font-size:12px;color:var(--text-light);text-align:center;margin-top:4px;}
+        .translator-viewer{position:relative;margin:20px auto;overflow:auto;background:#e0e0e0;border-radius:var(--radius);max-height:80vh;}
+        .translator-page-wrap{position:relative;margin:16px auto;box-shadow:0 2px 16px rgba(0,0,0,0.15);background:white;}
+        .translator-page-wrap canvas{display:block;}
+        .translator-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+        .translator-overlay.visible .t-block{opacity:1;}
+        .translator-overlay .t-block{position:absolute;background:white;opacity:0;transition:opacity .3s;overflow:hidden;line-height:1.3;display:flex;align-items:flex-start;white-space:pre-wrap;word-break:break-word;pointer-events:auto;}
+        .translator-file-info{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--card-bg);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:16px;}
+        .translator-file-info .file-name{font-weight:700;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .translator-file-info .file-remove{width:28px;height:28px;border-radius:6px;border:none;background:#FFE8E8;color:var(--accent);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+        .translator-page-nav{display:flex;gap:8px;justify-content:center;align-items:center;margin:12px 0;flex-wrap:wrap;}
+        .translator-page-btn{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;}
+        .translator-page-btn:hover{border-color:var(--primary);color:var(--primary);}
+        .translator-page-btn.active{background:var(--primary);color:white;border-color:var(--primary);}
+        @media(max-width:768px){
+            .translator-lang-btn{padding:8px 14px;font-size:12px;}
+            .translator-btn{padding:10px 20px;font-size:13px;}
+            .translator-upload-area{padding:32px 16px;}
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1001,6 +1042,59 @@
             </div>
         </div>
         <div id="pdfToolsWorkspace"></div>
+    </div>
+
+    <!-- ===== 가정통신문 번역기 PAGE ===== -->
+    <div class="page" id="page-translator">
+        <div style="text-align:center;margin-bottom:16px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">🌐 가정통신문 번역기</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">PDF 가정통신문을 업로드하면, 원본 양식을 유지한 채 다국어로 번역합니다.</p>
+        </div>
+
+        <!-- 업로드 영역 -->
+        <div id="translatorUploadArea" class="translator-upload-area" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handleTranslatorDrop(event)">
+            <div class="translator-upload-icon">📄</div>
+            <div class="translator-upload-text">PDF 가정통신문을 여기에 드래그하거나 클릭하세요</div>
+            <div class="translator-upload-hint">PDF 파일만 지원 · 파일은 서버로 전송되지 않습니다 (번역 텍스트만 전송)</div>
+            <input type="file" accept=".pdf,application/pdf" onchange="handleTranslatorFile(this.files[0])">
+        </div>
+
+        <!-- 파일 정보 (업로드 후) -->
+        <div id="translatorFileInfo" class="translator-file-info" style="display:none;">
+            <span style="font-size:20px;">📄</span>
+            <span class="file-name" id="translatorFileName"></span>
+            <span id="translatorPageCount" style="font-size:12px;color:var(--text-light);"></span>
+            <button class="file-remove" onclick="resetTranslator()" title="파일 제거">✕</button>
+        </div>
+
+        <!-- 언어 선택 -->
+        <div id="translatorLangBar" class="translator-lang-bar" style="display:none;">
+            <button class="translator-lang-btn" onclick="selectTransLang('en',this)" data-lang="en">🇺🇸 영어</button>
+            <button class="translator-lang-btn" onclick="selectTransLang('zh',this)" data-lang="zh">🇨🇳 중국어</button>
+            <button class="translator-lang-btn" onclick="selectTransLang('vi',this)" data-lang="vi">🇻🇳 베트남어</button>
+            <button class="translator-lang-btn" onclick="selectTransLang('km',this)" data-lang="km">🇰🇭 캄보디아어</button>
+            <button class="translator-lang-btn" onclick="selectTransLang('ja',this)" data-lang="ja">🇯🇵 일본어</button>
+            <button class="translator-lang-btn" onclick="selectTransLang('ru',this)" data-lang="ru">🇷🇺 러시아어</button>
+        </div>
+
+        <!-- 컨트롤 버튼 -->
+        <div id="translatorControls" class="translator-controls" style="display:none;">
+            <button class="translator-btn translator-btn-primary" id="translatorStartBtn" onclick="startTranslation()" disabled>🔄 번역 시작</button>
+            <button class="translator-btn translator-btn-secondary" id="translatorToggleBtn" onclick="toggleTranslation()" style="display:none;">👁️ 번역 숨기기</button>
+            <button class="translator-btn translator-btn-secondary" id="translatorSaveBtn" onclick="saveTranslationAsImage()" style="display:none;">💾 이미지로 저장</button>
+        </div>
+
+        <!-- 진행률 -->
+        <div id="translatorProgress" class="translator-progress">
+            <div class="translator-progress-bar"><div class="translator-progress-fill" id="translatorProgressFill"></div></div>
+            <div class="translator-progress-text" id="translatorProgressText">준비 중...</div>
+        </div>
+
+        <!-- 페이지 네비게이션 -->
+        <div id="translatorPageNav" class="translator-page-nav" style="display:none;"></div>
+
+        <!-- PDF 뷰어 -->
+        <div id="translatorViewer" class="translator-viewer" style="display:none;"></div>
     </div>
 
     <!-- ===== E-SIGN (전자서명) PAGE ===== -->
@@ -1392,7 +1486,8 @@ const DEFAULT_TABS=[
     {id:'news',title:'학교 소식',icon:'📰',type:'builtin',order:7},
     {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8},
     {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
-    {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10}
+    {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
+    {id:'translator',title:'가정통신문 번역',icon:'🌐',type:'builtin',order:11}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1603,6 +1698,7 @@ function switchPage(p,btn){
     if(p==='news')renderNews();
     if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
     if(p==='esign')renderEsignList();
+    if(p==='translator')initTranslator();
 }
 
 // ===== SCHEDULE =====
@@ -5729,6 +5825,373 @@ async function pdfScan(){
         if(results.length===1) pdfShowResult(results[0].name,results[0].blob);
         else pdfShowResultMulti(results);
     }
+}
+
+// ===== 가정통신문 번역기 =====
+let transState = {
+    pdf: null,
+    pages: [],       // {canvas, textItems, viewport}
+    blocks: [],      // grouped text blocks per page
+    translated: [],  // translated blocks per page
+    targetLang: null,
+    overlayVisible: true,
+    currentPage: 0
+};
+
+function initTranslator() {
+    // 초기화 시 별도 작업 없음 (상태 유지)
+}
+
+function handleTranslatorDrop(e) {
+    const file = e.dataTransfer.files[0];
+    if (file) handleTranslatorFile(file);
+}
+
+function resetTranslator() {
+    transState = { pdf: null, pages: [], blocks: [], translated: [], targetLang: null, overlayVisible: true, currentPage: 0 };
+    document.getElementById('translatorUploadArea').style.display = '';
+    document.getElementById('translatorFileInfo').style.display = 'none';
+    document.getElementById('translatorLangBar').style.display = 'none';
+    document.getElementById('translatorControls').style.display = 'none';
+    document.getElementById('translatorProgress').style.display = 'none';
+    document.getElementById('translatorPageNav').style.display = 'none';
+    document.getElementById('translatorViewer').style.display = 'none';
+    document.getElementById('translatorViewer').innerHTML = '';
+    document.getElementById('translatorToggleBtn').style.display = 'none';
+    document.getElementById('translatorSaveBtn').style.display = 'none';
+    document.getElementById('translatorStartBtn').disabled = true;
+}
+
+async function handleTranslatorFile(file) {
+    if (!file || file.type !== 'application/pdf') { showToast('PDF 파일만 업로드 가능합니다', 'error'); return; }
+    const arrayBuffer = await file.arrayBuffer();
+    try {
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer), cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/', cMapPacked: true }).promise;
+        transState.pdf = pdf;
+        transState.pages = [];
+        transState.blocks = [];
+        transState.translated = [];
+
+        document.getElementById('translatorUploadArea').style.display = 'none';
+        document.getElementById('translatorFileInfo').style.display = 'flex';
+        document.getElementById('translatorFileName').textContent = file.name;
+        document.getElementById('translatorPageCount').textContent = pdf.numPages + '페이지';
+        document.getElementById('translatorLangBar').style.display = 'flex';
+        document.getElementById('translatorControls').style.display = 'flex';
+
+        // 모든 페이지 렌더링 + 텍스트 추출
+        const viewer = document.getElementById('translatorViewer');
+        viewer.innerHTML = '';
+        viewer.style.display = 'block';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            const textContent = await page.getTextContent();
+            const textItems = textContent.items.filter(it => it.str.trim());
+
+            // 페이지 래퍼
+            const wrap = document.createElement('div');
+            wrap.className = 'translator-page-wrap';
+            wrap.style.width = viewport.width + 'px';
+            wrap.style.height = viewport.height + 'px';
+            wrap.dataset.pageIdx = i - 1;
+            wrap.appendChild(canvas);
+
+            // 오버레이 div
+            const overlay = document.createElement('div');
+            overlay.className = 'translator-overlay';
+            overlay.id = 'transOverlay_' + (i - 1);
+            wrap.appendChild(overlay);
+            viewer.appendChild(wrap);
+
+            // 텍스트 아이템 좌표 변환
+            const items = textItems.map(it => {
+                const tx = pdfjsLib.Util.transform(viewport.transform, it.transform);
+                return {
+                    str: it.str,
+                    x: tx[4],
+                    y: tx[5] - it.height * scale,
+                    width: it.width * scale,
+                    height: it.height * scale,
+                    fontSize: Math.abs(it.transform[0]) * scale,
+                    fontName: it.fontName || ''
+                };
+            });
+
+            transState.pages.push({ canvas, viewport, textItems: items });
+
+            // 텍스트 그룹화
+            const blocks = groupTextItems(items, viewport);
+            transState.blocks.push(blocks);
+        }
+
+        // 페이지 네비게이션
+        if (pdf.numPages > 1) {
+            const nav = document.getElementById('translatorPageNav');
+            nav.style.display = 'flex';
+            nav.innerHTML = '';
+            for (let i = 0; i < pdf.numPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'translator-page-btn' + (i === 0 ? ' active' : '');
+                btn.textContent = (i + 1) + '페이지';
+                btn.onclick = () => scrollToTransPage(i);
+                nav.appendChild(btn);
+            }
+        }
+
+        showToast('PDF 로드 완료! 언어를 선택하고 번역을 시작하세요.', 'success');
+    } catch (e) {
+        showToast('PDF 로드 실패: ' + e.message, 'error');
+    }
+}
+
+function groupTextItems(items, viewport) {
+    if (!items.length) return [];
+    // 같은 줄 그룹화 (y좌표 유사 + 간격 가까운 항목 병합)
+    const sorted = [...items].sort((a, b) => a.y - b.y || a.x - b.x);
+    const lines = [];
+    let currentLine = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+        const prev = currentLine[currentLine.length - 1];
+        const curr = sorted[i];
+        const yDiff = Math.abs(curr.y - prev.y);
+        // 같은 줄: y 차이가 폰트 크기의 60% 이내
+        if (yDiff < Math.max(prev.fontSize, curr.fontSize) * 0.6) {
+            currentLine.push(curr);
+        } else {
+            lines.push(currentLine);
+            currentLine = [curr];
+        }
+    }
+    lines.push(currentLine);
+
+    // 인접한 줄을 단락으로 병합 (줄 간격이 폰트 크기의 2배 이내)
+    const blocks = [];
+    let currentBlock = { items: [...lines[0]], text: lines[0].map(it => it.str).join(' ') };
+
+    for (let i = 1; i < lines.length; i++) {
+        const prevLine = lines[i - 1];
+        const currLine = lines[i];
+        const prevBottom = Math.max(...prevLine.map(it => it.y + it.height));
+        const currTop = Math.min(...currLine.map(it => it.y));
+        const gap = currTop - prevBottom;
+        const avgFontSize = (prevLine[0].fontSize + currLine[0].fontSize) / 2;
+
+        // x 범위가 비슷하고 간격이 작으면 같은 블록
+        const prevMinX = Math.min(...prevLine.map(it => it.x));
+        const prevMaxX = Math.max(...prevLine.map(it => it.x + it.width));
+        const currMinX = Math.min(...currLine.map(it => it.x));
+        const currMaxX = Math.max(...currLine.map(it => it.x + it.width));
+        const xOverlap = Math.min(prevMaxX, currMaxX) - Math.max(prevMinX, currMinX);
+        const xRange = Math.max(prevMaxX, currMaxX) - Math.min(prevMinX, currMinX);
+
+        if (gap < avgFontSize * 1.8 && xOverlap / xRange > 0.3) {
+            currentBlock.items.push(...currLine);
+            currentBlock.text += '\n' + currLine.map(it => it.str).join(' ');
+        } else {
+            blocks.push(finalizeBlock(currentBlock));
+            currentBlock = { items: [...currLine], text: currLine.map(it => it.str).join(' ') };
+        }
+    }
+    blocks.push(finalizeBlock(currentBlock));
+    return blocks;
+}
+
+function finalizeBlock(block) {
+    const xs = block.items.map(it => it.x);
+    const ys = block.items.map(it => it.y);
+    const rights = block.items.map(it => it.x + it.width);
+    const bottoms = block.items.map(it => it.y + it.height);
+    return {
+        text: block.text,
+        x: Math.min(...xs),
+        y: Math.min(...ys),
+        width: Math.max(...rights) - Math.min(...xs),
+        height: Math.max(...bottoms) - Math.min(...ys),
+        fontSize: block.items[0].fontSize,
+        items: block.items
+    };
+}
+
+function selectTransLang(lang, btn) {
+    transState.targetLang = lang;
+    document.querySelectorAll('.translator-lang-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('translatorStartBtn').disabled = false;
+}
+
+async function startTranslation() {
+    if (!transState.targetLang || !transState.blocks.length) return;
+    const startBtn = document.getElementById('translatorStartBtn');
+    startBtn.disabled = true;
+    startBtn.innerHTML = '⏳ 번역 중...';
+
+    const progress = document.getElementById('translatorProgress');
+    const fill = document.getElementById('translatorProgressFill');
+    const text = document.getElementById('translatorProgressText');
+    progress.style.display = 'block';
+
+    transState.translated = [];
+    const totalPages = transState.blocks.length;
+
+    try {
+        for (let p = 0; p < totalPages; p++) {
+            const pageBlocks = transState.blocks[p];
+            if (!pageBlocks.length) { transState.translated.push([]); continue; }
+
+            const pct = Math.round((p / totalPages) * 100);
+            fill.style.width = pct + '%';
+            text.textContent = `${p + 1}/${totalPages} 페이지 번역 중...`;
+
+            // 서버로 번역 요청 (한 페이지씩)
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    blocks: pageBlocks.map(b => ({ text: b.text })),
+                    targetLang: transState.targetLang
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || '번역 실패');
+            }
+
+            const data = await res.json();
+            const translatedBlocks = pageBlocks.map((b, i) => ({
+                ...b,
+                translated: data.translations[i]?.translated || b.text
+            }));
+            transState.translated.push(translatedBlocks);
+        }
+
+        fill.style.width = '100%';
+        text.textContent = '번역 완료!';
+
+        // 오버레이 렌더링
+        renderTranslationOverlays();
+
+        startBtn.innerHTML = '🔄 번역 시작';
+        startBtn.disabled = false;
+        document.getElementById('translatorToggleBtn').style.display = '';
+        document.getElementById('translatorSaveBtn').style.display = '';
+        transState.overlayVisible = true;
+        showToast('번역이 완료되었습니다!', 'success');
+    } catch (e) {
+        showToast('번역 오류: ' + e.message, 'error');
+        startBtn.innerHTML = '🔄 번역 시작';
+        startBtn.disabled = false;
+    }
+
+    setTimeout(() => { progress.style.display = 'none'; }, 2000);
+}
+
+function renderTranslationOverlays() {
+    for (let p = 0; p < transState.translated.length; p++) {
+        const overlay = document.getElementById('transOverlay_' + p);
+        if (!overlay) continue;
+        overlay.innerHTML = '';
+        overlay.classList.add('visible');
+
+        const blocks = transState.translated[p];
+        for (const block of blocks) {
+            const div = document.createElement('div');
+            div.className = 't-block';
+            div.style.left = block.x + 'px';
+            div.style.top = block.y + 'px';
+            div.style.width = block.width + 'px';
+            div.style.height = block.height + 'px';
+            div.style.fontSize = block.fontSize + 'px';
+            div.textContent = block.translated;
+
+            // 폰트 크기 자동 조절 (binary search)
+            overlay.appendChild(div);
+            fitTextInBlock(div, block.width, block.height, block.fontSize);
+        }
+    }
+}
+
+function fitTextInBlock(el, maxW, maxH, originalSize) {
+    let lo = 4, hi = originalSize, best = originalSize;
+    // 빠른 체크: 원본 크기로 맞으면 바로 리턴
+    el.style.fontSize = hi + 'px';
+    if (el.scrollHeight <= maxH + 1 && el.scrollWidth <= maxW + 1) return;
+
+    // Binary search
+    for (let i = 0; i < 10; i++) {
+        const mid = (lo + hi) / 2;
+        el.style.fontSize = mid + 'px';
+        if (el.scrollHeight <= maxH + 1 && el.scrollWidth <= maxW + 1) {
+            best = mid;
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    el.style.fontSize = best + 'px';
+    el.style.overflow = 'hidden';
+}
+
+function toggleTranslation() {
+    transState.overlayVisible = !transState.overlayVisible;
+    const btn = document.getElementById('translatorToggleBtn');
+    btn.textContent = transState.overlayVisible ? '👁️ 번역 숨기기' : '👁️ 번역 보기';
+    document.querySelectorAll('.translator-overlay').forEach(ov => {
+        if (transState.overlayVisible) ov.classList.add('visible');
+        else ov.classList.remove('visible');
+    });
+}
+
+function scrollToTransPage(idx) {
+    const wraps = document.querySelectorAll('.translator-page-wrap');
+    if (wraps[idx]) {
+        wraps[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelectorAll('.translator-page-btn').forEach((b, i) => {
+            b.classList.toggle('active', i === idx);
+        });
+    }
+}
+
+async function saveTranslationAsImage() {
+    // html2canvas CDN 동적 로드
+    if (!window.html2canvas) {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        document.head.appendChild(s);
+        await new Promise((resolve, reject) => { s.onload = resolve; s.onerror = reject; });
+    }
+
+    const wraps = document.querySelectorAll('.translator-page-wrap');
+    if (!wraps.length) return;
+
+    showToast('이미지 저장 준비 중...', 'info');
+
+    for (let i = 0; i < wraps.length; i++) {
+        try {
+            const canvas = await html2canvas(wraps[i], {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+            const link = document.createElement('a');
+            link.download = `번역_${i + 1}페이지.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (e) {
+            showToast('이미지 저장 실패: ' + e.message, 'error');
+        }
+    }
+    showToast('이미지 저장 완료!', 'success');
 }
 
 init();

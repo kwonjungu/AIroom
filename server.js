@@ -360,6 +360,65 @@ app.post('/api/ai/chat', async (req, res) => {
     }
 });
 
+// ===== 가정통신문 번역 API (Groq) =====
+app.post('/api/translate', async (req, res) => {
+    const apiKey = process.env.GROQ_API_KEY || req.headers['x-ai-key'];
+    if (!apiKey) return res.status(400).json({ error: 'API 키가 설정되지 않았습니다.' });
+    const { blocks, targetLang } = req.body;
+    if (!blocks || !blocks.length || !targetLang) return res.status(400).json({ error: 'blocks와 targetLang이 필요합니다.' });
+
+    const langNames = { en:'English', zh:'Chinese (Simplified)', vi:'Vietnamese', km:'Khmer (Cambodian)', ja:'Japanese', ru:'Russian' };
+    const langName = langNames[targetLang] || targetLang;
+
+    // 블록 텍스트를 번호 매겨서 하나의 프롬프트로 보냄
+    const numbered = blocks.map((b, i) => `[${i}] ${b.text}`).join('\n');
+    const systemPrompt = `You are a professional translator for school newsletters (가정통신문). Translate the following numbered text blocks from Korean to ${langName}. Return ONLY the translations in the same numbered format [0], [1], etc. Keep the exact same numbering. Do not add any explanation. Preserve line breaks within each block. If a block contains only numbers, dates, or proper nouns that don't need translation, return them as-is.`;
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: numbered }
+                ],
+                temperature: 0.2,
+                max_tokens: 4096
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) return res.status(response.status).json(data);
+
+        const content = data.choices?.[0]?.message?.content || '';
+        // 번호별로 파싱
+        const translations = {};
+        const lines = content.split('\n');
+        let currentIdx = -1;
+        let currentText = '';
+        for (const line of lines) {
+            const m = line.match(/^\[(\d+)\]\s*(.*)/);
+            if (m) {
+                if (currentIdx >= 0) translations[currentIdx] = currentText.trim();
+                currentIdx = parseInt(m[1]);
+                currentText = m[2];
+            } else if (currentIdx >= 0) {
+                currentText += '\n' + line;
+            }
+        }
+        if (currentIdx >= 0) translations[currentIdx] = currentText.trim();
+
+        const result = blocks.map((b, i) => ({
+            ...b,
+            translated: translations[i] || b.text
+        }));
+        res.json({ translations: result });
+    } catch (e) {
+        res.status(500).json({ error: '번역 API 호출 실패: ' + e.message });
+    }
+});
+
 // 메인 페이지
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
