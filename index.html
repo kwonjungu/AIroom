@@ -5886,7 +5886,7 @@ async function handleTranslatorFile(file) {
 
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
-            const scale = 1.5;
+            const scale = 2.0;
             const viewport = page.getViewport({ scale });
             const canvas = document.createElement('canvas');
             canvas.width = viewport.width;
@@ -5895,7 +5895,7 @@ async function handleTranslatorFile(file) {
             await page.render({ canvasContext: ctx, viewport }).promise;
 
             const textContent = await page.getTextContent();
-            const textItems = textContent.items.filter(it => it.str.trim());
+            const textItems = textContent.items.filter(it => it.str && it.str.trim().length > 0);
 
             // 페이지 래퍼
             const wrap = document.createElement('div');
@@ -5915,13 +5915,16 @@ async function handleTranslatorFile(file) {
             // 텍스트 아이템 좌표 변환
             const items = textItems.map(it => {
                 const tx = pdfjsLib.Util.transform(viewport.transform, it.transform);
+                const fontSize = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]);
+                const itemW = it.width * scale;
+                const itemH = fontSize * 1.2;
                 return {
                     str: it.str,
                     x: tx[4],
-                    y: tx[5] - it.height * scale,
-                    width: it.width * scale,
-                    height: it.height * scale,
-                    fontSize: Math.abs(it.transform[0]) * scale,
+                    y: tx[5] - fontSize,
+                    width: Math.max(itemW, fontSize * 0.6),
+                    height: itemH,
+                    fontSize: fontSize,
                     fontName: it.fontName || ''
                 };
             });
@@ -6007,16 +6010,17 @@ function groupTextItems(items, viewport) {
 }
 
 function finalizeBlock(block) {
+    const PAD = 2;
     const xs = block.items.map(it => it.x);
     const ys = block.items.map(it => it.y);
     const rights = block.items.map(it => it.x + it.width);
     const bottoms = block.items.map(it => it.y + it.height);
+    const x = Math.min(...xs) - PAD, y = Math.min(...ys) - PAD;
     return {
         text: block.text,
-        x: Math.min(...xs),
-        y: Math.min(...ys),
-        width: Math.max(...rights) - Math.min(...xs),
-        height: Math.max(...bottoms) - Math.min(...ys),
+        x, y,
+        width: Math.max(...rights) - Math.min(...xs) + PAD * 2,
+        height: Math.max(...bottoms) - Math.min(...ys) + PAD * 2,
         fontSize: block.items[0].fontSize,
         items: block.items
     };
@@ -6040,45 +6044,51 @@ async function startTranslation() {
     const text = document.getElementById('translatorProgressText');
     progress.style.display = 'block';
 
-    transState.translated = [];
-    const totalPages = transState.blocks.length;
+    // 모든 페이지 블록을 하나로 합침 (페이지 구분 없이 일괄 번역)
+    const allBlocks = [];
+    const pageMap = [];
+    transState.blocks.forEach((pageBlocks, pageIdx) => {
+        pageBlocks.forEach((block, blockIdx) => {
+            allBlocks.push(block);
+            pageMap.push({ pageIdx, blockIdx });
+        });
+    });
+
+    if (!allBlocks.length) { showToast('번역할 텍스트가 없습니다', 'error'); startBtn.disabled = false; startBtn.innerHTML = '🔄 번역 시작'; return; }
+
+    text.textContent = `총 ${allBlocks.length}개 블록 번역 중...`;
+    fill.style.width = '10%';
 
     try {
-        for (let p = 0; p < totalPages; p++) {
-            const pageBlocks = transState.blocks[p];
-            if (!pageBlocks.length) { transState.translated.push([]); continue; }
-
-            const pct = Math.round((p / totalPages) * 100);
+        const BATCH = 20;
+        const allTranslated = new Array(allBlocks.length);
+        for (let start = 0; start < allBlocks.length; start += BATCH) {
+            const batch = allBlocks.slice(start, start + BATCH);
+            const pct = Math.round(10 + 80 * (start / allBlocks.length));
             fill.style.width = pct + '%';
-            text.textContent = `${p + 1}/${totalPages} 페이지 번역 중...`;
+            text.textContent = `번역 중... (${Math.min(start + BATCH, allBlocks.length)}/${allBlocks.length})`;
 
-            // 서버로 번역 요청 (한 페이지씩)
             const res = await fetch('/api/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    blocks: pageBlocks.map(b => ({ text: b.text })),
-                    targetLang: transState.targetLang
-                })
+                body: JSON.stringify({ blocks: batch.map(b => ({ text: b.text })), targetLang: transState.targetLang })
             });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || '번역 실패');
-            }
-
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error || '번역 실패'); }
             const data = await res.json();
-            const translatedBlocks = pageBlocks.map((b, i) => ({
-                ...b,
-                translated: data.translations[i]?.translated || b.text
-            }));
-            transState.translated.push(translatedBlocks);
+            for (let j = 0; j < batch.length; j++) {
+                allTranslated[start + j] = data.translations[j]?.translated || batch[j].text;
+            }
         }
+
+        // 결과를 페이지별로 재구성
+        transState.translated = transState.blocks.map(pb => pb.map(b => ({ ...b })));
+        allTranslated.forEach((translated, i) => {
+            const { pageIdx, blockIdx } = pageMap[i];
+            transState.translated[pageIdx][blockIdx].translated = translated;
+        });
 
         fill.style.width = '100%';
         text.textContent = '번역 완료!';
-
-        // 오버레이 렌더링
         renderTranslationOverlays();
 
         startBtn.innerHTML = '🔄 번역 시작';
@@ -6112,9 +6122,10 @@ function renderTranslationOverlays() {
             div.style.width = block.width + 'px';
             div.style.height = block.height + 'px';
             div.style.fontSize = block.fontSize + 'px';
+            div.style.padding = '1px 2px';
+            div.style.boxSizing = 'border-box';
             div.textContent = block.translated;
 
-            // 폰트 크기 자동 조절 (binary search)
             overlay.appendChild(div);
             fitTextInBlock(div, block.width, block.height, block.fontSize);
         }

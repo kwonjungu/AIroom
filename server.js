@@ -372,7 +372,17 @@ app.post('/api/translate', async (req, res) => {
 
     // 블록 텍스트를 번호 매겨서 하나의 프롬프트로 보냄
     const numbered = blocks.map((b, i) => `[${i}] ${b.text}`).join('\n');
-    const systemPrompt = `You are a professional translator for school newsletters (가정통신문). Translate the following numbered text blocks from Korean to ${langName}. Return ONLY the translations in the same numbered format [0], [1], etc. Keep the exact same numbering. Do not add any explanation. Preserve line breaks within each block. If a block contains only numbers, dates, or proper nouns that don't need translation, return them as-is.`;
+    const systemPrompt = `You are a professional translator for school newsletters (가정통신문/안내장). Translate ALL of the following numbered text blocks from Korean to ${langName}.
+
+CRITICAL RULES:
+- You MUST translate EVERY single block. Do NOT skip any block.
+- Return ONLY the translations in the exact same numbered format [0], [1], [2], etc.
+- Keep the exact same numbering — every input number must appear in your output.
+- Do not add any explanation, commentary, or extra text.
+- Preserve line breaks within each block.
+- If a block contains only numbers, dates, phone numbers, URLs, or proper nouns that don't need translation, return them as-is with their number tag.
+- Translate everything including headers, footers, signatures, notes, instructions, checkbox items, etc.
+- This is a school document for parents — translate naturally and clearly.`;
 
     try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -384,8 +394,8 @@ app.post('/api/translate', async (req, res) => {
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: numbered }
                 ],
-                temperature: 0.2,
-                max_tokens: 4096
+                temperature: 0.1,
+                max_tokens: 8192
             })
         });
         const data = await response.json();

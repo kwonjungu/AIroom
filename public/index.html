@@ -7692,13 +7692,14 @@ async function pdfTransHandleFile(file){
 
         for(let i=1;i<=pdf.numPages;i++){
             const page=await pdf.getPage(i);
-            const scale=1.5;
+            const scale=2.0;
             const viewport=page.getViewport({scale});
             const canvas=document.createElement('canvas');
             canvas.width=viewport.width;canvas.height=viewport.height;
             await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
             const textContent=await page.getTextContent();
-            const textItems=textContent.items.filter(it=>it.str.trim());
+            // 모든 텍스트 아이템 포함 (빈 문자열만 제외)
+            const textItems=textContent.items.filter(it=>it.str&&it.str.trim().length>0);
 
             const wrap=document.createElement('div');
             wrap.style.cssText=`position:relative;margin:16px auto;box-shadow:0 2px 16px rgba(0,0,0,0.15);background:white;width:${viewport.width}px;height:${viewport.height}px;`;
@@ -7712,11 +7713,25 @@ async function pdfTransHandleFile(file){
             wrap.appendChild(overlay);
             viewer.appendChild(wrap);
 
+            // pdf.js 텍스트 좌표 추출 — viewport.transform 적용
             const items=textItems.map(it=>{
                 const tx=pdfjsLib.Util.transform(viewport.transform,it.transform);
-                return {str:it.str,x:tx[4],y:tx[5]-it.height*scale,width:it.width*scale,height:it.height*scale,fontSize:Math.abs(it.transform[0])*scale,fontName:it.fontName||''};
+                // tx = [scaleX, skewY, skewX, scaleY, translateX, translateY]
+                // tx[4]=x, tx[5]=y (캔버스 좌표, y는 텍스트 baseline 기준)
+                const fontSize=Math.sqrt(tx[0]*tx[0]+tx[1]*tx[1]);
+                const itemW=it.width*scale;
+                const itemH=fontSize*1.2; // 줄 높이 = 폰트크기 * 1.2
+                return {
+                    str:it.str,
+                    x:tx[4],
+                    y:tx[5]-fontSize,  // baseline에서 폰트크기만큼 위가 top
+                    width:Math.max(itemW, fontSize*0.6),
+                    height:itemH,
+                    fontSize:fontSize,
+                    fontName:it.fontName||''
+                };
             });
-            pdfTransState.pages.push({canvas,viewport,textItems:items});
+            pdfTransState.pages.push({canvas,viewport,textItems:items,scale});
             pdfTransState.blocks.push(pdfTransGroupItems(items));
         }
 
@@ -7772,9 +7787,13 @@ function pdfTransGroupItems(items){
 }
 
 function pdfTransFinalizeBlock(block){
+    const PAD=2; // 패딩: 원문을 확실히 덮기 위해
     const xs=block.items.map(it=>it.x),ys=block.items.map(it=>it.y);
     const rights=block.items.map(it=>it.x+it.width),bottoms=block.items.map(it=>it.y+it.height);
-    return{text:block.text,x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...rights)-Math.min(...xs),height:Math.max(...bottoms)-Math.min(...ys),fontSize:block.items[0].fontSize,items:block.items};
+    const x=Math.min(...xs)-PAD, y=Math.min(...ys)-PAD;
+    const w=Math.max(...rights)-Math.min(...xs)+PAD*2;
+    const h=Math.max(...bottoms)-Math.min(...ys)+PAD*2;
+    return{text:block.text,x,y,width:w,height:h,fontSize:block.items[0].fontSize,items:block.items};
 }
 
 function pdfTransSelectLang(lang,btn){
@@ -7792,24 +7811,50 @@ async function pdfTransStart(){
     const fill=document.getElementById('pdfTransProgressFill');
     const pText=document.getElementById('pdfTransProgressText');
     progress.style.display='';
-    pdfTransState.translated=[];
-    const total=pdfTransState.blocks.length;
+
+    // 모든 페이지의 블록을 하나로 합침 (페이지 구분 없이 일괄 번역)
+    const allBlocks=[];
+    const pageMap=[]; // 각 블록이 어느 페이지의 몇번째 블록인지 기록
+    pdfTransState.blocks.forEach((pageBlocks,pageIdx)=>{
+        pageBlocks.forEach((block,blockIdx)=>{
+            allBlocks.push(block);
+            pageMap.push({pageIdx,blockIdx});
+        });
+    });
+
+    if(!allBlocks.length){showToast('번역할 텍스트가 없습니다','error');startBtn.disabled=false;startBtn.textContent='🔄 번역 시작';return;}
+
+    pText.textContent=`총 ${allBlocks.length}개 블록 번역 중...`;
+    fill.style.width='10%';
 
     try{
-        for(let p=0;p<total;p++){
-            const pageBlocks=pdfTransState.blocks[p];
-            if(!pageBlocks.length){pdfTransState.translated.push([]);continue;}
-            fill.style.width=Math.round((p/total)*100)+'%';
-            pText.textContent=`${p+1}/${total} 페이지 번역 중...`;
+        // 20개씩 배치로 나누어 번역 (API 토큰 제한 대응)
+        const BATCH=20;
+        const allTranslated=new Array(allBlocks.length);
+        for(let start=0;start<allBlocks.length;start+=BATCH){
+            const batch=allBlocks.slice(start,start+BATCH);
+            const pct=Math.round(10+80*(start/allBlocks.length));
+            fill.style.width=pct+'%';
+            pText.textContent=`번역 중... (${Math.min(start+BATCH,allBlocks.length)}/${allBlocks.length})`;
 
             const res=await fetch('/api/translate',{
                 method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({blocks:pageBlocks.map(b=>({text:b.text})),targetLang:pdfTransState.targetLang})
+                body:JSON.stringify({blocks:batch.map(b=>({text:b.text})),targetLang:pdfTransState.targetLang})
             });
             if(!res.ok){const err=await res.json();throw new Error(err.error||'번역 실패');}
             const data=await res.json();
-            pdfTransState.translated.push(pageBlocks.map((b,i)=>({...b,translated:data.translations[i]?.translated||b.text})));
+            for(let j=0;j<batch.length;j++){
+                allTranslated[start+j]=data.translations[j]?.translated||batch[j].text;
+            }
         }
+
+        // 결과를 페이지별로 재구성
+        pdfTransState.translated=pdfTransState.blocks.map(pb=>pb.map(b=>({...b})));
+        allTranslated.forEach((translated,i)=>{
+            const{pageIdx,blockIdx}=pageMap[i];
+            pdfTransState.translated[pageIdx][blockIdx].translated=translated;
+        });
+
         fill.style.width='100%';pText.textContent='번역 완료!';
         pdfTransRenderOverlays();
         startBtn.textContent='🔄 번역 시작';startBtn.disabled=false;
@@ -7831,7 +7876,7 @@ function pdfTransRenderOverlays(){
         overlay.innerHTML='';overlay.classList.add('pdftr-visible');
         for(const block of pdfTransState.translated[p]){
             const div=document.createElement('div');
-            div.style.cssText=`position:absolute;background:white;overflow:hidden;line-height:1.3;white-space:pre-wrap;word-break:break-word;left:${block.x}px;top:${block.y}px;width:${block.width}px;height:${block.height}px;font-size:${block.fontSize}px;opacity:1;transition:opacity .3s;pointer-events:auto;`;
+            div.style.cssText=`position:absolute;background:white;overflow:hidden;line-height:1.35;white-space:pre-wrap;word-break:break-word;box-sizing:border-box;padding:1px 2px;left:${block.x}px;top:${block.y}px;width:${block.width}px;height:${block.height}px;font-size:${block.fontSize}px;opacity:1;transition:opacity .3s;pointer-events:auto;font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;`;
             div.textContent=block.translated;
             overlay.appendChild(div);
             pdfTransFitText(div,block.width,block.height,block.fontSize);
