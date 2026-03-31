@@ -5916,13 +5916,15 @@ async function handleTranslatorFile(file) {
             const items = textItems.map(it => {
                 const tx = pdfjsLib.Util.transform(viewport.transform, it.transform);
                 const fontSize = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]);
-                const itemW = it.width * scale;
-                const itemH = fontSize * 1.2;
+                const origFontSize = Math.sqrt(it.transform[0]*it.transform[0] + it.transform[1]*it.transform[1]);
+                const scaleRatio = origFontSize > 0 ? fontSize / origFontSize : scale;
+                const itemW = it.width * scaleRatio;
+                const itemH = fontSize * 1.35;
                 return {
                     str: it.str,
                     x: tx[4],
-                    y: tx[5] - fontSize,
-                    width: Math.max(itemW, fontSize * 0.6),
+                    y: tx[5] - fontSize * 1.1,
+                    width: Math.max(itemW, fontSize * it.str.length * 0.5),
                     height: itemH,
                     fontSize: fontSize,
                     fontName: it.fontName || ''
@@ -5958,7 +5960,6 @@ async function handleTranslatorFile(file) {
 
 function groupTextItems(items, viewport) {
     if (!items.length) return [];
-    // 같은 줄 그룹화 (y좌표 유사 + 간격 가까운 항목 병합)
     const sorted = [...items].sort((a, b) => a.y - b.y || a.x - b.x);
     const lines = [];
     let currentLine = [sorted[0]];
@@ -5966,9 +5967,7 @@ function groupTextItems(items, viewport) {
     for (let i = 1; i < sorted.length; i++) {
         const prev = currentLine[currentLine.length - 1];
         const curr = sorted[i];
-        const yDiff = Math.abs(curr.y - prev.y);
-        // 같은 줄: y 차이가 폰트 크기의 60% 이내
-        if (yDiff < Math.max(prev.fontSize, curr.fontSize) * 0.6) {
+        if (Math.abs(curr.y - prev.y) < Math.max(prev.fontSize, curr.fontSize) * 0.7) {
             currentLine.push(curr);
         } else {
             lines.push(currentLine);
@@ -5977,7 +5976,6 @@ function groupTextItems(items, viewport) {
     }
     lines.push(currentLine);
 
-    // 인접한 줄을 단락으로 병합 (줄 간격이 폰트 크기의 2배 이내)
     const blocks = [];
     let currentBlock = { items: [...lines[0]], text: lines[0].map(it => it.str).join(' ') };
 
@@ -5989,7 +5987,6 @@ function groupTextItems(items, viewport) {
         const gap = currTop - prevBottom;
         const avgFontSize = (prevLine[0].fontSize + currLine[0].fontSize) / 2;
 
-        // x 범위가 비슷하고 간격이 작으면 같은 블록
         const prevMinX = Math.min(...prevLine.map(it => it.x));
         const prevMaxX = Math.max(...prevLine.map(it => it.x + it.width));
         const currMinX = Math.min(...currLine.map(it => it.x));
@@ -5997,7 +5994,7 @@ function groupTextItems(items, viewport) {
         const xOverlap = Math.min(prevMaxX, currMaxX) - Math.max(prevMinX, currMinX);
         const xRange = Math.max(prevMaxX, currMaxX) - Math.min(prevMinX, currMinX);
 
-        if (gap < avgFontSize * 1.8 && xOverlap / xRange > 0.3) {
+        if (gap < avgFontSize * 2.5 && (xRange <= 0 || xOverlap / xRange > 0.2)) {
             currentBlock.items.push(...currLine);
             currentBlock.text += '\n' + currLine.map(it => it.str).join(' ');
         } else {
@@ -6010,17 +6007,17 @@ function groupTextItems(items, viewport) {
 }
 
 function finalizeBlock(block) {
-    const PAD = 2;
+    const PADX = 4, PADY = 3;
     const xs = block.items.map(it => it.x);
     const ys = block.items.map(it => it.y);
     const rights = block.items.map(it => it.x + it.width);
     const bottoms = block.items.map(it => it.y + it.height);
-    const x = Math.min(...xs) - PAD, y = Math.min(...ys) - PAD;
+    const x = Math.max(0, Math.min(...xs) - PADX), y = Math.max(0, Math.min(...ys) - PADY);
     return {
         text: block.text,
         x, y,
-        width: Math.max(...rights) - Math.min(...xs) + PAD * 2,
-        height: Math.max(...bottoms) - Math.min(...ys) + PAD * 2,
+        width: Math.max(...rights) - Math.min(...xs) + PADX * 2,
+        height: Math.max(...bottoms) - Math.min(...ys) + PADY * 2,
         fontSize: block.items[0].fontSize,
         items: block.items
     };

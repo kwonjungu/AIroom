@@ -7716,16 +7716,17 @@ async function pdfTransHandleFile(file){
             // pdf.js 텍스트 좌표 추출 — viewport.transform 적용
             const items=textItems.map(it=>{
                 const tx=pdfjsLib.Util.transform(viewport.transform,it.transform);
-                // tx = [scaleX, skewY, skewX, scaleY, translateX, translateY]
-                // tx[4]=x, tx[5]=y (캔버스 좌표, y는 텍스트 baseline 기준)
                 const fontSize=Math.sqrt(tx[0]*tx[0]+tx[1]*tx[1]);
-                const itemW=it.width*scale;
-                const itemH=fontSize*1.2; // 줄 높이 = 폰트크기 * 1.2
+                // width: 원본 좌표 → 캔버스 좌표 변환 (transform 스케일 비율 적용)
+                const origFontSize=Math.sqrt(it.transform[0]*it.transform[0]+it.transform[1]*it.transform[1]);
+                const scaleRatio=origFontSize>0?fontSize/origFontSize:scale;
+                const itemW=it.width*scaleRatio;
+                const itemH=fontSize*1.35; // 줄 높이 넉넉하게
                 return {
                     str:it.str,
                     x:tx[4],
-                    y:tx[5]-fontSize,  // baseline에서 폰트크기만큼 위가 top
-                    width:Math.max(itemW, fontSize*0.6),
+                    y:tx[5]-fontSize*1.1,  // baseline 위로 약간 더
+                    width:Math.max(itemW, fontSize*it.str.length*0.5),
                     height:itemH,
                     fontSize:fontSize,
                     fontName:it.fontName||''
@@ -7757,14 +7758,16 @@ async function pdfTransHandleFile(file){
 function pdfTransGroupItems(items){
     if(!items.length)return[];
     const sorted=[...items].sort((a,b)=>a.y-b.y||a.x-b.x);
+    // 1단계: 같은 줄 그룹화 (y좌표 유사)
     const lines=[];let currentLine=[sorted[0]];
     for(let i=1;i<sorted.length;i++){
         const prev=currentLine[currentLine.length-1],curr=sorted[i];
-        if(Math.abs(curr.y-prev.y)<Math.max(prev.fontSize,curr.fontSize)*0.6) currentLine.push(curr);
+        if(Math.abs(curr.y-prev.y)<Math.max(prev.fontSize,curr.fontSize)*0.7) currentLine.push(curr);
         else{lines.push(currentLine);currentLine=[curr];}
     }
     lines.push(currentLine);
 
+    // 2단계: 인접 줄을 단락으로 병합 (더 적극적으로 — 줄 간격이 작으면 합침)
     const blocks=[];
     let curBlock={items:[...lines[0]],text:lines[0].map(it=>it.str).join(' ')};
     for(let i=1;i<lines.length;i++){
@@ -7777,7 +7780,8 @@ function pdfTransGroupItems(items){
         const currMinX=Math.min(...currLine.map(it=>it.x)),currMaxX=Math.max(...currLine.map(it=>it.x+it.width));
         const xOverlap=Math.min(prevMaxX,currMaxX)-Math.max(prevMinX,currMinX);
         const xRange=Math.max(prevMaxX,currMaxX)-Math.min(prevMinX,currMinX);
-        if(gap<avgFs*1.8&&xOverlap/xRange>0.3){
+        // 더 적극적인 병합: 줄 간격이 폰트크기의 2.5배 이내이고, x범위 겹침이 20% 이상
+        if(gap<avgFs*2.5&&(xRange<=0||xOverlap/xRange>0.2)){
             curBlock.items.push(...currLine);
             curBlock.text+='\n'+currLine.map(it=>it.str).join(' ');
         }else{blocks.push(pdfTransFinalizeBlock(curBlock));curBlock={items:[...currLine],text:currLine.map(it=>it.str).join(' ')};}
@@ -7787,13 +7791,14 @@ function pdfTransGroupItems(items){
 }
 
 function pdfTransFinalizeBlock(block){
-    const PAD=2; // 패딩: 원문을 확실히 덮기 위해
+    const PADX=4,PADY=3; // 패딩: 원문을 확실히 덮기 위해
     const xs=block.items.map(it=>it.x),ys=block.items.map(it=>it.y);
     const rights=block.items.map(it=>it.x+it.width),bottoms=block.items.map(it=>it.y+it.height);
-    const x=Math.min(...xs)-PAD, y=Math.min(...ys)-PAD;
-    const w=Math.max(...rights)-Math.min(...xs)+PAD*2;
-    const h=Math.max(...bottoms)-Math.min(...ys)+PAD*2;
-    return{text:block.text,x,y,width:w,height:h,fontSize:block.items[0].fontSize,items:block.items};
+    const x=Math.min(...xs)-PADX, y=Math.min(...ys)-PADY;
+    const w=Math.max(...rights)-Math.min(...xs)+PADX*2;
+    const h=Math.max(...bottoms)-Math.min(...ys)+PADY*2;
+    // 블록 내 각 줄의 폭을 블록 전체 폭으로 확장 (줄 사이 빈 틈 방지)
+    return{text:block.text,x:Math.max(0,x),y:Math.max(0,y),width:w,height:h,fontSize:block.items[0].fontSize,items:block.items};
 }
 
 function pdfTransSelectLang(lang,btn){
