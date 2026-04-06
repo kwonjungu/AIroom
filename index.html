@@ -741,6 +741,7 @@
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 </head>
 <body>
     <header class="header">
@@ -1161,6 +1162,46 @@
         </div>
     </div></div>
 
+    <!-- ===== QR CODE GENERATOR PAGE ===== -->
+    <div class="page" id="page-qrcode">
+        <div style="text-align:center;margin-bottom:8px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">📱 QR 코드 생성기</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">웹 주소를 입력하면 자동으로 QR 코드가 생성됩니다.</p>
+        </div>
+        <div style="max-width:500px;margin:0 auto;">
+            <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:600;margin-bottom:6px;display:block;">웹 주소 (URL)</label>
+                <input type="url" id="qrInput" placeholder="https://example.com" oninput="generateQR()" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;box-sizing:border-box;transition:border-color .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:120px;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;font-size:13px;">크기</label>
+                    <select id="qrSize" onchange="generateQR()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                        <option value="200">200 x 200</option>
+                        <option value="300" selected>300 x 300</option>
+                        <option value="400">400 x 400</option>
+                        <option value="500">500 x 500</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1;min-width:120px;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;font-size:13px;">색상</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="color" id="qrColor" value="#000000" onchange="generateQR()" style="width:36px;height:36px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;">
+                        <span style="font-size:12px;color:var(--text-light);">QR 색상</span>
+                    </div>
+                </div>
+            </div>
+            <div id="qrResult" style="text-align:center;padding:30px 20px;background:white;border:2px dashed var(--border);border-radius:14px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <p style="color:var(--text-light);font-size:14px;">위에 웹 주소를 입력하면 QR 코드가 여기에 나타납니다.</p>
+            </div>
+            <div id="qrActions" style="display:none;text-align:center;margin-top:16px;gap:10px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="downloadQR('png')" style="font-size:14px;padding:10px 20px;">📥 PNG 다운로드</button>
+                <button class="btn btn-secondary" onclick="downloadQR('svg')" style="font-size:14px;padding:10px 20px;">📥 SVG 다운로드</button>
+                <button class="btn btn-secondary" onclick="copyQR()" style="font-size:14px;padding:10px 20px;">📋 복사</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1487,7 +1528,8 @@ const DEFAULT_TABS=[
     {id:'links',title:'링크 모음',icon:'🔗',type:'builtin',order:8},
     {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
     {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
-    {id:'translator',title:'가정통신문 번역',icon:'🌐',type:'builtin',order:11}
+    {id:'translator',title:'가정통신문 번역',icon:'🌐',type:'builtin',order:11},
+    {id:'qrcode',title:'QR 생성기',icon:'📱',type:'builtin',order:12}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -4326,6 +4368,78 @@ async function moveSection(secId,dir){
     if(newIdx<0||newIdx>=sorted.length)return;
     const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
     await api('POST','/api/sections',sections);saveToLocal();renderSections();
+}
+
+// ===== QR CODE GENERATOR =====
+let qrDebounce=null;
+function generateQR(){
+    clearTimeout(qrDebounce);
+    qrDebounce=setTimeout(()=>_generateQR(),300);
+}
+function _generateQR(){
+    const url=document.getElementById('qrInput').value.trim();
+    const result=document.getElementById('qrResult');
+    const actions=document.getElementById('qrActions');
+    if(!url){
+        result.innerHTML='<p style="color:var(--text-light);font-size:14px;">위에 웹 주소를 입력하면 QR 코드가 여기에 나타납니다.</p>';
+        actions.style.display='none';
+        return;
+    }
+    const size=parseInt(document.getElementById('qrSize').value);
+    const color=document.getElementById('qrColor').value;
+    const canvas=document.createElement('canvas');
+    QRCode.toCanvas(canvas,url,{width:size,margin:2,color:{dark:color,light:'#ffffff'}},function(err){
+        if(err){
+            result.innerHTML='<p style="color:#e53935;font-size:14px;">QR 코드 생성 실패: 올바른 URL을 입력하세요.</p>';
+            actions.style.display='none';
+            return;
+        }
+        result.innerHTML='';
+        canvas.style.borderRadius='8px';
+        canvas.style.maxWidth='100%';
+        result.appendChild(canvas);
+        const urlLabel=document.createElement('p');
+        urlLabel.style.cssText='font-size:12px;color:var(--text-light);margin-top:10px;word-break:break-all;';
+        urlLabel.textContent=url;
+        result.appendChild(urlLabel);
+        actions.style.display='flex';
+    });
+}
+function downloadQR(format){
+    const url=document.getElementById('qrInput').value.trim();
+    if(!url)return;
+    const size=parseInt(document.getElementById('qrSize').value);
+    const color=document.getElementById('qrColor').value;
+    if(format==='png'){
+        const canvas=document.createElement('canvas');
+        QRCode.toCanvas(canvas,url,{width:size,margin:2,color:{dark:color,light:'#ffffff'}},function(){
+            const link=document.createElement('a');
+            link.download='qrcode.png';
+            link.href=canvas.toDataURL('image/png');
+            link.click();
+        });
+    } else {
+        QRCode.toString(url,{type:'svg',width:size,margin:2,color:{dark:color,light:'#ffffff'}},function(err,svgStr){
+            if(err)return;
+            const blob=new Blob([svgStr],{type:'image/svg+xml'});
+            const link=document.createElement('a');
+            link.download='qrcode.svg';
+            link.href=URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+        });
+    }
+}
+async function copyQR(){
+    const canvas=document.querySelector('#qrResult canvas');
+    if(!canvas)return;
+    try{
+        const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+        showToast('QR 코드가 클립보드에 복사되었습니다!','success');
+    }catch(e){
+        showToast('복사 실패: 브라우저가 지원하지 않을 수 있습니다.','error');
+    }
 }
 
 // ===== E-SIGN (전자서명 문서) =====
