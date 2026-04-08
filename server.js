@@ -20,12 +20,24 @@ const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const HAS_REDIS = !!(REDIS_URL && REDIS_TOKEN);
 
-// ===== 인증 시스템 =====
-const ACCESS_CODE = process.env.ACCESS_CODE || 'baekam2026';
-const ADMIN_CODE = process.env.ADMIN_CODE || 'admin9999';
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
-const sessions = new Map(); // token → { role: 'user'|'admin', createdAt, expiresAt }
+// ===== 인증 시스템 (비밀번호 해시 암호화) =====
+const DEFAULT_ACCESS_CODE = '1234';
+const DEFAULT_ADMIN_CODE = 'admin1234';
+const sessions = new Map(); // token → { role, createdAt, expiresAt }
 const SESSION_TTL = 24 * 60 * 60 * 1000; // 24시간
+
+// --- 비밀번호 해시 유틸 ---
+// SHA-256 + salt 방식. bcrypt 없이 Node 내장 crypto만 사용.
+function hashPassword(plain, salt) {
+    if (!salt) salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(plain, salt, 10000, 64, 'sha512').toString('hex');
+    return { hash, salt };
+}
+
+function verifyPassword(plain, storedHash, storedSalt) {
+    const { hash } = hashPassword(plain, storedSalt);
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(storedHash));
+}
 
 function generateToken() {
     return crypto.randomBytes(48).toString('hex');
@@ -90,23 +102,38 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ===== 인증 API =====
+// 저장된 해시를 읽거나, 없으면 초기 비밀번호로 해시를 생성해서 저장
+async function getAuthCodes() {
+    let settings = {};
+    try { settings = (await readData('settings.json')) || {}; } catch (e) {}
+
+    // 해시가 아직 없으면 (최초 실행) → 초기 비밀번호를 해시로 변환 후 저장
+    if (!settings.auth || !settings.auth.accessHash) {
+        const access = hashPassword(DEFAULT_ACCESS_CODE);
+        const admin = hashPassword(DEFAULT_ADMIN_CODE);
+        settings.auth = {
+            accessHash: access.hash, accessSalt: access.salt,
+            adminHash: admin.hash, adminSalt: admin.salt
+        };
+        await writeData('settings.json', settings);
+    }
+    return settings.auth;
+}
+
 // 로그인 (인증코드 검증)
 app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: '인증 코드를 입력해주세요.' });
 
-    // 설정에 저장된 코드가 있으면 우선 사용
-    let currentAccessCode = ACCESS_CODE;
-    let currentAdminCode = ADMIN_CODE;
-    try {
-        const settings = await readData('settings.json');
-        if (settings && settings.accessCode) currentAccessCode = settings.accessCode;
-        if (settings && settings.adminCode) currentAdminCode = settings.adminCode;
-    } catch (e) { /* 기본값 사용 */ }
+    const auth = await getAuthCodes();
 
     let role = null;
-    if (code === currentAdminCode) role = 'admin';
-    else if (code === currentAccessCode) role = 'user';
+    try {
+        if (verifyPassword(code, auth.adminHash, auth.adminSalt)) role = 'admin';
+        else if (verifyPassword(code, auth.accessHash, auth.accessSalt)) role = 'user';
+    } catch (e) {
+        return res.status(500).json({ error: '인증 처리 오류' });
+    }
 
     if (!role) {
         return res.status(401).json({ error: '잘못된 인증 코드입니다.' });
@@ -577,12 +604,26 @@ app.post('/api/admin/sessions/clear', requireAdmin, (req, res) => {
 // 인증 코드 변경 (런타임 — 환경변수에 반영되지 않으므로 재시작 시 초기화)
 app.post('/api/admin/change-codes', requireAdmin, async (req, res) => {
     const { accessCode, adminCode } = req.body;
-    // 설정에 저장
+    if (!accessCode && !adminCode) return res.status(400).json({ error: '변경할 코드를 입력해주세요.' });
+
     const settings = await readData('settings.json') || {};
-    if (accessCode && accessCode.length >= 4) settings.accessCode = accessCode;
-    if (adminCode && adminCode.length >= 6) settings.adminCode = adminCode;
+    if (!settings.auth) settings.auth = {};
+
+    if (accessCode) {
+        if (accessCode.length < 4) return res.status(400).json({ error: '접속 코드는 4자 이상이어야 합니다.' });
+        const h = hashPassword(accessCode);
+        settings.auth.accessHash = h.hash;
+        settings.auth.accessSalt = h.salt;
+    }
+    if (adminCode) {
+        if (adminCode.length < 6) return res.status(400).json({ error: '관리자 코드는 6자 이상이어야 합니다.' });
+        const h = hashPassword(adminCode);
+        settings.auth.adminHash = h.hash;
+        settings.auth.adminSalt = h.salt;
+    }
+
     await writeData('settings.json', settings);
-    res.json({ success: true, message: '인증 코드가 변경되었습니다. 서버 재시작 후에도 유지됩니다.' });
+    res.json({ success: true, message: '인증 코드가 암호화되어 저장되었습니다.' });
 });
 
 // 감사 로그 조회 (최근 활동)
