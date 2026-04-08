@@ -23,8 +23,9 @@ const HAS_REDIS = !!(REDIS_URL && REDIS_TOKEN);
 // ===== 인증 시스템 (비밀번호 해시 암호화) =====
 const DEFAULT_ACCESS_CODE = '1234';
 const DEFAULT_ADMIN_CODE = 'admin1234';
-const sessions = new Map(); // token → { role, createdAt, expiresAt }
+const sessions = new Map(); // token → { role, createdAt, expiresAt } (로컬 캐시)
 const SESSION_TTL = 24 * 60 * 60 * 1000; // 24시간
+const SESSION_REDIS_TTL = 86400; // Redis TTL (초 단위, 24시간)
 
 // --- 비밀번호 해시 유틸 ---
 // SHA-256 + salt 방식. bcrypt 없이 Node 내장 crypto만 사용.
@@ -43,21 +44,52 @@ function generateToken() {
     return crypto.randomBytes(48).toString('hex');
 }
 
-function validateSession(token) {
-    if (!token) return null;
-    const session = sessions.get(token);
-    if (!session) return null;
-    if (Date.now() > session.expiresAt) {
-        sessions.delete(token);
-        return null;
+// 세션 저장 (메모리 + Redis)
+async function saveSession(token, session) {
+    sessions.set(token, session);
+    if (redis) {
+        try { await redis.set('session:' + token, JSON.stringify(session), { ex: SESSION_REDIS_TTL }); }
+        catch (e) { console.warn('Redis 세션 저장 실패:', e.message); }
     }
-    return session;
+}
+
+// 세션 삭제 (메모리 + Redis)
+async function deleteSession(token) {
+    sessions.delete(token);
+    if (redis) {
+        try { await redis.del('session:' + token); }
+        catch (e) { console.warn('Redis 세션 삭제 실패:', e.message); }
+    }
+}
+
+// 세션 검증 (메모리 → Redis 폴백)
+async function validateSession(token) {
+    if (!token) return null;
+    // 메모리 캐시 먼저
+    let session = sessions.get(token);
+    if (session) {
+        if (Date.now() > session.expiresAt) { deleteSession(token); return null; }
+        return session;
+    }
+    // Redis에서 조회 (서버리스 환경 대응)
+    if (redis) {
+        try {
+            const data = await redis.get('session:' + token);
+            if (data) {
+                session = typeof data === 'string' ? JSON.parse(data) : data;
+                if (Date.now() > session.expiresAt) { deleteSession(token); return null; }
+                sessions.set(token, session); // 메모리 캐시에 복원
+                return session;
+            }
+        } catch (e) { console.warn('Redis 세션 조회 실패:', e.message); }
+    }
+    return null;
 }
 
 // 인증 미들웨어 — 보호된 API에 적용
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
     const token = req.headers['x-auth-token'];
-    const session = validateSession(token);
+    const session = await validateSession(token);
     if (!session) {
         return res.status(401).json({ error: '인증이 필요합니다.' });
     }
@@ -66,9 +98,9 @@ function requireAuth(req, res, next) {
 }
 
 // 관리자 전용 미들웨어
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
     const token = req.headers['x-auth-token'];
-    const session = validateSession(token);
+    const session = await validateSession(token);
     if (!session) {
         return res.status(401).json({ error: '인증이 필요합니다.' });
     }
@@ -140,7 +172,7 @@ app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
     }
 
     const token = generateToken();
-    sessions.set(token, {
+    await saveSession(token, {
         role,
         createdAt: Date.now(),
         expiresAt: Date.now() + SESSION_TTL
@@ -150,17 +182,17 @@ app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
 });
 
 // 세션 검증
-app.get('/api/auth/verify', (req, res) => {
+app.get('/api/auth/verify', async (req, res) => {
     const token = req.headers['x-auth-token'];
-    const session = validateSession(token);
+    const session = await validateSession(token);
     if (!session) return res.status(401).json({ valid: false });
     res.json({ valid: true, role: session.role });
 });
 
 // 로그아웃
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', async (req, res) => {
     const token = req.headers['x-auth-token'];
-    if (token) sessions.delete(token);
+    if (token) await deleteSession(token);
     res.json({ success: true });
 });
 
