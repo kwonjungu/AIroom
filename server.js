@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
@@ -19,8 +20,122 @@ const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const HAS_REDIS = !!(REDIS_URL && REDIS_TOKEN);
 
-app.use(express.json({ limit: '50mb' }));
+// ===== 인증 시스템 =====
+const ACCESS_CODE = process.env.ACCESS_CODE || 'baekam2026';
+const ADMIN_CODE = process.env.ADMIN_CODE || 'admin9999';
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+const sessions = new Map(); // token → { role: 'user'|'admin', createdAt, expiresAt }
+const SESSION_TTL = 24 * 60 * 60 * 1000; // 24시간
+
+function generateToken() {
+    return crypto.randomBytes(48).toString('hex');
+}
+
+function validateSession(token) {
+    if (!token) return null;
+    const session = sessions.get(token);
+    if (!session) return null;
+    if (Date.now() > session.expiresAt) {
+        sessions.delete(token);
+        return null;
+    }
+    return session;
+}
+
+// 인증 미들웨어 — 보호된 API에 적용
+function requireAuth(req, res, next) {
+    const token = req.headers['x-auth-token'];
+    const session = validateSession(token);
+    if (!session) {
+        return res.status(401).json({ error: '인증이 필요합니다.' });
+    }
+    req.session = session;
+    next();
+}
+
+// 관리자 전용 미들웨어
+function requireAdmin(req, res, next) {
+    const token = req.headers['x-auth-token'];
+    const session = validateSession(token);
+    if (!session) {
+        return res.status(401).json({ error: '인증이 필요합니다.' });
+    }
+    if (session.role !== 'admin') {
+        return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+    }
+    req.session = session;
+    next();
+}
+
+// Rate limiting (간단 구현)
+const rateLimits = new Map(); // ip → { count, resetAt }
+function rateLimit(maxRequests, windowMs) {
+    return (req, res, next) => {
+        const ip = req.ip || req.connection.remoteAddress;
+        const now = Date.now();
+        let entry = rateLimits.get(ip);
+        if (!entry || now > entry.resetAt) {
+            entry = { count: 0, resetAt: now + windowMs };
+            rateLimits.set(ip, entry);
+        }
+        entry.count++;
+        if (entry.count > maxRequests) {
+            return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+        }
+        next();
+    };
+}
+
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ===== 인증 API =====
+// 로그인 (인증코드 검증)
+app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: '인증 코드를 입력해주세요.' });
+
+    // 설정에 저장된 코드가 있으면 우선 사용
+    let currentAccessCode = ACCESS_CODE;
+    let currentAdminCode = ADMIN_CODE;
+    try {
+        const settings = await readData('settings.json');
+        if (settings && settings.accessCode) currentAccessCode = settings.accessCode;
+        if (settings && settings.adminCode) currentAdminCode = settings.adminCode;
+    } catch (e) { /* 기본값 사용 */ }
+
+    let role = null;
+    if (code === currentAdminCode) role = 'admin';
+    else if (code === currentAccessCode) role = 'user';
+
+    if (!role) {
+        return res.status(401).json({ error: '잘못된 인증 코드입니다.' });
+    }
+
+    const token = generateToken();
+    sessions.set(token, {
+        role,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + SESSION_TTL
+    });
+
+    res.json({ success: true, token, role });
+});
+
+// 세션 검증
+app.get('/api/auth/verify', (req, res) => {
+    const token = req.headers['x-auth-token'];
+    const session = validateSession(token);
+    if (!session) return res.status(401).json({ valid: false });
+    res.json({ valid: true, role: session.role });
+});
+
+// 로그아웃
+app.post('/api/auth/logout', (req, res) => {
+    const token = req.headers['x-auth-token'];
+    if (token) sessions.delete(token);
+    res.json({ success: true });
+});
 
 // ===== Upstash Redis =====
 let redis = null;
@@ -133,7 +248,7 @@ const DATA_ROUTES = [
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
-    app.get(`/api/${p}`, async (req, res) => {
+    app.get(`/api/${p}`, requireAuth, async (req, res) => {
         try {
             const data = await readData(file);
             res.json(data !== null && data !== undefined ? data : fallback);
@@ -143,14 +258,14 @@ DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
             res.status(500).json({ error: '데이터 로딩 실패', _fallback: true });
         }
     });
-    app.post(`/api/${p}`, async (req, res) => {
+    app.post(`/api/${p}`, requireAuth, async (req, res) => {
         try { await writeData(file, req.body); res.json({ success: true }); }
-        catch (e) { res.status(500).json({ error: e.message }); }
+        catch (e) { res.status(500).json({ error: '서버 오류가 발생했습니다.' }); }
     });
 });
 
 // Training record PATCH (개별 교직원 기록 수정)
-app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
+app.patch('/api/training-records/:trainingId/:staffId', requireAuth, async (req, res) => {
     try {
         const records = await readData('training-records.json') || {};
         const { trainingId, staffId } = req.params;
@@ -161,8 +276,8 @@ app.patch('/api/training-records/:trainingId/:staffId', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Export (전체 데이터 내보내기)
-app.get('/api/export', async (req, res) => {
+// Export (전체 데이터 내보내기) — 관리자 전용
+app.get('/api/export', requireAdmin, async (req, res) => {
     try {
         const [links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, tdistDocs] = await Promise.all([
             readData('links.json'), readData('categories.json'), readData('sections.json'),
@@ -174,8 +289,8 @@ app.get('/api/export', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Import (전체 데이터 가져오기)
-app.post('/api/import', async (req, res) => {
+// Import (전체 데이터 가져오기) — 관리자 전용
+app.post('/api/import', requireAdmin, async (req, res) => {
     try {
         const { links, categories, sections, trainings, staff, trainingRecords, schedules, tabs, settings, news, collections, esignDocs, tdistDocs } = req.body;
         const writes = [];
@@ -207,7 +322,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Firebase config (환경변수에서 클라이언트로 전달)
-app.get('/api/firebase-config', (req, res) => {
+app.get('/api/firebase-config', requireAuth, (req, res) => {
     const cfg = {
         apiKey: process.env.FIREBASE_API_KEY,
         authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -222,12 +337,17 @@ app.get('/api/firebase-config', (req, res) => {
 
 // ===== Firebase Storage 다운로드 프록시 (CORS 우회) =====
 const https = require('https');
-app.get('/api/proxy-download', (req, res) => {
+app.get('/api/proxy-download', requireAuth, (req, res) => {
     const url = req.query.url;
     console.log('[proxy] 요청 URL:', url);
     if (!url) return res.status(400).json({ error: 'url 파라미터 필요' });
-    // Firebase Storage URL만 허용
-    if (!url.includes('firebasestorage.googleapis.com') && !url.includes('storage.googleapis.com')) {
+    // Firebase Storage URL만 허용 — URL 파싱으로 정확한 도메인 검증
+    let parsedUrl;
+    try { parsedUrl = new URL(url); } catch (e) {
+        return res.status(400).json({ error: '잘못된 URL 형식입니다.' });
+    }
+    const allowedHosts = ['firebasestorage.googleapis.com', 'storage.googleapis.com'];
+    if (!allowedHosts.includes(parsedUrl.hostname)) {
         return res.status(403).json({ error: '허용되지 않는 URL' });
     }
     https.get(url, (proxyRes) => {
@@ -343,8 +463,8 @@ app.get('/api/ai/status', (req, res) => {
     res.json({ hasServerKey: !!process.env.GROQ_API_KEY });
 });
 
-app.post('/api/ai/chat', async (req, res) => {
-    const apiKey = process.env.GROQ_API_KEY || req.headers['x-ai-key'];
+app.post('/api/ai/chat', requireAuth, async (req, res) => {
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return res.status(400).json({ error: 'API 키가 필요합니다.' });
     try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -361,8 +481,8 @@ app.post('/api/ai/chat', async (req, res) => {
 });
 
 // ===== 가정통신문 번역 API (Groq) =====
-app.post('/api/translate', async (req, res) => {
-    const apiKey = process.env.GROQ_API_KEY || req.headers['x-ai-key'];
+app.post('/api/translate', requireAuth, async (req, res) => {
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return res.status(400).json({ error: 'API 키가 설정되지 않았습니다.' });
     const { blocks, targetLang } = req.body;
     if (!blocks || !blocks.length || !targetLang) return res.status(400).json({ error: 'blocks와 targetLang이 필요합니다.' });
@@ -427,6 +547,53 @@ CRITICAL RULES:
     } catch (e) {
         res.status(500).json({ error: '번역 API 호출 실패: ' + e.message });
     }
+});
+
+// ===== 관리자 전용 API =====
+// 세션 목록 조회
+app.get('/api/admin/sessions', requireAdmin, (req, res) => {
+    const list = [];
+    sessions.forEach((session, token) => {
+        list.push({
+            tokenPrefix: token.slice(0, 8) + '...',
+            role: session.role,
+            createdAt: new Date(session.createdAt).toISOString(),
+            expiresAt: new Date(session.expiresAt).toISOString()
+        });
+    });
+    res.json(list);
+});
+
+// 모든 세션 강제 만료 (본인 제외)
+app.post('/api/admin/sessions/clear', requireAdmin, (req, res) => {
+    const myToken = req.headers['x-auth-token'];
+    let cleared = 0;
+    sessions.forEach((session, token) => {
+        if (token !== myToken) { sessions.delete(token); cleared++; }
+    });
+    res.json({ success: true, cleared });
+});
+
+// 인증 코드 변경 (런타임 — 환경변수에 반영되지 않으므로 재시작 시 초기화)
+app.post('/api/admin/change-codes', requireAdmin, async (req, res) => {
+    const { accessCode, adminCode } = req.body;
+    // 설정에 저장
+    const settings = await readData('settings.json') || {};
+    if (accessCode && accessCode.length >= 4) settings.accessCode = accessCode;
+    if (adminCode && adminCode.length >= 6) settings.adminCode = adminCode;
+    await writeData('settings.json', settings);
+    res.json({ success: true, message: '인증 코드가 변경되었습니다. 서버 재시작 후에도 유지됩니다.' });
+});
+
+// 감사 로그 조회 (최근 활동)
+app.get('/api/admin/audit-log', requireAdmin, async (req, res) => {
+    const log = await readData('audit-log.json') || [];
+    res.json(log.slice(-100)); // 최근 100건
+});
+
+// 관리자 페이지 서빙
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // 메인 페이지

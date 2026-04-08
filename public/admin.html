@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 포털 - 백암초 AI 교무실</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        :root{--primary:#4A90D9;--primary-dark:#357ABD;--accent:#FF6B6B;--success:#51CF66;--bg:#F0F2F5;--card:#FFFFFF;--text:#2D3748;--text-light:#718096;--border:#E2E8F0;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,0.06);}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+        .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#2D3748 0%,#4A5568 100%);z-index:9999;display:flex;align-items:center;justify-content:center;}
+        .auth-overlay.hidden{display:none;}
+        .auth-box{background:white;border-radius:24px;padding:48px 40px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;}
+        .auth-box .auth-icon{font-size:56px;margin-bottom:16px;}
+        .auth-box h2{font-family:'Jua',sans-serif;font-size:24px;color:var(--text);margin-bottom:8px;}
+        .auth-box .auth-subtitle{font-size:14px;color:var(--text-light);margin-bottom:28px;}
+        .auth-input{width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:12px;font-size:16px;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;font-weight:600;}
+        .auth-input:focus{border-color:var(--primary);}
+        .auth-input.error{border-color:var(--accent);animation:shake 0.4s;}
+        @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+        .auth-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#2D3748,#4A5568);color:white;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:transform 0.15s;}
+        .auth-btn:hover{transform:translateY(-1px);}
+        .auth-error{color:var(--accent);font-size:13px;margin-top:12px;min-height:20px;}
+        .admin-header{background:linear-gradient(135deg,#2D3748 0%,#4A5568 100%);color:white;padding:20px 32px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
+        .admin-header h1{font-family:'Jua',sans-serif;font-size:24px;display:flex;align-items:center;gap:12px;}
+        .admin-header-actions{display:flex;gap:10px;}
+        .admin-header-actions button{padding:8px 16px;border:1px solid rgba(255,255,255,0.3);border-radius:10px;background:rgba(255,255,255,0.15);color:white;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;}
+        .admin-header-actions button:hover{background:rgba(255,255,255,0.25);}
+        .admin-container{max-width:1100px;margin:24px auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;}
+        .admin-card{background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);border:1px solid var(--border);}
+        .admin-card h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+        .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+        .stat-item{background:var(--bg);border-radius:10px;padding:16px;text-align:center;}
+        .stat-item .stat-number{font-size:28px;font-weight:800;color:var(--primary);}
+        .stat-item .stat-label{font-size:12px;color:var(--text-light);margin-top:4px;}
+        .session-list{max-height:300px;overflow-y:auto;}
+        .session-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:8px;background:var(--bg);margin-bottom:8px;font-size:13px;}
+        .session-role{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+        .session-role.admin{background:#FED7D7;color:#C53030;}
+        .session-role.user{background:#C6F6D5;color:#276749;}
+        .form-group{margin-bottom:16px;}
+        .form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-light);}
+        .form-group input{width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;outline:none;transition:border-color 0.2s;}
+        .form-group input:focus{border-color:var(--primary);}
+        .btn{padding:10px 20px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+        .btn-primary{background:var(--primary);color:white;}
+        .btn-primary:hover{background:var(--primary-dark);}
+        .btn-danger{background:var(--accent);color:white;}
+        .btn-danger:hover{background:#E55555;}
+        .btn-outline{background:transparent;border:2px solid var(--border);color:var(--text);}
+        .btn-outline:hover{border-color:var(--primary);color:var(--primary);}
+        .security-list{list-style:none;}
+        .security-list li{padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px;display:flex;align-items:center;gap:10px;}
+        .security-list .critical{background:#FED7D7;color:#C53030;}
+        .security-list .high{background:#FEEBC8;color:#C05621;}
+        .security-list .done{background:#C6F6D5;color:#276749;}
+        .toast{position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:12px;background:#2D3748;color:white;font-size:14px;z-index:10000;animation:slideUp 0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+        .toast.success{background:#2F9E44;}
+        .toast.error{background:#E55555;}
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        .health-indicator{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+        .health-indicator.ok{background:#C6F6D5;color:#276749;}
+        .health-indicator.fail{background:#FED7D7;color:#C53030;}
+        .audit-log{max-height:400px;overflow-y:auto;font-size:13px;}
+        .audit-item{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;}
+        .audit-item:last-child{border-bottom:none;}
+        .audit-time{color:var(--text-light);font-size:11px;white-space:nowrap;}
+        @media(max-width:768px){.admin-container{grid-template-columns:1fr;}.admin-header{flex-direction:column;gap:12px;text-align:center;}}
+    </style>
+</head>
+<body>
+    <!-- 관리자 인증 -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-box">
+            <div class="auth-icon">🛡️</div>
+            <h2>관리자 포털</h2>
+            <p class="auth-subtitle">관리자 전용 인증 코드를 입력해주세요</p>
+            <input type="password" class="auth-input" id="adminCodeInput" placeholder="관리자 코드" maxlength="20" autocomplete="off">
+            <button class="auth-btn" onclick="adminLogin()">관리자 로그인</button>
+            <div class="auth-error" id="authError"></div>
+            <p style="margin-top:20px;"><a href="/" style="color:var(--primary);text-decoration:none;font-size:13px;">← 교무실로 돌아가기</a></p>
+        </div>
+    </div>
+
+    <!-- 관리자 대시보드 -->
+    <div id="adminApp" style="display:none;">
+        <header class="admin-header">
+            <h1>🛡️ 관리자 포털</h1>
+            <div class="admin-header-actions">
+                <button onclick="location.href='/'">🏠 교무실</button>
+                <button onclick="refreshAll()">🔄 새로고침</button>
+                <button onclick="adminLogout()" style="border-color:rgba(255,107,107,0.5);background:rgba(255,107,107,0.2);">🚪 로그아웃</button>
+            </div>
+        </header>
+
+        <div class="admin-container">
+            <!-- 서버 상태 -->
+            <div class="admin-card">
+                <h3>📊 시스템 현황</h3>
+                <div id="systemStatus">로딩 중...</div>
+            </div>
+
+            <!-- 데이터 통계 -->
+            <div class="admin-card">
+                <h3>📈 데이터 통계</h3>
+                <div class="stat-grid" id="dataStats">로딩 중...</div>
+            </div>
+
+            <!-- 활성 세션 -->
+            <div class="admin-card">
+                <h3>👥 활성 세션</h3>
+                <div class="session-list" id="sessionList">로딩 중...</div>
+                <button class="btn btn-danger" onclick="clearSessions()" style="margin-top:12px;width:100%;">모든 세션 강제 종료</button>
+            </div>
+
+            <!-- 인증 코드 변경 -->
+            <div class="admin-card">
+                <h3>🔑 인증 코드 관리</h3>
+                <div class="form-group">
+                    <label>일반 접속 코드</label>
+                    <input type="text" id="newAccessCode" placeholder="4자 이상 입력">
+                </div>
+                <div class="form-group">
+                    <label>관리자 코드</label>
+                    <input type="text" id="newAdminCode" placeholder="6자 이상 입력">
+                </div>
+                <button class="btn btn-primary" onclick="changeCodes()" style="width:100%;">코드 변경</button>
+            </div>
+
+            <!-- 데이터 관리 -->
+            <div class="admin-card">
+                <h3>💾 데이터 관리</h3>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button class="btn btn-outline" onclick="exportData()">📥 전체 데이터 내보내기 (JSON)</button>
+                    <label class="btn btn-outline" style="text-align:center;cursor:pointer;">
+                        📤 데이터 가져오기 (JSON)
+                        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+                    </label>
+                </div>
+            </div>
+
+            <!-- 보안 현황 -->
+            <div class="admin-card">
+                <h3>🔒 보안 조치 현황</h3>
+                <ul class="security-list">
+                    <li class="done">✅ 인증 코드 시스템 적용</li>
+                    <li class="done">✅ 세션 기반 API 보호</li>
+                    <li class="done">✅ 관리자 포털 분리</li>
+                    <li class="done">✅ Rate Limiting 적용</li>
+                    <li class="done">✅ SSRF URL 검증 강화</li>
+                    <li class="high">⚠️ CORS 정책 설정 필요</li>
+                    <li class="high">⚠️ 보안 헤더(helmet) 미적용</li>
+                    <li class="critical">🔴 비밀번호 해시 처리 필요</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+<script>
+let adminToken = localStorage.getItem('airoom_admin_token') || null;
+
+function esc(s) { if(!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function showToast(msg, type='') {
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+async function adminApi(method, url, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'X-Auth-Token': adminToken } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    if (r.status === 401 || r.status === 403) {
+        adminToken = null;
+        localStorage.removeItem('airoom_admin_token');
+        document.getElementById('authOverlay').classList.remove('hidden');
+        document.getElementById('adminApp').style.display = 'none';
+        return null;
+    }
+    return await r.json();
+}
+
+async function adminLogin() {
+    const input = document.getElementById('adminCodeInput');
+    const errEl = document.getElementById('authError');
+    const code = input.value.trim();
+    if (!code) { errEl.textContent = '관리자 코드를 입력해주세요.'; return; }
+    try {
+        const r = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+            errEl.textContent = data.error || '인증 실패';
+            input.classList.add('error');
+            setTimeout(() => input.classList.remove('error'), 400);
+            return;
+        }
+        if (data.role !== 'admin') {
+            errEl.textContent = '관리자 권한이 필요합니다. 관리자 코드를 입력해주세요.';
+            return;
+        }
+        adminToken = data.token;
+        localStorage.setItem('airoom_admin_token', adminToken);
+        document.getElementById('authOverlay').classList.add('hidden');
+        document.getElementById('adminApp').style.display = '';
+        refreshAll();
+    } catch (e) {
+        errEl.textContent = '서버 연결 실패';
+    }
+}
+
+function adminLogout() {
+    if (!confirm('로그아웃 하시겠습니까?')) return;
+    fetch('/api/auth/logout', { method: 'POST', headers: { 'X-Auth-Token': adminToken } }).catch(() => {});
+    adminToken = null;
+    localStorage.removeItem('airoom_admin_token');
+    location.reload();
+}
+
+async function checkAdminAuth() {
+    if (!adminToken) return false;
+    try {
+        const r = await fetch('/api/auth/verify', { headers: { 'X-Auth-Token': adminToken } });
+        const data = await r.json();
+        if (data.valid && data.role === 'admin') return true;
+    } catch (e) {}
+    adminToken = null;
+    localStorage.removeItem('airoom_admin_token');
+    return false;
+}
+
+async function refreshAll() {
+    await Promise.all([loadSystemStatus(), loadDataStats(), loadSessions()]);
+}
+
+async function loadSystemStatus() {
+    const el = document.getElementById('systemStatus');
+    try {
+        const health = await adminApi('GET', '/api/health');
+        if (!health) return;
+        el.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>서버</span>
+                    <span class="health-indicator ${health.server ? 'ok' : 'fail'}">${health.server ? '정상' : '오류'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Redis</span>
+                    <span class="health-indicator ${health.redis ? 'ok' : 'fail'}">${health.redis ? '연결됨' : '미연결'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>시각</span>
+                    <span style="font-size:12px;color:var(--text-light);">${new Date(health.timestamp).toLocaleString('ko-KR')}</span>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        el.innerHTML = '<span class="health-indicator fail">서버 응답 없음</span>';
+    }
+}
+
+async function loadDataStats() {
+    const el = document.getElementById('dataStats');
+    try {
+        const [staff, trainings, schedules, links, esignDocs, sections] = await Promise.all([
+            adminApi('GET', '/api/staff'),
+            adminApi('GET', '/api/trainings'),
+            adminApi('GET', '/api/schedules'),
+            adminApi('GET', '/api/links'),
+            adminApi('GET', '/api/esign-docs'),
+            adminApi('GET', '/api/sections')
+        ]);
+        el.innerHTML = `
+            <div class="stat-item"><div class="stat-number">${(staff||[]).length}</div><div class="stat-label">교직원</div></div>
+            <div class="stat-item"><div class="stat-number">${(trainings||[]).length}</div><div class="stat-label">연수 항목</div></div>
+            <div class="stat-item"><div class="stat-number">${(schedules||[]).length}</div><div class="stat-label">일정</div></div>
+            <div class="stat-item"><div class="stat-number">${(links||[]).length}</div><div class="stat-label">링크</div></div>
+            <div class="stat-item"><div class="stat-number">${(esignDocs||[]).length}</div><div class="stat-label">전자서명 문서</div></div>
+            <div class="stat-item"><div class="stat-number">${(sections||[]).length}</div><div class="stat-label">섹션</div></div>
+        `;
+    } catch (e) {
+        el.innerHTML = '<p style="color:var(--text-light);">데이터 로딩 실패</p>';
+    }
+}
+
+async function loadSessions() {
+    const el = document.getElementById('sessionList');
+    try {
+        const sessions = await adminApi('GET', '/api/admin/sessions');
+        if (!sessions || !sessions.length) {
+            el.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:20px;">활성 세션 없음</p>';
+            return;
+        }
+        el.innerHTML = sessions.map(s => `
+            <div class="session-item">
+                <div>
+                    <span style="font-family:monospace;">${esc(s.tokenPrefix)}</span>
+                    <span class="session-role ${s.role}">${s.role === 'admin' ? '관리자' : '사용자'}</span>
+                </div>
+                <span style="font-size:11px;color:var(--text-light);">${new Date(s.createdAt).toLocaleString('ko-KR')}</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        el.innerHTML = '<p style="color:var(--text-light);">로딩 실패</p>';
+    }
+}
+
+async function clearSessions() {
+    if (!confirm('본인을 제외한 모든 세션을 종료합니다. 계속하시겠습니까?')) return;
+    const data = await adminApi('POST', '/api/admin/sessions/clear');
+    if (data) {
+        showToast(`${data.cleared}개 세션이 종료되었습니다.`, 'success');
+        loadSessions();
+    }
+}
+
+async function changeCodes() {
+    const accessCode = document.getElementById('newAccessCode').value.trim();
+    const adminCode = document.getElementById('newAdminCode').value.trim();
+    if (!accessCode && !adminCode) { showToast('변경할 코드를 입력해주세요.', 'error'); return; }
+    if (accessCode && accessCode.length < 4) { showToast('접속 코드는 4자 이상이어야 합니다.', 'error'); return; }
+    if (adminCode && adminCode.length < 6) { showToast('관리자 코드는 6자 이상이어야 합니다.', 'error'); return; }
+    const data = await adminApi('POST', '/api/admin/change-codes', { accessCode, adminCode });
+    if (data && data.success) {
+        showToast('인증 코드가 변경되었습니다.', 'success');
+        document.getElementById('newAccessCode').value = '';
+        document.getElementById('newAdminCode').value = '';
+    }
+}
+
+async function exportData() {
+    try {
+        const r = await fetch('/api/export', { headers: { 'X-Auth-Token': adminToken } });
+        if (!r.ok) throw new Error('내보내기 실패');
+        const data = await r.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.download = `airoom_backup_${new Date().toISOString().slice(0,10)}.json`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('데이터 내보내기 완료', 'success');
+    } catch (e) {
+        showToast('내보내기 실패: ' + e.message, 'error');
+    }
+}
+
+async function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!confirm('기존 데이터를 덮어씁니다. 계속하시겠습니까?')) { event.target.value = ''; return; }
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const r = await fetch('/api/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Auth-Token': adminToken },
+            body: JSON.stringify(data)
+        });
+        if (!r.ok) throw new Error('가져오기 실패');
+        showToast('데이터 가져오기 완료', 'success');
+        loadDataStats();
+    } catch (e) {
+        showToast('가져오기 실패: ' + e.message, 'error');
+    }
+    event.target.value = '';
+}
+
+// Enter 키
+document.getElementById('adminCodeInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') adminLogin();
+});
+
+// 초기화
+(async function() {
+    const ok = await checkAdminAuth();
+    if (ok) {
+        document.getElementById('authOverlay').classList.add('hidden');
+        document.getElementById('adminApp').style.display = '';
+        refreshAll();
+    }
+})();
+</script>
+</body>
+</html>

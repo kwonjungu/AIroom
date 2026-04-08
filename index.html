@@ -742,8 +742,39 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+        /* ===== Auth Gate ===== */
+        .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s;}
+        .auth-overlay.hidden{opacity:0;pointer-events:none;}
+        .auth-box{background:white;border-radius:24px;padding:48px 40px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;animation:authSlideUp 0.6s ease;}
+        @keyframes authSlideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+        .auth-box .auth-icon{font-size:56px;margin-bottom:16px;}
+        .auth-box h2{font-family:'Jua',sans-serif;font-size:24px;color:#2D3748;margin-bottom:8px;}
+        .auth-box .auth-subtitle{font-size:14px;color:#718096;margin-bottom:28px;}
+        .auth-input{width:100%;padding:14px 18px;border:2px solid #E2E8F0;border-radius:12px;font-size:16px;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;font-weight:600;}
+        .auth-input:focus{border-color:#4A90D9;}
+        .auth-input.error{border-color:#FF6B6B;animation:authShake 0.4s;}
+        @keyframes authShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+        .auth-btn{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#4A90D9,#6C5CE7);color:white;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:transform 0.15s,box-shadow 0.15s;}
+        .auth-btn:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(74,144,217,0.4);}
+        .auth-btn:active{transform:translateY(0);}
+        .auth-error{color:#FF6B6B;font-size:13px;margin-top:12px;min-height:20px;}
+        .auth-footer{font-size:11px;color:#A0AEC0;margin-top:24px;}
+    </style>
 </head>
 <body>
+    <!-- 인증 게이트 -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-box">
+            <div class="auth-icon">🔐</div>
+            <h2>백암초 AI 교무실</h2>
+            <p class="auth-subtitle">접속하려면 인증 코드를 입력해주세요</p>
+            <input type="password" class="auth-input" id="authCodeInput" placeholder="인증 코드" maxlength="20" autocomplete="off">
+            <button class="auth-btn" id="authBtn" onclick="handleLogin()">입장하기</button>
+            <div class="auth-error" id="authError"></div>
+            <p class="auth-footer">백암초등학교 교직원 전용 시스템</p>
+        </div>
+    </div>
+
     <header class="header">
         <div class="header-inner">
             <div class="font-size-selector">
@@ -764,6 +795,7 @@
                 <span class="header-date" id="currentDate"></span>
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
                 <button class="btn-server-status" onclick="showServerStatus()">📊 서버현황</button>
+                <button class="btn-admin" onclick="logout()" style="background:rgba(255,107,107,0.3);border-color:rgba(255,107,107,0.5);">🚪 로그아웃</button>
             </div>
         </div>
         <label class="header-bg-btn" title="헤더 배경 이미지 변경">📷 배경 변경<input type="file" accept="image/*" onchange="handleBannerUpload(event)"></label>
@@ -1534,6 +1566,8 @@ const DEFAULT_TABS=[
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let scheduleView='month',scheduleDate=new Date();
+let authToken=localStorage.getItem('airoom_auth_token')||null;
+let authRole=localStorage.getItem('airoom_auth_role')||null;
 let undoStack=[];
 const MAX_UNDO=30;
 function pushUndo(){
@@ -1668,8 +1702,17 @@ function isEmptyData(d){return !d||((Array.isArray(d)&&d.length===0)||(typeof d=
 async function api(m,u,b){
     try{
         const o={method:m,headers:{'Content-Type':'application/json'}};
+        if(authToken)o.headers['X-Auth-Token']=authToken;
         if(b)o.body=JSON.stringify(b);
         const r=await fetch(u,o);
+        if(r.status===401){
+            // 세션 만료 → 로그인 화면으로
+            authToken=null;authRole=null;
+            localStorage.removeItem('airoom_auth_token');
+            localStorage.removeItem('airoom_auth_role');
+            document.getElementById('authOverlay').classList.remove('hidden');
+            return null;
+        }
         if(!r.ok){
             const errText=await r.text().catch(()=>'');
             throw new Error(`서버 오류 (${r.status}): ${errText}`);
@@ -1685,7 +1728,71 @@ async function api(m,u,b){
     }
 }
 
+// ===== 인증 시스템 =====
+async function handleLogin(){
+    const input=document.getElementById('authCodeInput');
+    const errEl=document.getElementById('authError');
+    const btn=document.getElementById('authBtn');
+    const code=input.value.trim();
+    if(!code){errEl.textContent='인증 코드를 입력해주세요.';input.classList.add('error');return;}
+    btn.disabled=true;btn.textContent='확인 중...';
+    try{
+        const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+        const data=await r.json();
+        if(!r.ok){
+            errEl.textContent=data.error||'인증 실패';
+            input.classList.add('error');
+            setTimeout(()=>input.classList.remove('error'),400);
+            btn.disabled=false;btn.textContent='입장하기';
+            return;
+        }
+        authToken=data.token;authRole=data.role;
+        localStorage.setItem('airoom_auth_token',authToken);
+        localStorage.setItem('airoom_auth_role',authRole);
+        document.getElementById('authOverlay').classList.add('hidden');
+        setTimeout(()=>document.getElementById('authOverlay').style.display='none',500);
+        init();
+    }catch(e){
+        errEl.textContent='서버 연결 실패. 잠시 후 다시 시도해주세요.';
+        btn.disabled=false;btn.textContent='입장하기';
+    }
+}
+
+async function checkAuth(){
+    if(!authToken){document.getElementById('authOverlay').classList.remove('hidden');return false;}
+    try{
+        const r=await fetch('/api/auth/verify',{headers:{'X-Auth-Token':authToken}});
+        const data=await r.json();
+        if(!data.valid){
+            authToken=null;authRole=null;
+            localStorage.removeItem('airoom_auth_token');
+            localStorage.removeItem('airoom_auth_role');
+            document.getElementById('authOverlay').classList.remove('hidden');
+            return false;
+        }
+        authRole=data.role;
+        document.getElementById('authOverlay').classList.add('hidden');
+        setTimeout(()=>document.getElementById('authOverlay').style.display='none',500);
+        return true;
+    }catch(e){
+        document.getElementById('authOverlay').classList.remove('hidden');
+        return false;
+    }
+}
+
+function logout(){
+    if(!confirm('로그아웃 하시겠습니까?'))return;
+    fetch('/api/auth/logout',{method:'POST',headers:{'X-Auth-Token':authToken}}).catch(()=>{});
+    authToken=null;authRole=null;
+    localStorage.removeItem('airoom_auth_token');
+    localStorage.removeItem('airoom_auth_role');
+    location.reload();
+}
+
 async function init(){
+    // 인증 확인
+    const authed=await checkAuth();
+    if(!authed)return;
     initFirebase(); // Firebase Storage 비동기 초기화 (병렬)
     loadBanner(); // 배너 이미지 로드
     try{
@@ -6322,6 +6429,11 @@ async function saveTranslationAsPdf() {
         showToast('PDF 저장 실패: ' + e.message, 'error');
     }
 }
+
+// 인증 입력 Enter 키 처리
+document.getElementById('authCodeInput').addEventListener('keydown',function(e){
+    if(e.key==='Enter')handleLogin();
+});
 
 init();
 </script>
