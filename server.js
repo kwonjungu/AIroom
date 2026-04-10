@@ -130,6 +130,88 @@ function rateLimit(maxRequests, windowMs) {
     };
 }
 
+// ===== 브루트포스 방어 시스템 =====
+// IP별 로그인 실패 추적 및 점진적 잠금
+const loginAttempts = new Map(); // ip → { failures, lockedUntil, totalFailures }
+const LOCKOUT_POLICY = [
+    { threshold: 5,  duration: 1 * 60 * 1000 },   // 5회 실패 → 1분 잠금
+    { threshold: 10, duration: 5 * 60 * 1000 },   // 10회 실패 → 5분 잠금
+    { threshold: 15, duration: 30 * 60 * 1000 },  // 15회 실패 → 30분 잠금
+    { threshold: 20, duration: 60 * 60 * 1000 },  // 20회 실패 → 1시간 잠금
+];
+const MAX_FAILURES_BEFORE_LONG_LOCK = 25; // 25회 이상 → 24시간 잠금
+const LONG_LOCK_DURATION = 24 * 60 * 60 * 1000;
+const ATTEMPT_RESET_AFTER = 60 * 60 * 1000; // 마지막 실패 후 1시간 지나면 카운터 리셋
+
+function getLoginAttemptInfo(ip) {
+    const now = Date.now();
+    let entry = loginAttempts.get(ip);
+    if (!entry) return null;
+    // 마지막 실패 후 1시간 경과 시 카운터 리셋
+    if (entry.lastFailure && (now - entry.lastFailure) > ATTEMPT_RESET_AFTER) {
+        loginAttempts.delete(ip);
+        return null;
+    }
+    return entry;
+}
+
+function checkLoginLock(ip) {
+    const now = Date.now();
+    const entry = getLoginAttemptInfo(ip);
+    if (!entry) return { locked: false };
+    if (entry.lockedUntil && now < entry.lockedUntil) {
+        const remainMs = entry.lockedUntil - now;
+        const remainSec = Math.ceil(remainMs / 1000);
+        return { locked: true, remainSec, failures: entry.failures };
+    }
+    return { locked: false, failures: entry.failures };
+}
+
+function recordLoginFailure(ip) {
+    const now = Date.now();
+    let entry = getLoginAttemptInfo(ip) || { failures: 0, lockedUntil: null, lastFailure: null };
+    entry.failures++;
+    entry.lastFailure = now;
+
+    // 점진적 잠금 시간 결정
+    if (entry.failures >= MAX_FAILURES_BEFORE_LONG_LOCK) {
+        entry.lockedUntil = now + LONG_LOCK_DURATION;
+    } else {
+        // 정책 테이블에서 해당하는 가장 높은 단계 적용
+        for (let i = LOCKOUT_POLICY.length - 1; i >= 0; i--) {
+            if (entry.failures >= LOCKOUT_POLICY[i].threshold) {
+                entry.lockedUntil = now + LOCKOUT_POLICY[i].duration;
+                break;
+            }
+        }
+    }
+
+    loginAttempts.set(ip, entry);
+
+    // 잠금 상태 반환
+    const nextThreshold = LOCKOUT_POLICY.find(p => p.threshold > entry.failures);
+    const remaining = nextThreshold ? (nextThreshold.threshold - entry.failures) : 0;
+    return {
+        failures: entry.failures,
+        lockedUntil: entry.lockedUntil,
+        attemptsUntilLock: remaining
+    };
+}
+
+function resetLoginAttempts(ip) {
+    loginAttempts.delete(ip);
+}
+
+// 오래된 잠금 기록 주기적 정리 (메모리 누수 방지)
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of loginAttempts) {
+        if (entry.lastFailure && (now - entry.lastFailure) > ATTEMPT_RESET_AFTER) {
+            loginAttempts.delete(ip);
+        }
+    }
+}, 10 * 60 * 1000); // 10분마다 정리
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -152,10 +234,25 @@ async function getAuthCodes() {
     return settings.auth;
 }
 
-// 로그인 (인증코드 검증)
+// 로그인 (인증코드 검증 + 브루트포스 방어)
 app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress;
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: '인증 코드를 입력해주세요.' });
+
+    // 잠금 상태 확인
+    const lockStatus = checkLoginLock(ip);
+    if (lockStatus.locked) {
+        const min = Math.floor(lockStatus.remainSec / 60);
+        const sec = lockStatus.remainSec % 60;
+        const timeStr = min > 0 ? `${min}분 ${sec}초` : `${sec}초`;
+        return res.status(429).json({
+            error: `로그인 시도가 너무 많습니다. ${timeStr} 후에 다시 시도해주세요.`,
+            locked: true,
+            remainSec: lockStatus.remainSec,
+            failures: lockStatus.failures
+        });
+    }
 
     const auth = await getAuthCodes();
 
@@ -168,8 +265,28 @@ app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
     }
 
     if (!role) {
-        return res.status(401).json({ error: '잘못된 인증 코드입니다.' });
+        // 실패 기록 및 잠금 정보 반환
+        const result = recordLoginFailure(ip);
+        const response = { error: '잘못된 인증 코드입니다.' };
+        if (result.attemptsUntilLock > 0 && result.attemptsUntilLock <= 3) {
+            response.error += ` (${result.attemptsUntilLock}회 남음)`;
+            response.attemptsLeft = result.attemptsUntilLock;
+        }
+        if (result.lockedUntil) {
+            const lockSec = Math.ceil((result.lockedUntil - Date.now()) / 1000);
+            const min = Math.floor(lockSec / 60);
+            const sec = lockSec % 60;
+            const timeStr = min > 0 ? `${min}분 ${sec}초` : `${sec}초`;
+            response.error = `로그인 시도 초과. ${timeStr} 동안 잠금됩니다.`;
+            response.locked = true;
+            response.remainSec = lockSec;
+        }
+        response.failures = result.failures;
+        return res.status(401).json(response);
     }
+
+    // 로그인 성공 시 실패 카운터 리셋
+    resetLoginAttempts(ip);
 
     const token = generateToken();
     await saveSession(token, {

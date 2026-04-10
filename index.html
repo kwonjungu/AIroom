@@ -1729,12 +1729,14 @@ async function api(m,u,b){
 }
 
 // ===== 인증 시스템 =====
+let loginLockTimer=null;
 async function handleLogin(){
     const input=document.getElementById('authCodeInput');
     const errEl=document.getElementById('authError');
     const btn=document.getElementById('authBtn');
     const code=input.value.trim();
     if(!code){errEl.textContent='인증 코드를 입력해주세요.';input.classList.add('error');return;}
+    if(btn.disabled)return;
     btn.disabled=true;btn.textContent='확인 중...';
     try{
         const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
@@ -1743,9 +1745,15 @@ async function handleLogin(){
             errEl.textContent=data.error||'인증 실패';
             input.classList.add('error');
             setTimeout(()=>input.classList.remove('error'),400);
-            btn.disabled=false;btn.textContent='입장하기';
+            // 잠금 상태면 카운트다운 표시
+            if(data.locked&&data.remainSec){
+                startLockCountdown(data.remainSec,errEl,btn,input);
+            }else{
+                btn.disabled=false;btn.textContent='입장하기';
+            }
             return;
         }
+        if(loginLockTimer){clearInterval(loginLockTimer);loginLockTimer=null;}
         authToken=data.token;authRole=data.role;
         localStorage.setItem('airoom_auth_token',authToken);
         localStorage.setItem('airoom_auth_role',authRole);
@@ -1756,6 +1764,27 @@ async function handleLogin(){
         errEl.textContent='서버 연결 실패. 잠시 후 다시 시도해주세요.';
         btn.disabled=false;btn.textContent='입장하기';
     }
+}
+function startLockCountdown(sec,errEl,btn,input){
+    if(loginLockTimer)clearInterval(loginLockTimer);
+    btn.disabled=true;input.disabled=true;
+    let remain=sec;
+    function tick(){
+        if(remain<=0){
+            clearInterval(loginLockTimer);loginLockTimer=null;
+            btn.disabled=false;input.disabled=false;
+            btn.textContent='입장하기';
+            errEl.textContent='다시 시도할 수 있습니다.';
+            return;
+        }
+        const m=Math.floor(remain/60),s=remain%60;
+        const t=m>0?`${m}분 ${s}초`:`${s}초`;
+        btn.textContent=`잠금 (${t})`;
+        errEl.textContent=`로그인 시도 초과. ${t} 후에 다시 시도해주세요.`;
+        remain--;
+    }
+    tick();
+    loginLockTimer=setInterval(tick,1000);
 }
 
 async function checkAuth(){

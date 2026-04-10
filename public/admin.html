@@ -193,11 +193,14 @@ async function adminApi(method, url, body) {
     return await r.json();
 }
 
+let adminLockTimer = null;
 async function adminLogin() {
     const input = document.getElementById('adminCodeInput');
     const errEl = document.getElementById('authError');
+    const btn = document.querySelector('.auth-btn');
     const code = input.value.trim();
     if (!code) { errEl.textContent = '관리자 코드를 입력해주세요.'; return; }
+    if (btn && btn.disabled) return;
     try {
         const r = await fetch('/api/auth/login', {
             method: 'POST',
@@ -209,12 +212,16 @@ async function adminLogin() {
             errEl.textContent = data.error || '인증 실패';
             input.classList.add('error');
             setTimeout(() => input.classList.remove('error'), 400);
+            if (data.locked && data.remainSec && btn) {
+                startAdminLockCountdown(data.remainSec, errEl, btn, input);
+            }
             return;
         }
         if (data.role !== 'admin') {
             errEl.textContent = '관리자 권한이 필요합니다. 관리자 코드를 입력해주세요.';
             return;
         }
+        if (adminLockTimer) { clearInterval(adminLockTimer); adminLockTimer = null; }
         adminToken = data.token;
         localStorage.setItem('airoom_admin_token', adminToken);
         document.getElementById('authOverlay').classList.add('hidden');
@@ -223,6 +230,27 @@ async function adminLogin() {
     } catch (e) {
         errEl.textContent = '서버 연결 실패';
     }
+}
+function startAdminLockCountdown(sec, errEl, btn, input) {
+    if (adminLockTimer) clearInterval(adminLockTimer);
+    btn.disabled = true; input.disabled = true;
+    let remain = sec;
+    function tick() {
+        if (remain <= 0) {
+            clearInterval(adminLockTimer); adminLockTimer = null;
+            btn.disabled = false; input.disabled = false;
+            btn.textContent = '관리자 로그인';
+            errEl.textContent = '다시 시도할 수 있습니다.';
+            return;
+        }
+        const m = Math.floor(remain / 60), s = remain % 60;
+        const t = m > 0 ? `${m}분 ${s}초` : `${s}초`;
+        btn.textContent = `잠금 (${t})`;
+        errEl.textContent = `로그인 시도 초과. ${t} 후에 다시 시도해주세요.`;
+        remain--;
+    }
+    tick();
+    adminLockTimer = setInterval(tick, 1000);
 }
 
 function adminLogout() {
