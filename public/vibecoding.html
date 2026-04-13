@@ -714,51 +714,97 @@ function dslToWorkspace(dslText){
     const isTurtle=currentMode==='turtle';
     const commands=isTurtle?parseTurtleDSL(dslText):parsePixelDSL(dslText);
     if(!commands.length)return;
+
+    function initBlock(block){block.initSvg();block.render();}
+
+    function makeBlock(type,fields){
+        const b=workspace.newBlock(type);
+        if(fields)for(const[k,v]of Object.entries(fields))b.setFieldValue(v,k);
+        return b;
+    }
+
     function create(cmds,parentConn){
         let prev=null;
         for(const cmd of cmds){
-            let block;
+            let block=null;
             if(isTurtle){
-                if(cmd.type==='FORWARD'){block=workspace.newBlock('t_forward');block.setFieldValue(cmd.value,'V');}
-                else if(cmd.type==='BACKWARD'){block=workspace.newBlock('t_backward');block.setFieldValue(cmd.value,'V');}
-                else if(cmd.type==='RIGHT'){block=workspace.newBlock('t_right');block.setFieldValue(cmd.value,'V');}
-                else if(cmd.type==='LEFT'){block=workspace.newBlock('t_left');block.setFieldValue(cmd.value,'V');}
-                else if(cmd.type==='PEN_UP')block=workspace.newBlock('t_pen_up');
-                else if(cmd.type==='PEN_DOWN')block=workspace.newBlock('t_pen_down');
-                else if(cmd.type==='PEN_COLOR'){block=workspace.newBlock('t_pen_color');block.setFieldValue(cmd.value,'C');}
-                else if(cmd.type==='PEN_SIZE'){block=workspace.newBlock('t_pen_size');block.setFieldValue(cmd.value,'V');}
-                else if(cmd.type==='HOME')block=workspace.newBlock('t_home');
-                else if(cmd.type==='CLEAR')block=workspace.newBlock('t_clear');
-                else if(cmd.type==='REPEAT'){block=workspace.newBlock('t_repeat');block.setFieldValue(cmd.count,'N');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
-                else continue;
+                switch(cmd.type){
+                    case'FORWARD':block=makeBlock('t_forward',{V:cmd.value});break;
+                    case'BACKWARD':block=makeBlock('t_backward',{V:cmd.value});break;
+                    case'RIGHT':block=makeBlock('t_right',{V:cmd.value});break;
+                    case'LEFT':block=makeBlock('t_left',{V:cmd.value});break;
+                    case'PEN_UP':block=makeBlock('t_pen_up');break;
+                    case'PEN_DOWN':block=makeBlock('t_pen_down');break;
+                    case'PEN_COLOR':block=makeBlock('t_pen_color',{C:cmd.value});break;
+                    case'PEN_SIZE':block=makeBlock('t_pen_size',{V:cmd.value});break;
+                    case'HOME':block=makeBlock('t_home');break;
+                    case'CLEAR':block=makeBlock('t_clear');break;
+                    case'REPEAT':
+                        block=makeBlock('t_repeat',{N:cmd.count});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    default:continue;
+                }
             }else{
-                if(cmd.type==='LED_ON'){block=workspace.newBlock('p_led_on');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');}
-                else if(cmd.type==='LED_OFF'){block=workspace.newBlock('p_led_off');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');}
-                else if(cmd.type==='LED_COLOR'){block=workspace.newBlock('p_led_color');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');block.setFieldValue(cmd.color,'C');}
-                else if(cmd.type==='LED_TOGGLE'){block=workspace.newBlock('p_led_toggle');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');}
-                else if(cmd.type==='FILL_ALL'){block=workspace.newBlock('p_fill');block.setFieldValue(cmd.color,'C');}
-                else if(cmd.type==='FILL_ROW'){block=workspace.newBlock('p_fill_row');block.setFieldValue(cmd.y,'Y');block.setFieldValue(cmd.color,'C');}
-                else if(cmd.type==='FILL_COL'){block=workspace.newBlock('p_fill_col');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.color,'C');}
-                else if(cmd.type==='CLEAR_ALL')block=workspace.newBlock('p_clear');
-                else if(cmd.type==='SHOW_ICON'){block=workspace.newBlock('p_icon');block.setFieldValue(cmd.name,'N');}
-                else if(cmd.type==='WAIT'){block=workspace.newBlock('p_wait');block.setFieldValue(cmd.ms,'MS');}
-                else if(cmd.type==='REPEAT'){block=workspace.newBlock('p_repeat');block.setFieldValue(cmd.count,'N');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
-                else if(cmd.type==='FOR'){block=workspace.newBlock('p_for');block.setFieldValue(cmd.var,'VAR');block.setFieldValue(cmd.from,'FROM');block.setFieldValue(cmd.to,'TO');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
-                else if(cmd.type==='ON_BUTTON_A'||cmd.type==='ON_BUTTON_B'){block=workspace.newBlock('p_on_btn');block.setFieldValue(cmd.type.replace('ON_BUTTON_',''),'B');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
-                else if(cmd.type==='ON_SHAKE'){block=workspace.newBlock('p_on_shake');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
-                else if(cmd.type==='ON_START'){block=workspace.newBlock('p_on_start');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
-                else continue;
+                switch(cmd.type){
+                    case'LED_ON':block=makeBlock('p_led_on',{X:cmd.x,Y:cmd.y});break;
+                    case'LED_OFF':block=makeBlock('p_led_off',{X:cmd.x,Y:cmd.y});break;
+                    case'LED_COLOR':block=makeBlock('p_led_color',{X:cmd.x,Y:cmd.y,C:cmd.color});break;
+                    case'LED_TOGGLE':block=makeBlock('p_led_toggle',{X:cmd.x,Y:cmd.y});break;
+                    case'FILL_ALL':block=makeBlock('p_fill',{C:cmd.color});break;
+                    case'FILL_ROW':block=makeBlock('p_fill_row',{Y:cmd.y,C:cmd.color});break;
+                    case'FILL_COL':block=makeBlock('p_fill_col',{X:cmd.x,C:cmd.color});break;
+                    case'CLEAR_ALL':block=makeBlock('p_clear');break;
+                    case'SHOW_ICON':block=makeBlock('p_icon',{N:cmd.name});break;
+                    case'WAIT':block=makeBlock('p_wait',{MS:cmd.ms});break;
+                    case'REPEAT':
+                        block=makeBlock('p_repeat',{N:cmd.count});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'FOR':
+                        block=makeBlock('p_for',{VAR:cmd.var,FROM:cmd.from,TO:cmd.to});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'ON_BUTTON_A':case'ON_BUTTON_B':
+                        block=makeBlock('p_on_btn',{B:cmd.type.replace('ON_BUTTON_','')});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'ON_SHAKE':
+                        block=makeBlock('p_on_shake');
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'ON_START':
+                        block=makeBlock('p_on_start');
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'IF':
+                        block=makeBlock('p_if_btn',{B:cmd.condition});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        if(cmd.elseBody?.length)create(cmd.elseBody,block.getInput('ELSE').connection);
+                        break;
+                    default:continue;
+                }
             }
             if(!block)continue;
-            if(!block.rendered){block.initSvg();block.render();}
-            if(parentConn&&!prev)parentConn.connect(block.previousConnection);
-            else if(prev&&prev.nextConnection&&block.previousConnection)prev.nextConnection.connect(block.previousConnection);
+            if(!block.svgGroup_)initBlock(block);
+            if(parentConn&&!prev){try{parentConn.connect(block.previousConnection);}catch(e){}}
+            else if(prev){try{prev.nextConnection.connect(block.previousConnection);}catch(e){}}
             prev=block;
         }
     }
     create(commands,null);
-    const tops=workspace.getTopBlocks(true);if(tops.length)tops[0].moveBy(30,30);
+    const tops=workspace.getTopBlocks(true);
+    let yOff=30;
+    for(const t of tops){t.moveBy(30,yOff);yOff+=t.getHeightWidth().height+20;}
     workspace.render();
+    workspace.scrollCenter();
 }
 
 function updateDSLPreview(){
@@ -865,9 +911,10 @@ async function sendChat(){
             : /^(LED_ON|LED_OFF|LED_COLOR|LED_TOGGLE|FILL_|CLEAR_ALL|SHOW_ICON|REPEAT|ON_|IF |FOR |WAIT)/m.test(reply);
 
         if(isDSL){
-            addChatMsg('ai',(currentMode==='turtle'?'🐢':'🎨')+' 코드를 만들었어요!\n\n'+reply);
             try{
                 dslToWorkspace(reply); updateDSLPreview();
+                const blockCount=workspace.getAllBlocks(false).length;
+                addChatMsg('ai',(currentMode==='turtle'?'🐢':'🎨')+' 블록 '+blockCount+'개를 만들었어요! ▶ 실행 버튼을 눌러보세요.');
                 if(currentMode==='turtle'){
                     const cmds=parseTurtleDSL(reply);
                     animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(reply);});
@@ -878,7 +925,10 @@ async function sendChat(){
                     await executePixelCommands(cmds);
                     if(currentMission?.targetGrid)checkPixelMission();
                 }
-            }catch(e){addChatMsg('system','⚠️ 코드 실행 중 문제가 생겼어요.');}
+            }catch(e){
+                console.error('블록 변환 오류:',e);
+                addChatMsg('system','⚠️ 블록 변환 중 문제가 생겼어요: '+e.message);
+            }
         }else{addChatMsg('ai',reply);}
     }catch(e){ld.remove();addChatMsg('system','⚠️ 네트워크 오류: '+e.message);}
     finally{isProcessing=false;document.getElementById('sendBtn').disabled=false;}
