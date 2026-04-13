@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바이브 코딩 — 터틀 & 픽셀 아트</title>
+<script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+<script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+<script src="https://unpkg.com/blockly/msg/ko.js"></script>
+<style>
+:root{--primary:#4A90D9;--primary-dark:#357ABD;--accent:#FF6B6B;--success:#51CF66;--bg:#F0F4F8;--card:#fff;--text:#2D3748;--text-light:#718096;--border:#E2E8F0;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,.08);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ===== HEADER ===== */
+.app-header{background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;padding:0;box-shadow:0 2px 12px rgba(0,0,0,.15);flex-shrink:0;transition:background .4s;}
+.app-header.pixel-mode{background:linear-gradient(135deg,#7C4DFF,#E040FB);}
+.header-top{padding:8px 20px;display:flex;align-items:center;justify-content:space-between;}
+.header-top h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.header-center{display:flex;align-items:center;gap:10px;}
+.mission-badge{background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+.level-badge{background:rgba(255,255,255,.3);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+.header-actions{display:flex;gap:6px;}
+.hdr-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;}
+.hdr-btn:hover{background:rgba(255,255,255,.3);}
+
+/* Mode Tabs */
+.mode-tabs{display:flex;padding:0 20px;gap:2px;}
+.mode-tab{padding:8px 20px;border:none;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);cursor:pointer;font-size:13px;font-weight:700;border-radius:10px 10px 0 0;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.mode-tab:hover{background:rgba(255,255,255,.2);color:#fff;}
+.mode-tab.active{background:var(--bg);color:var(--text);}
+
+/* ===== MAIN 3-PANEL ===== */
+.main-layout{flex:1;display:flex;overflow:hidden;min-height:0;}
+.panel{display:flex;flex-direction:column;overflow:hidden;background:var(--card);border-right:1px solid var(--border);}
+.panel:last-child{border-right:none;}
+.panel-header{padding:8px 12px;background:#f8fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.panel-header h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px;}
+.panel-body{flex:1;overflow:auto;position:relative;min-height:0;}
+
+/* ===== LEFT PANEL: CANVAS ===== */
+.canvas-panel{flex:0 0 35%;min-width:280px;}
+.ctrl-btn{padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;}
+.ctrl-btn:hover{border-color:var(--primary);color:var(--primary);}
+.ctrl-btn.run{background:var(--primary);color:#fff;border-color:var(--primary);}
+.ctrl-btn.run:hover{background:var(--primary-dark);}
+.ctrl-btn.demo{background:#FF9800;color:#fff;border-color:#FF9800;}
+
+/* --- Turtle Canvas --- */
+.turtle-view{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;}
+#turtleCanvas{display:block;}
+.tab-switch{display:flex;gap:3px;}
+.tab-btn{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:10px;font-weight:600;}
+.tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+/* --- Pixel Grid --- */
+.pixel-view{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:10px;background:#1a1a2e;}
+.microbit-frame{background:#333;border-radius:20px;padding:18px 16px 12px;box-shadow:0 4px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;gap:10px;}
+.microbit-label{font-size:9px;color:#888;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.led-grid{display:grid;gap:3px;}
+.led-cell{border-radius:3px;background:#1a1a1a;cursor:pointer;transition:all .12s;border:1px solid #2a2a2a;}
+.led-cell.on{box-shadow:0 0 6px currentColor,0 0 12px currentColor;border-color:transparent;}
+.led-cell:hover{border-color:#555;}
+.microbit-buttons{display:flex;align-items:center;gap:12px;width:100%;}
+.vbtn{width:40px;height:40px;border-radius:50%;border:2px solid #555;background:#222;color:#aaa;cursor:pointer;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;}
+.vbtn:active{background:#7C4DFF;border-color:#7C4DFF;color:#fff;transform:scale(.9);}
+.vbtn-label{font-size:9px;color:#666;text-align:center;margin-top:2px;}
+.btn-group{display:flex;flex-direction:column;align-items:center;}
+.spacer{flex:1;}
+.shake-btn{padding:5px 10px;border-radius:10px;border:1px solid #555;background:#222;color:#aaa;cursor:pointer;font-size:10px;font-weight:600;}
+.shake-btn:active{background:#FF4081;border-color:#FF4081;color:#fff;}
+.grid-selector{display:flex;gap:3px;}
+.grid-opt{padding:3px 8px;border-radius:6px;border:1px solid #444;background:#222;color:#aaa;cursor:pointer;font-size:10px;font-weight:600;}
+.grid-opt.active{background:#7C4DFF;color:#fff;border-color:#7C4DFF;}
+.color-palette{display:flex;gap:3px;flex-wrap:wrap;}
+.color-swatch{width:20px;height:20px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:all .12s;}
+.color-swatch:hover,.color-swatch.active{border-color:#fff;transform:scale(1.15);}
+
+/* ===== CENTER: BLOCKLY ===== */
+.blockly-panel{flex:0 0 35%;min-width:280px;}
+#blocklyDiv{width:100%;height:100%;}
+.dsl-preview{padding:6px 10px;background:#f5f5f5;border-top:1px solid var(--border);font-family:'Consolas','Courier New',monospace;font-size:10px;color:#666;max-height:70px;overflow-y:auto;white-space:pre;flex-shrink:0;}
+
+/* ===== RIGHT: CHAT ===== */
+.chat-panel{flex:1;min-width:240px;}
+.chat-history{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+.chat-msg{max-width:90%;padding:9px 12px;border-radius:12px;font-size:12px;line-height:1.5;word-break:break-word;}
+.chat-msg.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px;}
+.chat-msg.ai{align-self:flex-start;background:#f0f0f0;color:var(--text);border-bottom-left-radius:4px;}
+.chat-msg.system{align-self:center;background:#fff3e0;color:#e65100;font-size:11px;text-align:center;border-radius:8px;}
+.chat-msg.success{align-self:center;background:#e8f5e9;color:#2e7d32;font-size:12px;font-weight:700;text-align:center;}
+.chat-input-area{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0;background:#fafafa;}
+.chat-input-area input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;}
+.chat-input-area input:focus{border-color:var(--primary);}
+.send-btn{padding:9px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;}
+.hint-btn{padding:6px 10px;border:1px solid #FFA726;background:#FFF3E0;color:#E65100;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;}
+
+/* ===== MODALS ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:20px;width:90%;max-width:700px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h2{font-size:18px;font-weight:800;}
+.modal-close{width:32px;height:32px;border-radius:50%;border:none;background:#f0f0f0;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:18px 22px;}
+.mission-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+.mission-card{padding:14px;border-radius:12px;border:2px solid var(--border);cursor:pointer;transition:all .2s;position:relative;}
+.mission-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1);}
+.mission-card.completed{border-color:var(--success);background:#f0fff4;}
+.mission-card .m-level{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block;margin-bottom:4px;}
+.mission-card .m-title{font-size:14px;font-weight:700;margin-bottom:3px;}
+.mission-card .m-desc{font-size:11px;color:var(--text-light);}
+.mission-card .m-check{position:absolute;top:8px;right:8px;font-size:16px;}
+.feedback-modal .modal{max-width:420px;text-align:center;}
+.feedback-modal .modal>div{padding:28px;}
+.feedback-icon{font-size:56px;margin-bottom:10px;}
+.feedback-title{font-size:20px;font-weight:800;margin-bottom:6px;}
+.feedback-text{font-size:13px;color:var(--text-light);margin-bottom:18px;line-height:1.6;}
+.feedback-btn{padding:10px 24px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:700;transition:all .15s;}
+.feedback-btn.next{background:var(--primary);color:#fff;}
+.feedback-btn.retry{background:#f0f0f0;color:var(--text);margin-right:6px;}
+
+.loading{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-left-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px) rotate(-2deg)}40%{transform:translateX(8px) rotate(2deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
+.hidden{display:none!important;}
+
+@media(max-width:900px){
+    .main-layout{flex-direction:column;}
+    .panel{flex:none!important;min-width:0!important;border-right:none;border-bottom:1px solid var(--border);}
+    .canvas-panel,.blockly-panel{height:33vh;}
+    .chat-panel{height:34vh;}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="app-header" id="appHeader">
+    <div class="header-top">
+        <h1 id="appTitle">🐢 바이브 코딩</h1>
+        <div class="header-center">
+            <span class="level-badge" id="levelBadge">기초</span>
+            <span class="mission-badge" id="missionBadge">미션을 선택하세요</span>
+        </div>
+        <div class="header-actions">
+            <button class="hdr-btn" onclick="openMissionSelector()">📋 미션</button>
+            <button class="hdr-btn" onclick="location.href='/'">← 돌아가기</button>
+        </div>
+    </div>
+    <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="turtle" onclick="switchMode('turtle',this)">🐢 터틀 모드</button>
+        <button class="mode-tab" data-mode="pixel" onclick="switchMode('pixel',this)">🎨 픽셀 아트</button>
+    </div>
+</div>
+
+<!-- ===== 3-PANEL ===== -->
+<div class="main-layout">
+    <!-- LEFT: Canvas -->
+    <div class="panel canvas-panel">
+        <div class="panel-header" id="canvasPanelHeader">
+            <!-- Turtle header -->
+            <div id="turtleHeader">
+                <h3>🐢 터틀 캔버스</h3>
+            </div>
+            <div id="pixelHeader" class="hidden">
+                <h3>💡 LED 디스플레이</h3>
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+                <!-- Turtle controls -->
+                <div id="turtleControls" style="display:flex;gap:4px;align-items:center;">
+                    <div class="tab-switch">
+                        <button class="tab-btn active" onclick="switchCanvasTab('run',this)">실행</button>
+                        <button class="tab-btn" onclick="switchCanvasTab('target',this)">목표</button>
+                    </div>
+                    <button class="ctrl-btn demo" onclick="showTurtleDemo()">👀 시연</button>
+                </div>
+                <!-- Pixel controls -->
+                <div id="pixelControls" class="hidden" style="display:flex;gap:4px;align-items:center;">
+                    <div class="grid-selector">
+                        <button class="grid-opt active" onclick="setGridSize(5,this)">5×5</button>
+                        <button class="grid-opt" onclick="setGridSize(8,this)">8×8</button>
+                        <button class="grid-opt" onclick="setGridSize(16,this)">16×16</button>
+                    </div>
+                </div>
+                <!-- Common -->
+                <button class="ctrl-btn run" onclick="runCode()">▶ 실행</button>
+                <button class="ctrl-btn" onclick="resetView()">🔄 초기화</button>
+            </div>
+        </div>
+        <div class="panel-body">
+            <!-- Turtle view -->
+            <div class="turtle-view" id="turtleView">
+                <canvas id="turtleCanvas" width="500" height="400"></canvas>
+            </div>
+            <!-- Pixel view -->
+            <div class="pixel-view hidden" id="pixelView">
+                <div class="microbit-frame" id="microbitFrame">
+                    <div class="microbit-label">micro:bit</div>
+                    <div class="led-grid" id="ledGrid"></div>
+                    <div class="microbit-buttons">
+                        <div class="btn-group"><button class="vbtn" onmousedown="pressButton('A')" onmouseup="releaseButton('A')">A</button><span class="vbtn-label">버튼 A</span></div>
+                        <div class="spacer"></div>
+                        <button class="shake-btn" onclick="triggerShake()">📳 흔들기</button>
+                        <div class="spacer"></div>
+                        <div class="btn-group"><button class="vbtn" onmousedown="pressButton('B')" onmouseup="releaseButton('B')">B</button><span class="vbtn-label">버튼 B</span></div>
+                    </div>
+                </div>
+                <div class="color-palette" id="colorPalette"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CENTER: Blockly -->
+    <div class="panel blockly-panel">
+        <div class="panel-header">
+            <h3>🧩 블록 코딩</h3>
+            <button class="ctrl-btn" onclick="clearWorkspace()" style="font-size:10px;">🗑 초기화</button>
+        </div>
+        <div class="panel-body"><div id="blocklyDiv"></div></div>
+        <div class="dsl-preview" id="dslPreview">// 블록을 조합하면 여기에 코드가 표시됩니다</div>
+    </div>
+
+    <!-- RIGHT: Chat -->
+    <div class="panel chat-panel">
+        <div class="panel-header">
+            <h3>💬 AI 도우미</h3>
+            <button class="hint-btn" onclick="requestHint()">💡 힌트</button>
+        </div>
+        <div class="chat-history" id="chatHistory">
+            <div class="chat-msg system">🐢 안녕! 나는 바이브 코딩 도우미야.<br>위에서 모드를 선택하고 미션을 시작해봐!</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="자연어로 설명해 보세요" onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="send-btn" id="sendBtn" onclick="sendChat()">전송</button>
+        </div>
+    </div>
+</div>
+
+<!-- Mission Modal -->
+<div class="modal-overlay" id="missionModal">
+    <div class="modal">
+        <div class="modal-header"><h2 id="missionModalTitle">📋 미션 선택</h2><button class="modal-close" onclick="closeMissionSelector()">✕</button></div>
+        <div class="modal-body"><div class="mission-grid" id="missionGrid"></div></div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal-overlay feedback-modal" id="feedbackModal">
+    <div class="modal" style="max-width:420px;"><div style="padding:28px;text-align:center;">
+        <div class="feedback-icon" id="fbIcon"></div>
+        <div class="feedback-title" id="fbTitle"></div>
+        <div class="feedback-text" id="fbText"></div>
+        <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">다음 미션 →</button></div>
+    </div></div>
+</div>
+
+<script>
+// ============================================================
+//  GLOBALS
+// ============================================================
+const AUTH_TOKEN = localStorage.getItem('airoom_auth_token') || '';
+let currentMode = 'turtle'; // 'turtle' | 'pixel'
+let currentMission = null;
+let chatMessages = [];
+let isProcessing = false;
+let workspace;
+
+// ============================================================
+//  MODE SWITCHING
+// ============================================================
+function switchMode(mode, btn) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    const isTurtle = mode === 'turtle';
+    document.getElementById('appHeader').classList.toggle('pixel-mode', !isTurtle);
+    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : '🎨 바이브 코딩';
+    document.getElementById('turtleHeader').classList.toggle('hidden', !isTurtle);
+    document.getElementById('pixelHeader').classList.toggle('hidden', isTurtle);
+    document.getElementById('turtleControls').classList.toggle('hidden', !isTurtle);
+    document.getElementById('pixelControls').classList.toggle('hidden', isTurtle);
+    document.getElementById('turtleView').classList.toggle('hidden', !isTurtle);
+    document.getElementById('pixelView').classList.toggle('hidden', isTurtle);
+
+    // Swap Blockly toolbox
+    workspace.updateToolbox(isTurtle ? TURTLE_TOOLBOX : PIXEL_TOOLBOX);
+    workspace.clear();
+    updateDSLPreview();
+
+    // Reset
+    currentMission = null;
+    chatMessages = [];
+    document.getElementById('levelBadge').textContent = '기초';
+    document.getElementById('missionBadge').textContent = '미션을 선택하세요';
+    document.getElementById('chatHistory').innerHTML = '';
+    addChatMsg('system', isTurtle
+        ? '🐢 터틀 모드! 거북이가 어떻게 움직이면 좋을지 말해줘!'
+        : '🎨 픽셀 아트 모드! LED에 어떤 그림을 그리고 싶은지 말해줘!');
+
+    if (isTurtle) resetTurtle();
+    else { initPixelGrid(); }
+
+    Blockly.svgResize(workspace);
+    setTimeout(() => openMissionSelector(), 300);
+}
+
+// ============================================================
+//  TURTLE ENGINE
+// ============================================================
+const tCanvas = document.getElementById('turtleCanvas');
+const tCtx = tCanvas.getContext('2d');
+let tAnimId = null;
+let canvasTab = 'run';
+
+function resizeTurtleCanvas() {
+    const wrap = tCanvas.parentElement;
+    tCanvas.width = wrap.clientWidth;
+    tCanvas.height = wrap.clientHeight;
+}
+function toScreen(x, y) { return { x: tCanvas.width/2 + x, y: tCanvas.height/2 - y }; }
+
+function drawTurtleSprite(sx, sy, angle) {
+    tCtx.save(); tCtx.translate(sx, sy);
+    tCtx.rotate((angle-90)*Math.PI/180 + Math.PI/2);
+    tCtx.beginPath(); tCtx.moveTo(0,-12); tCtx.lineTo(-8,8); tCtx.lineTo(8,8); tCtx.closePath();
+    tCtx.fillStyle='#00FF88'; tCtx.fill();
+    tCtx.strokeStyle='#009955'; tCtx.lineWidth=1.5; tCtx.stroke(); tCtx.restore();
+}
+
+function clearTurtleCanvas() {
+    tCtx.clearRect(0,0,tCanvas.width,tCanvas.height);
+    const cx=tCanvas.width/2, cy=tCanvas.height/2;
+    tCtx.strokeStyle='rgba(255,255,255,0.05)'; tCtx.lineWidth=1;
+    for(let i=-300;i<=300;i+=50){tCtx.beginPath();tCtx.moveTo(cx+i,0);tCtx.lineTo(cx+i,tCanvas.height);tCtx.stroke();tCtx.beginPath();tCtx.moveTo(0,cy+i);tCtx.lineTo(tCanvas.width,cy+i);tCtx.stroke();}
+    tCtx.strokeStyle='rgba(255,255,255,0.15)';
+    tCtx.beginPath();tCtx.moveTo(cx,0);tCtx.lineTo(cx,tCanvas.height);tCtx.stroke();
+    tCtx.beginPath();tCtx.moveTo(0,cy);tCtx.lineTo(tCanvas.width,cy);tCtx.stroke();
+}
+
+function resetTurtle() {
+    if(tAnimId) cancelAnimationFrame(tAnimId);
+    resizeTurtleCanvas(); clearTurtleCanvas();
+    const sp=toScreen(0,0); drawTurtleSprite(sp.x,sp.y,0);
+}
+
+function drawTurtlePath(commands, color, size) {
+    let x=0,y=0,angle=0,penDown=true,penColor=color||'#00FF88',penSize=size||2;
+    clearTurtleCanvas(); tCtx.lineCap='round'; tCtx.lineJoin='round';
+    function exec(cmds){for(const cmd of cmds){
+        if(cmd.type==='FORWARD'||cmd.type==='BACKWARD'){
+            const dir=cmd.type==='FORWARD'?1:-1,rad=(angle-90)*Math.PI/180;
+            const nx=x+dir*cmd.value*Math.cos(rad),ny=y+dir*cmd.value*Math.sin(rad);
+            if(penDown){const f=toScreen(x,-y),t=toScreen(nx,-ny);tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(t.x,t.y);tCtx.strokeStyle=penColor;tCtx.lineWidth=penSize;tCtx.stroke();}
+            x=nx;y=ny;
+        }else if(cmd.type==='RIGHT')angle+=cmd.value;else if(cmd.type==='LEFT')angle-=cmd.value;
+        else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
+        else if(cmd.type==='PEN_COLOR')penColor=cmd.value;else if(cmd.type==='PEN_SIZE')penSize=cmd.value;
+        else if(cmd.type==='HOME'){x=0;y=0;angle=0;}else if(cmd.type==='CLEAR')clearTurtleCanvas();
+        else if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)exec(cmd.body);}
+    }}
+    exec(commands);
+    const sp=toScreen(x,-y); drawTurtleSprite(sp.x,sp.y,angle);
+}
+
+function animateTurtle(commands, onDone) {
+    if(tAnimId)cancelAnimationFrame(tAnimId);
+    const steps=[];
+    let x=0,y=0,angle=0,penDown=true,penColor='#00FF88',penSize=2;
+    function flatten(cmds){for(const cmd of cmds){
+        if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)flatten(cmd.body);}
+        else{steps.push({...cmd,_x:x,_y:y,_angle:angle,_penDown:penDown,_penColor:penColor,_penSize:penSize});
+        if(cmd.type==='FORWARD'||cmd.type==='BACKWARD'){const dir=cmd.type==='FORWARD'?1:-1,rad=(angle-90)*Math.PI/180;x+=dir*cmd.value*Math.cos(rad);y+=dir*cmd.value*Math.sin(rad);}
+        else if(cmd.type==='RIGHT')angle+=cmd.value;else if(cmd.type==='LEFT')angle-=cmd.value;
+        else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
+        else if(cmd.type==='PEN_COLOR')penColor=cmd.value;else if(cmd.type==='PEN_SIZE')penSize=cmd.value;
+        else if(cmd.type==='HOME'){x=0;y=0;angle=0;}}
+    }}
+    flatten(commands); clearTurtleCanvas();
+    let si=0,prog=0,cx=0,cy=0,ca=0,cp=true,cc='#00FF88',cs=2;
+    function frame(){
+        if(si>=steps.length){const sp=toScreen(cx,-cy);drawTurtleSprite(sp.x,sp.y,ca);if(onDone)onDone();return;}
+        const s=steps[si];
+        if(s.type==='FORWARD'||s.type==='BACKWARD'){
+            const dir=s.type==='FORWARD'?1:-1,dist=s.value,rad=(ca-90)*Math.PI/180;
+            prog+=3;const t=Math.min(prog/dist,1);
+            const nx=s._x+dir*dist*t*Math.cos(rad),ny=s._y+dir*dist*t*Math.sin(rad);
+            if(cp){const f=toScreen(cx,-cy),to=toScreen(nx,-ny);tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(to.x,to.y);tCtx.strokeStyle=cc;tCtx.lineWidth=cs;tCtx.lineCap='round';tCtx.stroke();}
+            cx=nx;cy=ny;const sp=toScreen(cx,-cy);drawTurtleSprite(sp.x,sp.y,ca);
+            if(t>=1){prog=0;si++;}
+        }else if(s.type==='RIGHT'){ca+=s.value;si++;}else if(s.type==='LEFT'){ca-=s.value;si++;}
+        else if(s.type==='PEN_UP'){cp=false;si++;}else if(s.type==='PEN_DOWN'){cp=true;si++;}
+        else if(s.type==='PEN_COLOR'){cc=s.value;si++;}else if(s.type==='PEN_SIZE'){cs=s.value;si++;}
+        else if(s.type==='HOME'){cx=0;cy=0;ca=0;si++;}else if(s.type==='CLEAR'){clearTurtleCanvas();si++;}
+        else{si++;}
+        tAnimId=requestAnimationFrame(frame);
+    }
+    tAnimId=requestAnimationFrame(frame);
+}
+
+function turtleCommandsToPath(commands){
+    let x=0,y=0,angle=0,penDown=true;const path=[{x,y}];
+    function exec(cmds){for(const cmd of cmds){
+        if(cmd.type==='FORWARD'){const rad=(angle-90)*Math.PI/180;x+=cmd.value*Math.cos(rad);y+=cmd.value*Math.sin(rad);path.push({x,y});}
+        else if(cmd.type==='BACKWARD'){const rad=(angle-90)*Math.PI/180;x-=cmd.value*Math.cos(rad);y-=cmd.value*Math.sin(rad);path.push({x,y});}
+        else if(cmd.type==='RIGHT')angle+=cmd.value;else if(cmd.type==='LEFT')angle-=cmd.value;
+        else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
+        else if(cmd.type==='HOME'){x=0;y=0;angle=0;}
+        else if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)exec(cmd.body);}
+    }}
+    exec(commands); return path;
+}
+
+function switchCanvasTab(tab, btn){
+    canvasTab=tab;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(tab==='target'&&currentMission&&currentMission.targetDSL){
+        drawTurtlePath(parseTurtleDSL(currentMission.targetDSL),'#FFD700',2);
+    }else{ const dsl=workspaceToDSL(); if(dsl){drawTurtlePath(parseTurtleDSL(dsl));}else resetTurtle(); }
+}
+
+function showTurtleDemo(){
+    if(!currentMission||!currentMission.targetDSL){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
+    animateTurtle(parseTurtleDSL(currentMission.targetDSL));
+}
+
+// ============================================================
+//  PIXEL ENGINE
+// ============================================================
+let pixelGridSize=5, pixelGrid=[], pixelColor='#FF0000';
+let pixelEventHandlers={A:null,B:null,SHAKE:null};
+let pixelAnimCancel=false;
+const COLORS=['#FF0000','#FF6600','#FFCC00','#33CC33','#0099FF','#6633FF','#FF33CC','#FFFFFF','#888888','#000000'];
+
+const PIXEL_ICONS={
+    HEART:[[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]],
+    SMILEY:[[0,0,0,0,0],[0,1,0,1,0],[0,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],
+    SAD:[[0,0,0,0,0],[0,1,0,1,0],[0,0,0,0,0],[0,1,1,1,0],[1,0,0,0,1]],
+    ARROW_UP:[[0,0,1,0,0],[0,1,1,1,0],[1,0,1,0,1],[0,0,1,0,0],[0,0,1,0,0]],
+    ARROW_DOWN:[[0,0,1,0,0],[0,0,1,0,0],[1,0,1,0,1],[0,1,1,1,0],[0,0,1,0,0]],
+    ARROW_LEFT:[[0,0,1,0,0],[0,1,0,0,0],[1,1,1,1,1],[0,1,0,0,0],[0,0,1,0,0]],
+    ARROW_RIGHT:[[0,0,1,0,0],[0,0,0,1,0],[1,1,1,1,1],[0,0,0,1,0],[0,0,1,0,0]],
+    CHECK:[[0,0,0,0,0],[0,0,0,0,1],[0,0,0,1,0],[1,0,1,0,0],[0,1,0,0,0]],
+    X:[[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1]],
+    DIAMOND:[[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],
+    SQUARE:[[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]]
+};
+
+function initPixelGrid(){
+    pixelGrid=[];
+    for(let y=0;y<pixelGridSize;y++){pixelGrid[y]=[];for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=null;}
+    renderPixelGrid();
+}
+
+function renderPixelGrid(){
+    const el=document.getElementById('ledGrid');
+    const cs=pixelGridSize<=5?46:pixelGridSize<=8?30:18;
+    el.style.gridTemplateColumns=`repeat(${pixelGridSize},${cs}px)`;
+    el.innerHTML='';
+    for(let y=0;y<pixelGridSize;y++) for(let x=0;x<pixelGridSize;x++){
+        const c=document.createElement('div');
+        c.className='led-cell'+(pixelGrid[y][x]?' on':'');
+        c.style.width=cs+'px'; c.style.height=cs+'px';
+        c.style.color=pixelGrid[y][x]||'#1a1a1a';
+        c.style.backgroundColor=pixelGrid[y][x]||'#1a1a1a';
+        c.onmousedown=()=>{if(pixelGrid[y][x])pixelGrid[y][x]=null;else pixelGrid[y][x]=pixelColor;renderPixelGrid();};
+        c.onmouseenter=(e)=>{if(e.buttons===1){pixelGrid[y][x]=pixelColor;renderPixelGrid();}};
+        el.appendChild(c);
+    }
+}
+
+function clearPixelGrid(){pixelAnimCancel=true;for(let y=0;y<pixelGridSize;y++)for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=null;renderPixelGrid();}
+
+function setGridSize(s,btn){pixelGridSize=s;document.querySelectorAll('.grid-opt').forEach(b=>b.classList.remove('active'));btn.classList.add('active');initPixelGrid();}
+
+function initPalette(){
+    const el=document.getElementById('colorPalette');
+    COLORS.forEach(c=>{const s=document.createElement('div');s.className='color-swatch'+(c===pixelColor?' active':'');s.style.backgroundColor=c;
+    s.onclick=()=>{pixelColor=c;document.querySelectorAll('.color-swatch').forEach(sw=>sw.classList.remove('active'));s.classList.add('active');};el.appendChild(s);});
+}
+
+function showPixelIcon(name){
+    const icon=PIXEL_ICONS[name?.toUpperCase()];
+    if(!icon||pixelGridSize!==5)return;
+    for(let y=0;y<5;y++)for(let x=0;x<5;x++)pixelGrid[y][x]=icon[y][x]?pixelColor:null;
+    renderPixelGrid();
+}
+
+function pressButton(b){if(pixelEventHandlers[b])executePixelCommands(pixelEventHandlers[b]);}
+function releaseButton(){}
+function triggerShake(){
+    const f=document.getElementById('microbitFrame');f.style.animation='shake .4s';setTimeout(()=>f.style.animation='',400);
+    if(pixelEventHandlers.SHAKE)executePixelCommands(pixelEventHandlers.SHAKE);
+}
+
+async function executePixelCommands(commands){
+    for(const cmd of commands){
+        if(pixelAnimCancel)return;
+        switch(cmd.type){
+            case'LED_ON':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=pixelColor;renderPixelGrid();}break;
+            case'LED_OFF':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=null;renderPixelGrid();}break;
+            case'LED_COLOR':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=cmd.color;renderPixelGrid();}break;
+            case'LED_TOGGLE':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=pixelGrid[cmd.y][cmd.x]?null:pixelColor;renderPixelGrid();}break;
+            case'FILL_ALL':for(let y=0;y<pixelGridSize;y++)for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=cmd.color;renderPixelGrid();break;
+            case'FILL_ROW':if(cmd.y<pixelGridSize){for(let x=0;x<pixelGridSize;x++)pixelGrid[cmd.y][x]=cmd.color;renderPixelGrid();}break;
+            case'FILL_COL':if(cmd.x<pixelGridSize){for(let y=0;y<pixelGridSize;y++)pixelGrid[y][cmd.x]=cmd.color;renderPixelGrid();}break;
+            case'CLEAR_ALL':clearPixelGrid();break;
+            case'SHOW_ICON':showPixelIcon(cmd.name);break;
+            case'WAIT':await new Promise(r=>setTimeout(r,cmd.ms));break;
+            case'REPEAT':for(let r=0;r<cmd.count;r++)await executePixelCommands(cmd.body);break;
+            case'FOR':{for(let v=cmd.from;v<=cmd.to;v++){const resolved=resolvePixelVar(cmd.body,cmd.var,v);await executePixelCommands(resolved);}break;}
+            case'ON_BUTTON_A':pixelEventHandlers.A=cmd.body;break;
+            case'ON_BUTTON_B':pixelEventHandlers.B=cmd.body;break;
+            case'ON_SHAKE':pixelEventHandlers.SHAKE=cmd.body;break;
+            case'ON_START':await executePixelCommands(cmd.body);break;
+            case'IF':break; // simplified
+        }
+    }
+}
+
+function resolvePixelVar(commands,varName,value){
+    return commands.map(cmd=>{const c={...cmd};
+    if(c.x!==undefined&&String(c.x)===varName)c.x=value;
+    if(c.y!==undefined&&String(c.y)===varName)c.y=value;
+    if(c.body)c.body=resolvePixelVar(c.body,varName,value);
+    return c;});
+}
+
+// ============================================================
+//  DSL PARSERS
+// ============================================================
+function parseTurtleDSL(text){
+    if(!text?.trim())return[];
+    const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l);
+    let i=0;
+    function parseBlock(){
+        const cmds=[];
+        while(i<lines.length){
+            const line=lines[i];
+            if(line==='}'){i++;return cmds;}
+            let m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
+                cmds.push({type:'REPEAT',count:parseInt(m[1]),body:parseBlock()});continue;}
+            m=line.match(/^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|HOME|CLEAR)\s*(.*)$/);
+            if(m){const cmd={type:m[1]};const arg=m[2].trim();
+                if(['FORWARD','BACKWARD','RIGHT','LEFT','PEN_SIZE'].includes(m[1]))cmd.value=parseFloat(arg)||0;
+                if(m[1]==='PEN_COLOR')cmd.value=arg||'#000000';
+                cmds.push(cmd);}
+            i++;
+        }
+        return cmds;
+    }
+    return parseBlock();
+}
+
+function parsePixelDSL(text){
+    if(!text?.trim())return[];
+    const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'));
+    let i=0;
+    function parseBlock(){
+        const cmds=[];
+        while(i<lines.length){
+            const line=lines[i];
+            if(line==='}'){i++;return cmds;}
+            let m;
+            m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'REPEAT',count:parseInt(m[1]),body:parseBlock()});continue;}
+            m=line.match(/^ON_(BUTTON_A|BUTTON_B|SHAKE|START)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'ON_'+m[1],body:parseBlock()});continue;}
+            m=line.match(/^IF\s+(BUTTON_A|BUTTON_B)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;const body=parseBlock();let elseBody=null;
+                if(i<lines.length&&lines[i].match(/^ELSE\s*\{?$/)){i++;if(i<lines.length&&lines[i]==='{')i++;elseBody=parseBlock();}
+                cmds.push({type:'IF',condition:m[1],body,elseBody});continue;}
+            if(line.match(/^ELSE\s*\{?$/)){i++;continue;}
+            m=line.match(/^FOR\s+(\w+)\s+(\d+)\s+(\d+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'FOR',var:m[1],from:parseInt(m[2]),to:parseInt(m[3]),body:parseBlock()});continue;}
+            m=line.match(/^LED_ON\s+(\d+)\s+(\d+)$/);if(m){cmds.push({type:'LED_ON',x:+m[1],y:+m[2]});i++;continue;}
+            m=line.match(/^LED_OFF\s+(\d+)\s+(\d+)$/);if(m){cmds.push({type:'LED_OFF',x:+m[1],y:+m[2]});i++;continue;}
+            m=line.match(/^LED_COLOR\s+(\d+)\s+(\d+)\s+(#[0-9A-Fa-f]{6})$/);if(m){cmds.push({type:'LED_COLOR',x:+m[1],y:+m[2],color:m[3]});i++;continue;}
+            m=line.match(/^LED_TOGGLE\s+(\d+)\s+(\d+)$/);if(m){cmds.push({type:'LED_TOGGLE',x:+m[1],y:+m[2]});i++;continue;}
+            m=line.match(/^FILL_ALL\s+(#[0-9A-Fa-f]{6})$/);if(m){cmds.push({type:'FILL_ALL',color:m[1]});i++;continue;}
+            m=line.match(/^FILL_ROW\s+(\d+)\s+(#[0-9A-Fa-f]{6})$/);if(m){cmds.push({type:'FILL_ROW',y:+m[1],color:m[2]});i++;continue;}
+            m=line.match(/^FILL_COL\s+(\d+)\s+(#[0-9A-Fa-f]{6})$/);if(m){cmds.push({type:'FILL_COL',x:+m[1],color:m[2]});i++;continue;}
+            if(line==='CLEAR_ALL'){cmds.push({type:'CLEAR_ALL'});i++;continue;}
+            m=line.match(/^WAIT\s+(\d+)$/);if(m){cmds.push({type:'WAIT',ms:+m[1]});i++;continue;}
+            m=line.match(/^SHOW_ICON\s+(\w+)$/);if(m){cmds.push({type:'SHOW_ICON',name:m[1]});i++;continue;}
+            i++;
+        }
+        return cmds;
+    }
+    return parseBlock();
+}
+
+// ============================================================
+//  BLOCKLY — BLOCK DEFINITIONS
+// ============================================================
+Blockly.defineBlocksWithJsonArray([
+    // === TURTLE BLOCKS ===
+    {type:'t_forward',message0:'앞으로 %1 가기',args0:[{type:'field_number',name:'V',value:100,min:1,max:500}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_backward',message0:'뒤로 %1 가기',args0:[{type:'field_number',name:'V',value:100,min:1,max:500}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_right',message0:'오른쪽 %1 도',args0:[{type:'field_number',name:'V',value:90,min:1,max:360}],previousStatement:null,nextStatement:null,colour:210},
+    {type:'t_left',message0:'왼쪽 %1 도',args0:[{type:'field_number',name:'V',value:90,min:1,max:360}],previousStatement:null,nextStatement:null,colour:210},
+    {type:'t_pen_up',message0:'펜 올리기',previousStatement:null,nextStatement:null,colour:50},
+    {type:'t_pen_down',message0:'펜 내리기',previousStatement:null,nextStatement:null,colour:50},
+    {type:'t_pen_color',message0:'펜 색 %1',args0:[{type:'field_colour',name:'C',colour:'#FF0000'}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'t_pen_size',message0:'펜 굵기 %1',args0:[{type:'field_number',name:'V',value:2,min:1,max:20}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'t_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:4,min:1,max:100}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
+    {type:'t_home',message0:'처음 위치로',previousStatement:null,nextStatement:null,colour:290},
+    {type:'t_clear',message0:'화면 지우기',previousStatement:null,nextStatement:null,colour:290},
+
+    // === PIXEL BLOCKS ===
+    {type:'p_led_on',message0:'LED 켜기 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_off',message0:'LED 끄기 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_color',message0:'LED 색상 x%1 y%2 %3',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15},{type:'field_colour',name:'C',colour:'#FF0000'}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_toggle',message0:'LED 전환 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_fill',message0:'전체 채우기 %1',args0:[{type:'field_colour',name:'C',colour:'#FF0000'}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_fill_row',message0:'행 %1 채우기 %2',args0:[{type:'field_number',name:'Y',value:0,min:0,max:15},{type:'field_colour',name:'C',colour:'#FF0000'}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_fill_col',message0:'열 %1 채우기 %2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_colour',name:'C',colour:'#FF0000'}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_clear',message0:'전체 지우기',previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_icon',message0:'아이콘 %1',args0:[{type:'field_dropdown',name:'N',options:[['❤️ 하트','HEART'],['😊 웃는얼굴','SMILEY'],['😢 슬픈얼굴','SAD'],['⬆ 위','ARROW_UP'],['⬇ 아래','ARROW_DOWN'],['⬅ 왼쪽','ARROW_LEFT'],['➡ 오른쪽','ARROW_RIGHT'],['✔ 체크','CHECK'],['✕ 엑스','X'],['◇ 다이아','DIAMOND'],['□ 사각형','SQUARE']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:4,min:1,max:100}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
+    {type:'p_for',message0:'%1 을 %2 부터 %3 까지',args0:[{type:'field_dropdown',name:'VAR',options:[['x','x'],['y','y']]},{type:'field_number',name:'FROM',value:0,min:0},{type:'field_number',name:'TO',value:4,min:0}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
+    {type:'p_wait',message0:'%1 ms 기다리기',args0:[{type:'field_number',name:'MS',value:500,min:50,max:5000}],previousStatement:null,nextStatement:null,colour:290},
+    {type:'p_on_btn',message0:'버튼 %1 누르면',args0:[{type:'field_dropdown',name:'B',options:[['A','A'],['B','B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
+    {type:'p_on_shake',message0:'흔들면',message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
+    {type:'p_on_start',message0:'시작하면',message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
+    {type:'p_if_btn',message0:'만약 버튼 %1 눌려있으면',args0:[{type:'field_dropdown',name:'B',options:[['A','BUTTON_A'],['B','BUTTON_B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210}
+]);
+
+// ============================================================
+//  BLOCKLY TOOLBOXES
+// ============================================================
+const TURTLE_TOOLBOX={kind:'categoryToolbox',contents:[
+    {kind:'category',name:'🚶 이동',colour:'160',contents:[{kind:'block',type:'t_forward'},{kind:'block',type:'t_backward'}]},
+    {kind:'category',name:'🔄 회전',colour:'210',contents:[{kind:'block',type:'t_right'},{kind:'block',type:'t_left'}]},
+    {kind:'category',name:'✏️ 펜',colour:'20',contents:[{kind:'block',type:'t_pen_color'},{kind:'block',type:'t_pen_size'},{kind:'block',type:'t_pen_up'},{kind:'block',type:'t_pen_down'}]},
+    {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'t_repeat'}]},
+    {kind:'category',name:'🏠 기타',colour:'290',contents:[{kind:'block',type:'t_home'},{kind:'block',type:'t_clear'}]}
+]};
+
+const PIXEL_TOOLBOX={kind:'categoryToolbox',contents:[
+    {kind:'category',name:'💡 LED',colour:'20',contents:[{kind:'block',type:'p_led_on'},{kind:'block',type:'p_led_off'},{kind:'block',type:'p_led_color'},{kind:'block',type:'p_led_toggle'},{kind:'block',type:'p_fill'},{kind:'block',type:'p_fill_row'},{kind:'block',type:'p_fill_col'},{kind:'block',type:'p_clear'},{kind:'block',type:'p_icon'}]},
+    {kind:'category',name:'🎮 이벤트',colour:'180',contents:[{kind:'block',type:'p_on_start'},{kind:'block',type:'p_on_btn'},{kind:'block',type:'p_on_shake'}]},
+    {kind:'category',name:'🔀 조건',colour:'210',contents:[{kind:'block',type:'p_if_btn'}]},
+    {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'p_repeat'},{kind:'block',type:'p_for'}]},
+    {kind:'category',name:'⏱ 기타',colour:'290',contents:[{kind:'block',type:'p_wait'}]}
+]};
+
+// ============================================================
+//  BLOCKLY → DSL
+// ============================================================
+function workspaceToDSL(){
+    const tops=workspace.getTopBlocks(true); let dsl='';
+    function b2d(block,ind){
+        const p='  '.repeat(ind); let r='';
+        while(block){const t=block.type;
+            // Turtle
+            if(t==='t_forward')r+=p+'FORWARD '+block.getFieldValue('V')+'\n';
+            else if(t==='t_backward')r+=p+'BACKWARD '+block.getFieldValue('V')+'\n';
+            else if(t==='t_right')r+=p+'RIGHT '+block.getFieldValue('V')+'\n';
+            else if(t==='t_left')r+=p+'LEFT '+block.getFieldValue('V')+'\n';
+            else if(t==='t_pen_up')r+=p+'PEN_UP\n';
+            else if(t==='t_pen_down')r+=p+'PEN_DOWN\n';
+            else if(t==='t_pen_color')r+=p+'PEN_COLOR '+block.getFieldValue('C')+'\n';
+            else if(t==='t_pen_size')r+=p+'PEN_SIZE '+block.getFieldValue('V')+'\n';
+            else if(t==='t_home')r+=p+'HOME\n'; else if(t==='t_clear')r+=p+'CLEAR\n';
+            else if(t==='t_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            // Pixel
+            else if(t==='p_led_on')r+=p+'LED_ON '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
+            else if(t==='p_led_off')r+=p+'LED_OFF '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
+            else if(t==='p_led_color')r+=p+'LED_COLOR '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+' '+block.getFieldValue('C')+'\n';
+            else if(t==='p_led_toggle')r+=p+'LED_TOGGLE '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
+            else if(t==='p_fill')r+=p+'FILL_ALL '+block.getFieldValue('C')+'\n';
+            else if(t==='p_fill_row')r+=p+'FILL_ROW '+block.getFieldValue('Y')+' '+block.getFieldValue('C')+'\n';
+            else if(t==='p_fill_col')r+=p+'FILL_COL '+block.getFieldValue('X')+' '+block.getFieldValue('C')+'\n';
+            else if(t==='p_clear')r+=p+'CLEAR_ALL\n';
+            else if(t==='p_icon')r+=p+'SHOW_ICON '+block.getFieldValue('N')+'\n';
+            else if(t==='p_wait')r+=p+'WAIT '+block.getFieldValue('MS')+'\n';
+            else if(t==='p_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='p_for'){r+=p+'FOR '+block.getFieldValue('VAR')+' '+block.getFieldValue('FROM')+' '+block.getFieldValue('TO')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='p_on_btn'){r+=p+'ON_BUTTON_'+block.getFieldValue('B')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='p_on_shake'){r+=p+'ON_SHAKE {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='p_on_start'){r+=p+'ON_START {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='p_if_btn'){r+=p+'IF '+block.getFieldValue('B')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';
+                const e=block.getInputTargetBlock('ELSE');if(e){r+=p+'ELSE {\n';r+=b2d(e,ind+1);r+=p+'}\n';}}
+            block=block.getNextBlock();
+        }
+        return r;
+    }
+    for(const b of tops)dsl+=b2d(b,0);
+    return dsl.trim();
+}
+
+function dslToWorkspace(dslText){
+    workspace.clear();
+    const isTurtle=currentMode==='turtle';
+    const commands=isTurtle?parseTurtleDSL(dslText):parsePixelDSL(dslText);
+    if(!commands.length)return;
+    function create(cmds,parentConn){
+        let prev=null;
+        for(const cmd of cmds){
+            let block;
+            if(isTurtle){
+                if(cmd.type==='FORWARD'){block=workspace.newBlock('t_forward');block.setFieldValue(cmd.value,'V');}
+                else if(cmd.type==='BACKWARD'){block=workspace.newBlock('t_backward');block.setFieldValue(cmd.value,'V');}
+                else if(cmd.type==='RIGHT'){block=workspace.newBlock('t_right');block.setFieldValue(cmd.value,'V');}
+                else if(cmd.type==='LEFT'){block=workspace.newBlock('t_left');block.setFieldValue(cmd.value,'V');}
+                else if(cmd.type==='PEN_UP')block=workspace.newBlock('t_pen_up');
+                else if(cmd.type==='PEN_DOWN')block=workspace.newBlock('t_pen_down');
+                else if(cmd.type==='PEN_COLOR'){block=workspace.newBlock('t_pen_color');block.setFieldValue(cmd.value,'C');}
+                else if(cmd.type==='PEN_SIZE'){block=workspace.newBlock('t_pen_size');block.setFieldValue(cmd.value,'V');}
+                else if(cmd.type==='HOME')block=workspace.newBlock('t_home');
+                else if(cmd.type==='CLEAR')block=workspace.newBlock('t_clear');
+                else if(cmd.type==='REPEAT'){block=workspace.newBlock('t_repeat');block.setFieldValue(cmd.count,'N');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
+                else continue;
+            }else{
+                if(cmd.type==='LED_ON'){block=workspace.newBlock('p_led_on');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');}
+                else if(cmd.type==='LED_OFF'){block=workspace.newBlock('p_led_off');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');}
+                else if(cmd.type==='LED_COLOR'){block=workspace.newBlock('p_led_color');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');block.setFieldValue(cmd.color,'C');}
+                else if(cmd.type==='LED_TOGGLE'){block=workspace.newBlock('p_led_toggle');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.y,'Y');}
+                else if(cmd.type==='FILL_ALL'){block=workspace.newBlock('p_fill');block.setFieldValue(cmd.color,'C');}
+                else if(cmd.type==='FILL_ROW'){block=workspace.newBlock('p_fill_row');block.setFieldValue(cmd.y,'Y');block.setFieldValue(cmd.color,'C');}
+                else if(cmd.type==='FILL_COL'){block=workspace.newBlock('p_fill_col');block.setFieldValue(cmd.x,'X');block.setFieldValue(cmd.color,'C');}
+                else if(cmd.type==='CLEAR_ALL')block=workspace.newBlock('p_clear');
+                else if(cmd.type==='SHOW_ICON'){block=workspace.newBlock('p_icon');block.setFieldValue(cmd.name,'N');}
+                else if(cmd.type==='WAIT'){block=workspace.newBlock('p_wait');block.setFieldValue(cmd.ms,'MS');}
+                else if(cmd.type==='REPEAT'){block=workspace.newBlock('p_repeat');block.setFieldValue(cmd.count,'N');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
+                else if(cmd.type==='FOR'){block=workspace.newBlock('p_for');block.setFieldValue(cmd.var,'VAR');block.setFieldValue(cmd.from,'FROM');block.setFieldValue(cmd.to,'TO');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
+                else if(cmd.type==='ON_BUTTON_A'||cmd.type==='ON_BUTTON_B'){block=workspace.newBlock('p_on_btn');block.setFieldValue(cmd.type.replace('ON_BUTTON_',''),'B');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
+                else if(cmd.type==='ON_SHAKE'){block=workspace.newBlock('p_on_shake');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
+                else if(cmd.type==='ON_START'){block=workspace.newBlock('p_on_start');block.initSvg();block.render();if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);}
+                else continue;
+            }
+            if(!block)continue;
+            if(!block.rendered){block.initSvg();block.render();}
+            if(parentConn&&!prev)parentConn.connect(block.previousConnection);
+            else if(prev&&prev.nextConnection&&block.previousConnection)prev.nextConnection.connect(block.previousConnection);
+            prev=block;
+        }
+    }
+    create(commands,null);
+    const tops=workspace.getTopBlocks(true);if(tops.length)tops[0].moveBy(30,30);
+    workspace.render();
+}
+
+function updateDSLPreview(){
+    const dsl=workspaceToDSL();
+    document.getElementById('dslPreview').textContent=dsl||'// 블록을 조합하면 여기에 코드가 표시됩니다';
+}
+
+// ============================================================
+//  RUN / RESET
+// ============================================================
+function runCode(){
+    const dsl=workspaceToDSL();
+    if(!dsl){addChatMsg('system','블록이 비어있어요! 블록을 조합하거나 AI에게 요청해 보세요.');return;}
+    if(currentMode==='turtle'){
+        const cmds=parseTurtleDSL(dsl);
+        animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(dsl);});
+    }else{
+        pixelAnimCancel=false;
+        pixelEventHandlers={A:null,B:null,SHAKE:null};
+        clearPixelGrid();
+        const cmds=parsePixelDSL(dsl);
+        executePixelCommands(cmds).then(()=>{if(currentMission?.targetGrid)checkPixelMission();});
+    }
+}
+
+function resetView(){
+    if(currentMode==='turtle')resetTurtle();
+    else clearPixelGrid();
+}
+
+function clearWorkspace(){workspace.clear();updateDSLPreview();}
+
+// ============================================================
+//  CHAT / API
+// ============================================================
+function addChatMsg(role,text){
+    const div=document.createElement('div');div.className='chat-msg '+role;
+    div.innerHTML=text.replace(/\n/g,'<br>');
+    const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
+}
+
+const TURTLE_PROMPT=`너는 터틀 그래픽 코딩 도우미야.
+아이가 거북이의 동작을 자연어로 설명하면,
+아래 DSL 명령어만 사용해서 코드를 생성해.
+
+사용 가능한 명령어:
+FORWARD n, BACKWARD n, RIGHT d, LEFT d,
+PEN_UP, PEN_DOWN, PEN_COLOR #hex, PEN_SIZE n,
+REPEAT n { ... }, HOME, CLEAR
+
+규칙:
+1. DSL 코드만 출력할 것. 설명이나 인사말 금지.
+2. 마크다운 코드블록 사용 금지.
+3. 각 명령어는 한 줄에 하나씩.
+4. REPEAT 중괄호는 반드시 짝 맞출 것.
+5. 색상은 #RRGGBB 형식.`;
+
+const PIXEL_PROMPT=`너는 마이크로비트 픽셀 아트 코딩 도우미야.
+아이가 LED에 그리고 싶은 그림을 설명하면,
+아래 DSL 명령어만 사용해서 코드를 생성해.
+
+사용 가능한 명령어:
+LED_ON x y, LED_OFF x y, LED_COLOR x y #hex, LED_TOGGLE x y,
+FILL_ALL #hex, FILL_ROW y #hex, FILL_COL x #hex, CLEAR_ALL,
+SHOW_ICON name (HEART,SMILEY,SAD,ARROW_UP,ARROW_DOWN,ARROW_LEFT,ARROW_RIGHT,CHECK,X,DIAMOND,SQUARE),
+REPEAT n { ... }, FOR var from to { ... },
+ON_BUTTON_A { ... }, ON_BUTTON_B { ... }, ON_SHAKE { ... }, ON_START { ... },
+IF BUTTON_A { ... } ELSE { ... }, WAIT ms
+
+규칙:
+1. DSL 코드만 출력할 것. 설명이나 인사말 금지.
+2. 마크다운 코드블록 사용 금지.
+3. 기본 그리드 5x5 (x:0-4, y:0-4).
+4. 색상은 #RRGGBB 형식.`;
+
+async function sendChat(){
+    const input=document.getElementById('chatInput');
+    const text=input.value.trim();
+    if(!text||isProcessing)return;
+    input.value=''; addChatMsg('user',text);
+    isProcessing=true; document.getElementById('sendBtn').disabled=true;
+
+    const ld=document.createElement('div');ld.className='chat-msg ai';
+    ld.innerHTML='<span class="loading"></span> 생각하고 있어요...';
+    document.getElementById('chatHistory').appendChild(ld);
+    document.getElementById('chatHistory').scrollTop=999999;
+
+    try{
+        const msgs=[{role:'system',content:currentMode==='turtle'?TURTLE_PROMPT:PIXEL_PROMPT},...chatMessages.slice(-6),{role:'user',content:text}];
+        const res=await fetch('/api/ai/chat',{method:'POST',
+            headers:{'Content-Type':'application/json','X-Auth-Token':AUTH_TOKEN},
+            body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,temperature:0.5,max_tokens:1024})
+        });
+        const data=await res.json(); ld.remove();
+        if(!res.ok){addChatMsg('system','⚠️ AI 호출 실패: '+(data?.error?.message||data?.error||'알 수 없는 오류'));return;}
+
+        let reply=data.choices?.[0]?.message?.content||'';
+        reply=reply.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim();
+        chatMessages.push({role:'user',content:text});
+        chatMessages.push({role:'assistant',content:reply});
+
+        const isDSL = currentMode==='turtle'
+            ? /^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|REPEAT|HOME|CLEAR)/m.test(reply)
+            : /^(LED_ON|LED_OFF|LED_COLOR|LED_TOGGLE|FILL_|CLEAR_ALL|SHOW_ICON|REPEAT|ON_|IF |FOR |WAIT)/m.test(reply);
+
+        if(isDSL){
+            addChatMsg('ai',(currentMode==='turtle'?'🐢':'🎨')+' 코드를 만들었어요!\n\n'+reply);
+            try{
+                dslToWorkspace(reply); updateDSLPreview();
+                if(currentMode==='turtle'){
+                    const cmds=parseTurtleDSL(reply);
+                    animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(reply);});
+                }else{
+                    clearPixelGrid(); pixelAnimCancel=false;
+                    pixelEventHandlers={A:null,B:null,SHAKE:null};
+                    const cmds=parsePixelDSL(reply);
+                    await executePixelCommands(cmds);
+                    if(currentMission?.targetGrid)checkPixelMission();
+                }
+            }catch(e){addChatMsg('system','⚠️ 코드 실행 중 문제가 생겼어요.');}
+        }else{addChatMsg('ai',reply);}
+    }catch(e){ld.remove();addChatMsg('system','⚠️ 네트워크 오류: '+e.message);}
+    finally{isProcessing=false;document.getElementById('sendBtn').disabled=false;}
+}
+
+function requestHint(){
+    if(!currentMission){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
+    addChatMsg('system','💡 힌트: '+currentMission.hint);
+}
+
+// ============================================================
+//  MISSIONS
+// ============================================================
+const TURTLE_MISSIONS=[
+    {id:1,title:'직선 그리기',level:'기초',levelColor:'#4CAF50',description:'거북이를 앞으로 100픽셀 보내보세요!',hint:'"앞으로 100 가줘"라고 말해보세요.',targetDSL:'FORWARD 100',tolerance:15},
+    {id:2,title:'ㄱ자 그리기',level:'기초',levelColor:'#4CAF50',description:'앞으로 가다가 오른쪽으로 꺾어보세요!',hint:'앞으로 간 다음, 오른쪽 90도 돌고 다시 앞으로.',targetDSL:'FORWARD 100\nRIGHT 90\nFORWARD 100',tolerance:15},
+    {id:3,title:'삼각형',level:'도형',levelColor:'#2196F3',description:'거북이가 삼각형을 그려요!',hint:'앞으로 가고 오른쪽 120도 돌기를 3번 반복.',targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
+    {id:4,title:'사각형',level:'도형',levelColor:'#2196F3',description:'정사각형을 그려요!',hint:'같은 동작을 4번 반복해 보세요.',targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}',tolerance:15},
+    {id:5,title:'오각형',level:'도형',levelColor:'#2196F3',description:'오각형을 그려요!',hint:'5번 반복, 72도씩 돌면 오각형.',targetDSL:'REPEAT 5 {\nFORWARD 80\nRIGHT 72\n}',tolerance:15},
+    {id:6,title:'색깔 삼각형',level:'색상',levelColor:'#9C27B0',description:'빨간 굵은 선으로 삼각형!',hint:'펜 색을 빨간색, 굵기 3으로 바꾼 뒤 삼각형.',targetDSL:'PEN_COLOR #FF0000\nPEN_SIZE 3\nREPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
+    {id:7,title:'별 그리기',level:'패턴',levelColor:'#FF9800',description:'멋진 별을 그려보세요! ⭐',hint:'5번 반복, 앞으로 120, 오른쪽 144도.',targetDSL:'REPEAT 5 {\nFORWARD 120\nRIGHT 144\n}',tolerance:15},
+    {id:8,title:'집 그리기',level:'복합',levelColor:'#F44336',description:'사각형+삼각형 지붕 🏠',hint:'사각형을 그리고 지붕 삼각형을 얹어보세요.',targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}\nRIGHT 30\nREPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:20},
+    {id:9,title:'자유 창작',level:'자유',levelColor:'#607D8B',description:'마음대로 그려보세요! 🎨',hint:'원하는 모양을 자유롭게!',targetDSL:'',tolerance:0}
+];
+
+const PIXEL_MISSIONS=[
+    {id:1,title:'점 하나 켜기',level:'기초',levelColor:'#4CAF50',description:'가운데 LED 하나를 켜보세요!',hint:'LED_ON 2 2 를 사용해 보세요.',targetGrid:[[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
+    {id:2,title:'가로줄',level:'기초',levelColor:'#4CAF50',description:'가운데 행 전체를 켜보세요!',hint:'FOR x 0 4 를 사용해 보세요.',targetGrid:[[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0]]},
+    {id:3,title:'대각선',level:'기초',levelColor:'#4CAF50',description:'대각선을 그려보세요! ╲',hint:'(0,0), (1,1), (2,2), (3,3), (4,4) 를 켜면 돼요.',targetGrid:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]},
+    {id:4,title:'하트',level:'패턴',levelColor:'#E91E63',description:'하트를 만들어보세요! ❤️',hint:'SHOW_ICON HEART 를 사용해 보세요.',targetGrid:[[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]]},
+    {id:5,title:'웃는 얼굴',level:'패턴',levelColor:'#E91E63',description:'웃는 얼굴! 😊',hint:'눈(1,1), (3,1)과 입 모양을 생각해 보세요.',targetGrid:[[0,0,0,0,0],[0,1,0,1,0],[0,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]]},
+    {id:6,title:'테두리',level:'반복',levelColor:'#FF9800',description:'정사각형 테두리 □',hint:'FOR 반복으로 가장자리를 채우세요.',targetGrid:[[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]]},
+    {id:7,title:'체크무늬',level:'반복',levelColor:'#FF9800',description:'체스판 만들기!',hint:'x+y가 짝수인 곳만 켜면 돼요.',targetGrid:[[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1]]},
+    {id:8,title:'버튼 이벤트',level:'조건',levelColor:'#2196F3',description:'A→하트, B→엑스 만들기!',hint:'ON_BUTTON_A { SHOW_ICON HEART } 사용.',targetGrid:null},
+    {id:9,title:'자유 창작',level:'자유',levelColor:'#607D8B',description:'마음대로 그려보세요! 🎨',hint:'자유롭게!',targetGrid:null}
+];
+
+let completedTurtle=JSON.parse(localStorage.getItem('turtle_completed')||'[]');
+let completedPixel=JSON.parse(localStorage.getItem('pixel_completed')||'[]');
+
+function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:PIXEL_MISSIONS;}
+function getCompleted(){return currentMode==='turtle'?completedTurtle:completedPixel;}
+function saveCompleted(id){
+    if(currentMode==='turtle'){if(!completedTurtle.includes(id)){completedTurtle.push(id);localStorage.setItem('turtle_completed',JSON.stringify(completedTurtle));}}
+    else{if(!completedPixel.includes(id)){completedPixel.push(id);localStorage.setItem('pixel_completed',JSON.stringify(completedPixel));}}
+}
+
+function openMissionSelector(){
+    const missions=getMissions(),completed=getCompleted();
+    const g=document.getElementById('missionGrid');g.innerHTML='';
+    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🐢 터틀 미션':'🎨 픽셀 아트 미션';
+    for(const m of missions){
+        const done=completed.includes(m.id);
+        const c=document.createElement('div');c.className='mission-card'+(done?' completed':'');
+        c.innerHTML=`<span class="m-level" style="background:${m.levelColor}20;color:${m.levelColor}">${m.level}</span>
+            <div class="m-title">${m.title}</div><div class="m-desc">${m.description}</div>${done?'<span class="m-check">✅</span>':''}`;
+        c.onclick=()=>selectMission(m);g.appendChild(c);
+    }
+    document.getElementById('missionModal').classList.add('show');
+}
+
+function closeMissionSelector(){document.getElementById('missionModal').classList.remove('show');}
+
+function selectMission(m){
+    currentMission=m;
+    document.getElementById('levelBadge').textContent=m.level;
+    document.getElementById('levelBadge').style.background=m.levelColor;
+    document.getElementById('missionBadge').textContent=`미션 ${m.id}: ${m.title}`;
+    closeMissionSelector(); clearWorkspace();
+    chatMessages=[];document.getElementById('chatHistory').innerHTML='';
+    addChatMsg('system',`🎯 미션 ${m.id}: ${m.title}`);
+    addChatMsg('system',m.description);
+    if(currentMode==='turtle'){
+        resetTurtle();
+        if(m.targetDSL)addChatMsg('system','👀 "목표" 탭을 눌러 완성 모양을 확인하세요!');
+    }else{
+        clearPixelGrid();
+        if(m.targetGrid)addChatMsg('system','💡 목표 패턴을 생각하며 AI에게 설명해 보세요!');
+    }
+    addChatMsg('system','자연어로 설명하거나 블록을 직접 조합해 보세요!');
+}
+
+function checkTurtleMission(studentDSL){
+    if(!currentMission?.targetDSL)return;
+    const tp=turtleCommandsToPath(parseTurtleDSL(currentMission.targetDSL));
+    const sp=turtleCommandsToPath(parseTurtleDSL(studentDSL));
+    const tol=currentMission.tolerance||15, maxLen=Math.max(tp.length,sp.length);
+    let match=0;
+    for(let i=0;i<Math.min(tp.length,sp.length);i++){
+        if(Math.abs(tp[i].x-sp[i].x)<=tol&&Math.abs(tp[i].y-sp[i].y)<=tol)match++;
+    }
+    const sim=maxLen>0?match/maxLen:0;
+    if(sim>=0.8){saveCompleted(currentMission.id);showFeedback(true,'🎉 미션 성공!','정확해요! 멋진 그림 완성!');addChatMsg('success','🎉 미션 성공!');}
+    else if(sim>=0.5)showFeedback(false,'거의 다 됐어요! 💪','조금만 더 수정하면 완성!');
+    else addChatMsg('system','🤔 목표와 달라요. 힌트를 확인해 보세요!');
+}
+
+function checkPixelMission(){
+    if(!currentMission?.targetGrid)return;
+    const t=currentMission.targetGrid;let match=0,total=0;
+    for(let y=0;y<Math.min(pixelGridSize,t.length);y++)for(let x=0;x<Math.min(pixelGridSize,t[y].length);x++){
+        total++;if(!!t[y][x]===!!pixelGrid[y]?.[x])match++;
+    }
+    const sim=total>0?match/total:0;
+    if(sim>=0.9){saveCompleted(currentMission.id);showFeedback(true,'🎉 미션 성공!','멋진 픽셀 아트 완성!');addChatMsg('success','🎉 미션 성공!');}
+    else if(sim>=0.7)showFeedback(false,'거의 다 됐어요! 💪',Math.round(sim*100)+'% 일치!');
+    else addChatMsg('system','🤔 '+Math.round(sim*100)+'% 일치. 힌트를 확인해 보세요!');
+}
+
+function showFeedback(ok,title,text){
+    document.getElementById('fbIcon').textContent=ok?'🎉':'💪';
+    document.getElementById('fbTitle').textContent=title;
+    document.getElementById('fbText').textContent=text;
+    document.getElementById('fbNextBtn').style.display=ok?'':'none';
+    document.getElementById('feedbackModal').classList.add('show');
+}
+function closeFeedback(){document.getElementById('feedbackModal').classList.remove('show');}
+function nextMission(){
+    closeFeedback();if(!currentMission)return;
+    const ms=getMissions(),idx=ms.findIndex(m=>m.id===currentMission.id)+1;
+    if(idx<ms.length)selectMission(ms[idx]);
+    else addChatMsg('success','🏆 모든 미션 완료! 대단해요!');
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+window.addEventListener('load',()=>{
+    resizeTurtleCanvas(); clearTurtleCanvas();
+    const sp=toScreen(0,0); drawTurtleSprite(sp.x,sp.y,0);
+    initPixelGrid(); initPalette();
+    workspace=Blockly.inject('blocklyDiv',{toolbox:TURTLE_TOOLBOX,scrollbars:true,trashcan:true,
+        zoom:{controls:true,wheel:true,startScale:0.9},grid:{spacing:20,length:3,colour:'#eee',snap:true}});
+    workspace.addChangeListener(updateDSLPreview);
+    setTimeout(()=>openMissionSelector(),500);
+});
+window.addEventListener('resize',()=>{resizeTurtleCanvas();if(workspace)Blockly.svgResize(workspace);});
+</script>
+</body>
+</html>
