@@ -324,12 +324,25 @@ function resizeTurtleCanvas() {
 }
 function toScreen(x, y) { return { x: tCanvas.width/2 + x, y: tCanvas.height/2 - y }; }
 
+const turtleImg = new Image();
+turtleImg.src = '/turtle-sprite.png';
+let turtleImgLoaded = false;
+turtleImg.onload = () => { turtleImgLoaded = true; };
+
 function drawTurtleSprite(sx, sy, angle) {
     tCtx.save(); tCtx.translate(sx, sy);
-    tCtx.rotate((angle-90)*Math.PI/180 + Math.PI/2);
-    tCtx.beginPath(); tCtx.moveTo(0,-12); tCtx.lineTo(-8,8); tCtx.lineTo(8,8); tCtx.closePath();
-    tCtx.fillStyle='#00FF88'; tCtx.fill();
-    tCtx.strokeStyle='#009955'; tCtx.lineWidth=1.5; tCtx.stroke(); tCtx.restore();
+    tCtx.rotate((angle) * Math.PI / 180);
+    if (turtleImgLoaded) {
+        const size = 36;
+        tCtx.drawImage(turtleImg, -size/2, -size/2, size, size);
+    } else {
+        // fallback triangle
+        tCtx.rotate(-90*Math.PI/180 + Math.PI/2);
+        tCtx.beginPath(); tCtx.moveTo(0,-12); tCtx.lineTo(-8,8); tCtx.lineTo(8,8); tCtx.closePath();
+        tCtx.fillStyle='#00FF88'; tCtx.fill();
+        tCtx.strokeStyle='#009955'; tCtx.lineWidth=1.5; tCtx.stroke();
+    }
+    tCtx.restore();
 }
 
 function clearTurtleCanvas() {
