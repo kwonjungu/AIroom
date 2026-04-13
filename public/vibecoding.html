@@ -375,10 +375,22 @@ function drawTurtlePath(commands, color, size) {
             }
             x=nx;y=ny;
         }else if(cmd.type==='RIGHT'||cmd.type==='LEFT'){
-            const av=cmd.value;
-            if(cmd.type==='RIGHT')angle+=av;else angle-=av;
+            const ext=cmd.value;
+            const interior=180-ext;
+            const prevAngle=angle;
+            if(cmd.type==='RIGHT')angle+=ext;else angle-=ext;
             const sp=toScreen(x,-y);
-            labels.push({type:'angle',text:av+'\u00B0',x:sp.x,y:sp.y});
+            if(interior>0&&interior<180){
+                // Draw arc for interior angle
+                const r=18;
+                const startRad=(prevAngle-90)*Math.PI/180;
+                const endRad=(angle-90)*Math.PI/180;
+                const ccw=cmd.type==='LEFT';
+                tCtx.beginPath();
+                tCtx.arc(sp.x,sp.y,r,ccw?endRad:startRad+Math.PI,ccw?startRad:startRad+Math.PI+(Math.PI-ext*Math.PI/180));
+                tCtx.strokeStyle='rgba(255,215,0,0.5)';tCtx.lineWidth=1.5;tCtx.stroke();
+                labels.push({type:'angle',text:interior+'\u00B0',x:sp.x,y:sp.y});
+            }
         }
         else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
         else if(cmd.type==='PEN_COLOR')penColor=cmd.value;else if(cmd.type==='PEN_SIZE')penSize=cmd.value;
@@ -448,7 +460,15 @@ function animateTurtle(commands, onDone) {
                 if(cp){const f=toScreen(s._x,-s._y),to=toScreen(cx,-cy);drawnLines.push({type:'label',labelType:'distance',text:''+s.value,lx:(f.x+to.x)/2,ly:(f.y+to.y)/2});}
                 prog=0;si++;
             }
-        }else if(s.type==='RIGHT'){ca+=s.value;const sp=toScreen(cx,-cy);drawnLines.push({type:'label',labelType:'angle',text:s.value+'\u00B0',lx:sp.x,ly:sp.y});si++;}else if(s.type==='LEFT'){ca-=s.value;const sp=toScreen(cx,-cy);drawnLines.push({type:'label',labelType:'angle',text:s.value+'\u00B0',lx:sp.x,ly:sp.y});si++;}
+        }else if(s.type==='RIGHT'||s.type==='LEFT'){
+            const ext=s.value;const interior=180-ext;
+            if(s.type==='RIGHT')ca+=ext;else ca-=ext;
+            if(interior>0&&interior<180){
+                const sp=toScreen(cx,-cy);
+                drawnLines.push({type:'label',labelType:'angle',text:interior+'\u00B0',lx:sp.x,ly:sp.y});
+            }
+            si++;
+        }
         else if(s.type==='PEN_UP'){cp=false;si++;}else if(s.type==='PEN_DOWN'){cp=true;si++;}
         else if(s.type==='PEN_COLOR'){cc=s.value;si++;}else if(s.type==='PEN_SIZE'){cs=s.value;si++;}
         else if(s.type==='HOME'){cx=0;cy=0;ca=0;si++;}else if(s.type==='CLEAR'){clearTurtleCanvas();drawnLines.length=0;si++;}
@@ -936,8 +956,13 @@ function addChatMsg(role,text){
 }
 
 const TURTLE_PROMPT=`너는 터틀 그래픽 코딩 도우미야.
-아이가 거북이의 동작을 자연어로 설명하면,
-아래 DSL 명령어만 사용해서 코드를 생성해.
+아이가 거북이의 동작을 자연어로 직접 설명하면 그대로 DSL 코드로 변환해.
+
+중요: 아이가 스스로 생각하도록 도와줘야 해.
+- "삼각형 그려줘"처럼 도형 이름만 말하면, 바로 코드를 주지 말고 질문해:
+  "삼각형의 한 변 길이는 얼마로 할까? 거북이가 몇 도를 돌아야 할까?"
+- 아이가 구체적으로 "앞으로 100 가고 오른쪽 120도 돌아"처럼 동작을 설명하면 그때 코드를 생성해.
+- 각도나 길이를 직접 알려주지 마. 아이가 생각하게 유도해.
 
 사용 가능한 명령어:
 FORWARD n, BACKWARD n, RIGHT d, LEFT d,
@@ -945,11 +970,12 @@ PEN_UP, PEN_DOWN, PEN_COLOR #hex, PEN_SIZE n,
 REPEAT n { ... }, HOME, CLEAR
 
 규칙:
-1. DSL 코드만 출력할 것. 설명이나 인사말 금지.
-2. 마크다운 코드블록 사용 금지.
-3. 각 명령어는 한 줄에 하나씩.
-4. REPEAT 중괄호는 반드시 짝 맞출 것.
-5. 색상은 #RRGGBB 형식.`;
+1. 아이가 구체적 동작을 말하면 DSL 코드만 출력. 설명 금지.
+2. 아이가 도형 이름만 말하면 한국어로 짧게 질문해 (코드 출력 금지).
+3. 마크다운 코드블록 사용 금지.
+4. 각 명령어는 한 줄에 하나씩.
+5. REPEAT 중괄호는 반드시 짝 맞출 것.
+6. 색상은 #RRGGBB 형식 (ff0000, ffff00, 00cc00, 0000ff, ff8800, 8800ff, ffffff, 000000, ff66cc 중 선택).`;
 
 const PIXEL_PROMPT=`너는 마이크로비트 픽셀 아트 코딩 도우미야.
 아이가 LED에 그리고 싶은 그림을 설명하면,
@@ -1052,7 +1078,7 @@ const TURTLE_MISSIONS=[
 
     // ── 3학년 2학기: 원, 삼각형 분류 ──
     {id:5,title:'정삼각형',level:'3-2 삼각형',levelColor:'#2196F3',
-     description:'[수학 3-2] 세 변의 길이가 모두 같은 삼각형! 외각=120°',
+     description:'[수학 3-2] 세 변의 길이가 모두 같은 삼각형을 그려보세요!',
      hint:'3번 반복: 앞으로 100, 오른쪽 120도.',
      targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
     {id:6,title:'이등변삼각형',level:'3-2 삼각형',levelColor:'#2196F3',
@@ -1076,11 +1102,11 @@ const TURTLE_MISSIONS=[
 
     // ── 4학년 2학기: 사각형 분류 ──
     {id:10,title:'평행사변형',level:'4-2 사각형',levelColor:'#FF9800',
-     description:'[수학 4-2] 마주보는 두 쌍의 변이 평행! 외각 60°와 120° 반복.',
+     description:'[수학 4-2] 마주보는 두 쌍의 변이 평행한 사각형을 그려보세요!',
      hint:'앞으로120 오른쪽60, 앞으로80 오른쪽120 을 2번 반복.',
      targetDSL:'REPEAT 2 {\nFORWARD 120\nRIGHT 60\nFORWARD 80\nRIGHT 120\n}',tolerance:20},
     {id:11,title:'마름모',level:'4-2 사각형',levelColor:'#FF9800',
-     description:'[수학 4-2] 네 변의 길이가 모두 같은 사각형! 예각60°+둔각120°.',
+     description:'[수학 4-2] 네 변의 길이가 모두 같은 사각형을 그려보세요!',
      hint:'앞으로100 오른쪽60, 앞으로100 오른쪽120 을 2번 반복.',
      targetDSL:'REPEAT 2 {\nFORWARD 100\nRIGHT 60\nFORWARD 100\nRIGHT 120\n}',tolerance:20},
     {id:12,title:'사다리꼴',level:'4-2 사각형',levelColor:'#FF9800',
@@ -1090,11 +1116,11 @@ const TURTLE_MISSIONS=[
 
     // ── 4학년: 다각형 ──
     {id:13,title:'정오각형 (외각 72°)',level:'4-2 다각형',levelColor:'#FF5722',
-     description:'[수학 4-2] 다섯 변이 같은 정다각형! 360°÷5 = 72°',
+     description:'[수학 4-2] 다섯 변이 같은 정다각형을 그려보세요! 외각은?',
      hint:'5번 반복: 앞으로 80, 오른쪽 72도.',
      targetDSL:'REPEAT 5 {\nFORWARD 80\nRIGHT 72\n}',tolerance:15},
     {id:14,title:'정육각형 (외각 60°)',level:'4-2 다각형',levelColor:'#FF5722',
-     description:'[수학 4-2] 여섯 변이 같은 정다각형! 360°÷6 = 60°',
+     description:'[수학 4-2] 여섯 변이 같은 정다각형을 그려보세요! 외각은?',
      hint:'6번 반복: 앞으로 70, 오른쪽 60도.',
      targetDSL:'REPEAT 6 {\nFORWARD 70\nRIGHT 60\n}',tolerance:15},
 
@@ -1110,7 +1136,7 @@ const TURTLE_MISSIONS=[
 
     // ── 도전: 복합 도형 ──
     {id:17,title:'별 (외각 144°)',level:'도전',levelColor:'#795548',
-     description:'별은 정오각형의 꼭짓점을 하나씩 건너뛰어 연결! 360°×2÷5=144°',
+     description:'별은 정오각형의 꼭짓점을 하나씩 건너뛰어 연결한 모양이에요!',
      hint:'5번 반복: 앞으로 120, 오른쪽 144도.',
      targetDSL:'REPEAT 5 {\nFORWARD 120\nRIGHT 144\n}',tolerance:15},
     {id:18,title:'집 그리기',level:'도전',levelColor:'#795548',
