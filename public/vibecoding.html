@@ -365,19 +365,33 @@ function resetTurtle() {
 function drawTurtlePath(commands, color, size) {
     let x=0,y=0,angle=0,penDown=true,penColor=color||'#00FF88',penSize=size||2;
     clearTurtleCanvas(); tCtx.lineCap='round'; tCtx.lineJoin='round';
+    const labels=[];
     function exec(cmds){for(const cmd of cmds){
         if(cmd.type==='FORWARD'||cmd.type==='BACKWARD'){
             const dir=cmd.type==='FORWARD'?1:-1,rad=(angle-90)*Math.PI/180;
             const nx=x+dir*cmd.value*Math.cos(rad),ny=y+dir*cmd.value*Math.sin(rad);
-            if(penDown){const f=toScreen(x,-y),t=toScreen(nx,-ny);tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(t.x,t.y);tCtx.strokeStyle=penColor;tCtx.lineWidth=penSize;tCtx.stroke();}
+            if(penDown){const f=toScreen(x,-y),t=toScreen(nx,-ny);tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(t.x,t.y);tCtx.strokeStyle=penColor;tCtx.lineWidth=penSize;tCtx.stroke();
+                labels.push({type:'distance',text:''+cmd.value,x:(f.x+t.x)/2,y:(f.y+t.y)/2});
+            }
             x=nx;y=ny;
-        }else if(cmd.type==='RIGHT')angle+=cmd.value;else if(cmd.type==='LEFT')angle-=cmd.value;
+        }else if(cmd.type==='RIGHT'||cmd.type==='LEFT'){
+            const av=cmd.value;
+            if(cmd.type==='RIGHT')angle+=av;else angle-=av;
+            const sp=toScreen(x,-y);
+            labels.push({type:'angle',text:av+'\u00B0',x:sp.x,y:sp.y});
+        }
         else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
         else if(cmd.type==='PEN_COLOR')penColor=cmd.value;else if(cmd.type==='PEN_SIZE')penSize=cmd.value;
         else if(cmd.type==='HOME'){x=0;y=0;angle=0;}else if(cmd.type==='CLEAR')clearTurtleCanvas();
         else if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)exec(cmd.body);}
     }}
     exec(commands);
+    // Draw labels
+    tCtx.font='11px sans-serif';
+    for(const lb of labels){
+        if(lb.type==='distance'){tCtx.fillStyle='#ffffff';tCtx.fillText(lb.text,lb.x+3,lb.y-3);}
+        else{tCtx.fillStyle='#FFD700';tCtx.fillText(lb.text,lb.x+5,lb.y-5);}
+    }
     const sp=toScreen(x,-y); drawTurtleSprite(sp.x,sp.y,angle);
 }
 
@@ -401,10 +415,16 @@ function animateTurtle(commands, onDone) {
 
     function redrawScene(turtleX,turtleY,turtleAngle){
         clearTurtleCanvas();
-        // Redraw all completed lines
+        // Redraw all completed lines and labels
         for(const ln of drawnLines){
-            tCtx.beginPath();tCtx.moveTo(ln.fx,ln.fy);tCtx.lineTo(ln.tx,ln.ty);
-            tCtx.strokeStyle=ln.color;tCtx.lineWidth=ln.size;tCtx.lineCap='round';tCtx.stroke();
+            if(ln.type==='label'){
+                tCtx.font='11px sans-serif';
+                if(ln.labelType==='distance'){tCtx.fillStyle='#ffffff';tCtx.fillText(ln.text,ln.lx+3,ln.ly-3);}
+                else{tCtx.fillStyle='#FFD700';tCtx.fillText(ln.text,ln.lx+5,ln.ly-5);}
+            }else{
+                tCtx.beginPath();tCtx.moveTo(ln.fx,ln.fy);tCtx.lineTo(ln.tx,ln.ty);
+                tCtx.strokeStyle=ln.color;tCtx.lineWidth=ln.size;tCtx.lineCap='round';tCtx.stroke();
+            }
         }
         // Draw turtle sprite (no ghosting)
         const sp=toScreen(turtleX,-turtleY);
@@ -424,8 +444,11 @@ function animateTurtle(commands, onDone) {
             }
             cx=nx;cy=ny;
             redrawScene(cx,cy,ca);
-            if(t>=1){prog=0;si++;}
-        }else if(s.type==='RIGHT'){ca+=s.value;si++;}else if(s.type==='LEFT'){ca-=s.value;si++;}
+            if(t>=1){
+                if(cp){const f=toScreen(s._x,-s._y),to=toScreen(cx,-cy);drawnLines.push({type:'label',labelType:'distance',text:''+s.value,lx:(f.x+to.x)/2,ly:(f.y+to.y)/2});}
+                prog=0;si++;
+            }
+        }else if(s.type==='RIGHT'){ca+=s.value;const sp=toScreen(cx,-cy);drawnLines.push({type:'label',labelType:'angle',text:s.value+'\u00B0',lx:sp.x,ly:sp.y});si++;}else if(s.type==='LEFT'){ca-=s.value;const sp=toScreen(cx,-cy);drawnLines.push({type:'label',labelType:'angle',text:s.value+'\u00B0',lx:sp.x,ly:sp.y});si++;}
         else if(s.type==='PEN_UP'){cp=false;si++;}else if(s.type==='PEN_DOWN'){cp=true;si++;}
         else if(s.type==='PEN_COLOR'){cc=s.value;si++;}else if(s.type==='PEN_SIZE'){cs=s.value;si++;}
         else if(s.type==='HOME'){cx=0;cy=0;ca=0;si++;}else if(s.type==='CLEAR'){clearTurtleCanvas();drawnLines.length=0;si++;}
@@ -1009,15 +1032,105 @@ function requestHint(){
 //  MISSIONS
 // ============================================================
 const TURTLE_MISSIONS=[
-    {id:1,title:'직선 그리기',level:'기초',levelColor:'#4CAF50',description:'거북이를 앞으로 100픽셀 보내보세요!',hint:'"앞으로 100 가줘"라고 말해보세요.',targetDSL:'FORWARD 100',tolerance:15},
-    {id:2,title:'ㄱ자 그리기',level:'기초',levelColor:'#4CAF50',description:'앞으로 가다가 오른쪽으로 꺾어보세요!',hint:'앞으로 간 다음, 오른쪽 90도 돌고 다시 앞으로.',targetDSL:'FORWARD 100\nRIGHT 90\nFORWARD 100',tolerance:15},
-    {id:3,title:'삼각형',level:'도형',levelColor:'#2196F3',description:'거북이가 삼각형을 그려요!',hint:'앞으로 가고 오른쪽 120도 돌기를 3번 반복.',targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
-    {id:4,title:'사각형',level:'도형',levelColor:'#2196F3',description:'정사각형을 그려요!',hint:'같은 동작을 4번 반복해 보세요.',targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}',tolerance:15},
-    {id:5,title:'오각형',level:'도형',levelColor:'#2196F3',description:'오각형을 그려요!',hint:'5번 반복, 72도씩 돌면 오각형.',targetDSL:'REPEAT 5 {\nFORWARD 80\nRIGHT 72\n}',tolerance:15},
-    {id:6,title:'색깔 삼각형',level:'색상',levelColor:'#9C27B0',description:'빨간 굵은 선으로 삼각형!',hint:'펜 색을 빨간색, 굵기 3으로 바꾼 뒤 삼각형.',targetDSL:'PEN_COLOR #FF0000\nPEN_SIZE 3\nREPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
-    {id:7,title:'별 그리기',level:'패턴',levelColor:'#FF9800',description:'멋진 별을 그려보세요! ⭐',hint:'5번 반복, 앞으로 120, 오른쪽 144도.',targetDSL:'REPEAT 5 {\nFORWARD 120\nRIGHT 144\n}',tolerance:15},
-    {id:8,title:'집 그리기',level:'복합',levelColor:'#F44336',description:'사각형+삼각형 지붕 🏠',hint:'사각형을 그리고 지붕 삼각형을 얹어보세요.',targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}\nRIGHT 30\nREPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:20},
-    {id:9,title:'자유 창작',level:'자유',levelColor:'#607D8B',description:'마음대로 그려보세요! 🎨',hint:'원하는 모양을 자유롭게!',targetDSL:'',tolerance:0}
+    // ── 3학년 1학기: 직각, 직선, 기본 이동 ──
+    {id:1,title:'직선 긋기',level:'3-1 직선',levelColor:'#4CAF50',
+     description:'[수학 3-1] 선분을 그어 보세요! 거북이를 앞으로 100픽셀 보내요.',
+     hint:'"앞으로 100" 한 줄이면 돼요.',
+     targetDSL:'FORWARD 100',tolerance:15},
+    {id:2,title:'직각 만들기 (90°)',level:'3-1 직각',levelColor:'#4CAF50',
+     description:'[수학 3-1] 직각은 90°! 앞으로 가다 직각으로 꺾어 보세요.',
+     hint:'앞으로 100, 오른쪽 90도, 앞으로 100.',
+     targetDSL:'FORWARD 100\nRIGHT 90\nFORWARD 100',tolerance:15},
+    {id:3,title:'직사각형',level:'3-1 직각',levelColor:'#4CAF50',
+     description:'[수학 3-1] 네 각이 모두 직각(90°)! 가로 120, 세로 80인 직사각형.',
+     hint:'앞으로120 오른쪽90, 앞으로80 오른쪽90 을 2번 반복.',
+     targetDSL:'REPEAT 2 {\nFORWARD 120\nRIGHT 90\nFORWARD 80\nRIGHT 90\n}',tolerance:15},
+    {id:4,title:'정사각형',level:'3-1 직각',levelColor:'#4CAF50',
+     description:'[수학 3-1] 네 변의 길이가 같고 네 각이 모두 직각인 사각형!',
+     hint:'4번 반복: 앞으로 100, 오른쪽 90도.',
+     targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}',tolerance:15},
+
+    // ── 3학년 2학기: 원, 삼각형 분류 ──
+    {id:5,title:'정삼각형',level:'3-2 삼각형',levelColor:'#2196F3',
+     description:'[수학 3-2] 세 변의 길이가 모두 같은 삼각형! 외각=120°',
+     hint:'3번 반복: 앞으로 100, 오른쪽 120도.',
+     targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
+    {id:6,title:'이등변삼각형',level:'3-2 삼각형',levelColor:'#2196F3',
+     description:'[수학 3-2] 두 변의 길이가 같은 삼각형! 밑변 120, 빗변 100.',
+     hint:'앞으로120, 왼쪽50도, 앞으로100, 왼쪽80도, 앞으로100.',
+     targetDSL:'FORWARD 120\nLEFT 50\nFORWARD 100\nLEFT 80\nFORWARD 100',tolerance:20},
+    {id:7,title:'직각삼각형',level:'3-2 삼각형',levelColor:'#2196F3',
+     description:'[수학 3-2] 한 각이 직각(90°)인 삼각형!',
+     hint:'앞으로 100, 왼쪽 90도, 앞으로 80, 왼쪽 약 141도, 빗변.',
+     targetDSL:'FORWARD 100\nLEFT 90\nFORWARD 80\nLEFT 141\nFORWARD 128',tolerance:25},
+
+    // ── 4학년 1학기: 각도, 예각·둔각 ──
+    {id:8,title:'예각 삼각형 (모든 각 < 90°)',level:'4-1 각도',levelColor:'#9C27B0',
+     description:'[수학 4-1] 세 각이 모두 예각(90°보다 작은 각)인 삼각형!',
+     hint:'외각 합 360°. 외각 120도씩 돌면 정삼각형이 돼요.',
+     targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
+    {id:9,title:'둔각 삼각형 (한 각 > 90°)',level:'4-1 각도',levelColor:'#9C27B0',
+     description:'[수학 4-1] 한 각이 둔각(90°보다 큰 각 120°)인 삼각형!',
+     hint:'앞으로100, 오른쪽150도, 앞으로100, 오른쪽150도, 앞으로180.',
+     targetDSL:'FORWARD 100\nRIGHT 150\nFORWARD 100\nRIGHT 150\nFORWARD 180',tolerance:25},
+
+    // ── 4학년 2학기: 사각형 분류 ──
+    {id:10,title:'평행사변형',level:'4-2 사각형',levelColor:'#FF9800',
+     description:'[수학 4-2] 마주보는 두 쌍의 변이 평행! 외각 60°와 120° 반복.',
+     hint:'앞으로120 오른쪽60, 앞으로80 오른쪽120 을 2번 반복.',
+     targetDSL:'REPEAT 2 {\nFORWARD 120\nRIGHT 60\nFORWARD 80\nRIGHT 120\n}',tolerance:20},
+    {id:11,title:'마름모',level:'4-2 사각형',levelColor:'#FF9800',
+     description:'[수학 4-2] 네 변의 길이가 모두 같은 사각형! 예각60°+둔각120°.',
+     hint:'앞으로100 오른쪽60, 앞으로100 오른쪽120 을 2번 반복.',
+     targetDSL:'REPEAT 2 {\nFORWARD 100\nRIGHT 60\nFORWARD 100\nRIGHT 120\n}',tolerance:20},
+    {id:12,title:'사다리꼴',level:'4-2 사각형',levelColor:'#FF9800',
+     description:'[수학 4-2] 한 쌍의 변만 평행! 아랫변이 윗변보다 길어요.',
+     hint:'아래120, 왼쪽60, 빗변70, 왼쪽120, 위60, 왼쪽60, 빗변70.',
+     targetDSL:'FORWARD 120\nLEFT 60\nFORWARD 70\nLEFT 120\nFORWARD 60\nLEFT 60\nFORWARD 70',tolerance:20},
+
+    // ── 4학년: 다각형 ──
+    {id:13,title:'정오각형 (외각 72°)',level:'4-2 다각형',levelColor:'#FF5722',
+     description:'[수학 4-2] 다섯 변이 같은 정다각형! 360°÷5 = 72°',
+     hint:'5번 반복: 앞으로 80, 오른쪽 72도.',
+     targetDSL:'REPEAT 5 {\nFORWARD 80\nRIGHT 72\n}',tolerance:15},
+    {id:14,title:'정육각형 (외각 60°)',level:'4-2 다각형',levelColor:'#FF5722',
+     description:'[수학 4-2] 여섯 변이 같은 정다각형! 360°÷6 = 60°',
+     hint:'6번 반복: 앞으로 70, 오른쪽 60도.',
+     targetDSL:'REPEAT 6 {\nFORWARD 70\nRIGHT 60\n}',tolerance:15},
+
+    // ── 5학년: 합동과 대칭, 색상 활용 ──
+    {id:15,title:'선대칭 나비',level:'5학년 대칭',levelColor:'#E91E63',
+     description:'[수학 5-1] 좌우가 대칭인 나비 모양! 색을 바꿔서 좌우를 구분해요.',
+     hint:'빨강으로 삼각형 한쪽, 파랑으로 반대쪽 삼각형.',
+     targetDSL:'PEN_COLOR #ff0000\nFORWARD 80\nRIGHT 140\nFORWARD 80\nRIGHT 100\nFORWARD 50\nRIGHT 120\nPEN_COLOR #0000ff\nFORWARD 50\nRIGHT 100\nFORWARD 80\nRIGHT 140\nFORWARD 80',tolerance:25},
+    {id:16,title:'색 변경 사각형',level:'5학년 대칭',levelColor:'#E91E63',
+     description:'[수학 5-1] 변마다 색이 바뀌는 정사각형! 빨→노→초→파 대칭을 관찰.',
+     hint:'색 바꾸고 앞으로100 오른쪽90을 4번 반복.',
+     targetDSL:'PEN_COLOR #ff0000\nFORWARD 100\nRIGHT 90\nPEN_COLOR #ffff00\nFORWARD 100\nRIGHT 90\nPEN_COLOR #00cc00\nFORWARD 100\nRIGHT 90\nPEN_COLOR #0000ff\nFORWARD 100\nRIGHT 90',tolerance:15},
+
+    // ── 도전: 복합 도형 ──
+    {id:17,title:'별 (외각 144°)',level:'도전',levelColor:'#795548',
+     description:'별은 정오각형의 꼭짓점을 하나씩 건너뛰어 연결! 360°×2÷5=144°',
+     hint:'5번 반복: 앞으로 120, 오른쪽 144도.',
+     targetDSL:'REPEAT 5 {\nFORWARD 120\nRIGHT 144\n}',tolerance:15},
+    {id:18,title:'집 그리기',level:'도전',levelColor:'#795548',
+     description:'정사각형(몸체) + 정삼각형(지붕)을 합쳐 집을 만들어요! 🏠',
+     hint:'사각형을 그린 뒤 30도 돌고 삼각형 지붕을 얹어보세요.',
+     targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}\nRIGHT 30\nREPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:20},
+    {id:19,title:'무지개 별',level:'도전',levelColor:'#795548',
+     description:'꼭짓점마다 색이 바뀌는 별! 각도와 색상을 모두 활용하세요.',
+     hint:'5번: 색 바꾸고 앞으로 120 오른쪽 144도.',
+     targetDSL:'PEN_COLOR #ff0000\nFORWARD 120\nRIGHT 144\nPEN_COLOR #ff8800\nFORWARD 120\nRIGHT 144\nPEN_COLOR #ffff00\nFORWARD 120\nRIGHT 144\nPEN_COLOR #00cc00\nFORWARD 120\nRIGHT 144\nPEN_COLOR #0000ff\nFORWARD 120\nRIGHT 144',tolerance:15},
+    {id:20,title:'나선 계단',level:'도전',levelColor:'#795548',
+     description:'직각(90°)은 같지만 변의 길이가 점점 늘어나는 나선!',
+     hint:'앞으로20 오른쪽90, 앞으로40 오른쪽90, 앞으로60 오른쪽90...',
+     targetDSL:'FORWARD 20\nRIGHT 90\nFORWARD 40\nRIGHT 90\nFORWARD 60\nRIGHT 90\nFORWARD 80\nRIGHT 90\nFORWARD 100\nRIGHT 90\nFORWARD 120\nRIGHT 90',tolerance:20},
+
+    // ── 자유 ──
+    {id:21,title:'자유 창작',level:'자유',levelColor:'#607D8B',
+     description:'배운 도형과 각도를 조합해서 마음대로 그려보세요! 🎨',
+     hint:'원하는 모양을 자유롭게!',
+     targetDSL:'',tolerance:0}
 ];
 
 const PIXEL_MISSIONS=[
