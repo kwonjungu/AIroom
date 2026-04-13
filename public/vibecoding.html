@@ -184,6 +184,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                         <button class="grid-opt" onclick="setGridSize(8,this)">8×8</button>
                         <button class="grid-opt" onclick="setGridSize(16,this)">16×16</button>
                     </div>
+                    <button class="ctrl-btn demo" onclick="showPixelDemo()">👀 시연</button>
                 </div>
                 <!-- Common -->
                 <button class="ctrl-btn run" onclick="runCode()">▶ 실행</button>
@@ -459,6 +460,31 @@ function switchCanvasTab(tab, btn){
 function showTurtleDemo(){
     if(!currentMission||!currentMission.targetDSL){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
     animateTurtle(parseTurtleDSL(currentMission.targetDSL));
+}
+
+function showPixelDemo(){
+    if(!currentMission||!currentMission.targetGrid){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
+    clearPixelGrid();
+    const tg=currentMission.targetGrid;
+    // Animate: light up one pixel at a time
+    const cells=[];
+    for(let y=0;y<Math.min(pixelGridSize,tg.length);y++)
+        for(let x=0;x<Math.min(pixelGridSize,tg[y].length);x++)
+            if(tg[y][x])cells.push({x,y});
+    let idx=0;
+    function step(){
+        if(idx>=cells.length){
+            // Show complete for 2 seconds then clear
+            setTimeout(()=>{clearPixelGrid();addChatMsg('system','시연 완료! 이 패턴을 만들어 보세요.');},2000);
+            return;
+        }
+        const c=cells[idx];
+        pixelGrid[c.y][c.x]=pixelColor;
+        renderPixelGrid();
+        idx++;
+        setTimeout(step,80);
+    }
+    step();
 }
 
 // ============================================================
