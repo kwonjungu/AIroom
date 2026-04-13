@@ -1158,15 +1158,117 @@ const TURTLE_MISSIONS=[
 ];
 
 const PIXEL_MISSIONS=[
-    {id:1,title:'점 하나 켜기',level:'기초',levelColor:'#4CAF50',description:'가운데 LED 하나를 켜보세요!',hint:'LED_ON 2 2 를 사용해 보세요.',targetGrid:[[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
-    {id:2,title:'가로줄',level:'기초',levelColor:'#4CAF50',description:'가운데 행 전체를 켜보세요!',hint:'FOR x 0 4 를 사용해 보세요.',targetGrid:[[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0]]},
-    {id:3,title:'대각선',level:'기초',levelColor:'#4CAF50',description:'대각선을 그려보세요! ╲',hint:'(0,0), (1,1), (2,2), (3,3), (4,4) 를 켜면 돼요.',targetGrid:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]},
-    {id:4,title:'하트',level:'패턴',levelColor:'#E91E63',description:'하트를 만들어보세요! ❤️',hint:'SHOW_ICON HEART 를 사용해 보세요.',targetGrid:[[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]]},
-    {id:5,title:'웃는 얼굴',level:'패턴',levelColor:'#E91E63',description:'웃는 얼굴! 😊',hint:'눈(1,1), (3,1)과 입 모양을 생각해 보세요.',targetGrid:[[0,0,0,0,0],[0,1,0,1,0],[0,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]]},
-    {id:6,title:'테두리',level:'반복',levelColor:'#FF9800',description:'정사각형 테두리 □',hint:'FOR 반복으로 가장자리를 채우세요.',targetGrid:[[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]]},
-    {id:7,title:'체크무늬',level:'반복',levelColor:'#FF9800',description:'체스판 만들기!',hint:'x+y가 짝수인 곳만 켜면 돼요.',targetGrid:[[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1]]},
-    {id:8,title:'버튼 이벤트',level:'조건',levelColor:'#2196F3',description:'A→하트, B→엑스 만들기!',hint:'ON_BUTTON_A { SHOW_ICON HEART } 사용.',targetGrid:null},
-    {id:9,title:'자유 창작',level:'자유',levelColor:'#607D8B',description:'마음대로 그려보세요! 🎨',hint:'자유롭게!',targetGrid:null}
+    // ── 5×5 기초 ──
+    {id:1,title:'점 하나',level:'5×5 기초',levelColor:'#4CAF50',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'어디에 불이 켜졌는지 좌표를 관찰하세요.',
+     targetGrid:[[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]]},
+    {id:2,title:'가로줄',level:'5×5 기초',levelColor:'#4CAF50',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'어떤 행이 켜졌나요? 반복을 활용해 보세요.',
+     targetGrid:[[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0]]},
+    {id:3,title:'대각선',level:'5×5 기초',levelColor:'#4CAF50',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'x와 y 좌표 사이에 규칙이 있어요.',
+     targetGrid:[[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]},
+    {id:4,title:'십자가',level:'5×5 기초',levelColor:'#4CAF50',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'가로줄 하나와 세로줄 하나가 겹쳐있어요.',
+     targetGrid:[[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0]]},
+
+    // ── 5×5 패턴 ──
+    {id:5,title:'하트',level:'5×5 패턴',levelColor:'#E91E63',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'위쪽은 두 봉우리, 아래로 갈수록 좁아져요.',
+     targetGrid:[[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]]},
+    {id:6,title:'웃는 얼굴',level:'5×5 패턴',levelColor:'#E91E63',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'눈 위치와 입 모양을 관찰하세요.',
+     targetGrid:[[0,0,0,0,0],[0,1,0,1,0],[0,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]]},
+    {id:7,title:'테두리',level:'5×5 반복',levelColor:'#FF9800',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'가장자리만 켜져있어요. FOR 반복을 써보세요.',
+     targetGrid:[[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]]},
+    {id:8,title:'체크무늬',level:'5×5 반복',levelColor:'#FF9800',gridSize:5,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'켜진 곳과 꺼진 곳의 좌표에 규칙이 있어요.',
+     targetGrid:[[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1],[0,1,0,1,0],[1,0,1,0,1]]},
+
+    // ── 5×5 조건 ──
+    {id:9,title:'버튼 이벤트',level:'5×5 조건',levelColor:'#2196F3',gridSize:5,
+     description:'버튼 A → 하트, 버튼 B → 엑스가 나오게 해보세요!',
+     hint:'ON_BUTTON_A와 ON_BUTTON_B 블록을 사용하세요.',
+     targetGrid:null},
+
+    // ── 8×8 기초 ──
+    {id:10,title:'가로줄 8칸',level:'8×8 기초',levelColor:'#00897B',gridSize:8,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'가운데 행을 관찰하세요. 격자가 커졌어요!',
+     targetGrid:(()=>{const g=Array.from({length:8},()=>Array(8).fill(0));for(let x=0;x<8;x++)g[4][x]=1;return g;})()},
+    {id:11,title:'X자',level:'8×8 기초',levelColor:'#00897B',gridSize:8,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'두 대각선이 겹쳐있어요.',
+     targetGrid:(()=>{const g=Array.from({length:8},()=>Array(8).fill(0));for(let i=0;i<8;i++){g[i][i]=1;g[i][7-i]=1;}return g;})()},
+    {id:12,title:'테두리 8×8',level:'8×8 반복',levelColor:'#00897B',gridSize:8,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'5×5 테두리와 같은 원리지만 크기가 달라요.',
+     targetGrid:(()=>{const g=Array.from({length:8},()=>Array(8).fill(0));for(let i=0;i<8;i++){g[0][i]=1;g[7][i]=1;g[i][0]=1;g[i][7]=1;}return g;})()},
+    {id:13,title:'사각 나선',level:'8×8 패턴',levelColor:'#00897B',gridSize:8,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'바깥 테두리와 안쪽 테두리가 겹쳐있어요.',
+     targetGrid:(()=>{const g=Array.from({length:8},()=>Array(8).fill(0));for(let i=0;i<8;i++){g[0][i]=1;g[7][i]=1;g[i][0]=1;g[i][7]=1;}for(let i=2;i<6;i++){g[2][i]=1;g[5][i]=1;g[i][2]=1;g[i][5]=1;}return g;})()},
+    {id:14,title:'화살표',level:'8×8 패턴',levelColor:'#00897B',gridSize:8,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'위쪽 삼각형과 아래쪽 직사각형이 합쳐져 있어요.',
+     targetGrid:(()=>{const g=Array.from({length:8},()=>Array(8).fill(0));
+       g[0][3]=1;g[0][4]=1;g[1][2]=1;g[1][3]=1;g[1][4]=1;g[1][5]=1;
+       g[2][1]=1;g[2][2]=1;g[2][3]=1;g[2][4]=1;g[2][5]=1;g[2][6]=1;
+       for(let y=3;y<8;y++){g[y][3]=1;g[y][4]=1;}return g;})()},
+
+    // ── 16×16 ──
+    {id:15,title:'큰 하트',level:'16×16',levelColor:'#7C4DFF',gridSize:16,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'5×5 하트를 크게 확대한 모양이에요.',
+     targetGrid:(()=>{const g=Array.from({length:16},()=>Array(16).fill(0));
+       const pts=[[2,1],[3,1],[4,1],[5,1],[9,1],[10,1],[11,1],[12,1],
+         [1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[8,2],[9,2],[10,2],[11,2],[12,2],[13,2],
+         [1,3],[2,3],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[10,3],[11,3],[12,3],[13,3],
+         [1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],[11,4],[12,4],[13,4],
+         [2,5],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[10,5],[11,5],[12,5],
+         [3,6],[4,6],[5,6],[6,6],[7,6],[8,6],[9,6],[10,6],[11,6],
+         [4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],
+         [5,8],[6,8],[7,8],[8,8],[9,8],
+         [6,9],[7,9],[8,9],
+         [7,10]];
+       for(const[x,y]of pts)if(y<16&&x<16)g[y][x]=1;return g;})()},
+    {id:16,title:'큰 별',level:'16×16',levelColor:'#7C4DFF',gridSize:16,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'가운데에서 바깥으로 뻗어나가는 모양이에요.',
+     targetGrid:(()=>{const g=Array.from({length:16},()=>Array(16).fill(0));
+       for(let i=0;i<16;i++){g[7][i]=1;g[8][i]=1;g[i][7]=1;g[i][8]=1;} // cross
+       for(let i=0;i<16;i++){g[i][i]=1;g[i][15-i]=1;} // diagonals
+       return g;})()},
+    {id:17,title:'얼굴',level:'16×16',levelColor:'#7C4DFF',gridSize:16,
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'동그란 얼굴에 눈, 코, 입이 있어요.',
+     targetGrid:(()=>{const g=Array.from({length:16},()=>Array(16).fill(0));
+       // circle outline (rough)
+       const cx=7.5,cy=7.5,r=7;
+       for(let a=0;a<360;a+=5){const x=Math.round(cx+r*Math.cos(a*Math.PI/180)),y=Math.round(cy+r*Math.sin(a*Math.PI/180));if(x>=0&&x<16&&y>=0&&y<16)g[y][x]=1;}
+       // eyes
+       g[5][4]=1;g[5][5]=1;g[6][4]=1;g[6][5]=1;
+       g[5][10]=1;g[5][11]=1;g[6][10]=1;g[6][11]=1;
+       // nose
+       g[8][7]=1;g[8][8]=1;
+       // mouth
+       for(let x=4;x<=11;x++)g[11][x]=1;g[10][3]=1;g[10][12]=1;
+       return g;})()},
+
+    // ── 자유 ──
+    {id:18,title:'자유 창작',level:'자유',levelColor:'#607D8B',gridSize:5,
+     description:'격자 크기를 바꿔가며 자유롭게 그려보세요! 🎨',
+     hint:'AI에게 원하는 패턴을 설명해 보세요.',
+     targetGrid:null}
 ];
 
 let completedTurtle=JSON.parse(localStorage.getItem('turtle_completed')||'[]');
@@ -1213,7 +1315,14 @@ function selectMission(m){
             }),500);
         }
     }else{
-        clearPixelGrid();
+        // Auto-switch grid size for pixel missions
+        if(m.gridSize&&m.gridSize!==pixelGridSize){
+            pixelGridSize=m.gridSize;
+            document.querySelectorAll('.grid-opt').forEach(b=>{
+                b.classList.toggle('active',parseInt(b.textContent)===m.gridSize);
+            });
+        }
+        initPixelGrid();
         if(m.targetGrid){
             addChatMsg('system','👀 목표 패턴을 보여줍니다! 잘 관찰하세요.');
             setTimeout(()=>{
