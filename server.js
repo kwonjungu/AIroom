@@ -640,21 +640,79 @@ app.get('/api/ai/status', (req, res) => {
     res.json({ hasServerKey: !!process.env.GROQ_API_KEY });
 });
 
+// Groq 모델 폴백 순서 — 앞의 모델이 할당량 초과/폐기 시 다음 모델로 자동 전환
+// 품질 우선순위: 70B > 8B. 70B 계열이 동일 공급량 기준 먼저 소진되므로 8B로 폴백.
+const GROQ_FALLBACK_MODELS = [
+    'llama-3.3-70b-versatile',  // 기본 (고품질)
+    'llama-3.1-8b-instant',     // 빠르고 할당량 여유
+    'llama3-70b-8192',          // 이전 세대 70B
+    'llama3-8b-8192'            // 이전 세대 8B (최종 폴백)
+];
+
+// 429/할당량/모델 폐기 에러인지 판별
+function isGroqQuotaError(status, data) {
+    if (status === 429) return true;
+    const code = data?.error?.code || '';
+    const type = data?.error?.type || '';
+    const msg = (data?.error?.message || '').toLowerCase();
+    return (
+        code === 'rate_limit_exceeded' ||
+        code === 'insufficient_quota' ||
+        code === 'model_decommissioned' ||
+        code === 'model_not_found' ||
+        type.includes('tokens_per') ||
+        type.includes('requests_per') ||
+        msg.includes('rate limit') ||
+        msg.includes('quota') ||
+        msg.includes('decommissioned')
+    );
+}
+
+// Groq 호출 + 폴백 — body.model은 1순위로 쓰고, 실패 시 폴백 리스트 순회
+async function callGroqWithFallback(apiKey, body) {
+    const requested = body.model;
+    // 우선순위: 요청 모델 → 폴백 리스트 (중복 제거)
+    const models = [requested, ...GROQ_FALLBACK_MODELS].filter(
+        (m, i, arr) => m && arr.indexOf(m) === i
+    );
+
+    let lastStatus = 500;
+    let lastData = { error: 'AI 호출 실패' };
+
+    for (const model of models) {
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                body: JSON.stringify({ ...body, model })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                if (model !== requested) {
+                    console.log(`[Groq] 폴백 사용: ${requested} → ${model}`);
+                    data._fallbackModel = model;
+                }
+                return { ok: true, status: 200, data };
+            }
+            lastStatus = response.status;
+            lastData = data;
+            if (!isGroqQuotaError(response.status, data)) {
+                // 할당량 외 에러(잘못된 요청 등)는 바로 중단
+                return { ok: false, status: response.status, data };
+            }
+            console.warn(`[Groq] ${model} 할당량 초과/불가 — 다음 모델로 전환`);
+        } catch (e) {
+            lastData = { error: 'AI API 호출 실패: ' + e.message };
+        }
+    }
+    return { ok: false, status: lastStatus, data: lastData };
+}
+
 app.post('/api/ai/chat', requireAuth, async (req, res) => {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) return res.status(400).json({ error: 'API 키가 필요합니다.' });
-    try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-            body: JSON.stringify(req.body)
-        });
-        const data = await response.json();
-        if (!response.ok) return res.status(response.status).json(data);
-        res.json(data);
-    } catch (e) {
-        res.status(500).json({ error: 'AI API 호출 실패: ' + e.message });
-    }
+    const result = await callGroqWithFallback(apiKey, req.body);
+    res.status(result.status).json(result.data);
 });
 
 // ===== 가정통신문 번역 API (Groq) =====
@@ -682,21 +740,17 @@ CRITICAL RULES:
 - This is a school document for parents — translate naturally and clearly.`;
 
     try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: numbered }
-                ],
-                temperature: 0.1,
-                max_tokens: 8192
-            })
+        const result = await callGroqWithFallback(apiKey, {
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: numbered }
+            ],
+            temperature: 0.1,
+            max_tokens: 8192
         });
-        const data = await response.json();
-        if (!response.ok) return res.status(response.status).json(data);
+        if (!result.ok) return res.status(result.status).json(result.data);
+        const data = result.data;
 
         const content = data.choices?.[0]?.message?.content || '';
         // 번호별로 파싱
@@ -716,11 +770,11 @@ CRITICAL RULES:
         }
         if (currentIdx >= 0) translations[currentIdx] = currentText.trim();
 
-        const result = blocks.map((b, i) => ({
+        const translated = blocks.map((b, i) => ({
             ...b,
             translated: translations[i] || b.text
         }));
-        res.json({ translations: result });
+        res.json({ translations: translated, fallbackModel: data._fallbackModel });
     } catch (e) {
         res.status(500).json({ error: '번역 API 호출 실패: ' + e.message });
     }
