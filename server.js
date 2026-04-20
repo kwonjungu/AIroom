@@ -214,6 +214,7 @@ setInterval(() => {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/defaults', express.static(path.join(__dirname, 'defaults')));
 
 // ===== 인증 API =====
 // 저장된 해시를 읽거나, 없으면 초기 비밀번호로 해시를 생성해서 저장

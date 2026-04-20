@@ -1593,7 +1593,9 @@ const MAX_FILE_SIZE=5*1024*1024; // 5MB limit per file
 let firebaseStorage=null;
 async function initFirebase(){
     try{
-        const cfg=await fetch('/api/firebase-config').then(r=>r.json());
+        const headers={};
+        if(authToken)headers['X-Auth-Token']=authToken;
+        const cfg=await fetch('/api/firebase-config',{headers}).then(r=>r.json());
         if(cfg&&cfg.apiKey){
             const app=firebase.initializeApp(cfg);
             firebaseStorage=firebase.storage();
@@ -6315,9 +6317,11 @@ async function startTranslation() {
             fill.style.width = pct + '%';
             text.textContent = `번역 중... (${Math.min(start + BATCH, allBlocks.length)}/${allBlocks.length})`;
 
+            const tHeaders = { 'Content-Type': 'application/json' };
+            if (authToken) tHeaders['X-Auth-Token'] = authToken;
             const res = await fetch('/api/translate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: tHeaders,
                 body: JSON.stringify({ blocks: batch.map(b => ({ text: b.text })), targetLang: transState.targetLang })
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error || '번역 실패'); }
