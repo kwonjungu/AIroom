@@ -1,3 +1,11 @@
 node_modules/
 data/
 .env
+
+# 방학근무 개발용 테스트 아티팩트 (commit 제외)
+test-*.js
+test-*.hwpx
+test-*.docx
+test-*.xlsx
+~$*
+_check/

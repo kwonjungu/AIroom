@@ -421,7 +421,8 @@ const DATA_ROUTES = [
     { path: 'news', file: 'news.json', fallback: [] },
     { path: 'collections', file: 'collections.json', fallback: [] },
     { path: 'esign-docs', file: 'esign-docs.json', fallback: [] },
-    { path: 'tdist-docs', file: 'tdist-docs.json', fallback: [] }
+    { path: 'tdist-docs', file: 'tdist-docs.json', fallback: [] },
+    { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } }
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
@@ -451,6 +452,129 @@ app.patch('/api/training-records/:trainingId/:staffId', requireAuth, async (req,
         await writeData('training-records.json', records);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== 방학 근무 (겨울방학 허가원 자동화) =====
+const hwpx = require('./lib/hwpx');
+
+// 개별 교직원 항목 저장 (PATCH) — 인증 사용자만, 이름 기반 복구 위해 staffId + name 필요
+app.patch('/api/winter-schedule/entries/:staffId', requireAuth, async (req, res) => {
+    try {
+        const ws = (await readData('winter-schedule.json')) || { config: {}, entries: {} };
+        if (!ws.entries) ws.entries = {};
+        const { staffId } = req.params;
+        ws.entries[staffId] = {
+            ...(req.body || {}),
+            staffId,
+            updatedAt: new Date().toISOString()
+        };
+        await writeData('winter-schedule.json', ws);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 방학 세팅 (config 설정) — 관리자만. 이 요청은 전체 entries를 날린다.
+app.post('/api/winter-schedule/setup', requireAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate, holidays } = req.body || {};
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: '시작일과 종료일을 모두 지정해야 합니다.' });
+        }
+        const newConfig = {
+            config: {
+                startDate,
+                endDate,
+                holidays: Array.isArray(holidays) ? holidays : [],
+                setAt: new Date().toISOString(),
+            },
+            entries: {} // 기존 entries 모두 삭제
+        };
+        await writeData('winter-schedule.json', newConfig);
+        res.json({ success: true, config: newConfig.config });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 공휴일 조회 (date.nager.at 프록시)
+app.get('/api/winter-schedule/holidays', requireAuth, async (req, res) => {
+    const year = parseInt(req.query.year, 10);
+    if (!year || year < 1900 || year > 2100) {
+        return res.status(400).json({ error: 'year 파라미터가 필요합니다.' });
+    }
+    try {
+        const r = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/KR`);
+        if (!r.ok) throw new Error(`upstream ${r.status}`);
+        const data = await r.json();
+        // [{date:"2026-01-01", localName:"신정", ...}, ...]
+        res.json(data.map(d => ({ date: d.date, name: d.localName })));
+    } catch (e) {
+        res.status(502).json({ error: '공휴일 조회 실패: ' + e.message });
+    }
+});
+
+// 허가원 다운로드 — 기본 DOCX (Word). HWPX는 ?format=hwpx 쿼리.
+app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) => {
+    try {
+        const { staffId } = req.params;
+        const format = (req.query.format || 'docx').toLowerCase();
+        const [ws, staff] = await Promise.all([
+            readData('winter-schedule.json'),
+            readData('staff.json')
+        ]);
+        const entry = (ws && ws.entries && ws.entries[staffId]) || null;
+        if (!entry) return res.status(404).json({ error: '해당 교직원의 근무 현황이 없습니다.' });
+        const staffRecord = (staff || []).find(s => s.id === staffId) || {};
+        const name = entry.name || staffRecord.name || '';
+        if (!name) return res.status(400).json({ error: '이름이 비어 있습니다.' });
+
+        const payload = {
+            name,
+            school: entry.school || '백암초등학교',
+            position: entry.position || staffRecord.position || '교사',
+            applyDate: entry.applyDate,
+            days: entry.days || {},
+            fortyOnePeriods: entry.fortyOnePeriods,
+            workPeriods: entry.workPeriods,
+            summary: entry.summary,
+        };
+
+        const safeName = name.replace(/[^가-힣A-Za-z0-9_-]/g, '_');
+
+        if (format === 'hwpx') {
+            const buf = await hwpx.generatePermit(payload);
+            res.setHeader('Content-Type', 'application/hwp+zip');
+            res.setHeader('Content-Disposition',
+                `attachment; filename*=UTF-8''${encodeURIComponent(`HWPX_${safeName}.HWPX`)}`);
+            return res.send(buf);
+        }
+
+        // 기본: DOCX
+        const { generatePermitDocx } = require('./lib/docx-permit');
+        const buf = await generatePermitDocx(payload);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition',
+            `attachment; filename*=UTF-8''${encodeURIComponent(`근무지외연수허가원_${safeName}.docx`)}`);
+        res.send(buf);
+    } catch (e) {
+        console.error('permit gen error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 전체 일정 엑셀 export (색 포함) — 관리자만
+app.get('/api/winter-schedule/xlsx', requireAdmin, async (req, res) => {
+    try {
+        const [ws, staff] = await Promise.all([
+            readData('winter-schedule.json'),
+            readData('staff.json')
+        ]);
+        const buf = await require('./lib/xlsx-export').buildScheduleXlsx(ws, staff);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent('겨울방학근무현황.xlsx')}`);
+        res.send(buf);
+    } catch (e) {
+        console.error('xlsx export error:', e);
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // Export (전체 데이터 내보내기) — 관리자 전용
