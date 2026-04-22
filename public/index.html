@@ -380,9 +380,13 @@
         .list-table .manager-line{display:block;font-size:12px;}
         .schedule-table td.today{background:#FFF8E1;}
         .schedule-table td.other-month{color:#ccc;background:#fafafa;}
+        .schedule-table td.weekend{background:#fff5f5;}
+        .schedule-table td.holiday{background:#ffecec;}
+        .schedule-table td.today.weekend,.schedule-table td.today.holiday{background:#fff3cd;}
         .schedule-day-num{font-weight:700;font-size:14px;margin-bottom:4px;}
         .schedule-day-num.sun{color:#e53935;}
-        .schedule-day-num.sat{color:#1565c0;}
+        .schedule-day-num.sat{color:#c62828;}
+        .schedule-holiday-label{display:inline-block;font-size:9px;color:#c62828;background:#ffe0e0;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:500;vertical-align:middle;}
         .schedule-item{background:var(--primary-light);border-left:3px solid var(--primary);padding:3px 6px;margin-bottom:3px;border-radius:4px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;}
         .schedule-item:hover{background:#d0e2f7;}
         .schedule-item .del-btn{display:none;background:none;border:none;cursor:pointer;font-size:10px;color:#e53935;padding:0 2px;}
@@ -1470,6 +1474,33 @@
             <span style="display:inline-block;width:12px;height:12px;background:#D9D9D9;vertical-align:middle;margin:0 4px 0 8px;"></span>토·일·공휴일
         </div>
 
+        <!-- 관리자: 교직원 명단 편집 -->
+        <div class="admin-only" style="margin-top:24px;padding:18px;border:2px solid #ffc9c9;border-radius:12px;background:#fff5f5;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+                <h3 style="margin:0;font-size:18px;font-weight:800;color:#c92a2a;">👥 교직원 명단 관리 <span style="font-size:12px;color:#868e96;font-weight:400;">(관리자 전용)</span></h3>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="wsStaffAddRow()" style="font-size:13px;padding:6px 12px;">➕ 추가</button>
+                    <button class="btn btn-primary" onclick="wsStaffSave()" style="font-size:13px;padding:6px 12px;">💾 저장</button>
+                </div>
+            </div>
+            <div style="overflow:auto;max-height:400px;border:1px solid var(--border);border-radius:8px;background:#fff;">
+                <table id="wsStaffTable" style="border-collapse:collapse;font-size:13px;width:100%;">
+                    <thead style="background:#f8f9fa;position:sticky;top:0;z-index:1;">
+                        <tr>
+                            <th style="padding:8px;border-bottom:1px solid var(--border);width:70px;">번호</th>
+                            <th style="padding:8px;border-bottom:1px solid var(--border);width:140px;">직책/소속</th>
+                            <th style="padding:8px;border-bottom:1px solid var(--border);">이름</th>
+                            <th style="padding:8px;border-bottom:1px solid var(--border);width:70px;">삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wsStaffBody"></tbody>
+                </table>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-light);">
+                ※ 수정 후 <strong>저장</strong>을 눌러야 반영됩니다. 삭제 시 해당 교직원이 입력한 방학 근무 데이터는 유지되지만 화면에서 안 보입니다.
+            </div>
+        </div>
+
         <!-- 오늘의 복무 현황 (날짜별 그룹핑 뷰) -->
         <div style="margin-top:24px;padding:18px;border:1px solid var(--border);border-radius:12px;background:#fff;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
@@ -2220,6 +2251,36 @@ async function updateScheduleItem(id,field,val){
     saveToLocal();
 }
 
+// ===== 공휴일 (법정 + 학교 재량) =====
+// 학교 재량 휴업일 — 향후 관리자 UI로 편집 가능하게 할 예정. 현재는 하드코딩.
+const SCHOOL_HOLIDAYS = [
+    { date: '2026-05-04', name: '학교장 재량 휴업일' }
+];
+let holidaysCache = {}; // year → [{date, name}]  (법정공휴일 API 캐시)
+async function loadHolidaysForYear(year){
+    if(year in holidaysCache) return holidaysCache[year];
+    holidaysCache[year] = []; // 선점하여 중복 fetch 방지
+    try {
+        const r = await fetch(`/api/winter-schedule/holidays?year=${year}`,{
+            headers: authToken ? {'X-Auth-Token': authToken} : {}
+        });
+        if(r.ok){
+            holidaysCache[year] = await r.json();
+            // 현재 보고있는 탭이 학교 일정이면 자동 재렌더
+            if(activeTabId==='schedule') renderSchedule();
+        }
+    } catch(e){}
+    return holidaysCache[year];
+}
+function getHolidayName(iso){
+    const y = parseInt(iso.slice(0,4), 10);
+    const fromApi = (holidaysCache[y]||[]).find(h => h.date===iso);
+    if(fromApi) return fromApi.name;
+    const fromSchool = SCHOOL_HOLIDAYS.find(h => h.date===iso);
+    if(fromSchool) return fromSchool.name;
+    return null;
+}
+
 function renderSchedule(){
     const el=document.getElementById('scheduleContent');
     const title=document.getElementById('scheduleTitle');
@@ -2233,11 +2294,15 @@ function renderSchedule(){
 function renderMonthView(el,titleEl){
     const y=scheduleDate.getFullYear(),m=scheduleDate.getMonth();
     titleEl.textContent=`${y}년 ${m+1}월`;
+    // 법정공휴일 캐시 확보 (비동기, 완료 시 자동 재렌더)
+    if(!(y in holidaysCache)) loadHolidaysForYear(y);
+    if(m===0 && !((y-1) in holidaysCache)) loadHolidaysForYear(y-1);
+    if(m===11 && !((y+1) in holidaysCache)) loadHolidaysForYear(y+1);
     const first=new Date(y,m,1),last=new Date(y,m+1,0);
     const startDay=first.getDay(); // 0=sun
     const today=todayStr();
     let html='<table class="schedule-table"><thead><tr>';
-    ['일','월','화','수','목','금','토'].forEach((d,i)=>html+=`<th style="${i===0?'color:#ffcdd2':i===6?'color:#bbdefb':''}">${d}</th>`);
+    ['일','월','화','수','목','금','토'].forEach((d,i)=>html+=`<th style="${i===0||i===6?'color:#ffcdd2':''}">${d}</th>`);
     html+='</tr></thead><tbody><tr>';
     // prev month padding
     const prevLast=new Date(y,m,0).getDate();
@@ -2250,9 +2315,12 @@ function renderMonthView(el,titleEl){
         const ds=fmtDate(new Date(y,m,d));
         const dow=(startDay+d-1)%7;
         const isToday=ds===today?'today':'';
+        const isWeekend=(dow===0||dow===6);
+        const holidayName=getHolidayName(ds);
         const items=getScheduleItems(ds);
-        html+=`<td class="${isToday}" style="width:14.28%">`;
-        html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}</div>`;
+        const cellCls=[isToday,isWeekend?'weekend':'',holidayName?'holiday':''].filter(Boolean).join(' ');
+        html+=`<td class="${cellCls}" style="width:14.28%">`;
+        html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}${holidayName?`<span class="schedule-holiday-label">${esc(holidayName)}</span>`:''}</div>`;
         items.forEach(it=>{
             const hasExtra=it.link||it.fileUrl||it.gotoTab;
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
@@ -2279,20 +2347,31 @@ function renderWeekView(el,titleEl){
     const sun=new Date(d);sun.setDate(d.getDate()-day);
     const sat=new Date(sun);sat.setDate(sun.getDate()+6);
     titleEl.textContent=`${sun.getMonth()+1}/${sun.getDate()} ~ ${sat.getMonth()+1}/${sat.getDate()}`;
+    // 공휴일 캐시 (주가 연도 경계에 걸릴 수 있음)
+    [sun.getFullYear(), sat.getFullYear()].forEach(yy=>{
+        if(!(yy in holidaysCache)) loadHolidaysForYear(yy);
+    });
     const today=todayStr();
     let html='<table class="schedule-table week-table"><thead><tr>';
     const dayNames=['일','월','화','수','목','금','토'];
     for(let i=0;i<7;i++){
         const dd=new Date(sun);dd.setDate(sun.getDate()+i);
-        html+=`<th style="${i===0?'color:#ffcdd2':i===6?'color:#bbdefb':''}">${dayNames[i]}<br>${dd.getMonth()+1}.${dd.getDate()}</th>`;
+        const isWe=(i===0||i===6);
+        html+=`<th style="${isWe?'color:#ffcdd2':''}">${dayNames[i]}<br>${dd.getMonth()+1}.${dd.getDate()}</th>`;
     }
     html+='</tr></thead><tbody><tr>';
     for(let i=0;i<7;i++){
         const dd=new Date(sun);dd.setDate(sun.getDate()+i);
         const ds=fmtDate(dd);
         const isToday=ds===today?'today':'';
+        const isWeekend=(i===0||i===6);
+        const holidayName=getHolidayName(ds);
         const items=getScheduleItems(ds);
-        html+=`<td class="${isToday}">`;
+        const cellCls=[isToday,isWeekend?'weekend':'',holidayName?'holiday':''].filter(Boolean).join(' ');
+        html+=`<td class="${cellCls}">`;
+        if(holidayName){
+            html+=`<div style="font-size:10px;color:#c62828;margin-bottom:4px;font-weight:600;">🔴 ${esc(holidayName)}</div>`;
+        }
         items.forEach(it=>{
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
                 +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
@@ -2340,15 +2419,19 @@ function renderDayView(el,titleEl){
 function renderListView(el,titleEl){
     const y=scheduleDate.getFullYear(),m=scheduleDate.getMonth();
     titleEl.textContent=`${y}년 ${m+1}월`;
+    if(!(y in holidaysCache)) loadHolidaysForYear(y);
     const last=new Date(y,m+1,0);
     const today=todayStr();
     const dayNames=['일','월','화','수','목','금','토'];
-    // 수업일수 계산 (평일 중 일정이 없거나 일반 일정인 날 = 주말/공휴일 제외)
+    // 수업일수 = 평일 총합 - 법정공휴일(평일만)
     let schoolDays=0;
     for(let d=1;d<=last.getDate();d++){
         const dt=new Date(y,m,d);
         const dow=dt.getDay();
-        if(dow!==0&&dow!==6) schoolDays++;
+        if(dow===0||dow===6) continue;
+        const ds=fmtDate(dt);
+        if(getHolidayName(ds)) continue;
+        schoolDays++;
     }
     let html='<div class="list-view-header">';
     html+=`<div class="list-view-school-days">📋 수업일수: ${schoolDays}일</div>`;
@@ -2368,26 +2451,31 @@ function renderListView(el,titleEl){
         const dt=new Date(y,m,d);
         const dow=dt.getDay();
         const isToday=ds===today;
+        const holidayName=getHolidayName(ds);
         const items=getScheduleItems(ds);
         let rowClass='';
         if(isToday) rowClass='row-today';
+        else if(holidayName) rowClass='row-sun';
         else if(dow===0) rowClass='row-sun';
         else if(dow===6) rowClass='row-sat';
-        if(items.length===0){
+        if(items.length===0&&!holidayName){
             rowClass+=' row-empty';
         }
-        const dowClass=dow===0?'dow-sun':dow===6?'dow-sat':'';
+        const dowClass=(dow===0||dow===6||holidayName)?'dow-sun':'';
         html+=`<tr class="${rowClass}">`;
         html+=`<td class="col-date">${ds}</td>`;
         html+=`<td class="col-dow ${dowClass}">${dayNames[dow]}</td>`;
-        if(items.length===0){
+        if(items.length===0&&!holidayName){
             html+=`<td></td><td></td><td></td>`;
+        } else if(items.length===0&&holidayName){
+            html+=`<td class="col-event"><span style="color:#c62828;font-weight:600;">🔴 ${esc(holidayName)}</span></td><td></td><td></td>`;
         } else {
-            // 행사: 행사명(text) 표시
+            // 행사: 행사명(text) 표시 (공휴일명이 있으면 맨 위에 추가)
             const eventNames=items.map(it=>`<div class="event-name">${it.emoji?it.emoji+' ':''}${esc(it.text)}</div>`);
+            const holidayBadge=holidayName?`<div class="event-name" style="color:#c62828;font-weight:600;">🔴 ${esc(holidayName)}</div>`:'';
             // 주요활동: 세부 내용(detail) 표시
             const detailItems=items.map(it=>it.detail?`<div class="event-detail-line">${esc(it.detail)}</div>`:'').filter(Boolean);
-            html+=`<td class="col-event">${eventNames.join('')}</td>`;
+            html+=`<td class="col-event">${holidayBadge}${eventNames.join('')}</td>`;
             html+=`<td class="col-detail">${detailItems.length?detailItems.join(''):'<span style="color:var(--text-light);">-</span>'}</td>`;
             // 담당자
             const managers=[...new Set(items.map(it=>it.manager).filter(Boolean))];
@@ -10216,6 +10304,70 @@ function renderWinterSchedule(){
     }
     body.innerHTML=bodyHtml;
     renderWinterDailyStatus();
+    renderWsStaffEditor();
+}
+
+// ===== 교직원 명단 관리 (관리자 전용) =====
+let _wsStaffDirty = false; // 저장 여부 표시용
+function renderWsStaffEditor(){
+    const tbody=document.getElementById('wsStaffBody');
+    if(!tbody)return;
+    const list=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0));
+    let html='';
+    for(const s of list){
+        html+=`<tr data-id="${esc(s.id||'')}">`
+            +`<td style="padding:4px;border-bottom:1px solid var(--border);text-align:center;"><input type="number" value="${s.no||''}" data-field="no" oninput="_wsStaffDirty=true" style="width:60px;padding:4px;border:1px solid var(--border);border-radius:4px;text-align:center;"></td>`
+            +`<td style="padding:4px;border-bottom:1px solid var(--border);"><input type="text" value="${esc(s.position||'')}" data-field="position" oninput="_wsStaffDirty=true" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;"></td>`
+            +`<td style="padding:4px;border-bottom:1px solid var(--border);"><input type="text" value="${esc(s.name||'')}" data-field="name" oninput="_wsStaffDirty=true" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;"></td>`
+            +`<td style="padding:4px;border-bottom:1px solid var(--border);text-align:center;"><button onclick="wsStaffDelete('${esc(s.id||'')}')" style="border:none;background:none;color:#c92a2a;font-size:16px;cursor:pointer;" title="삭제">✕</button></td>`
+            +`</tr>`;
+    }
+    tbody.innerHTML=html;
+}
+function wsStaffAddRow(){
+    const nextNo=((staff||[]).reduce((m,s)=>Math.max(m,s.no||0),0))+1;
+    const newId='s'+Date.now();
+    if(!staff)staff=[];
+    staff.push({id:newId, no:nextNo, position:'', name:''});
+    _wsStaffDirty=true;
+    renderWsStaffEditor();
+    // 새 행의 직책 입력에 포커스
+    setTimeout(()=>{
+        const row=document.querySelector(`#wsStaffBody tr[data-id="${newId}"] input[data-field="position"]`);
+        if(row)row.focus();
+    }, 50);
+}
+function wsStaffDelete(id){
+    const target=(staff||[]).find(s=>s.id===id);
+    if(!target)return;
+    if(!confirm(`"${target.name||'(이름 없음)'}" 을(를) 명단에서 삭제할까요?`))return;
+    staff=(staff||[]).filter(s=>s.id!==id);
+    _wsStaffDirty=true;
+    renderWsStaffEditor();
+}
+async function wsStaffSave(){
+    if(!isAdmin){showToast('관리자만 가능합니다','error');return;}
+    // DOM → staff 배열로 동기화
+    const rows=document.querySelectorAll('#wsStaffBody tr');
+    const next=[];
+    rows.forEach(r=>{
+        const id=r.getAttribute('data-id');
+        const no=parseInt(r.querySelector('input[data-field="no"]').value, 10) || 0;
+        const position=r.querySelector('input[data-field="position"]').value.trim();
+        const name=r.querySelector('input[data-field="name"]').value.trim();
+        if(!name) return; // 이름이 없으면 skip (실수로 빈 행 남은 경우)
+        next.push({ id: id || ('s'+Date.now()+Math.random().toString(36).slice(2,6)), no, position, name });
+    });
+    next.sort((a,b)=>(a.no||0)-(b.no||0));
+    const r=await api('POST','/api/staff', next);
+    if(r && r.success){
+        staff=next;
+        _wsStaffDirty=false;
+        showToast(`명단 ${next.length}명 저장됨`,'success');
+        renderWinterSchedule(); // 방학근무 표도 갱신
+    } else {
+        showToast('저장 실패','error');
+    }
 }
 function wsDailyToday(){
     const now=new Date();

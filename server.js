@@ -563,7 +563,7 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
         const buf = await hwpx.generatePermit(payload);
         res.setHeader('Content-Type', 'application/hwp+zip');
         res.setHeader('Content-Disposition',
-            `attachment; filename*=UTF-8''${encodeURIComponent(`HWPX_${safeName}.HWPX`)}`);
+            `attachment; filename*=UTF-8''${encodeURIComponent(`근무지 외 연수 허가원(${safeName}).hwpx`)}`);
         res.send(buf);
     } catch (e) {
         console.error('permit gen error:', e);
