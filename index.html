@@ -1234,6 +1234,128 @@
         </div>
     </div>
 
+    <!-- ===== DOCUMENT SCANNER PAGE ===== -->
+    <div class="page" id="page-scanner">
+        <style>
+            #page-scanner { --sc-bg:#fafbfc; --sc-border:#e1e5eb; --sc-muted:#6b7280; }
+            #page-scanner .sc-wrap{max-width:960px;margin:0 auto;}
+            #page-scanner .sc-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+            #page-scanner .sc-head h2{font-size:20px;font-weight:800;margin:0;}
+            #page-scanner .sc-head p{font-size:12px;color:var(--text-light);margin:4px 0 0;}
+            #page-scanner .sc-status{padding:8px 12px;background:#fff;border-left:3px solid var(--primary);border-radius:4px;font-size:12px;margin:8px 0;box-shadow:var(--shadow);}
+            #page-scanner .sc-status.error{border-left-color:#e53935;color:#c62828;background:#fff5f5;}
+            #page-scanner .sc-status.ok{border-left-color:#27ae60;}
+            #page-scanner .sc-preview{position:relative;background:#000;border-radius:var(--radius);overflow:hidden;border:1px solid var(--sc-border);}
+            #page-scanner #scVideo{display:none;}
+            #page-scanner #scPreviewCanvas{display:block;width:100%;height:auto;max-height:60vh;object-fit:contain;}
+            #page-scanner .sc-adjust{display:none;position:relative;background:#111;border-radius:var(--radius);overflow:hidden;border:1px solid var(--sc-border);margin-top:10px;}
+            #page-scanner .sc-adjust.active{display:block;}
+            #page-scanner #scAdjustCanvas{display:block;width:100%;height:auto;max-height:60vh;object-fit:contain;touch-action:none;}
+            #page-scanner .sc-toolbar{margin:12px 0;display:flex;flex-wrap:wrap;gap:6px;}
+            #page-scanner .sc-btn{padding:9px 14px;font-size:13px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;}
+            #page-scanner .sc-btn:hover:not(:disabled){opacity:0.9;}
+            #page-scanner .sc-btn:disabled{background:#bbb;cursor:not-allowed;}
+            #page-scanner .sc-btn.ghost{background:#fff;color:var(--text);border:1px solid var(--sc-border);}
+            #page-scanner .sc-btn.ghost:hover:not(:disabled){border-color:var(--primary);color:var(--primary);}
+            #page-scanner .sc-btn.success{background:#27ae60;}
+            #page-scanner .sc-btn.danger{background:#e53935;}
+            #page-scanner .sc-panel{background:#fff;border:1px solid var(--sc-border);border-radius:var(--radius);padding:14px;margin:12px 0;box-shadow:var(--shadow);}
+            #page-scanner .sc-panel h3{margin:0 0 10px;font-size:14px;font-weight:700;color:var(--text);}
+            #page-scanner .sc-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:7px 0;}
+            #page-scanner .sc-row label{font-size:12px;color:var(--sc-muted);min-width:70px;font-weight:600;}
+            #page-scanner .sc-row select, #page-scanner .sc-row input[type=range]{background:#fff;color:var(--text);border:1px solid var(--sc-border);border-radius:6px;padding:6px 8px;font-size:12px;}
+            #page-scanner .sc-row input[type=range]{flex:1;min-width:180px;padding:0;accent-color:var(--primary);}
+            #page-scanner .sc-val{font-family:monospace;font-size:12px;color:var(--primary);min-width:40px;text-align:right;font-weight:700;}
+            #page-scanner .sc-hint{color:var(--sc-muted);font-size:11px;margin-top:4px;}
+            #page-scanner .sc-pages{display:flex;gap:10px;flex-wrap:wrap;min-height:40px;}
+            #page-scanner .sc-thumb{position:relative;width:150px;border:1px solid var(--sc-border);border-radius:8px;overflow:hidden;background:#fff;box-shadow:var(--shadow);}
+            #page-scanner .sc-thumb img{width:100%;display:block;cursor:zoom-in;}
+            #page-scanner .sc-thumb .sc-num{position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.75);color:#fff;padding:2px 8px;font-size:11px;border-radius:4px;font-weight:700;}
+            #page-scanner .sc-thumb .sc-rm{position:absolute;top:4px;right:4px;background:rgba(231,76,60,0.95);color:#fff;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;padding:0;font-size:14px;line-height:1;}
+            #page-scanner .sc-empty{color:var(--sc-muted);font-style:italic;padding:10px;}
+            #page-scanner .sc-storage{font-size:11px;color:var(--sc-muted);text-align:right;margin-top:4px;}
+        </style>
+        <div class="sc-wrap">
+            <div class="sc-head">
+                <div>
+                    <h2>📷 문서 스캐너</h2>
+                    <p>카메라로 찍어 자동 보정 후 PDF로 저장합니다. 캡처한 페이지는 브라우저에 보관됩니다.</p>
+                </div>
+            </div>
+            <div class="sc-status" id="scStatus">탭을 선택하면 카메라와 OpenCV를 준비합니다...</div>
+
+            <div class="sc-preview">
+                <video id="scVideo" autoplay playsinline muted></video>
+                <canvas id="scPreviewCanvas"></canvas>
+            </div>
+
+            <div class="sc-toolbar">
+                <button class="sc-btn" id="scCaptureBtn" disabled>📸 캡처 (자동 검출)</button>
+                <button class="sc-btn ghost" id="scManualBtn" disabled>✋ 수동 선택 캡처</button>
+                <button class="sc-btn ghost" id="scSwitchBtn" disabled>🔄 카메라 전환</button>
+                <button class="sc-btn success" id="scPdfBtn" disabled>💾 PDF로 저장</button>
+                <button class="sc-btn danger" id="scClearBtn">🗑 전체 삭제</button>
+            </div>
+
+            <div class="sc-adjust" id="scAdjust">
+                <canvas id="scAdjustCanvas"></canvas>
+                <div class="sc-toolbar" style="padding:10px;">
+                    <button class="sc-btn success" id="scConfirmBtn">✓ 이 영역으로 추출</button>
+                    <button class="sc-btn ghost" id="scResetCornersBtn">↺ 자동 검출 재시도</button>
+                    <button class="sc-btn ghost" id="scFullFrameBtn">⬜ 전체 프레임</button>
+                    <button class="sc-btn danger" id="scCancelBtn">✕ 취소</button>
+                </div>
+                <div class="sc-hint" style="padding:0 10px 10px;">네 꼭짓점을 드래그해 문서 가장자리에 맞추세요. 표가 잡히면 전체 프레임 또는 수동 조정을 쓰세요.</div>
+            </div>
+
+            <div class="sc-panel">
+                <h3>⚙️ 보정 설정</h3>
+                <div class="sc-row">
+                    <label>모드</label>
+                    <select id="scMode">
+                        <option value="color">컬러 향상 (그림자 제거 + CLAHE)</option>
+                        <option value="gray">흑백 그레이스케일</option>
+                        <option value="bw">B&amp;W 문서 (이진화, 가장 작음)</option>
+                        <option value="off">원본 (보정 없음)</option>
+                    </select>
+                </div>
+                <div class="sc-row">
+                    <label>해상도</label>
+                    <select id="scDpi">
+                        <option value="150">150 dpi · 1240×1754 (작음/빠름)</option>
+                        <option value="200" selected>200 dpi · 1654×2339 (권장)</option>
+                        <option value="300">300 dpi · 2480×3508 (인쇄 품질)</option>
+                    </select>
+                </div>
+                <div class="sc-row">
+                    <label>밝기</label>
+                    <input type="range" id="scBright" min="-50" max="80" value="10">
+                    <span class="sc-val" id="scBrightVal">+10</span>
+                </div>
+                <div class="sc-row">
+                    <label>대비</label>
+                    <input type="range" id="scContrast" min="80" max="180" value="115">
+                    <span class="sc-val" id="scContrastVal">1.15</span>
+                </div>
+                <div class="sc-row">
+                    <label>선명도</label>
+                    <input type="range" id="scSharpen" min="0" max="100" value="40">
+                    <span class="sc-val" id="scSharpenVal">0.40</span>
+                </div>
+                <div class="sc-row">
+                    <button class="sc-btn ghost" id="scReprocessBtn" disabled>🔁 현재 설정으로 전부 재처리</button>
+                </div>
+                <div class="sc-hint">모드 변경은 자동 재처리. 슬라이더는 "재처리" 버튼 또는 다음 캡처부터 적용.</div>
+            </div>
+
+            <div class="sc-panel">
+                <h3>📄 캡처한 페이지 (<span id="scPageCount">0</span>)</h3>
+                <div class="sc-pages" id="scPages"><div class="sc-empty">아직 캡처한 페이지가 없습니다.</div></div>
+                <div class="sc-storage" id="scStorage"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1561,7 +1683,8 @@ const DEFAULT_TABS=[
     {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
     {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
     {id:'translator',title:'가정통신문 번역',icon:'🌐',type:'builtin',order:11},
-    {id:'qrcode',title:'QR 생성기',icon:'📱',type:'builtin',order:12}
+    {id:'qrcode',title:'QR 생성기',icon:'📱',type:'builtin',order:12},
+    {id:'scanner',title:'문서 스캐너',icon:'📷',type:'builtin',order:13}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1879,6 +2002,7 @@ function switchPage(p,btn){
     if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
     if(p==='esign')renderEsignList();
     if(p==='translator')initTranslator();
+    if(p==='scanner')initScanner();
 }
 
 // ===== SCHEDULE =====
@@ -6467,6 +6591,658 @@ async function saveTranslationAsPdf() {
 document.getElementById('authCodeInput').addEventListener('keydown',function(e){
     if(e.key==='Enter')handleLogin();
 });
+
+// ═══════════════════════════════════════════════════════════════════
+// 문서 스캐너 모듈 (jscanify + OpenCV 보정 + jsPDF + IndexedDB)
+// ═══════════════════════════════════════════════════════════════════
+const SC = {
+    inited: false, libsReady: false, scanner: null, stream: null,
+    facingMode: 'environment', rafId: null,
+    pages: [],  // { id, name, createdAt, dataUrl (processed), width, height, mode }
+    rawStore: new Map(), // id -> HTMLCanvasElement (raw extracted, in-memory only, not persisted)
+    adjustState: null,
+    DPI_SIZES: { '150':[1240,1754], '200':[1654,2339], '300':[2480,3508] },
+    DB_NAME: 'airoom_scanner', DB_STORE: 'pages', SETTINGS_KEY: 'airoom_scanner_settings',
+};
+
+function scEl(id){ return document.getElementById(id); }
+function scSetStatus(msg, kind){
+    const el = scEl('scStatus'); if(!el) return;
+    el.textContent = msg;
+    el.className = 'sc-status' + (kind ? ' '+kind : '');
+}
+
+async function initScanner(){
+    if(SC.inited) return;
+    SC.inited = true;
+    scWireUI();
+    scLoadSettings();
+    await scLoadPagesFromDB();
+    scRenderPages();
+    scSetStatus('라이브러리 로딩 중... (최초 1회 OpenCV 10MB)');
+    try {
+        await scLoadLibs();
+        SC.scanner = new window.jscanify();
+        SC.libsReady = true;
+        scEl('scCaptureBtn').disabled = false;
+        scEl('scManualBtn').disabled = false;
+        scEl('scSwitchBtn').disabled = false;
+        scSetStatus('준비 완료. 카메라를 시작합니다...', 'ok');
+        await scStartCamera();
+    } catch(e){
+        scSetStatus('라이브러리 로딩 실패: ' + e.message, 'error');
+    }
+}
+
+function scLoadScript(src){
+    return new Promise((res, rej) => {
+        if(document.querySelector(`script[src="${src}"]`)){ res(); return; }
+        const s = document.createElement('script');
+        s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error('load fail: '+src));
+        document.head.appendChild(s);
+    });
+}
+
+async function scLoadLibs(){
+    // OpenCV.js는 async 로드 후 cv.onRuntimeInitialized 또는 cv.Mat 확인 필요
+    await scLoadScript('https://docs.opencv.org/4.8.0/opencv.js');
+    await new Promise((res, rej) => {
+        const t0 = Date.now();
+        const check = setInterval(() => {
+            if(window.cv && window.cv.Mat){ clearInterval(check); res(); }
+            else if(Date.now() - t0 > 60000){ clearInterval(check); rej(new Error('OpenCV 로딩 타임아웃')); }
+        }, 150);
+    });
+    await scLoadScript('https://cdn.jsdelivr.net/gh/puffinsoft/jscanify@master/src/jscanify.min.js');
+    // jsPDF
+    if(!window.jspdf){
+        await scLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    }
+}
+
+// ───────── UI 와이어링 ─────────
+function scWireUI(){
+    scEl('scCaptureBtn').onclick = () => scCapture(true);
+    scEl('scManualBtn').onclick = () => scCapture(false);
+    scEl('scSwitchBtn').onclick = () => {
+        SC.facingMode = SC.facingMode === 'environment' ? 'user' : 'environment';
+        scStartCamera();
+    };
+    scEl('scPdfBtn').onclick = scGeneratePDF;
+    scEl('scClearBtn').onclick = async () => {
+        if(SC.pages.length && !confirm('모든 페이지를 삭제할까요?')) return;
+        SC.pages = []; SC.rawStore.clear();
+        await scClearDB();
+        scRenderPages();
+        scEl('scPdfBtn').disabled = true;
+        scEl('scReprocessBtn').disabled = true;
+    };
+    scEl('scReprocessBtn').onclick = scReprocessAll;
+    scEl('scMode').onchange = () => { scSaveSettings(); scReprocessAll(); };
+    scEl('scDpi').onchange = scSaveSettings;
+    ['scBright','scContrast','scSharpen'].forEach(id => {
+        scEl(id).oninput = () => { scUpdateSliderLabels(); scSaveSettings(); };
+    });
+    scUpdateSliderLabels();
+
+    scEl('scConfirmBtn').onclick = scConfirmAdjust;
+    scEl('scCancelBtn').onclick = scCancelAdjust;
+    scEl('scResetCornersBtn').onclick = () => {
+        if(SC.adjustState) scDetectCorners(SC.adjustState);
+    };
+    scEl('scFullFrameBtn').onclick = () => {
+        if(!SC.adjustState) return;
+        const { raw } = SC.adjustState;
+        SC.adjustState.corners = [
+            {x:0, y:0}, {x:raw.width, y:0},
+            {x:raw.width, y:raw.height}, {x:0, y:raw.height}
+        ];
+        scRedrawAdjust();
+    };
+
+    scSetupAdjustDrag();
+}
+
+function scUpdateSliderLabels(){
+    const b = parseInt(scEl('scBright').value, 10);
+    scEl('scBrightVal').textContent = (b >= 0 ? '+' : '') + b;
+    scEl('scContrastVal').textContent = (parseInt(scEl('scContrast').value, 10)/100).toFixed(2);
+    scEl('scSharpenVal').textContent = (parseInt(scEl('scSharpen').value, 10)/100).toFixed(2);
+}
+
+function scCurrentOpts(){
+    return {
+        mode: scEl('scMode').value,
+        brightness: parseInt(scEl('scBright').value, 10),
+        contrast: parseInt(scEl('scContrast').value, 10),
+        sharpenAmt: parseInt(scEl('scSharpen').value, 10),
+    };
+}
+
+function scLoadSettings(){
+    try {
+        const raw = localStorage.getItem(SC.SETTINGS_KEY);
+        if(!raw) return;
+        const s = JSON.parse(raw);
+        if(s.mode) scEl('scMode').value = s.mode;
+        if(s.dpi) scEl('scDpi').value = s.dpi;
+        if(s.brightness != null) scEl('scBright').value = s.brightness;
+        if(s.contrast != null) scEl('scContrast').value = s.contrast;
+        if(s.sharpen != null) scEl('scSharpen').value = s.sharpen;
+        scUpdateSliderLabels();
+    } catch(e){}
+}
+function scSaveSettings(){
+    try {
+        localStorage.setItem(SC.SETTINGS_KEY, JSON.stringify({
+            mode: scEl('scMode').value, dpi: scEl('scDpi').value,
+            brightness: scEl('scBright').value, contrast: scEl('scContrast').value, sharpen: scEl('scSharpen').value,
+        }));
+    } catch(e){}
+}
+
+// ───────── IndexedDB ─────────
+function scOpenDB(){
+    return new Promise((res, rej) => {
+        const req = indexedDB.open(SC.DB_NAME, 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if(!db.objectStoreNames.contains(SC.DB_STORE)){
+                db.createObjectStore(SC.DB_STORE, { keyPath:'id' });
+            }
+        };
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => rej(req.error);
+    });
+}
+async function scPutPageDB(page){
+    const db = await scOpenDB();
+    return new Promise((res, rej) => {
+        const tx = db.transaction(SC.DB_STORE, 'readwrite');
+        tx.objectStore(SC.DB_STORE).put(page);
+        tx.oncomplete = () => { db.close(); res(); };
+        tx.onerror = () => rej(tx.error);
+    });
+}
+async function scDeletePageDB(id){
+    const db = await scOpenDB();
+    return new Promise((res, rej) => {
+        const tx = db.transaction(SC.DB_STORE, 'readwrite');
+        tx.objectStore(SC.DB_STORE).delete(id);
+        tx.oncomplete = () => { db.close(); res(); };
+        tx.onerror = () => rej(tx.error);
+    });
+}
+async function scLoadPagesFromDB(){
+    try {
+        const db = await scOpenDB();
+        const pages = await new Promise((res, rej) => {
+            const tx = db.transaction(SC.DB_STORE, 'readonly');
+            const req = tx.objectStore(SC.DB_STORE).getAll();
+            req.onsuccess = () => res(req.result || []);
+            req.onerror = () => rej(req.error);
+        });
+        db.close();
+        pages.sort((a,b) => a.createdAt - b.createdAt);
+        SC.pages = pages;
+    } catch(e){ SC.pages = []; }
+}
+async function scClearDB(){
+    try {
+        const db = await scOpenDB();
+        await new Promise((res, rej) => {
+            const tx = db.transaction(SC.DB_STORE, 'readwrite');
+            tx.objectStore(SC.DB_STORE).clear();
+            tx.oncomplete = () => res();
+            tx.onerror = () => rej(tx.error);
+        });
+        db.close();
+    } catch(e){}
+}
+
+// ───────── 카메라 ─────────
+async function scStartCamera(){
+    if(SC.stream) SC.stream.getTracks().forEach(t => t.stop());
+    const video = scEl('scVideo');
+    const canvas = scEl('scPreviewCanvas');
+    try {
+        SC.stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode:{ ideal: SC.facingMode }, width:{ ideal: 3840 }, height:{ ideal: 2160 } },
+            audio: false,
+        });
+        video.srcObject = SC.stream;
+        await video.play();
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        if(SC.rafId) cancelAnimationFrame(SC.rafId);
+        SC.rafId = requestAnimationFrame(scRenderLoop);
+        scSetStatus(`카메라 준비 완료 (${video.videoWidth}×${video.videoHeight}). 문서를 비추세요.`, 'ok');
+    } catch(err){
+        scSetStatus('카메라 접근 실패: ' + err.message + ' (HTTPS/localhost 필요)', 'error');
+    }
+}
+
+function scRenderLoop(){
+    const video = scEl('scVideo'); const canvas = scEl('scPreviewCanvas');
+    if(video && video.videoWidth && video.readyState >= 2){
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // 커스텀 검출로 하이라이트 (외곽 우선)
+        const corners = scDetectQuadFromCanvas(canvas, true);
+        if(corners) scDrawQuad(ctx, corners, 'rgba(40,200,90,0.95)', 3);
+    }
+    SC.rafId = requestAnimationFrame(scRenderLoop);
+}
+
+// ───────── 문서 꼭짓점 커스텀 검출 (외곽 우선, 내부 표 무시) ─────────
+function scDetectQuadFromCanvas(canvas, forOverlay){
+    if(!window.cv) return null;
+    try {
+        const src = cv.imread(canvas);
+        const result = scFindOuterQuad(src);
+        src.delete();
+        return result;
+    } catch(e){ return null; }
+}
+
+function scFindOuterQuad(srcMat){
+    // 1) 속도를 위해 최대 640px로 다운샘플
+    const maxDim = 640;
+    const scale = Math.min(1, maxDim / Math.max(srcMat.cols, srcMat.rows));
+    const small = new cv.Mat();
+    if(scale < 1){
+        cv.resize(srcMat, small, new cv.Size(Math.round(srcMat.cols * scale), Math.round(srcMat.rows * scale)), 0, 0, cv.INTER_AREA);
+    } else {
+        srcMat.copyTo(small);
+    }
+
+    const gray = new cv.Mat();
+    cv.cvtColor(small, gray, cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+    // 종이 vs 배경 대비가 약할 수 있으니 OTSU 기반 Canny 임계값
+    const edges = new cv.Mat();
+    cv.Canny(gray, edges, 50, 150);
+    // 가장자리 연결 보강
+    const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3,3));
+    cv.dilate(edges, edges, kernel);
+
+    const contours = new cv.MatVector();
+    const hier = new cv.Mat();
+    cv.findContours(edges, contours, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+    const frameArea = small.cols * small.rows;
+    const minArea = frameArea * 0.15; // 프레임의 15% 이상만 후보
+    let best = null; let bestScore = -Infinity;
+
+    for(let i = 0; i < contours.size(); i++){
+        const c = contours.get(i);
+        const area = cv.contourArea(c);
+        if(area < minArea){ c.delete(); continue; }
+        const peri = cv.arcLength(c, true);
+        const approx = new cv.Mat();
+        cv.approxPolyDP(c, approx, 0.02 * peri, true);
+        if(approx.rows === 4){
+            const pts = [];
+            for(let j = 0; j < 4; j++){
+                pts.push({ x: approx.data32S[j*2], y: approx.data32S[j*2+1] });
+            }
+            // 점수: 면적 비율 - 프레임 중앙과의 거리 페널티. 외곽일수록 높음.
+            const ratio = area / frameArea;
+            // 점들이 프레임 가장자리에 얼마나 가까운지
+            const cx = small.cols / 2, cy = small.rows / 2;
+            let edgeBias = 0;
+            pts.forEach(p => {
+                const dx = Math.min(p.x, small.cols - p.x);
+                const dy = Math.min(p.y, small.rows - p.y);
+                edgeBias += 1 - Math.min(dx, dy) / Math.max(small.cols, small.rows);
+            });
+            const score = ratio * 2 + edgeBias * 0.3;
+            if(score > bestScore){
+                bestScore = score;
+                best = pts;
+            }
+        }
+        approx.delete(); c.delete();
+    }
+
+    contours.delete(); hier.delete(); kernel.delete(); gray.delete(); edges.delete(); small.delete();
+
+    if(!best) return null;
+    // 원본 좌표로 복원
+    const inv = 1 / scale;
+    best = best.map(p => ({ x: p.x * inv, y: p.y * inv }));
+    return scSortCorners(best);
+}
+
+function scSortCorners(pts){
+    // tl, tr, br, bl 순으로 정렬
+    pts = pts.slice();
+    const sumSorted = pts.slice().sort((a,b) => (a.x+a.y) - (b.x+b.y));
+    const diffSorted = pts.slice().sort((a,b) => (a.x-a.y) - (b.x-b.y));
+    const tl = sumSorted[0], br = sumSorted[3];
+    const tr = diffSorted[3], bl = diffSorted[0];
+    return [tl, tr, br, bl];
+}
+
+function scDrawQuad(ctx, corners, color, lw){
+    ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for(let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
+    ctx.closePath(); ctx.stroke();
+    // 꼭짓점 마커
+    corners.forEach(p => {
+        ctx.fillStyle = color; ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(6, lw*2), 0, Math.PI*2); ctx.fill();
+    });
+}
+
+// ───────── 캡처 → 수동 조정 → 추출 플로우 ─────────
+function scCapture(autoDetect){
+    if(!SC.libsReady) return;
+    const video = scEl('scVideo');
+    if(!video.videoWidth){ scSetStatus('카메라가 준비되지 않음', 'error'); return; }
+    const raw = document.createElement('canvas');
+    raw.width = video.videoWidth; raw.height = video.videoHeight;
+    raw.getContext('2d').drawImage(video, 0, 0);
+
+    SC.adjustState = { raw, corners: null };
+    if(autoDetect) scDetectCorners(SC.adjustState);
+    else {
+        // 전체 프레임으로 시작 (수동 조정 전제)
+        SC.adjustState.corners = [
+            {x:0, y:0}, {x:raw.width, y:0},
+            {x:raw.width, y:raw.height}, {x:0, y:raw.height}
+        ];
+    }
+    scShowAdjust();
+}
+
+function scDetectCorners(state){
+    const corners = scDetectQuadFromCanvas(state.raw, false);
+    if(corners) state.corners = corners;
+    else {
+        state.corners = [
+            {x: state.raw.width*0.1, y: state.raw.height*0.1},
+            {x: state.raw.width*0.9, y: state.raw.height*0.1},
+            {x: state.raw.width*0.9, y: state.raw.height*0.9},
+            {x: state.raw.width*0.1, y: state.raw.height*0.9}
+        ];
+        scSetStatus('자동 검출 실패 — 꼭짓점을 수동으로 드래그하세요.', 'error');
+    }
+    scRedrawAdjust();
+}
+
+function scShowAdjust(){
+    const adjust = scEl('scAdjust');
+    const canvas = scEl('scAdjustCanvas');
+    canvas.width = SC.adjustState.raw.width;
+    canvas.height = SC.adjustState.raw.height;
+    adjust.classList.add('active');
+    scRedrawAdjust();
+    scSetStatus('추출할 영역을 확인하고 꼭짓점을 필요시 조정하세요.', 'ok');
+}
+
+function scRedrawAdjust(){
+    const canvas = scEl('scAdjustCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(SC.adjustState.raw, 0, 0);
+    // 바깥 영역 어둡게
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.moveTo(SC.adjustState.corners[0].x, SC.adjustState.corners[0].y);
+    for(let i = 3; i >= 0; i--) ctx.lineTo(SC.adjustState.corners[i].x, SC.adjustState.corners[i].y);
+    ctx.closePath();
+    ctx.fill('evenodd');
+    ctx.restore();
+    scDrawQuad(ctx, SC.adjustState.corners, 'rgba(40,200,90,0.95)', Math.max(4, canvas.width/400));
+}
+
+function scSetupAdjustDrag(){
+    const canvas = scEl('scAdjustCanvas');
+    let dragIdx = -1;
+    function toCanvasCoord(e){
+        const r = canvas.getBoundingClientRect();
+        const x = (e.clientX - r.left) * (canvas.width / r.width);
+        const y = (e.clientY - r.top) * (canvas.height / r.height);
+        return { x, y };
+    }
+    function onDown(e){
+        if(!SC.adjustState) return;
+        e.preventDefault();
+        const p = toCanvasCoord(e.touches ? e.touches[0] : e);
+        const threshold = Math.max(30, canvas.width/30);
+        let minD = Infinity, idx = -1;
+        SC.adjustState.corners.forEach((c,i) => {
+            const d = Math.hypot(c.x-p.x, c.y-p.y);
+            if(d < minD){ minD = d; idx = i; }
+        });
+        if(minD < threshold) dragIdx = idx;
+    }
+    function onMove(e){
+        if(dragIdx < 0 || !SC.adjustState) return;
+        e.preventDefault();
+        const p = toCanvasCoord(e.touches ? e.touches[0] : e);
+        p.x = Math.max(0, Math.min(canvas.width, p.x));
+        p.y = Math.max(0, Math.min(canvas.height, p.y));
+        SC.adjustState.corners[dragIdx] = p;
+        scRedrawAdjust();
+    }
+    function onUp(){ dragIdx = -1; }
+    canvas.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    canvas.addEventListener('touchstart', onDown, { passive:false });
+    canvas.addEventListener('touchmove', onMove, { passive:false });
+    canvas.addEventListener('touchend', onUp);
+}
+
+function scCancelAdjust(){
+    SC.adjustState = null;
+    scEl('scAdjust').classList.remove('active');
+}
+
+async function scConfirmAdjust(){
+    if(!SC.adjustState) return;
+    const [tw, th] = SC.DPI_SIZES[scEl('scDpi').value];
+    const opts = scCurrentOpts();
+    try {
+        const rawExtracted = scWarpPerspective(SC.adjustState.raw, SC.adjustState.corners, tw, th);
+        const processed = scEnhanceDocument(rawExtracted, opts);
+        const id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+        const quality = opts.mode === 'bw' ? 1.0 : 0.85;
+        const dataUrl = opts.mode === 'bw' ? processed.toDataURL('image/png') : processed.toDataURL('image/jpeg', quality);
+        const page = {
+            id, name: `page_${SC.pages.length+1}`,
+            createdAt: Date.now(),
+            dataUrl, width: processed.width, height: processed.height,
+            mode: opts.mode,
+        };
+        SC.pages.push(page);
+        SC.rawStore.set(id, rawExtracted);
+        await scPutPageDB(page);
+        scRenderPages();
+        scEl('scPdfBtn').disabled = false;
+        scEl('scReprocessBtn').disabled = false;
+        scSetStatus(`페이지 추가 완료 (${SC.pages.length}장, ${tw}×${th})`, 'ok');
+        scCancelAdjust();
+    } catch(e){
+        console.error(e);
+        scSetStatus('추출/보정 오류: ' + e.message, 'error');
+    }
+}
+
+function scWarpPerspective(rawCanvas, corners, tw, th){
+    const src = cv.imread(rawCanvas);
+    const srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        corners[0].x, corners[0].y, corners[1].x, corners[1].y,
+        corners[2].x, corners[2].y, corners[3].x, corners[3].y,
+    ]);
+    const dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        0, 0, tw, 0, tw, th, 0, th
+    ]);
+    const M = cv.getPerspectiveTransform(srcPts, dstPts);
+    const dst = new cv.Mat();
+    cv.warpPerspective(src, dst, M, new cv.Size(tw, th));
+    const out = document.createElement('canvas');
+    out.width = tw; out.height = th;
+    cv.imshow(out, dst);
+    src.delete(); srcPts.delete(); dstPts.delete(); M.delete(); dst.delete();
+    return out;
+}
+
+// ───────── 보정 파이프라인 ─────────
+function scEnhanceDocument(srcCanvas, opts){
+    const { mode, brightness, contrast, sharpenAmt } = opts;
+    const out = document.createElement('canvas');
+    const src = cv.imread(srcCanvas);
+    if(mode === 'off'){ cv.imshow(out, src); src.delete(); return out; }
+
+    const gray = new cv.Mat();
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    const kSize = Math.max(31, Math.floor(Math.min(src.cols, src.rows)/30) | 1);
+    const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(kSize, kSize));
+    const bg = new cv.Mat();
+    cv.morphologyEx(gray, bg, cv.MORPH_CLOSE, kernel);
+
+    const grayF = new cv.Mat(); const bgF = new cv.Mat();
+    gray.convertTo(grayF, cv.CV_32F); bg.convertTo(bgF, cv.CV_32F);
+    const one = new cv.Mat(bgF.rows, bgF.cols, cv.CV_32F, new cv.Scalar(1));
+    cv.max(bgF, one, bgF); one.delete();
+
+    const normF = new cv.Mat();
+    cv.divide(grayF, bgF, normF, 255);
+    const normU8 = new cv.Mat();
+    normF.convertTo(normU8, cv.CV_8U);
+
+    if(mode === 'bw'){
+        const bw = new cv.Mat();
+        cv.adaptiveThreshold(normU8, bw, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 35, 12);
+        cv.imshow(out, bw); bw.delete();
+    } else if(mode === 'gray'){
+        const alpha = contrast/100;
+        const adj = new cv.Mat();
+        normU8.convertTo(adj, -1, alpha, brightness);
+        if(sharpenAmt > 0) scUnsharp(adj, sharpenAmt/100);
+        cv.imshow(out, adj); adj.delete();
+    } else { // color
+        const src3 = new cv.Mat();
+        cv.cvtColor(src, src3, cv.COLOR_RGBA2RGB);
+        const src3F = new cv.Mat();
+        src3.convertTo(src3F, cv.CV_32F);
+        const bg3V = new cv.MatVector(); bg3V.push_back(bgF); bg3V.push_back(bgF); bg3V.push_back(bgF);
+        const bg3 = new cv.Mat();
+        cv.merge(bg3V, bg3);
+        const colorNormF = new cv.Mat();
+        cv.divide(src3F, bg3, colorNormF, 255);
+        const alpha = contrast/100;
+        const colorNorm = new cv.Mat();
+        colorNormF.convertTo(colorNorm, cv.CV_8U, alpha, brightness);
+        const lab = new cv.Mat();
+        cv.cvtColor(colorNorm, lab, cv.COLOR_RGB2Lab);
+        const labCh = new cv.MatVector();
+        cv.split(lab, labCh);
+        const L = labCh.get(0);
+        const clahe = new cv.CLAHE(2.0, new cv.Size(8,8));
+        clahe.apply(L, L); labCh.set(0, L);
+        cv.merge(labCh, lab);
+        const enhanced = new cv.Mat();
+        cv.cvtColor(lab, enhanced, cv.COLOR_Lab2RGB);
+        if(sharpenAmt > 0) scUnsharp(enhanced, sharpenAmt/100);
+        cv.imshow(out, enhanced);
+        src3.delete(); src3F.delete(); bg3V.delete(); bg3.delete();
+        colorNormF.delete(); colorNorm.delete();
+        lab.delete(); labCh.delete(); clahe.delete(); enhanced.delete();
+    }
+    src.delete(); gray.delete(); kernel.delete(); bg.delete();
+    grayF.delete(); bgF.delete(); normF.delete(); normU8.delete();
+    return out;
+}
+
+function scUnsharp(mat, amount){
+    const blurred = new cv.Mat();
+    cv.GaussianBlur(mat, blurred, new cv.Size(0,0), 1.5);
+    cv.addWeighted(mat, 1+amount, blurred, -amount, 0, mat);
+    blurred.delete();
+}
+
+async function scReprocessAll(){
+    if(!SC.pages.length) return;
+    scSetStatus('재처리 중...', '');
+    const opts = scCurrentOpts();
+    const missing = SC.pages.filter(p => !SC.rawStore.has(p.id));
+    if(missing.length){
+        scSetStatus(`재처리는 현재 세션에서 캡처한 페이지만 가능합니다 (이전 세션 ${missing.length}장 제외).`, 'error');
+    }
+    await new Promise(r => setTimeout(r, 30));
+    for(const page of SC.pages){
+        const raw = SC.rawStore.get(page.id);
+        if(!raw) continue;
+        const processed = scEnhanceDocument(raw, opts);
+        const quality = opts.mode === 'bw' ? 1.0 : 0.85;
+        page.dataUrl = opts.mode === 'bw' ? processed.toDataURL('image/png') : processed.toDataURL('image/jpeg', quality);
+        page.width = processed.width; page.height = processed.height; page.mode = opts.mode;
+        await scPutPageDB(page);
+    }
+    scRenderPages();
+    scSetStatus(`재처리 완료.`, 'ok');
+}
+
+// ───────── 렌더 / PDF ─────────
+function scRenderPages(){
+    const container = scEl('scPages');
+    scEl('scPageCount').textContent = SC.pages.length;
+    if(!SC.pages.length){
+        container.innerHTML = '<div class="sc-empty">아직 캡처한 페이지가 없습니다.</div>';
+        scEl('scPdfBtn').disabled = true;
+        scEl('scReprocessBtn').disabled = true;
+        scEl('scStorage').textContent = '';
+        return;
+    }
+    container.innerHTML = '';
+    SC.pages.forEach((page, i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'sc-thumb';
+        wrap.innerHTML = `<span class="sc-num">${i+1}</span><button class="sc-rm" title="삭제">×</button>`;
+        const img = document.createElement('img');
+        img.src = page.dataUrl;
+        img.onclick = () => window.open(page.dataUrl, '_blank');
+        wrap.appendChild(img);
+        wrap.querySelector('.sc-rm').onclick = async () => {
+            SC.pages.splice(i, 1);
+            SC.rawStore.delete(page.id);
+            await scDeletePageDB(page.id);
+            scRenderPages();
+        };
+        container.appendChild(wrap);
+    });
+    scEl('scPdfBtn').disabled = false;
+    scEl('scReprocessBtn').disabled = false;
+    // 저장 용량
+    const totalBytes = SC.pages.reduce((s,p) => s + (p.dataUrl ? p.dataUrl.length : 0), 0);
+    scEl('scStorage').textContent = `저장됨: ${SC.pages.length}장 / 약 ${(totalBytes/1024/1024).toFixed(1)}MB`;
+}
+
+function scGeneratePDF(){
+    if(!SC.pages.length) return;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'mm', format:'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 5;
+    const maxW = pageW - margin*2, maxH = pageH - margin*2;
+    SC.pages.forEach((page, i) => {
+        if(i > 0) pdf.addPage();
+        const ratio = page.width / page.height;
+        let w = maxW, h = maxW / ratio;
+        if(h > maxH){ h = maxH; w = maxH * ratio; }
+        const x = (pageW - w)/2, y = (pageH - h)/2;
+        const fmt = page.mode === 'bw' ? 'PNG' : 'JPEG';
+        pdf.addImage(page.dataUrl, fmt, x, y, w, h);
+    });
+    pdf.save('scanned-' + new Date().toISOString().replace(/[:.]/g, '-') + '.pdf');
+    scSetStatus(`PDF 저장 완료 (${SC.pages.length}페이지)`, 'ok');
+}
 
 init();
 </script>
