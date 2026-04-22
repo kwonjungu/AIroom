@@ -337,7 +337,8 @@ const KV_KEYS = {
     'news.json': 'news',
     'collections.json': 'collections',
     'esign-docs.json': 'esign-docs',
-    'tdist-docs.json': 'tdist-docs'
+    'tdist-docs.json': 'tdist-docs',
+    'winter-schedule.json': 'winter-schedule'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
