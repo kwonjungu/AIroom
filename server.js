@@ -213,8 +213,7 @@ setInterval(() => {
 }, 10 * 60 * 1000); // 10분마다 정리
 
 app.use(express.json({ limit: '10mb' }));
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/defaults', express.static(path.join(__dirname, 'defaults')));
 
 // ===== 인증 API =====
