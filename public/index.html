@@ -5351,7 +5351,7 @@ const PDF_TOOLS={
     rotate:{title:'PDF 회전',icon:'🔄',color:'#00897b',accept:'.pdf',multi:false,desc:'회전할 PDF 파일을 선택하세요'},
     protect:{title:'PDF 보호',icon:'🔒',color:'#5c6bc0',accept:'.pdf',multi:false,desc:'암호를 설정할 PDF를 선택하세요'},
     pagenumber:{title:'페이지 번호',icon:'🔢',color:'#6d4c41',accept:'.pdf',multi:false,desc:'번호를 삽입할 PDF를 선택하세요'},
-    scan:{title:'사진 스캔',icon:'📸',color:'#00acc1',accept:'image/*',multi:true,desc:'스캔할 사진을 선택하세요 (JPG, PNG)'},
+    scan:{title:'사진 스캔',icon:'📸',color:'#00acc1',accept:'image/*',multi:false,desc:'카메라로 문서를 촬영하세요'},
     pptx2pdf:{title:'PPTX → PDF',icon:'📊',color:'#d84315',accept:'.pptx',multi:false,desc:'변환할 PPTX 파일을 선택하세요'},
     hwpx2pdf:{title:'HWPX → PDF',icon:'📝',color:'#0277bd',accept:'.hwpx',multi:false,desc:'변환할 HWPX 파일을 선택하세요'}
 };
@@ -5382,7 +5382,8 @@ function openPdfTool(toolId){
         <div id="scanStep1" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
                 <h3 style="margin:0;font-size:16px;">✂️ 1단계: 문서 영역 선택</h3>
-                <div style="display:flex;gap:6px;">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="pdf-btn pdf-btn-secondary" onclick="scanRetake()" style="padding:6px 14px;font-size:12px;">↻ 다시 촬영</button>
                     <button class="pdf-btn pdf-btn-secondary" onclick="scanAutoDetect()" style="padding:6px 14px;font-size:12px;">🔍 자동 감지</button>
                     <button class="pdf-btn pdf-btn-secondary" onclick="scanSelectAll()" style="padding:6px 14px;font-size:12px;">⬜ 전체 선택</button>
                     <button class="pdf-btn pdf-btn-primary" onclick="scanGoStep2()" style="padding:8px 18px;font-size:13px;">다음 →</button>
@@ -5419,27 +5420,41 @@ function openPdfTool(toolId){
             </div>
         </div>
     </div>`;
-    ws.innerHTML=`<div class="pdf-workspace active">
-        <div class="pdf-ws-header"><h2><span style="background:${tool.color};color:white;width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">${tool.icon}</span>${tool.title}</h2><button class="pdf-ws-back" onclick="closePdfTool()">← 도구 목록</button></div>
+    const captureHtml = toolId==='scan' ? `
+        <div class="scan-camera-wrap" id="scanCameraWrap" style="background:#000;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;">
+            <div style="position:relative;background:#000;">
+                <video id="scanCamVideo" autoplay playsinline muted style="display:block;width:100%;height:auto;max-height:62vh;object-fit:contain;"></video>
+                <div id="scanCamStatus" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.65);color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;">카메라 준비 중...</div>
+            </div>
+            <div style="display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;background:#111;">
+                <button class="pdf-btn pdf-btn-primary" onclick="scanShutter()" id="scanShutterBtn" disabled style="font-size:14px;padding:11px 26px;">📸 촬영</button>
+                <button class="pdf-btn pdf-btn-secondary" onclick="scanSwitchCamera()" id="scanSwitchBtn" disabled style="font-size:13px;padding:10px 18px;">🔄 카메라 전환</button>
+            </div>
+        </div>` : `
         <div class="pdf-dropzone" id="pdfDropzone" onclick="document.getElementById('pdfFileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handlePdfDrop(event)">
             <div class="pdf-dropzone-icon">${tool.icon}</div>
             <div class="pdf-dropzone-text">${tool.desc}</div>
             <div class="pdf-dropzone-sub">또는 여기에 파일을 끌어다 놓으세요</div>
             <input type="file" id="pdfFileInput" accept="${tool.accept}" ${tool.multi?'multiple':''} style="display:none" onchange="handlePdfFileSelect(event)">
-        </div>
+        </div>`;
+    ws.innerHTML=`<div class="pdf-workspace active">
+        <div class="pdf-ws-header"><h2><span style="background:${tool.color};color:white;width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;">${tool.icon}</span>${tool.title}</h2><button class="pdf-ws-back" onclick="closePdfTool()">← 도구 목록</button></div>
+        ${captureHtml}
         <div class="pdf-file-list" id="pdfFileList"></div>
         ${optionsHtml}
         <div class="pdf-preview-grid" id="pdfPreviewGrid"></div>
         <div class="pdf-action-bar" id="pdfActionBar" style="display:none;">
             <button class="pdf-btn pdf-btn-primary" id="pdfProcessBtn" onclick="processPdfTool()">🚀 변환 시작</button>
-            <button class="pdf-btn pdf-btn-secondary" onclick="pdfToolFiles=[];renderPdfFiles();">🗑️ 초기화</button>
+            <button class="pdf-btn pdf-btn-secondary" onclick="if(pdfToolCurrent==='scan'){scanRetake();}else{pdfToolFiles=[];renderPdfFiles();}">🗑️ 초기화</button>
         </div>
         <div class="pdf-progress" id="pdfProgress"><div class="pdf-progress-bar"><div class="pdf-progress-fill" id="pdfProgressFill"></div></div><div class="pdf-progress-text" id="pdfProgressText">처리 중...</div></div>
         <div class="pdf-result" id="pdfResult"></div>
     </div>`;
+    if(toolId==='scan') scanStartCamera();
 }
 
 function closePdfTool(){
+    scanStopCamera();
     document.getElementById('pdfToolsMain').style.display='';
     document.getElementById('pdfToolsWorkspace').innerHTML='';
     pdfToolFiles=[];pdfToolCurrent=null;pdfSelectedPages=new Set();pdfPageRotations={};
@@ -5510,7 +5525,7 @@ function renderPdfFiles(){
     }
 }
 
-function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();if(pdfToolCurrent==='scan'){if(pdfToolFiles.length>0)initScanPreview();else{const a=document.getElementById('scanEditorArea');if(a)a.style.display='none';scanOrigBitmap=null;scanCroppedBitmap=null;}}}
+function removePdfFile(i){pdfToolFiles.splice(i,1);renderPdfFiles();if(pdfToolCurrent==='split'||pdfToolCurrent==='rotate')renderPdfPreview();if(pdfToolCurrent==='scan'){if(pdfToolFiles.length>0)initScanPreview();else{scanRetake();}}}
 function movePdfFile(i,dir){
     const j=i+dir;if(j<0||j>=pdfToolFiles.length)return;
     [pdfToolFiles[i],pdfToolFiles[j]]=[pdfToolFiles[j],pdfToolFiles[i]];
@@ -6349,6 +6364,64 @@ async function pdfHwpx2Pdf(){
 }
 
 // ===== 사진 스캔 (자동 감지 + 크롭 + 원근 보정) =====
+// ───── 사진 스캔: 카메라 캡처 ─────
+let scanCamStream=null;
+let scanCamFacing='environment';
+async function scanStartCamera(){
+    const video=document.getElementById('scanCamVideo');
+    const status=document.getElementById('scanCamStatus');
+    const shutter=document.getElementById('scanShutterBtn');
+    const switchBtn=document.getElementById('scanSwitchBtn');
+    if(!video)return;
+    if(scanCamStream){scanCamStream.getTracks().forEach(t=>t.stop());scanCamStream=null;}
+    try{
+        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+            if(status)status.textContent='이 브라우저는 카메라를 지원하지 않습니다.';return;
+        }
+        scanCamStream=await navigator.mediaDevices.getUserMedia({
+            video:{facingMode:{ideal:scanCamFacing},width:{ideal:3840},height:{ideal:2160}},
+            audio:false
+        });
+        video.srcObject=scanCamStream;
+        await video.play();
+        if(status)status.textContent=`${video.videoWidth}×${video.videoHeight} · 문서를 비추고 촬영하세요`;
+        if(shutter)shutter.disabled=false;
+        if(switchBtn)switchBtn.disabled=false;
+    }catch(e){
+        if(status)status.textContent='카메라 접근 실패: '+e.message+' (HTTPS/localhost 필요)';
+    }
+}
+function scanStopCamera(){
+    if(scanCamStream){scanCamStream.getTracks().forEach(t=>t.stop());scanCamStream=null;}
+    const v=document.getElementById('scanCamVideo');if(v)v.srcObject=null;
+}
+function scanSwitchCamera(){
+    scanCamFacing=scanCamFacing==='environment'?'user':'environment';
+    scanStartCamera();
+}
+async function scanShutter(){
+    const video=document.getElementById('scanCamVideo');
+    if(!video||!video.videoWidth){showToast('카메라가 준비되지 않았습니다','error');return;}
+    const canvas=document.createElement('canvas');
+    canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    canvas.getContext('2d').drawImage(video,0,0);
+    const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',0.95));
+    const ab=await blob.arrayBuffer();
+    pdfToolFiles=[{name:`scan_${Date.now()}.jpg`,size:ab.byteLength,data:ab,pageCount:0,type:'image/jpeg'}];
+    scanStopCamera();
+    const wrap=document.getElementById('scanCameraWrap');if(wrap)wrap.style.display='none';
+    renderPdfFiles();
+    initScanPreview();
+}
+function scanRetake(){
+    pdfToolFiles=[];
+    scanOrigBitmap=null;scanCroppedBitmap=null;scanCorners=[];
+    const a=document.getElementById('scanEditorArea');if(a)a.style.display='none';
+    const wrap=document.getElementById('scanCameraWrap');if(wrap)wrap.style.display='';
+    renderPdfFiles();
+    scanStartCamera();
+}
+
 let scanOrigBitmap=null;
 let scanCorners=[];  // [{x,y}] 4 corners in image coords
 let scanDragIdx=-1;
