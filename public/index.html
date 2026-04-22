@@ -4410,8 +4410,13 @@ async function initTabsConfig(){
     if(!tabsConfig||!tabsConfig.length){
         tabsConfig=DEFAULT_TABS.map(t=>({...t}));
     }
-    // defaults에서 부서탭 데이터 병합
+    // 폐기된 탭 정리 (구버전 잔재)
+    const obsoleteIds=['translator','qrcode'];
     let needsSave=false;
+    const beforeLen=tabsConfig.length;
+    tabsConfig=tabsConfig.filter(t=>!obsoleteIds.includes(t.id));
+    if(tabsConfig.length<beforeLen) needsSave=true;
+    // defaults에서 부서탭 데이터 병합
     try{
         const resp=await fetch('/defaults/tabs.json');
         if(resp.ok){
@@ -10159,17 +10164,17 @@ function renderWinterSchedule(){
     const dates=wsIsoDateRange(cfg.startDate,cfg.endDate);
     const holidays=cfg.holidays||[];
 
-    let headHtml='<tr><th rowspan="2" style="padding:6px;background:#f5f5f5;position:sticky;left:0;z-index:3;border:1px solid var(--border);">교직원</th>';
+    let headHtml='<tr><th rowspan="2" style="padding:6px;background:#f5f5f5;color:#222;position:sticky;left:0;z-index:3;border:1px solid var(--border);font-size:14px;">교직원</th>';
     dates.forEach(iso=>{
         const [_,m,d]=iso.split('-');
         const isHol=wsIsHolidayOrWeekend(iso,holidays);
-        headHtml+=`<th style="padding:4px 6px;background:${isHol?'#D9D9D9':'#f5f5f5'};border:1px solid var(--border);min-width:36px;">${parseInt(m,10)}/${parseInt(d,10)}</th>`;
+        headHtml+=`<th style="padding:6px 4px;background:${isHol?'#BDBDBD':'#E8EAED'};color:#111;border:1px solid var(--border);min-width:40px;font-size:14px;font-weight:700;">${parseInt(m,10)}/${parseInt(d,10)}</th>`;
     });
     headHtml+='</tr><tr>';
     dates.forEach(iso=>{
         const wd=WS_WEEKDAY_KOR[new Date(iso+'T00:00:00Z').getUTCDay()];
         const isHol=wsIsHolidayOrWeekend(iso,holidays);
-        headHtml+=`<th style="padding:2px;background:${isHol?'#D9D9D9':'#f5f5f5'};border:1px solid var(--border);font-weight:400;">${wd}</th>`;
+        headHtml+=`<th style="padding:4px 2px;background:${isHol?'#BDBDBD':'#E8EAED'};color:#111;border:1px solid var(--border);font-size:13px;font-weight:600;">${wd}</th>`;
     });
     headHtml+='</tr>';
     head.innerHTML=headHtml;
