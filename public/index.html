@@ -2252,8 +2252,10 @@ async function updateScheduleItem(id,field,val){
 }
 
 // ===== 공휴일 (법정 + 학교 재량) =====
-// 학교 재량 휴업일 — 향후 관리자 UI로 편집 가능하게 할 예정. 현재는 하드코딩.
+// 학교 재량 휴업일 + 근로자의 날 등 법정공휴일 API에서 누락되는 일자
+// 향후 관리자 UI로 편집 가능하게 할 예정. 현재는 하드코딩.
 const SCHOOL_HOLIDAYS = [
+    { date: '2026-05-01', name: '근로자의 날(노동절)' },
     { date: '2026-05-04', name: '학교장 재량 휴업일' }
 ];
 let holidaysCache = {}; // year → [{date, name}]  (법정공휴일 API 캐시)
