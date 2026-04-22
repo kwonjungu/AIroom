@@ -513,10 +513,12 @@ app.get('/api/winter-schedule/holidays', requireAuth, async (req, res) => {
 });
 
 // 허가원 다운로드 — 기본 DOCX (Word). HWPX는 ?format=hwpx 쿼리.
+// 허가원 HWPX 다운로드. DOCX/HTML은 더 이상 서비스에서 노출하지 않지만,
+// ?format=docx/html 쿼리로 호출하면 여전히 폴백을 생성해준다 (레거시 호출 보호용).
 app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) => {
     try {
         const { staffId } = req.params;
-        const format = (req.query.format || 'docx').toLowerCase();
+        const format = (req.query.format || 'hwpx').toLowerCase();
         const [ws, staff] = await Promise.all([
             readData('winter-schedule.json'),
             readData('staff.json')
@@ -533,6 +535,7 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
             position: entry.position || staffRecord.position || '교사',
             applyDate: entry.applyDate,
             days: entry.days || {},
+            config: (ws && ws.config) || null, // 주말·공휴일 자동 집계용
             fortyOnePeriods: entry.fortyOnePeriods,
             workPeriods: entry.workPeriods,
             summary: entry.summary,
@@ -540,11 +543,12 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
 
         const safeName = name.replace(/[^가-힣A-Za-z0-9_-]/g, '_');
 
-        if (format === 'hwpx') {
-            const buf = await hwpx.generatePermit(payload);
-            res.setHeader('Content-Type', 'application/hwp+zip');
+        if (format === 'docx') {
+            const { generatePermitDocx } = require('./lib/docx-permit');
+            const buf = await generatePermitDocx(payload);
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
             res.setHeader('Content-Disposition',
-                `attachment; filename*=UTF-8''${encodeURIComponent(`HWPX_${safeName}.HWPX`)}`);
+                `attachment; filename*=UTF-8''${encodeURIComponent(`근무지외연수허가원_${safeName}.docx`)}`);
             return res.send(buf);
         }
 
@@ -555,12 +559,11 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
             return res.send(html);
         }
 
-        // 기본: DOCX
-        const { generatePermitDocx } = require('./lib/docx-permit');
-        const buf = await generatePermitDocx(payload);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        // 기본: HWPX
+        const buf = await hwpx.generatePermit(payload);
+        res.setHeader('Content-Type', 'application/hwp+zip');
         res.setHeader('Content-Disposition',
-            `attachment; filename*=UTF-8''${encodeURIComponent(`근무지외연수허가원_${safeName}.docx`)}`);
+            `attachment; filename*=UTF-8''${encodeURIComponent(`HWPX_${safeName}.HWPX`)}`);
         res.send(buf);
     } catch (e) {
         console.error('permit gen error:', e);

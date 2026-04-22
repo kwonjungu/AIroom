@@ -9,3 +9,7 @@ test-*.docx
 test-*.xlsx
 ~$*
 _check/
+_compare_*.xml
+_compare.py
+_analyze_mod.py
+HWPX_*.hwpx
