@@ -1234,6 +1234,52 @@
         </div>
     </div>
 
+    <!-- 방학근무 현황 입력표 -->
+    <div class="page" id="page-winter-schedule">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+            <div>
+                <h2 style="font-size:22px;font-weight:800;margin:0;">🏫 겨울방학 근무 현황</h2>
+                <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;" id="wsDateHint">방학 기간이 설정되지 않았습니다. 관리자에게 문의하세요.</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span id="wsWhoami" style="padding:6px 10px;border-radius:8px;background:var(--border);font-size:13px;"></span>
+                <button class="btn btn-secondary" onclick="wsChangeName()" style="font-size:13px;padding:8px 12px;">이름 변경</button>
+                <button class="btn btn-primary" onclick="wsDownloadPermit('docx')" style="font-size:13px;padding:8px 12px;">📥 DOCX</button>
+                <button class="btn btn-primary" onclick="wsDownloadPermit('hwpx')" style="font-size:13px;padding:8px 12px;">📥 HWPX</button>
+                <button class="btn btn-secondary" onclick="wsDownloadPermit('html')" style="font-size:13px;padding:8px 12px;">🌐 HTML 미리보기</button>
+                <button class="admin-only btn btn-secondary" onclick="wsSetupVacation()" style="font-size:13px;padding:8px 12px;background:#ffe5e5;color:#c92a2a;">⚠️ 방학 세팅하기</button>
+                <button class="admin-only btn btn-secondary" onclick="wsDownloadXlsx()" style="font-size:13px;padding:8px 12px;">📊 전체 엑셀</button>
+            </div>
+        </div>
+        <div id="wsIdentityBar" style="display:none;padding:16px;background:#fff9db;border-radius:10px;margin-bottom:12px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">먼저 본인 이름을 입력해주세요</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="wsNameInput" placeholder="예: 권준구" list="wsStaffList"
+                    style="flex:1;min-width:200px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
+                <datalist id="wsStaffList"></datalist>
+                <button class="btn btn-primary" onclick="wsSaveIdentity()" style="padding:10px 16px;">확인</button>
+            </div>
+            <div style="font-size:12px;color:var(--text-light);margin-top:6px;">이름을 똑같이 입력하면 이전에 작성한 내용을 그대로 불러옵니다.</div>
+        </div>
+        <div id="wsGridWrapper" style="overflow:auto;max-height:600px;border:1px solid var(--border);border-radius:10px;">
+            <table id="wsGrid" style="border-collapse:collapse;font-size:12px;width:max-content;min-width:100%;">
+                <thead id="wsGridHead"></thead>
+                <tbody id="wsGridBody"></tbody>
+            </table>
+        </div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-light);">
+            범례:
+            <span style="display:inline-block;width:12px;height:12px;background:#0080C0;vertical-align:middle;margin:0 4px 0 8px;"></span>근무
+            <span style="display:inline-block;width:12px;height:12px;background:#FFA0A0;vertical-align:middle;margin:0 4px 0 8px;"></span>출장
+            <span style="display:inline-block;width:12px;height:12px;background:#B22222;vertical-align:middle;margin:0 4px 0 8px;"></span>출장연수
+            <span style="display:inline-block;width:12px;height:12px;background:#228B22;vertical-align:middle;margin:0 4px 0 8px;"></span>41조연수
+            <span style="display:inline-block;width:12px;height:12px;background:#FFD700;vertical-align:middle;margin:0 4px 0 8px;"></span>연가
+            <span style="display:inline-block;width:12px;height:12px;background:#FFA500;vertical-align:middle;margin:0 4px 0 8px;"></span>기타
+            <span style="display:inline-block;width:12px;height:12px;background:repeating-linear-gradient(45deg,#0080C0,#0080C0 3px,#228B22 3px,#228B22 6px);vertical-align:middle;margin:0 4px 0 8px;"></span>오전근무/오후41조
+            <span style="display:inline-block;width:12px;height:12px;background:#D9D9D9;vertical-align:middle;margin:0 4px 0 8px;"></span>토·일·공휴일
+        </div>
+    </div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1561,7 +1607,8 @@ const DEFAULT_TABS=[
     {id:'collection',title:'자료 집계',icon:'📦',type:'builtin',order:9},
     {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
     {id:'translator',title:'가정통신문 번역',icon:'🌐',type:'builtin',order:11},
-    {id:'qrcode',title:'QR 생성기',icon:'📱',type:'builtin',order:12}
+    {id:'qrcode',title:'QR 생성기',icon:'📱',type:'builtin',order:12},
+    {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1857,6 +1904,8 @@ async function init(){
     await initTabsConfig();
     updateDate();renderTabs();renderSections();renderCategoryTabs();renderLinks();updateStats();
     setupIconPicker();renderTrainingChecklist();populateRegSelect();renderSchedule();renderNews();renderCustomPages();renderCollections();renderEsignList();
+    // 방학근무 데이터 비동기 로드
+    wsLoad().then(()=>renderWinterSchedule()).catch(()=>{});
     if(!sections.length){
         document.getElementById('sectionsContainer').innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);">📭 섹션 데이터를 불러오는 중 오류가 발생했습니다.<br>관리 모드에서 새 섹션을 추가하거나, 페이지를 새로고침해 주세요.</div>';
     }
@@ -1879,6 +1928,7 @@ function switchPage(p,btn){
     if(p==='pdftools'){document.getElementById('pdfToolsMain').style.display='';document.getElementById('pdfToolsWorkspace').innerHTML='';}
     if(p==='esign')renderEsignList();
     if(p==='translator')initTranslator();
+    if(p==='winter-schedule'){wsLoad().then(()=>renderWinterSchedule()).catch(()=>{});}
 }
 
 // ===== SCHEDULE =====
@@ -2528,6 +2578,252 @@ function toggleAdmin(){
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
+    if(typeof renderWinterSchedule==='function')renderWinterSchedule();
+}
+
+// ========== 겨울방학 근무 현황 ==========
+let wsData = { config: { startDate:'', endDate:'', holidays:[], setAt:null }, entries:{} };
+let wsMyStaffId = localStorage.getItem('airoom_ws_staffId') || null;
+let wsMyName = localStorage.getItem('airoom_ws_name') || null;
+const WS_STATUSES = [
+    { value:'', label:'-', bg:'transparent', fg:'#000' },
+    { value:'근무', label:'근무', bg:'#0080C0', fg:'#fff' },
+    { value:'출장', label:'출장', bg:'#FFA0A0', fg:'#000' },
+    { value:'출장연수', label:'출장연수', bg:'#B22222', fg:'#fff' },
+    { value:'41조연수', label:'41조연수', bg:'#228B22', fg:'#fff' },
+    { value:'연가', label:'연가', bg:'#FFD700', fg:'#000' },
+    { value:'기타', label:'기타', bg:'#FFA500', fg:'#000' },
+    { value:'오전근무/오후41조', label:'오전근무/오후41조', bg:'#0080C0', fg:'#fff', pattern:true },
+];
+const WS_WEEKDAY_KOR = ['일','월','화','수','목','금','토'];
+function wsIsoDateRange(s, e){
+    const out=[];
+    if(!s||!e)return out;
+    const [sy,sm,sd]=s.split('-').map(Number);
+    const [ey,em,ed]=e.split('-').map(Number);
+    const cur=new Date(Date.UTC(sy,sm-1,sd));
+    const end=new Date(Date.UTC(ey,em-1,ed));
+    while(cur.getTime()<=end.getTime()){
+        const y=cur.getUTCFullYear();
+        const m=String(cur.getUTCMonth()+1).padStart(2,'0');
+        const d=String(cur.getUTCDate()).padStart(2,'0');
+        out.push(`${y}-${m}-${d}`);
+        cur.setUTCDate(cur.getUTCDate()+1);
+    }
+    return out;
+}
+function wsStatusByValue(v){ return WS_STATUSES.find(s=>s.value===v)||WS_STATUSES[0]; }
+function wsIsHolidayOrWeekend(iso, holidays){
+    const d=new Date(iso+'T00:00:00Z').getUTCDay();
+    if(d===0||d===6)return true;
+    return (holidays||[]).some(h=>(h.date||h)===iso);
+}
+async function wsLoad(){
+    const data = await api('GET','/api/winter-schedule');
+    if(data)wsData=data;
+    if(!wsData.config)wsData.config={ startDate:'', endDate:'', holidays:[], setAt:null };
+    if(!wsData.entries)wsData.entries={};
+}
+function wsFindStaffByName(n){
+    const trim=(n||'').trim();
+    if(!trim)return null;
+    return (staff||[]).find(s=>s.name===trim)||null;
+}
+function wsChangeName(){
+    wsMyStaffId=null;wsMyName=null;
+    localStorage.removeItem('airoom_ws_staffId');
+    localStorage.removeItem('airoom_ws_name');
+    renderWinterSchedule();
+}
+function wsSaveIdentity(){
+    const input=document.getElementById('wsNameInput');
+    const n=input.value.trim();
+    const match=wsFindStaffByName(n);
+    if(!match){
+        showToast(`"${n}" 은 교직원 명부에 없습니다`,'error');
+        return;
+    }
+    wsMyStaffId=match.id;wsMyName=match.name;
+    localStorage.setItem('airoom_ws_staffId',match.id);
+    localStorage.setItem('airoom_ws_name',match.name);
+    showToast(`${match.name} 선생님으로 로그인됨`,'success');
+    renderWinterSchedule();
+}
+function renderWinterSchedule(){
+    const hint=document.getElementById('wsDateHint');
+    const who=document.getElementById('wsWhoami');
+    const idBar=document.getElementById('wsIdentityBar');
+    const head=document.getElementById('wsGridHead');
+    const body=document.getElementById('wsGridBody');
+    if(!head||!body)return;
+
+    // 교직원 datalist
+    const dl=document.getElementById('wsStaffList');
+    if(dl){dl.innerHTML=(staff||[]).map(s=>`<option value="${s.name}">`).join('');}
+
+    // 본인 식별
+    if(!wsMyStaffId||!wsMyName){
+        idBar.style.display='block';
+        who.textContent='이름을 입력해주세요';
+    } else {
+        idBar.style.display='none';
+        who.textContent=`👤 ${wsMyName}`;
+    }
+
+    const cfg=wsData.config||{};
+    if(!cfg.startDate||!cfg.endDate){
+        hint.textContent='방학 기간이 설정되지 않았습니다. 관리자에게 문의하세요.';
+        head.innerHTML='';body.innerHTML='';
+        return;
+    }
+    hint.textContent=`📅 ${cfg.startDate} ~ ${cfg.endDate}${cfg.holidays&&cfg.holidays.length?` (공휴일 ${cfg.holidays.length}일)`:''}`;
+
+    const dates=wsIsoDateRange(cfg.startDate,cfg.endDate);
+    const holidays=cfg.holidays||[];
+
+    // 헤더 2행: 날짜 / 요일
+    let headHtml='<tr><th rowspan="2" style="padding:6px;background:#f5f5f5;position:sticky;left:0;z-index:3;border:1px solid var(--border);">교직원</th>';
+    dates.forEach(iso=>{
+        const [_,m,d]=iso.split('-');
+        const isHol=wsIsHolidayOrWeekend(iso,holidays);
+        headHtml+=`<th style="padding:4px 6px;background:${isHol?'#D9D9D9':'#f5f5f5'};border:1px solid var(--border);min-width:36px;">${parseInt(m,10)}/${parseInt(d,10)}</th>`;
+    });
+    headHtml+='</tr><tr>';
+    dates.forEach(iso=>{
+        const wd=WS_WEEKDAY_KOR[new Date(iso+'T00:00:00Z').getUTCDay()];
+        const isHol=wsIsHolidayOrWeekend(iso,holidays);
+        headHtml+=`<th style="padding:2px;background:${isHol?'#D9D9D9':'#f5f5f5'};border:1px solid var(--border);font-weight:400;">${wd}</th>`;
+    });
+    headHtml+='</tr>';
+    head.innerHTML=headHtml;
+
+    // 바디: 본인 행만 편집 가능, 나머지는 읽기전용
+    const sortedStaff=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0));
+    let bodyHtml='';
+    for(const s of sortedStaff){
+        const isMe=(s.id===wsMyStaffId);
+        const entry=wsData.entries[s.id]||{};
+        const days=entry.days||{};
+        bodyHtml+=`<tr${isMe?' style="background:#fffbe6;"':''}>`;
+        bodyHtml+=`<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:${isMe?'#fff3bf':'#fff'};font-weight:${isMe?'700':'400'};z-index:2;white-space:nowrap;">${s.no}. ${s.name}<br><span style="font-size:10px;color:var(--text-light)">${s.position||''}</span></td>`;
+        dates.forEach(iso=>{
+            const val=days[iso]||'';
+            const isHol=wsIsHolidayOrWeekend(iso,holidays);
+            const autoHol=isHol&&!val;
+            const st=wsStatusByValue(autoHol?'토·일·공휴일':val);
+            const bgColor=autoHol?'#D9D9D9':(st.bg||'transparent');
+            const fgColor=autoHol?'#000':(st.fg||'#000');
+            if(isMe&&!isHol){
+                let opts=WS_STATUSES.map(o=>`<option value="${o.value}"${o.value===val?' selected':''}>${o.label}</option>`).join('');
+                bodyHtml+=`<td style="padding:0;border:1px solid var(--border);background:${bgColor};color:${fgColor};"><select onchange="wsSetCell('${iso}',this.value)" style="width:100%;padding:4px 2px;background:transparent;color:inherit;border:none;font-size:10px;outline:none;cursor:pointer;">${opts}</select></td>`;
+            } else {
+                bodyHtml+=`<td style="padding:4px 2px;border:1px solid var(--border);background:${bgColor};color:${fgColor};text-align:center;font-size:10px;">${autoHol?'':(st.label==='-'?'':st.label)}</td>`;
+            }
+        });
+        bodyHtml+='</tr>';
+    }
+    body.innerHTML=bodyHtml;
+}
+let _wsSaveTimer=null;
+function wsSetCell(iso,value){
+    if(!wsMyStaffId){showToast('먼저 본인 이름을 입력해주세요','error');return;}
+    if(!wsData.entries[wsMyStaffId]){
+        const me=(staff||[]).find(s=>s.id===wsMyStaffId);
+        wsData.entries[wsMyStaffId]={ staffId:wsMyStaffId, name:wsMyName, school:'백암초등학교', position:me?me.position:'교사', days:{} };
+    }
+    const entry=wsData.entries[wsMyStaffId];
+    if(!entry.days)entry.days={};
+    if(value)entry.days[iso]=value; else delete entry.days[iso];
+    // 즉시 UI 업데이트
+    renderWinterSchedule();
+    // 디바운스 저장
+    if(_wsSaveTimer)clearTimeout(_wsSaveTimer);
+    _wsSaveTimer=setTimeout(async()=>{
+        const r=await api('PATCH',`/api/winter-schedule/entries/${wsMyStaffId}`,entry);
+        if(r&&r.success)showToast('저장됨','success');
+    },800);
+}
+async function wsDownloadPermit(format){
+    if(!wsMyStaffId){showToast('먼저 본인 이름을 입력해주세요','error');return;}
+    const url=`/api/winter-schedule/permit/${wsMyStaffId}?format=${format||'docx'}`;
+    try{
+        const r=await fetch(url,{headers:authToken?{'X-Auth-Token':authToken}:{}});
+        if(!r.ok){
+            const txt=await r.text();
+            showToast(`다운로드 실패: ${txt}`,'error');
+            return;
+        }
+        if(format==='html'){
+            const html=await r.text();
+            const w=window.open('','_blank');
+            if(w){w.document.write(html);w.document.close();}
+            return;
+        }
+        const blob=await r.blob();
+        const cd=r.headers.get('Content-Disposition')||'';
+        const m=cd.match(/filename\*=UTF-8''([^;]+)/i);
+        const filename=m?decodeURIComponent(m[1]):`허가원_${wsMyName}.${format||'docx'}`;
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=filename;
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }catch(e){showToast(`다운로드 오류: ${e.message}`,'error');}
+}
+async function wsDownloadXlsx(){
+    if(!isAdmin){showToast('관리자만 가능합니다','error');return;}
+    try{
+        const r=await fetch('/api/winter-schedule/xlsx',{headers:authToken?{'X-Auth-Token':authToken}:{}});
+        if(!r.ok){showToast('엑셀 다운로드 실패','error');return;}
+        const blob=await r.blob();
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download='겨울방학근무현황.xlsx';
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }catch(e){showToast(`오류: ${e.message}`,'error');}
+}
+async function wsSetupVacation(){
+    if(!isAdmin){showToast('관리자만 가능합니다','error');return;}
+    const startDate=prompt('방학 시작일 (YYYY-MM-DD)','2026-01-05');
+    if(!startDate)return;
+    const endDate=prompt('방학 종료일 (YYYY-MM-DD)','2026-02-13');
+    if(!endDate)return;
+    const entriesCount=Object.keys(wsData.entries||{}).length;
+    const warn=`⚠️ 방학 세팅을 실행합니다.
+
+    • 기간: ${startDate} ~ ${endDate}
+    • 기존 저장 내용: ${entriesCount}명분 — 전부 삭제됩니다
+
+    정말 진행할까요? 되돌릴 수 없습니다.`;
+    if(!confirm(warn))return;
+    // 공휴일 가져오기
+    const y=parseInt(startDate.slice(0,4),10);
+    let holidays=[];
+    try{
+        const r=await fetch(`/api/winter-schedule/holidays?year=${y}`,{headers:authToken?{'X-Auth-Token':authToken}:{}});
+        if(r.ok){
+            const all=await r.json();
+            holidays=all.filter(h=>h.date>=startDate&&h.date<=endDate);
+        }
+    }catch(e){}
+    if(y!==parseInt(endDate.slice(0,4),10)){
+        try{
+            const r=await fetch(`/api/winter-schedule/holidays?year=${parseInt(endDate.slice(0,4),10)}`,{headers:authToken?{'X-Auth-Token':authToken}:{}});
+            if(r.ok){
+                const all=await r.json();
+                holidays=holidays.concat(all.filter(h=>h.date>=startDate&&h.date<=endDate));
+            }
+        }catch(e){}
+    }
+    const res=await api('POST','/api/winter-schedule/setup',{startDate,endDate,holidays});
+    if(res&&res.success){
+        wsData={ config:res.config, entries:{} };
+        showToast('방학 세팅 완료','success');
+        renderWinterSchedule();
+    } else {
+        showToast('세팅 실패','error');
+    }
 }
 
 // ===== 글씨 크기 =====

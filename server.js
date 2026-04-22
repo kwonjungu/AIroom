@@ -547,6 +547,13 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
             return res.send(buf);
         }
 
+        if (format === 'html') {
+            const { generatePermitHtml } = require('./lib/html-permit');
+            const html = generatePermitHtml(payload);
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+        }
+
         // 기본: DOCX
         const { generatePermitDocx } = require('./lib/docx-permit');
         const buf = await generatePermitDocx(payload);
