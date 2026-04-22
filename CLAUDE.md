@@ -105,18 +105,31 @@ AIroom/
 - 셀 배경색 + 반일 혼합은 `pattern: 'lightUp'` 줄무늬
 - 주말/공휴일 자동 회색 처리
 
-### ⏳ Phase 3 — index.html 탭 UI (**진행 중, 미완료**)
-- 아직 index.html은 **수정하지 않음**
-- 필요한 작업:
-  1. `DEFAULT_TABS` 배열 (line 1673 근처)에 `{id:'winter-schedule', title:'방학근무', icon:'🏫', type:'builtin', order:14}` 추가
-  2. `<div class="page" id="page-winter-schedule">` 컨테이너를 page 영역(line 826 근처, scanner 다음)에 삽입
-  3. `renderWinterSchedule()` + `saveWinterSchedule()` 함수 추가 (line 2006 근처 기존 패턴 참조)
-  4. `init()` (line 1956)에 `api('GET','/api/winter-schedule')` 호출 추가
-  5. `admin-mode` 클래스로 보이는 "방학 세팅하기" 버튼 (기존 staff 에디터 패턴 참조, line 3489 근처)
-  6. 드롭다운 그리드 UI — 행=교직원, 열=날짜, 각 셀이 드롭다운 + 색 적용
+### ✅ Phase 3 — index.html 탭 UI (**기본 완성, 실사용 검증 필요**)
+- DEFAULT_TABS[13]에 `winter-schedule` 탭 등록
+- 본인 이름 입력(LocalStorage) → 해당 행만 편집 가능, 다른 교직원은 색으로 표시만
+- 드롭다운 8종 상태 (근무/출장/출장연수/41조/연가/기타/오전근무·오후41조/빈칸)
+- 주말/공휴일 자동 회색 + 편집 불가
+- 800ms 디바운스 자동 저장 (PATCH 엔드포인트)
+- 허가원 출력 **3종**: DOCX / HWPX / HTML (인쇄 미리보기)
+- 관리자 버튼: "방학 세팅하기" (공휴일 API 자동 조회 + 기존 entries 삭제 경고) + "전체 엑셀"
 
-### ⏳ Phase 5 — 배포 검증 (미완료)
-- Vercel Preview에서 HWPX/엑셀 다운로드 실제 작동 확인
+### 주요 함수 (index.html 내)
+- `renderWinterSchedule()` — 그리드 전체 다시 그림
+- `wsSetCell(iso, value)` — 셀 변경 → 디바운스 저장
+- `wsDownloadPermit(format)` — docx/hwpx/html 선택
+- `wsSetupVacation()` — 관리자, 방학 세팅
+- `wsSaveIdentity()` / `wsChangeName()` — 본인 식별
+- `WS_STATUSES` 배열 — 드롭다운/색 정의
+
+### ⏳ Phase 5 — 배포 검증 + 후속 작업 (남은 것)
+- [ ] Vercel Preview 배포 후 실제 로그인하여 탭 동작 확인
+- [ ] "방학 세팅하기"로 기간 세팅 → 다른 교직원 계정(또는 새 브라우저)에서 본인 이름 입력 → 색 선택 → 저장됨 확인
+- [ ] 허가원 3종 다운로드 각각 동작 확인 (한글/Word/크롬 브라우저 열기)
+- [ ] 관리자 전체 엑셀 다운로드 확인
+- [ ] 행 추가 대량 케이스 (8+5) 한글에서 실제 열림 확인 (로컬 test-output-v2.hwpx로는 확인됨)
+- [ ] UI 세부 다듬기: 연수내용/장소/비고 입력 필드 (현재 API 스키마엔 있지만 UI 미노출), 모바일 대응, 반일 혼합 UX 개선
+- [ ] 권한 제한 실제 검증: "이름 입력"만으로 다른 교직원 데이터 덮어쓰기 가능한 문제 (접근 코드가 공유라 현재 의도된 설계)
 
 ---
 
@@ -209,14 +222,17 @@ async function api(method, endpoint, body) {
 ## 다음 세션에서 바로 시작하기
 
 1. 이 CLAUDE.md 먼저 읽기
-2. `AIroom/lib/hwpx.js`에서 행 추가 로직 (`fillMainTable`) 상태 확인
-3. 사용자에게 `test-output-v2.hwpx`가 한글에서 열리는지 재확인
-4. 열리면 → **Phase 3 (index.html 탭 UI) 착수**. 편집 전 index.html에서 아래 앵커 확인:
-   - `const DEFAULT_TABS` 정의 위치
-   - `<div class="page" id="page-scanner">` 다음에 삽입 위치
-   - `function switchPage` 구현
-   - `function toggleAdmin`
-5. 탭 UI 완성 후 → Vercel Preview URL에서 로그인해서 실제 API 동작 확인 (Phase 5)
+2. Vercel Preview URL(자동 생성됨) 또는 프로덕션에 머지 후 `https://a-iroom.vercel.app/` 접속
+3. 로그인 → "방학근무" 탭 클릭
+4. 관리 모드 켜서 "방학 세팅하기" 실행 → 기간/공휴일 설정
+5. 일반 사용자 역할로 본인 이름 입력 → 드롭다운 색 선택 → 자동 저장 확인
+6. 허가원 3종 다운로드 테스트 (DOCX: Word에서 열림, HWPX: 한글에서 열림, HTML: 브라우저 새 창)
+7. 문제 있으면 CLAUDE.md의 "⚠️ 결정적인 기술 함정" 참고 (이미 해결한 버그들)
+
+### 우선순위 높은 개선
+- 연수내용/연수장소/비고(연락처) 입력 UI 추가 (API 스키마엔 이미 있음)
+- 허가원 다운로드 전 summary 미리보기 모달
+- 대량 기간 (>15개) 시 HWPX 렌더 테스트
 
 ---
 
