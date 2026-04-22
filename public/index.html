@@ -6465,7 +6465,14 @@ function scanCamLoop(){
     scanCamRafId=requestAnimationFrame(scanCamLoop);
 }
 
+let scanCamLastTick=0;
+let scanCamDebug={contours:0,quads:0,largest:0};
 function scanCamDetectAndDraw(video,overlay){
+    // 10fps로 스로틀링 (검출은 비싸고 60fps 필요 없음)
+    const now=performance.now();
+    if(now-scanCamLastTick<100){return;}
+    scanCamLastTick=now;
+
     const srcW=video.videoWidth,srcH=video.videoHeight;
     const scale=Math.min(1,480/Math.max(srcW,srcH));
     const dw=Math.max(1,Math.round(srcW*scale)),dh=Math.max(1,Math.round(srcH*scale));
@@ -6475,6 +6482,13 @@ function scanCamDetectAndDraw(video,overlay){
     const quadSmall=scanDetectOuterQuadCV(work);
     const ctx=overlay.getContext('2d');
     ctx.clearRect(0,0,overlay.width,overlay.height);
+    // 디버그 배지
+    const badge=document.getElementById('scanCamCVStatus');
+    if(badge){
+        badge.textContent=quadSmall
+            ? `🔲 감지됨 (컨투어 ${scanCamDebug.contours}개)`
+            : `🔍 탐색 중 (컨투어 ${scanCamDebug.contours}, 사각형 ${scanCamDebug.quads})`;
+    }
     if(quadSmall){
         // video는 object-fit:contain — 오버레이에 그릴 때 실제 컨텐츠 영역 계산
         const vRatio=srcW/srcH,dispRatio=overlay.width/overlay.height;
@@ -6483,7 +6497,7 @@ function scanCamDetectAndDraw(video,overlay){
         else{contentH=overlay.height;contentW=overlay.height*vRatio;offsetX=(overlay.width-contentW)/2;offsetY=0;}
         const mapX=contentW/dw,mapY=contentH/dh;
         ctx.strokeStyle='rgba(40,220,110,0.95)';
-        ctx.lineWidth=Math.max(2,overlay.width/240);
+        ctx.lineWidth=Math.max(3,overlay.width/200);
         ctx.beginPath();
         ctx.moveTo(offsetX+quadSmall[0].x*mapX,offsetY+quadSmall[0].y*mapY);
         for(let i=1;i<4;i++)ctx.lineTo(offsetX+quadSmall[i].x*mapX,offsetY+quadSmall[i].y*mapY);
@@ -6491,7 +6505,7 @@ function scanCamDetectAndDraw(video,overlay){
         ctx.fillStyle='rgba(40,220,110,0.95)';
         quadSmall.forEach(p=>{
             ctx.beginPath();
-            ctx.arc(offsetX+p.x*mapX,offsetY+p.y*mapY,Math.max(5,overlay.width/120),0,Math.PI*2);
+            ctx.arc(offsetX+p.x*mapX,offsetY+p.y*mapY,Math.max(6,overlay.width/100),0,Math.PI*2);
             ctx.fill();
         });
         scanCamLastQuad=quadSmall.map(p=>({x:p.x/scale,y:p.y/scale}));
@@ -6509,33 +6523,62 @@ function scanDetectOuterQuadCV(canvas){
         cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
         cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
         edges=new cv.Mat();
-        cv.Canny(gray,edges,50,150);
-        kernel=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(3,3));
+        // 낮은 임계값으로 약한 엣지도 캡쳐
+        cv.Canny(gray,edges,30,100);
+        // 큰 커널로 끊긴 엣지 이어붙이기 (close)
+        kernel=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(5,5));
         cv.dilate(edges,edges,kernel);
+        cv.erode(edges,edges,kernel);
         contours=new cv.MatVector();
         hier=new cv.Mat();
         cv.findContours(edges,contours,hier,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
         const frameArea=src.cols*src.rows;
-        const minArea=frameArea*0.15;
-        let best=null,bestScore=-Infinity;
+        const minArea=frameArea*0.08; // 8%로 완화
+        let best=null,bestScore=-Infinity,quadCount=0,largestArea=0;
+        scanCamDebug.contours=contours.size();
         for(let i=0;i<contours.size();i++){
             const c=contours.get(i);
             const area=cv.contourArea(c);
+            if(area>largestArea)largestArea=area;
             if(area<minArea){c.delete();continue;}
             const peri=cv.arcLength(c,true);
-            const approx=new cv.Mat();
-            cv.approxPolyDP(c,approx,0.02*peri,true);
-            if(approx.rows===4){
-                const pts=[];
-                for(let j=0;j<4;j++)pts.push({x:approx.data32S[j*2],y:approx.data32S[j*2+1]});
+            // 여러 epsilon 시도
+            let pts=null;
+            for(const eps of [0.02,0.03,0.015,0.04,0.05,0.01]){
+                const approx=new cv.Mat();
+                cv.approxPolyDP(c,approx,eps*peri,true);
+                if(approx.rows===4){
+                    pts=[];
+                    for(let j=0;j<4;j++)pts.push({x:approx.data32S[j*2],y:approx.data32S[j*2+1]});
+                    approx.delete();
+                    break;
+                }
+                approx.delete();
+            }
+            // 폴백: 4점 근사 실패하면 최소 면적 회전 사각형
+            if(!pts){
+                try{
+                    const rect=cv.minAreaRect(c);
+                    const pts2f=new cv.Mat();
+                    cv.boxPoints(rect,pts2f);
+                    pts=[];
+                    for(let j=0;j<4;j++)pts.push({x:pts2f.data32F[j*2],y:pts2f.data32F[j*2+1]});
+                    pts2f.delete();
+                } catch(e){}
+            }
+            if(pts){
+                quadCount++;
                 const score=(area/frameArea)*2;
                 if(score>bestScore){bestScore=score;best=pts;}
             }
-            approx.delete();c.delete();
+            c.delete();
         }
+        scanCamDebug.quads=quadCount;
+        scanCamDebug.largest=largestArea;
         if(!best)return null;
         return scanSortCornersCV(best);
     } catch(e){
+        console.error('CV 검출 오류:',e);
         return null;
     } finally {
         if(src)src.delete();if(gray)gray.delete();
