@@ -5422,9 +5422,11 @@ function openPdfTool(toolId){
     </div>`;
     const captureHtml = toolId==='scan' ? `
         <div class="scan-camera-wrap" id="scanCameraWrap" style="background:#000;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;">
-            <div style="position:relative;background:#000;">
+            <div style="position:relative;background:#000;" id="scanCamStage">
                 <video id="scanCamVideo" autoplay playsinline muted style="display:block;width:100%;height:auto;max-height:62vh;object-fit:contain;"></video>
+                <canvas id="scanCamOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
                 <div id="scanCamStatus" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.65);color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;">카메라 준비 중...</div>
+                <div id="scanCamCVStatus" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.65);color:#ffd54a;padding:5px 10px;border-radius:6px;font-size:11px;">OpenCV 로딩 중...</div>
             </div>
             <div style="display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;background:#111;">
                 <button class="pdf-btn pdf-btn-primary" onclick="scanShutter()" id="scanShutterBtn" disabled style="font-size:14px;padding:11px 26px;">📸 촬영</button>
@@ -6364,12 +6366,41 @@ async function pdfHwpx2Pdf(){
 }
 
 // ===== 사진 스캔 (자동 감지 + 크롭 + 원근 보정) =====
-// ───── 사진 스캔: 카메라 캡처 ─────
+// ───── 사진 스캔: 카메라 캡처 + OpenCV 라이브 검출 ─────
 let scanCamStream=null;
 let scanCamFacing='environment';
+let scanCamRafId=null;
+let scanCamLastQuad=null;       // 검출된 꼭짓점 (원본 비디오 좌표)
+let scanCapturedQuadPreset=null; // 촬영 순간의 검출 결과 → STEP1 초기값으로 사용
+let scanCVLoaded=false;
+let scanCVLoading=null;
+
+function scanLoadOpenCV(){
+    if(scanCVLoaded)return Promise.resolve();
+    if(scanCVLoading)return scanCVLoading;
+    scanCVLoading=new Promise((resolve,reject)=>{
+        const existing=document.querySelector('script[data-opencv]');
+        if(existing&&window.cv&&window.cv.Mat){scanCVLoaded=true;resolve();return;}
+        const s=document.createElement('script');
+        s.src='https://docs.opencv.org/4.8.0/opencv.js';
+        s.async=true;s.setAttribute('data-opencv','1');
+        s.onload=()=>{
+            const t0=Date.now();
+            const chk=setInterval(()=>{
+                if(window.cv&&window.cv.Mat){clearInterval(chk);scanCVLoaded=true;resolve();}
+                else if(Date.now()-t0>60000){clearInterval(chk);reject(new Error('OpenCV init timeout'));}
+            },150);
+        };
+        s.onerror=()=>reject(new Error('OpenCV 스크립트 로딩 실패'));
+        document.head.appendChild(s);
+    });
+    return scanCVLoading;
+}
+
 async function scanStartCamera(){
     const video=document.getElementById('scanCamVideo');
     const status=document.getElementById('scanCamStatus');
+    const cvStatus=document.getElementById('scanCamCVStatus');
     const shutter=document.getElementById('scanShutterBtn');
     const switchBtn=document.getElementById('scanSwitchBtn');
     if(!video)return;
@@ -6387,21 +6418,143 @@ async function scanStartCamera(){
         if(status)status.textContent=`${video.videoWidth}×${video.videoHeight} · 문서를 비추고 촬영하세요`;
         if(shutter)shutter.disabled=false;
         if(switchBtn)switchBtn.disabled=false;
+        if(cvStatus){
+            if(scanCVLoaded) cvStatus.textContent='🔲 OpenCV 준비됨';
+            else cvStatus.textContent='OpenCV 로딩 중... (10MB, 최초 1회)';
+        }
+        if(scanCamRafId)cancelAnimationFrame(scanCamRafId);
+        scanCamRafId=requestAnimationFrame(scanCamLoop);
+        scanLoadOpenCV().then(()=>{
+            if(cvStatus)cvStatus.textContent='🔲 자동 감지 ON';
+        }).catch(err=>{
+            if(cvStatus)cvStatus.textContent='OpenCV 로딩 실패 — 네모 감지 없이 촬영 가능';
+            console.warn('OpenCV load failed:',err);
+        });
     }catch(e){
         if(status)status.textContent='카메라 접근 실패: '+e.message+' (HTTPS/localhost 필요)';
     }
 }
+
 function scanStopCamera(){
+    if(scanCamRafId){cancelAnimationFrame(scanCamRafId);scanCamRafId=null;}
     if(scanCamStream){scanCamStream.getTracks().forEach(t=>t.stop());scanCamStream=null;}
     const v=document.getElementById('scanCamVideo');if(v)v.srcObject=null;
+    scanCamLastQuad=null;
 }
+
 function scanSwitchCamera(){
     scanCamFacing=scanCamFacing==='environment'?'user':'environment';
     scanStartCamera();
 }
+
+let scanCamDetectBusy=false;
+function scanCamLoop(){
+    const video=document.getElementById('scanCamVideo');
+    const overlay=document.getElementById('scanCamOverlay');
+    if(!video||!overlay||!scanCamStream){scanCamRafId=null;return;}
+    if(video.videoWidth&&video.readyState>=2){
+        const r=video.getBoundingClientRect();
+        const W=Math.max(1,Math.round(r.width)),H=Math.max(1,Math.round(r.height));
+        if(overlay.width!==W||overlay.height!==H){overlay.width=W;overlay.height=H;}
+        if(scanCVLoaded&&!scanCamDetectBusy){
+            scanCamDetectBusy=true;
+            try{scanCamDetectAndDraw(video,overlay);}
+            finally{scanCamDetectBusy=false;}
+        }
+    }
+    scanCamRafId=requestAnimationFrame(scanCamLoop);
+}
+
+function scanCamDetectAndDraw(video,overlay){
+    const srcW=video.videoWidth,srcH=video.videoHeight;
+    const scale=Math.min(1,480/Math.max(srcW,srcH));
+    const dw=Math.max(1,Math.round(srcW*scale)),dh=Math.max(1,Math.round(srcH*scale));
+    const work=document.createElement('canvas');
+    work.width=dw;work.height=dh;
+    work.getContext('2d').drawImage(video,0,0,dw,dh);
+    const quadSmall=scanDetectOuterQuadCV(work);
+    const ctx=overlay.getContext('2d');
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    if(quadSmall){
+        // video는 object-fit:contain — 오버레이에 그릴 때 실제 컨텐츠 영역 계산
+        const vRatio=srcW/srcH,dispRatio=overlay.width/overlay.height;
+        let contentW,contentH,offsetX,offsetY;
+        if(vRatio>dispRatio){contentW=overlay.width;contentH=overlay.width/vRatio;offsetX=0;offsetY=(overlay.height-contentH)/2;}
+        else{contentH=overlay.height;contentW=overlay.height*vRatio;offsetX=(overlay.width-contentW)/2;offsetY=0;}
+        const mapX=contentW/dw,mapY=contentH/dh;
+        ctx.strokeStyle='rgba(40,220,110,0.95)';
+        ctx.lineWidth=Math.max(2,overlay.width/240);
+        ctx.beginPath();
+        ctx.moveTo(offsetX+quadSmall[0].x*mapX,offsetY+quadSmall[0].y*mapY);
+        for(let i=1;i<4;i++)ctx.lineTo(offsetX+quadSmall[i].x*mapX,offsetY+quadSmall[i].y*mapY);
+        ctx.closePath();ctx.stroke();
+        ctx.fillStyle='rgba(40,220,110,0.95)';
+        quadSmall.forEach(p=>{
+            ctx.beginPath();
+            ctx.arc(offsetX+p.x*mapX,offsetY+p.y*mapY,Math.max(5,overlay.width/120),0,Math.PI*2);
+            ctx.fill();
+        });
+        scanCamLastQuad=quadSmall.map(p=>({x:p.x/scale,y:p.y/scale}));
+    } else {
+        scanCamLastQuad=null;
+    }
+}
+
+function scanDetectOuterQuadCV(canvas){
+    if(!window.cv||!window.cv.Mat)return null;
+    let src,gray,edges,kernel,contours,hier;
+    try{
+        src=cv.imread(canvas);
+        gray=new cv.Mat();
+        cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+        cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
+        edges=new cv.Mat();
+        cv.Canny(gray,edges,50,150);
+        kernel=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(3,3));
+        cv.dilate(edges,edges,kernel);
+        contours=new cv.MatVector();
+        hier=new cv.Mat();
+        cv.findContours(edges,contours,hier,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);
+        const frameArea=src.cols*src.rows;
+        const minArea=frameArea*0.15;
+        let best=null,bestScore=-Infinity;
+        for(let i=0;i<contours.size();i++){
+            const c=contours.get(i);
+            const area=cv.contourArea(c);
+            if(area<minArea){c.delete();continue;}
+            const peri=cv.arcLength(c,true);
+            const approx=new cv.Mat();
+            cv.approxPolyDP(c,approx,0.02*peri,true);
+            if(approx.rows===4){
+                const pts=[];
+                for(let j=0;j<4;j++)pts.push({x:approx.data32S[j*2],y:approx.data32S[j*2+1]});
+                const score=(area/frameArea)*2;
+                if(score>bestScore){bestScore=score;best=pts;}
+            }
+            approx.delete();c.delete();
+        }
+        if(!best)return null;
+        return scanSortCornersCV(best);
+    } catch(e){
+        return null;
+    } finally {
+        if(src)src.delete();if(gray)gray.delete();
+        if(edges)edges.delete();if(kernel)kernel.delete();
+        if(contours)contours.delete();if(hier)hier.delete();
+    }
+}
+
+function scanSortCornersCV(pts){
+    const sumSorted=pts.slice().sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+    const diffSorted=pts.slice().sort((a,b)=>(a.x-a.y)-(b.x-b.y));
+    return [sumSorted[0],diffSorted[3],sumSorted[3],diffSorted[0]];
+}
+
 async function scanShutter(){
     const video=document.getElementById('scanCamVideo');
     if(!video||!video.videoWidth){showToast('카메라가 준비되지 않았습니다','error');return;}
+    // 촬영 시점의 검출 결과를 STEP1 초기 코너로 전달
+    scanCapturedQuadPreset=scanCamLastQuad?scanCamLastQuad.slice():null;
     const canvas=document.createElement('canvas');
     canvas.width=video.videoWidth;canvas.height=video.videoHeight;
     canvas.getContext('2d').drawImage(video,0,0);
@@ -6413,9 +6566,11 @@ async function scanShutter(){
     renderPdfFiles();
     initScanPreview();
 }
+
 function scanRetake(){
     pdfToolFiles=[];
     scanOrigBitmap=null;scanCroppedBitmap=null;scanCorners=[];
+    scanCapturedQuadPreset=null;
     const a=document.getElementById('scanEditorArea');if(a)a.style.display='none';
     const wrap=document.getElementById('scanCameraWrap');if(wrap)wrap.style.display='';
     renderPdfFiles();
@@ -6448,15 +6603,22 @@ function scanGoStep1(){
     canvas.width=scanOrigBitmap.width*scanDisplayScale;
     canvas.height=scanOrigBitmap.height*scanDisplayScale;
     canvas.getContext('2d').drawImage(scanOrigBitmap,0,0,canvas.width,canvas.height);
-    // 초기 코너 (약간 안쪽)
+    // 초기 코너: 카메라에서 검출된 꼭짓점 있으면 사용, 없으면 안쪽 여백
+    let usedPreset=false;
     if(scanCorners.length!==4){
-        const w=scanOrigBitmap.width,h=scanOrigBitmap.height,m=0.05;
-        scanCorners=[{x:w*m,y:h*m},{x:w*(1-m),y:h*m},{x:w*(1-m),y:h*(1-m)},{x:w*m,y:h*(1-m)}];
+        if(scanCapturedQuadPreset&&scanCapturedQuadPreset.length===4){
+            scanCorners=scanCapturedQuadPreset.map(p=>({x:p.x,y:p.y}));
+            scanCapturedQuadPreset=null;
+            usedPreset=true;
+        } else {
+            const w=scanOrigBitmap.width,h=scanOrigBitmap.height,m=0.05;
+            scanCorners=[{x:w*m,y:h*m},{x:w*(1-m),y:h*m},{x:w*(1-m),y:h*(1-m)},{x:w*m,y:h*(1-m)}];
+        }
     }
     drawScanOverlay();
     setupScanDrag();
-    // 자동 감지 시도
-    scanAutoDetect();
+    // 프리셋이 있으면 자동 감지 생략 (촬영 시점의 검출이 더 정확)
+    if(!usedPreset) scanAutoDetect();
 }
 
 function drawScanOverlay(){
@@ -6527,6 +6689,20 @@ function setupScanDrag(){
 function scanAutoDetect(){
     if(!scanOrigBitmap)return;
     const W=scanOrigBitmap.width,H=scanOrigBitmap.height;
+    // OpenCV가 있으면 외곽 사각형 기반 검출 우선 (표 내부 무시, 원근 대응)
+    if(window.cv&&window.cv.Mat){
+        const tmp=document.createElement('canvas');
+        const scale=Math.min(1,640/Math.max(W,H));
+        tmp.width=Math.round(W*scale);tmp.height=Math.round(H*scale);
+        tmp.getContext('2d').drawImage(scanOrigBitmap,0,0,tmp.width,tmp.height);
+        const quad=scanDetectOuterQuadCV(tmp);
+        if(quad){
+            scanCorners=quad.map(p=>({x:p.x/scale,y:p.y/scale}));
+            drawScanOverlay();
+            return;
+        }
+    }
+    // 폴백: 기존 Sobel 기반 축 정렬 사각형
     const tmpC=document.createElement('canvas');
     const sw=Math.min(500,W),sh=Math.round(H*(sw/W));
     tmpC.width=sw;tmpC.height=sh;
