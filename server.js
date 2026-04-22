@@ -495,7 +495,77 @@ app.post('/api/winter-schedule/setup', requireAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// 공휴일 조회 (date.nager.at 프록시)
+// ===== 공휴일 조회 (date.nager.at + 대체공휴일 + 추가 임시공휴일) =====
+// date.nager.at는 대체공휴일과 선거·임시공휴일을 누락하므로 서버에서 보강.
+
+// 대체공휴일 적용 대상 (관공서 공휴일에 관한 규정 제3조). 신정/현충일은 법률상 제외.
+const SUBSTITUTABLE_SINGLE_NAMES = new Set([
+    'Independence Movement Day',  // 3·1절
+    'Liberation Day',             // 광복절
+    'National Foundation Day',    // 개천절
+    'Hangul Day',                 // 한글날
+    "Children's Day",             // 어린이날
+    "Buddha's Birthday",          // 부처님 오신 날 (2023~)
+    'Christmas Day',              // 크리스마스 (2023~)
+]);
+const HOLIDAY_GROUPS = { 'Lunar New Year': '설날', 'Chuseok': '추석' }; // 3일 연휴
+
+// date.nager.at가 누락하는 연도별 추가 공휴일 (전국동시선거, 임시공휴일 등)
+const EXTRA_HOLIDAYS_BY_YEAR = {
+    2026: [
+        { date: '2026-06-03', name: '제9회 전국동시지방선거' },
+    ],
+};
+
+function computeHolidaysWithSubs(nagerData, year) {
+    // 1) 기본 + 추가 수기 공휴일 병합
+    const base = (nagerData || []).map(d => ({ date: d.date, name: d.localName, src: d.name }));
+    const extras = (EXTRA_HOLIDAYS_BY_YEAR[year] || []).map(e => ({ date: e.date, name: e.name, src: 'extra' }));
+    const all = [...base, ...extras];
+    const existing = new Set(all.map(h => h.date));
+
+    function nextBusinessDay(iso) {
+        const d = new Date(iso + 'T00:00:00Z');
+        while (true) {
+            d.setUTCDate(d.getUTCDate() + 1);
+            const ds = d.toISOString().slice(0, 10);
+            const dow = d.getUTCDay();
+            if (dow !== 0 && dow !== 6 && !existing.has(ds)) return ds;
+        }
+    }
+
+    // 2) 단일 공휴일 중 토·일 겹침 → 다음 평일로 대체공휴일 추가
+    for (const h of base) {
+        if (!SUBSTITUTABLE_SINGLE_NAMES.has(h.src)) continue;
+        const dow = new Date(h.date + 'T00:00:00Z').getUTCDay();
+        if (dow === 0 || dow === 6) {
+            const sub = nextBusinessDay(h.date);
+            all.push({ date: sub, name: `${h.name} 대체공휴일`, src: 'substitute' });
+            existing.add(sub);
+        }
+    }
+
+    // 3) 설날·추석 연휴: 연휴 중 토·일 겹치면 연휴 마지막 다음 평일 1일 대체
+    for (const [groupSrc, korName] of Object.entries(HOLIDAY_GROUPS)) {
+        const dates = base.filter(h => h.src === groupSrc).map(h => h.date).sort();
+        if (dates.length === 0) continue;
+        const overlapsWeekend = dates.some(ds => {
+            const d = new Date(ds + 'T00:00:00Z').getUTCDay();
+            return d === 0 || d === 6;
+        });
+        if (overlapsWeekend) {
+            const last = dates[dates.length - 1];
+            const sub = nextBusinessDay(last);
+            all.push({ date: sub, name: `${korName} 대체공휴일`, src: 'substitute' });
+            existing.add(sub);
+        }
+    }
+
+    return all
+        .map(h => ({ date: h.date, name: h.name }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 app.get('/api/winter-schedule/holidays', requireAuth, async (req, res) => {
     const year = parseInt(req.query.year, 10);
     if (!year || year < 1900 || year > 2100) {
@@ -505,8 +575,7 @@ app.get('/api/winter-schedule/holidays', requireAuth, async (req, res) => {
         const r = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/KR`);
         if (!r.ok) throw new Error(`upstream ${r.status}`);
         const data = await r.json();
-        // [{date:"2026-01-01", localName:"신정", ...}, ...]
-        res.json(data.map(d => ({ date: d.date, name: d.localName })));
+        res.json(computeHolidaysWithSubs(data, year));
     } catch (e) {
         res.status(502).json({ error: '공휴일 조회 실패: ' + e.message });
     }
