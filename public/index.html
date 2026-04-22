@@ -1471,6 +1471,19 @@
             <span style="display:inline-block;width:12px;height:12px;background:repeating-linear-gradient(45deg,#0080C0,#0080C0 3px,#228B22 3px,#228B22 6px);vertical-align:middle;margin:0 4px 0 8px;"></span>오전근무/오후41조
             <span style="display:inline-block;width:12px;height:12px;background:#D9D9D9;vertical-align:middle;margin:0 4px 0 8px;"></span>토·일·공휴일
         </div>
+
+        <!-- 오늘의 복무 현황 (날짜별 그룹핑 뷰) -->
+        <div style="margin-top:24px;padding:18px;border:1px solid var(--border);border-radius:12px;background:#fff;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+                <h3 style="margin:0;font-size:18px;font-weight:800;">📊 오늘의 복무 현황</h3>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <label style="font-size:13px;color:var(--text-light);">날짜 선택</label>
+                    <input type="date" id="wsDailyDate" onchange="renderWinterDailyStatus()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+                    <button class="btn btn-secondary" onclick="wsDailyToday()" style="padding:7px 12px;font-size:13px;">오늘</button>
+                </div>
+            </div>
+            <div id="wsDailyStatus"></div>
+        </div>
     </div>
 
     <!-- Custom Tab Pages Container -->
@@ -10204,6 +10217,81 @@ function renderWinterSchedule(){
         bodyHtml+='</tr>';
     }
     body.innerHTML=bodyHtml;
+    renderWinterDailyStatus();
+}
+function wsDailyToday(){
+    const now=new Date();
+    const iso=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const picker=document.getElementById('wsDailyDate');
+    if(!picker)return;
+    const cfg=wsData.config||{};
+    picker.value=(cfg.startDate&&cfg.endDate&&iso>=cfg.startDate&&iso<=cfg.endDate)?iso:(cfg.startDate||iso);
+    renderWinterDailyStatus();
+}
+function renderWinterDailyStatus(){
+    const box=document.getElementById('wsDailyStatus');
+    const picker=document.getElementById('wsDailyDate');
+    if(!box||!picker)return;
+    const cfg=wsData.config||{};
+    if(!cfg.startDate||!cfg.endDate){
+        box.innerHTML='<div style="color:var(--text-light);font-size:13px;padding:12px;">방학 기간이 설정되지 않았습니다.</div>';
+        return;
+    }
+    picker.min=cfg.startDate;picker.max=cfg.endDate;
+    if(!picker.value){
+        const now=new Date();
+        const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        picker.value=(today>=cfg.startDate&&today<=cfg.endDate)?today:cfg.startDate;
+    }
+    if(picker.value<cfg.startDate)picker.value=cfg.startDate;
+    if(picker.value>cfg.endDate)picker.value=cfg.endDate;
+    const iso=picker.value;
+    const holidays=cfg.holidays||[];
+    const isHol=wsIsHolidayOrWeekend(iso,holidays);
+    const wd=WS_WEEKDAY_KOR[new Date(iso+'T00:00:00Z').getUTCDay()];
+    const holHit=(holidays||[]).find(h=>(h.date||h)===iso);
+    const holName=holHit?(holHit.name||''):'';
+
+    const groups={};
+    const staffSorted=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0));
+    for(const s of staffSorted){
+        const entry=wsData.entries[s.id]||{};
+        const v=(entry.days||{})[iso]||'';
+        const key=(!v&&isHol)?'토·일·공휴일':(v||'미입력');
+        if(!groups[key])groups[key]=[];
+        groups[key].push(s);
+    }
+
+    const displayOrder=['근무','출장','출장연수','41조연수','연가','기타','오전근무/오후41조','토·일·공휴일','미입력'];
+    const COLORS={
+        '근무':{bg:'#0080C0',fg:'#fff'},
+        '출장':{bg:'#FFA0A0',fg:'#000'},
+        '출장연수':{bg:'#B22222',fg:'#fff'},
+        '41조연수':{bg:'#228B22',fg:'#fff'},
+        '연가':{bg:'#FFD700',fg:'#000'},
+        '기타':{bg:'#FFA500',fg:'#000'},
+        '오전근무/오후41조':{bg:'#0080C0',fg:'#fff'},
+        '토·일·공휴일':{bg:'#757575',fg:'#fff'},
+        '미입력':{bg:'#E0E0E0',fg:'#555'}
+    };
+
+    let html=`<div style="font-size:14px;color:var(--text);margin-bottom:12px;font-weight:600;">📅 ${iso} (${wd})${holName?` · <span style="color:#c92a2a;">${esc(holName)}</span>`:''}${(isHol&&!holName)?' · 주말':''}</div>`;
+    html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">';
+    let anyShown=false;
+    for(const key of displayOrder){
+        const list=groups[key];
+        if(!list||!list.length)continue;
+        anyShown=true;
+        const c=COLORS[key]||{bg:'#999',fg:'#fff'};
+        html+=`<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.04);">`;
+        html+=`<div style="padding:10px 14px;background:${c.bg};color:${c.fg};font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center;"><span>${esc(key)}</span><span style="background:rgba(255,255,255,0.28);padding:2px 10px;border-radius:12px;font-size:12px;">${list.length}명</span></div>`;
+        html+='<div style="padding:10px 14px;font-size:13px;line-height:1.9;">';
+        html+=list.map(s=>`<div>${s.no?(s.no+'. '):''}<strong>${esc(s.name)}</strong>${s.position?`<span style="color:var(--text-light);font-size:11px;margin-left:6px;">${esc(s.position)}</span>`:''}</div>`).join('');
+        html+='</div></div>';
+    }
+    html+='</div>';
+    if(!anyShown)html+='<div style="color:var(--text-light);font-size:13px;padding:12px;text-align:center;">표시할 데이터가 없습니다.</div>';
+    box.innerHTML=html;
 }
 let _wsSaveTimer=null;
 function wsSetCell(iso,value){
