@@ -5421,16 +5421,45 @@ function openPdfTool(toolId){
         </div>
     </div>`;
     const captureHtml = toolId==='scan' ? `
-        <div class="scan-camera-wrap" id="scanCameraWrap" style="background:#000;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;">
+        <div class="scan-camera-wrap" id="scanCameraWrap" style="background:#0a0a0a;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;">
             <div style="position:relative;background:#000;" id="scanCamStage">
                 <video id="scanCamVideo" autoplay playsinline muted style="display:block;width:100%;height:auto;max-height:62vh;object-fit:contain;"></video>
                 <canvas id="scanCamOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
                 <div id="scanCamStatus" style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.65);color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;">카메라 준비 중...</div>
                 <div id="scanCamCVStatus" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.65);color:#ffd54a;padding:5px 10px;border-radius:6px;font-size:11px;">OpenCV 로딩 중...</div>
             </div>
-            <div style="display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;background:#111;">
-                <button class="pdf-btn pdf-btn-primary" onclick="scanShutter()" id="scanShutterBtn" disabled style="font-size:14px;padding:11px 26px;">📸 촬영</button>
-                <button class="pdf-btn pdf-btn-secondary" onclick="scanSwitchCamera()" id="scanSwitchBtn" disabled style="font-size:13px;padding:10px 18px;">🔄 카메라 전환</button>
+            <div style="display:flex;gap:8px;padding:10px 12px;justify-content:center;flex-wrap:wrap;background:#111;border-top:1px solid #222;">
+                <button class="pdf-btn pdf-btn-primary" onclick="scanShutter()" id="scanShutterBtn" disabled style="font-size:14px;padding:11px 26px;">📸 촬영 (누적)</button>
+                <button class="pdf-btn pdf-btn-secondary" onclick="scanSwitchCamera()" id="scanSwitchBtn" disabled style="font-size:13px;padding:10px 18px;">🔄 카메라</button>
+            </div>
+            <div style="padding:8px 12px;background:#161616;border-top:1px solid #222;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;color:#ccc;">
+                    <span style="color:#888;">보정:</span>
+                    <select id="scanBatchMode" style="background:#2a2a2a;color:#eee;border:1px solid #444;border-radius:5px;padding:4px 8px;font-size:12px;">
+                        <option value="auto" selected>자동 (그림자 제거+레벨)</option>
+                        <option value="bw">흑백 문서</option>
+                        <option value="gray">그레이스케일</option>
+                        <option value="color">컬러 선명</option>
+                        <option value="off">원본</option>
+                    </select>
+                    <span style="color:#888;margin-left:6px;">해상도:</span>
+                    <select id="scanBatchDpi" style="background:#2a2a2a;color:#eee;border:1px solid #444;border-radius:5px;padding:4px 8px;font-size:12px;">
+                        <option value="150">150 dpi (작음)</option>
+                        <option value="200" selected>200 dpi (권장)</option>
+                        <option value="300">300 dpi (고품질)</option>
+                    </select>
+                    <label style="margin-left:6px;color:#ccc;display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+                        <input type="checkbox" id="scanBatchWarp" checked> <span>원근 보정</span>
+                    </label>
+                </div>
+            </div>
+            <div id="scanBatchGallery" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#0f0f0f;border-top:1px solid #222;min-height:50px;align-items:center;">
+                <div id="scanBatchEmpty" style="color:#777;font-size:12px;">촬영한 페이지가 여기에 모입니다. 여러 장 찍고 <b>[💾 PDF 저장]</b> 눌러 한 번에 저장하세요.</div>
+            </div>
+            <div style="padding:10px 12px;background:#111;border-top:1px solid #222;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button class="pdf-btn pdf-btn-success" onclick="scanBatchFinish('pdf')" id="scanBatchPdfBtn" disabled style="font-size:14px;padding:11px 24px;">💾 PDF 저장 (0장)</button>
+                <button class="pdf-btn pdf-btn-secondary" onclick="scanBatchFinish('jpg')" id="scanBatchJpgBtn" disabled style="font-size:13px;padding:10px 18px;">🖼 JPG ZIP</button>
+                <button class="pdf-btn pdf-btn-secondary" onclick="scanBatchClear()" id="scanBatchClearBtn" disabled style="font-size:13px;padding:10px 18px;">🗑 전체 삭제</button>
             </div>
         </div>` : `
         <div class="pdf-dropzone" id="pdfDropzone" onclick="document.getElementById('pdfFileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handlePdfDrop(event)">
@@ -5457,6 +5486,7 @@ function openPdfTool(toolId){
 
 function closePdfTool(){
     scanStopCamera();
+    if(typeof scanBatchPages!=='undefined') scanBatchPages=[];
     document.getElementById('pdfToolsMain').style.display='';
     document.getElementById('pdfToolsWorkspace').innerHTML='';
     pdfToolFiles=[];pdfToolCurrent=null;pdfSelectedPages=new Set();pdfPageRotations={};
@@ -6593,27 +6623,252 @@ function scanSortCornersCV(pts){
     return [sumSorted[0],diffSorted[3],sumSorted[3],diffSorted[0]];
 }
 
+let scanBatchPages=[]; // { id, dataUrl, quad, thumbUrl, videoW, videoH }
+
 async function scanShutter(){
     const video=document.getElementById('scanCamVideo');
     if(!video||!video.videoWidth){showToast('카메라가 준비되지 않았습니다','error');return;}
-    // 촬영 시점의 검출 결과를 STEP1 초기 코너로 전달
-    scanCapturedQuadPreset=scanCamLastQuad?scanCamLastQuad.slice():null;
     const canvas=document.createElement('canvas');
     canvas.width=video.videoWidth;canvas.height=video.videoHeight;
     canvas.getContext('2d').drawImage(video,0,0);
-    const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',0.95));
-    const ab=await blob.arrayBuffer();
-    pdfToolFiles=[{name:`scan_${Date.now()}.jpg`,size:ab.byteLength,data:ab,pageCount:0,type:'image/jpeg'}];
-    scanStopCamera();
-    const wrap=document.getElementById('scanCameraWrap');if(wrap)wrap.style.display='none';
-    renderPdfFiles();
-    initScanPreview();
+    const dataUrl=canvas.toDataURL('image/jpeg',0.92);
+    // 썸네일 140px
+    const thumb=document.createElement('canvas');
+    const tw=140,th=Math.round(video.videoHeight*(tw/video.videoWidth));
+    thumb.width=tw;thumb.height=th;
+    thumb.getContext('2d').drawImage(canvas,0,0,tw,th);
+    const thumbUrl=thumb.toDataURL('image/jpeg',0.85);
+    const page={
+        id:'pg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+        dataUrl,thumbUrl,
+        quad:scanCamLastQuad?scanCamLastQuad.slice():null,
+        videoW:video.videoWidth,videoH:video.videoHeight,
+    };
+    scanBatchPages.push(page);
+    scanRenderBatchGallery();
+    scanFlashShutter();
+    // 카메라는 계속 켜둠 — 연속 촬영 가능
+}
+
+function scanFlashShutter(){
+    const stage=document.getElementById('scanCamStage');
+    if(!stage)return;
+    const flash=document.createElement('div');
+    flash.style.cssText='position:absolute;inset:0;background:white;pointer-events:none;z-index:20;opacity:0.85;transition:opacity 0.25s;';
+    stage.appendChild(flash);
+    requestAnimationFrame(()=>{flash.style.opacity='0';});
+    setTimeout(()=>flash.remove(),280);
+}
+
+function scanRenderBatchGallery(){
+    const g=document.getElementById('scanBatchGallery');
+    const empty=document.getElementById('scanBatchEmpty');
+    const pdfBtn=document.getElementById('scanBatchPdfBtn');
+    const jpgBtn=document.getElementById('scanBatchJpgBtn');
+    const clearBtn=document.getElementById('scanBatchClearBtn');
+    if(!g)return;
+    [...g.querySelectorAll('.scan-batch-thumb')].forEach(el=>el.remove());
+    if(scanBatchPages.length===0){
+        if(empty)empty.style.display='';
+        if(pdfBtn){pdfBtn.disabled=true;pdfBtn.textContent='💾 PDF 저장 (0장)';}
+        if(jpgBtn)jpgBtn.disabled=true;
+        if(clearBtn)clearBtn.disabled=true;
+        return;
+    }
+    if(empty)empty.style.display='none';
+    if(pdfBtn){pdfBtn.disabled=false;pdfBtn.textContent=`💾 PDF 저장 (${scanBatchPages.length}장)`;}
+    if(jpgBtn)jpgBtn.disabled=false;
+    if(clearBtn)clearBtn.disabled=false;
+    scanBatchPages.forEach((page,idx)=>{
+        const wrap=document.createElement('div');
+        wrap.className='scan-batch-thumb';
+        wrap.style.cssText='position:relative;width:110px;border-radius:6px;overflow:hidden;border:1px solid #333;background:#000;';
+        const quadBadge=page.quad?'<span title="네모 감지됨" style="position:absolute;bottom:4px;right:4px;background:rgba(40,180,80,0.9);color:white;padding:1px 5px;font-size:10px;border-radius:3px;font-weight:700;">✓</span>':'<span title="네모 미감지" style="position:absolute;bottom:4px;right:4px;background:rgba(180,60,60,0.9);color:white;padding:1px 5px;font-size:10px;border-radius:3px;font-weight:700;">?</span>';
+        wrap.innerHTML=`
+            <img src="${page.thumbUrl}" style="width:100%;display:block;" alt="page ${idx+1}">
+            <span style="position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.78);color:white;padding:1px 6px;font-size:11px;border-radius:3px;font-weight:700;">${idx+1}</span>
+            <button data-idx="${idx}" class="scan-thumb-rm" style="position:absolute;top:4px;right:4px;background:rgba(231,76,60,0.95);color:white;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;padding:0;font-size:13px;line-height:1;" title="삭제">×</button>
+            ${quadBadge}`;
+        wrap.querySelector('.scan-thumb-rm').onclick=(e)=>{
+            e.stopPropagation();
+            const i=parseInt(e.target.dataset.idx,10);
+            scanBatchPages.splice(i,1);
+            scanRenderBatchGallery();
+        };
+        g.appendChild(wrap);
+    });
+}
+
+function scanBatchClear(){
+    if(!scanBatchPages.length)return;
+    if(!confirm('촬영한 페이지 전체를 삭제할까요?'))return;
+    scanBatchPages=[];
+    scanRenderBatchGallery();
+}
+
+function scanLoadImage(src){
+    return new Promise((res,rej)=>{
+        const img=new Image();
+        img.onload=()=>res(img);
+        img.onerror=rej;
+        img.src=src;
+    });
+}
+
+function scanWarpPerspective(img,quad){
+    if(!window.cv||!window.cv.Mat)return null;
+    const src=document.createElement('canvas');
+    src.width=img.width;src.height=img.height;
+    src.getContext('2d').drawImage(img,0,0);
+    const srcMat=cv.imread(src);
+    const sorted=scanSortCornersCV(quad);
+    const tl=sorted[0],tr=sorted[1],br=sorted[2],bl=sorted[3];
+    const wT=Math.hypot(tr.x-tl.x,tr.y-tl.y);
+    const wB=Math.hypot(br.x-bl.x,br.y-bl.y);
+    const hL=Math.hypot(bl.x-tl.x,bl.y-tl.y);
+    const hR=Math.hypot(br.x-tr.x,br.y-tr.y);
+    const tw=Math.max(1,Math.round(Math.max(wT,wB)));
+    const th=Math.max(1,Math.round(Math.max(hL,hR)));
+    const srcPts=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]);
+    const dstPts=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,tw,0,tw,th,0,th]);
+    const M=cv.getPerspectiveTransform(srcPts,dstPts);
+    const dst=new cv.Mat();
+    cv.warpPerspective(srcMat,dst,M,new cv.Size(tw,th));
+    const out=document.createElement('canvas');
+    out.width=tw;out.height=th;
+    cv.imshow(out,dst);
+    srcMat.delete();srcPts.delete();dstPts.delete();M.delete();dst.delete();
+    return out;
+}
+
+function scanResizeToDpi(canvas,dpi){
+    // A4: 210x297mm. dpi=150→1240x1754, 200→1654x2339, 300→2480x3508
+    const targets={150:[1240,1754],200:[1654,2339],300:[2480,3508]};
+    const [tw,th]=targets[dpi]||targets[200];
+    const ratio=canvas.width/canvas.height;
+    let w,h;
+    if(ratio>tw/th){w=tw;h=Math.round(tw/ratio);} else {h=th;w=Math.round(th*ratio);}
+    if(w===canvas.width&&h===canvas.height)return canvas;
+    const out=document.createElement('canvas');
+    out.width=w;out.height=h;
+    out.getContext('2d').drawImage(canvas,0,0,w,h);
+    return out;
+}
+
+async function scanProcessBatchPage(page,opts){
+    const {mode,dpi,warp}=opts;
+    const img=await scanLoadImage(page.dataUrl);
+    let processed;
+    if(warp&&page.quad&&window.cv){
+        processed=scanWarpPerspective(img,page.quad)||imageToCanvasLocal(img);
+    } else {
+        processed=imageToCanvasLocal(img);
+    }
+    processed=scanResizeToDpi(processed,parseInt(dpi,10));
+    // 필터 적용 — 기존 applyScanFilter 사용하되 scanMode select가 없어도 동작하게 임시 주입
+    if(mode!=='off'){
+        // scanMode 임시 override
+        const existingModeEl=document.getElementById('scanMode');
+        let tempModeInput=null;
+        if(!existingModeEl){
+            tempModeInput=document.createElement('input');
+            tempModeInput.type='hidden';tempModeInput.id='scanMode';tempModeInput.value=mode;
+            document.body.appendChild(tempModeInput);
+        } else {
+            existingModeEl.value=mode;
+        }
+        const ctx=processed.getContext('2d');
+        const data=ctx.getImageData(0,0,processed.width,processed.height);
+        applyScanFilter(data);
+        ctx.putImageData(data,0,0);
+        if(tempModeInput)tempModeInput.remove();
+    }
+    return processed;
+}
+
+function imageToCanvasLocal(img){
+    const c=document.createElement('canvas');
+    c.width=img.naturalWidth||img.width;c.height=img.naturalHeight||img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    return c;
+}
+
+async function scanBatchFinish(outputType){
+    if(!scanBatchPages.length)return;
+    const mode=document.getElementById('scanBatchMode')?.value||'auto';
+    const dpi=document.getElementById('scanBatchDpi')?.value||'200';
+    const warp=document.getElementById('scanBatchWarp')?.checked!==false;
+    const progress=document.getElementById('pdfProgress');
+    const progressFill=document.getElementById('pdfProgressFill');
+    const progressText=document.getElementById('pdfProgressText');
+    if(progress)progress.classList.add('active');
+    const pdfBtn=document.getElementById('scanBatchPdfBtn');
+    const jpgBtn=document.getElementById('scanBatchJpgBtn');
+    if(pdfBtn)pdfBtn.disabled=true;if(jpgBtn)jpgBtn.disabled=true;
+    try {
+        if(outputType==='pdf'){
+            const doc=await PDFLib.PDFDocument.create();
+            for(let i=0;i<scanBatchPages.length;i++){
+                if(progressText)progressText.textContent=`페이지 ${i+1}/${scanBatchPages.length} 처리 중...`;
+                if(progressFill)progressFill.style.width=`${(i/scanBatchPages.length)*90}%`;
+                const canvas=await scanProcessBatchPage(scanBatchPages[i],{mode,dpi,warp});
+                const jpgData=canvas.toDataURL('image/jpeg',0.92);
+                const jpgBytes=Uint8Array.from(atob(jpgData.split(',')[1]),c=>c.charCodeAt(0));
+                const jpg=await doc.embedJpg(jpgBytes);
+                const pageW=595.28,pageH=841.89;
+                const r=jpg.width/jpg.height,pr=pageW/pageH;
+                let w,h;
+                if(r>pr){w=pageW;h=pageW/r;} else {h=pageH;w=pageH*r;}
+                const pg=doc.addPage([pageW,pageH]);
+                pg.drawImage(jpg,{x:(pageW-w)/2,y:(pageH-h)/2,width:w,height:h});
+                await new Promise(r=>setTimeout(r,1));
+            }
+            if(progressText)progressText.textContent='PDF 생성 중...';
+            if(progressFill)progressFill.style.width='95%';
+            const bytes=await doc.save();
+            const blob=new Blob([bytes],{type:'application/pdf'});
+            scanDownloadBlob(blob,`scanned_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`);
+            showToast(`${scanBatchPages.length}장 PDF 저장 완료!`,'success');
+        } else { // jpg zip
+            const zip=new JSZip();
+            for(let i=0;i<scanBatchPages.length;i++){
+                if(progressText)progressText.textContent=`페이지 ${i+1}/${scanBatchPages.length} 처리 중...`;
+                if(progressFill)progressFill.style.width=`${(i/scanBatchPages.length)*90}%`;
+                const canvas=await scanProcessBatchPage(scanBatchPages[i],{mode,dpi,warp});
+                const blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',0.92));
+                zip.file(`page_${String(i+1).padStart(2,'0')}.jpg`,blob);
+                await new Promise(r=>setTimeout(r,1));
+            }
+            if(progressText)progressText.textContent='ZIP 생성 중...';
+            if(progressFill)progressFill.style.width='95%';
+            const zipBlob=await zip.generateAsync({type:'blob'});
+            scanDownloadBlob(zipBlob,`scanned_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.zip`);
+            showToast(`${scanBatchPages.length}장 ZIP 저장 완료!`,'success');
+        }
+    } catch(e){
+        console.error(e);
+        showToast('저장 실패: '+e.message,'error');
+    } finally {
+        if(progress){setTimeout(()=>progress.classList.remove('active'),800);}
+        if(progressFill)progressFill.style.width='100%';
+        if(pdfBtn)pdfBtn.disabled=false;if(jpgBtn)jpgBtn.disabled=false;
+    }
+}
+
+function scanDownloadBlob(blob,filename){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 function scanRetake(){
+    scanBatchPages=[];
     pdfToolFiles=[];
     scanOrigBitmap=null;scanCroppedBitmap=null;scanCorners=[];
     scanCapturedQuadPreset=null;
+    scanRenderBatchGallery();
     const a=document.getElementById('scanEditorArea');if(a)a.style.display='none';
     const wrap=document.getElementById('scanCameraWrap');if(wrap)wrap.style.display='';
     renderPdfFiles();
