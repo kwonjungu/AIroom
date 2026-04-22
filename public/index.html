@@ -2804,12 +2804,37 @@ function calPickerSelect(btn,dateStr){
     goToDate(dateStr);
 }
 
-function toggleAdmin(){
-    isAdmin=!isAdmin;document.body.classList.toggle('admin-mode',isAdmin);
+async function toggleAdmin(){
+    // 이미 관리 ON인 경우 → 끄기
+    if(isAdmin){
+        isAdmin=false;document.body.classList.remove('admin-mode');
+        const b=document.getElementById('btnAdmin');
+        b.textContent='🔧 관리';
+        b.style.background='rgba(255,255,255,0.2)';
+        renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
+        return;
+    }
+    // 관리 ON 요청 — 서버 세션이 admin이 아니면 관리자 코드로 재로그인
+    if(authRole!=='admin'){
+        const code=prompt('관리자 코드를 입력하세요');
+        if(!code)return;
+        try{
+            const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+            const data=await r.json();
+            if(!r.ok||data.role!=='admin'){
+                showToast(data.error||'관리자 코드가 올바르지 않습니다','error');
+                return;
+            }
+            authToken=data.token;authRole=data.role;
+            localStorage.setItem('airoom_auth_token',authToken);
+            localStorage.setItem('airoom_auth_role',authRole);
+        }catch(e){showToast('서버 연결 실패','error');return;}
+    }
+    isAdmin=true;document.body.classList.add('admin-mode');
     const b=document.getElementById('btnAdmin');
-    b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
-    b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
-    if(isAdmin)showToast('관리 모드 활성화','success');
+    b.textContent='✅ 관리 ON';
+    b.style.background='rgba(81,207,102,0.3)';
+    showToast('관리 모드 활성화','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
 }
 
