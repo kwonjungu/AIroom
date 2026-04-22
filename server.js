@@ -473,8 +473,8 @@ app.patch('/api/winter-schedule/entries/:staffId', requireAuth, async (req, res)
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// 방학 세팅 (config 설정) — 관리자만. 이 요청은 전체 entries를 날린다.
-app.post('/api/winter-schedule/setup', requireAdmin, async (req, res) => {
+// 방학 세팅 (config 설정) — 인증된 사용자. 이 요청은 전체 entries를 날린다.
+app.post('/api/winter-schedule/setup', requireAuth, async (req, res) => {
     try {
         const { startDate, endDate, holidays } = req.body || {};
         if (!startDate || !endDate) {
@@ -567,8 +567,8 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
     }
 });
 
-// 전체 일정 엑셀 export (색 포함) — 관리자만
-app.get('/api/winter-schedule/xlsx', requireAdmin, async (req, res) => {
+// 전체 일정 엑셀 export (색 포함) — 인증된 사용자
+app.get('/api/winter-schedule/xlsx', requireAuth, async (req, res) => {
     try {
         const [ws, staff] = await Promise.all([
             readData('winter-schedule.json'),
