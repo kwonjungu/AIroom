@@ -1146,11 +1146,25 @@ async function mgrLogout() {
 // ═══════════════════════════════════════════════
 // 담당자 폼 렌더
 // ═══════════════════════════════════════════════
+// 인원 합계 자동 계산: 계 = 학생 + 교직원 + 유치원 + 조리원 + 기타
+function recalcPortionTotal() {
+  let sum = 0;
+  PORTION_ROWS.forEach(r => {
+    if (r === '계') return;
+    const el = document.querySelector(`input[data-count="${r}"]`);
+    const n = parseInt(el && el.value, 10);
+    if (!isNaN(n) && n > 0) sum += n;
+  });
+  const totalEl = document.querySelector('input[data-count="계"]');
+  if (totalEl) totalEl.value = sum > 0 ? String(sum) : '';
+}
+
 function buildManagerForm() {
   // 검식/급식량/인원 테이블 생성
   const pBody = $('mgr-portion-tbody');
   pBody.innerHTML = '';
   PORTION_ROWS.forEach(row => {
+    const isTotal = row === '계';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="font-bold bg-gray-50 text-xs">${row}</td>
@@ -1163,10 +1177,17 @@ function buildManagerForm() {
         <span class="radio-pill" data-group="p-amt-${row}" data-val="적당">적당</span>
         <span class="radio-pill" data-group="p-amt-${row}" data-val="부족">부족</span>
       </td>
-      <td><input type="number" min="0" data-count="${row}" placeholder="0"></td>
+      <td><input type="number" min="0" data-count="${row}" placeholder="0"${isTotal ? ' readonly class="bg-gray-50 font-bold text-gray-800"' : ''}></td>
     `;
     pBody.appendChild(tr);
   });
+  // 계(합계) 자동 계산 — 학생+교직원+유치원+조리원+기타
+  pBody.addEventListener('input', (e) => {
+    if (e.target.matches('input[data-count]') && e.target.dataset.count !== '계') {
+      recalcPortionTotal();
+    }
+  });
+  recalcPortionTotal();
 
   // 점검사항
   const cWrap = $('mgr-check-items');
@@ -1302,6 +1323,7 @@ function restoreJournalToForm(j) {
     const cEl = document.querySelector(`[data-count="${r}"]`);
     if (cEl) cEl.value = (d.portions && d.portions[r]?.count) || '';
   });
+  recalcPortionTotal();
   CHECK_ITEMS.forEach(it => setRadioValue(it.key, (d.checks && d.checks[it.key]) || ''));
   setRadioValue('preserve-do', d.preserveDo || '');
   setRadioValue('preserve-state', d.preserveState || '');
