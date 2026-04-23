@@ -338,7 +338,9 @@ const KV_KEYS = {
     'collections.json': 'collections',
     'esign-docs.json': 'esign-docs',
     'tdist-docs.json': 'tdist-docs',
-    'winter-schedule.json': 'winter-schedule'
+    'winter-schedule.json': 'winter-schedule',
+    'bap-managers.json': 'bap-managers',
+    'bap-bosses.json': 'bap-bosses'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -769,6 +771,168 @@ app.post('/api/bap/parse-menu', express.json({ limit: '50mb' }), async (req, res
         res.json({ menus, count });
     } catch (e) {
         console.error('[/api/bap/parse-menu]', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ===== /bap 사용자 인증 =====
+// 기존 hashPassword(PBKDF2) + Redis 패턴 재사용. 별도 토큰 store(bap-session:)로
+// 메인 앱 세션과 충돌 방지. 33명 내부 학교용이라 단순/실용 우선.
+const BAP_SESSION_TTL = 30 * 86400; // 30일
+
+function bapValidName(s) {
+    return typeof s === 'string' && s.trim().length >= 1 && s.trim().length <= 30;
+}
+function bapValidPw(s) {
+    return typeof s === 'string' && s.length >= 4 && s.length <= 128;
+}
+function bapRoleKey(role) {
+    if (role === 'manager') return 'bap-managers.json';
+    if (role === 'boss')    return 'bap-bosses.json';
+    return null;
+}
+
+async function bapSessionGet(token) {
+    if (!token) return null;
+    if (!redis) return null;
+    try {
+        const data = await redis.get('bap-session:' + token);
+        if (!data) return null;
+        return typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (e) { return null; }
+}
+async function bapSessionSet(token, payload) {
+    if (!redis) return;
+    try { await redis.set('bap-session:' + token, JSON.stringify(payload), { ex: BAP_SESSION_TTL }); }
+    catch (e) { console.warn('bap-session set 실패:', e.message); }
+}
+async function bapSessionDel(token) {
+    if (!redis) return;
+    try { await redis.del('bap-session:' + token); } catch (e) {}
+}
+
+// 인증 미들웨어
+async function bapAuth(req, res, next) {
+    const token = req.header('X-Bap-Token');
+    const sess = await bapSessionGet(token);
+    if (!sess) return res.status(401).json({ error: '로그인이 필요합니다.' });
+    req.bapSession = sess;
+    req.bapToken = token;
+    next();
+}
+
+// 가입된 이름 목록 (로그인 dropdown용, 비번 정보 제외)
+app.get('/api/bap/auth/list', async (req, res) => {
+    const role = req.query.role;
+    const file = bapRoleKey(role);
+    if (!file) return res.status(400).json({ error: 'role은 manager 또는 boss' });
+    const map = (await readData(file)) || {};
+    res.json({ names: Object.keys(map).sort() });
+});
+
+// 회원가입
+app.post('/api/bap/auth/signup', async (req, res) => {
+    try {
+        const { role, name, password } = req.body || {};
+        const file = bapRoleKey(role);
+        if (!file) return res.status(400).json({ error: 'role은 manager 또는 boss' });
+        if (!bapValidName(name)) return res.status(400).json({ error: '이름은 1~30자' });
+        if (!bapValidPw(password)) return res.status(400).json({ error: '비밀번호는 4~128자' });
+        const cleanName = name.trim();
+        const map = (await readData(file)) || {};
+        if (map[cleanName]) return res.status(409).json({ error: '이미 가입된 이름입니다. 로그인하거나 다른 이름을 사용하세요.' });
+        const { hash, salt } = hashPassword(password);
+        const now = new Date().toISOString();
+        map[cleanName] = { pwHash: hash, pwSalt: salt, createdAt: now, updatedAt: now };
+        await writeData(file, map);
+        const token = generateToken();
+        await bapSessionSet(token, { role, name: cleanName, createdAt: Date.now() });
+        res.json({ token, name: cleanName, role });
+    } catch (e) {
+        console.error('[bap signup]', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 로그인
+app.post('/api/bap/auth/login', async (req, res) => {
+    try {
+        const { role, name, password } = req.body || {};
+        const file = bapRoleKey(role);
+        if (!file) return res.status(400).json({ error: 'role은 manager 또는 boss' });
+        if (!bapValidName(name) || !bapValidPw(password)) return res.status(400).json({ error: '이름/비밀번호 형식 오류' });
+        const cleanName = name.trim();
+        const map = (await readData(file)) || {};
+        const acc = map[cleanName];
+        if (!acc) return res.status(404).json({ error: '가입되지 않은 이름입니다.' });
+        if (!verifyPassword(password, acc.pwHash, acc.pwSalt)) {
+            return res.status(401).json({ error: '비밀번호가 틀립니다.' });
+        }
+        const token = generateToken();
+        await bapSessionSet(token, { role, name: cleanName, createdAt: Date.now() });
+        res.json({ token, name: cleanName, role });
+    } catch (e) {
+        console.error('[bap login]', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 현재 세션 조회
+app.get('/api/bap/auth/me', bapAuth, (req, res) => {
+    res.json({ name: req.bapSession.name, role: req.bapSession.role });
+});
+
+// 비밀번호 변경
+app.post('/api/bap/auth/change-password', bapAuth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body || {};
+        if (!bapValidPw(currentPassword) || !bapValidPw(newPassword)) {
+            return res.status(400).json({ error: '비밀번호는 4~128자' });
+        }
+        const { role, name } = req.bapSession;
+        const file = bapRoleKey(role);
+        const map = (await readData(file)) || {};
+        const acc = map[name];
+        if (!acc) return res.status(404).json({ error: '계정을 찾을 수 없습니다.' });
+        if (!verifyPassword(currentPassword, acc.pwHash, acc.pwSalt)) {
+            return res.status(401).json({ error: '현재 비밀번호가 틀립니다.' });
+        }
+        const { hash, salt } = hashPassword(newPassword);
+        acc.pwHash = hash; acc.pwSalt = salt; acc.updatedAt = new Date().toISOString();
+        map[name] = acc;
+        await writeData(file, map);
+        res.json({ ok: true });
+    } catch (e) {
+        console.error('[bap change-password]', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 로그아웃
+app.post('/api/bap/auth/logout', bapAuth, async (req, res) => {
+    await bapSessionDel(req.bapToken);
+    res.json({ ok: true });
+});
+
+// 계정 삭제 (현재 비번 확인 후)
+app.delete('/api/bap/auth/account', bapAuth, async (req, res) => {
+    try {
+        const { currentPassword } = req.body || {};
+        if (!bapValidPw(currentPassword)) return res.status(400).json({ error: '비밀번호 형식 오류' });
+        const { role, name } = req.bapSession;
+        const file = bapRoleKey(role);
+        const map = (await readData(file)) || {};
+        const acc = map[name];
+        if (!acc) return res.status(404).json({ error: '계정을 찾을 수 없습니다.' });
+        if (!verifyPassword(currentPassword, acc.pwHash, acc.pwSalt)) {
+            return res.status(401).json({ error: '비밀번호가 틀립니다.' });
+        }
+        delete map[name];
+        await writeData(file, map);
+        await bapSessionDel(req.bapToken);
+        res.json({ ok: true });
+    } catch (e) {
+        console.error('[bap delete account]', e);
         res.status(500).json({ error: e.message });
     }
 });

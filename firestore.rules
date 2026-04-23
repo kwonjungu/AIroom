@@ -45,7 +45,8 @@ service cloud.firestore {
     // 핵심: approved 상태 일지는 수정·삭제 절대 불가
     // submitted 상태에서만 approved로 전환 허용
     match /bap_journals/{date} {
-      allow read: if date.matches('\\d{4}-\\d{2}-\\d{2}');
+      // list 쿼리 호환을 위해 read는 전면 허용 (내부 보안은 PIN으로 제어)
+      allow read: if true;
 
       // 신규 생성: status=submitted, managerName 필수
       allow create: if request.resource.data.status == 'submitted'

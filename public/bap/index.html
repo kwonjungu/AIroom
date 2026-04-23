@@ -63,7 +63,12 @@
       <h1 class="text-3xl font-bold text-gray-800">🍱 백암초 급식일지</h1>
       <p class="text-sm text-gray-500 mt-1">비조리교 학교급식 일일 기록 시스템</p>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-4xl">
+      <button data-go="menu" class="landing-btn bg-white hover:bg-amber-50 border-2 border-amber-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
+        <span class="text-6xl">🍚</span>
+        <span class="text-xl font-bold text-gray-800">월별 식단 입력하기</span>
+        <span class="text-xs text-gray-500 text-center">HWPX 업로드 · AI 자동 추출</span>
+      </button>
       <button data-go="manager" class="landing-btn bg-white hover:bg-blue-50 border-2 border-blue-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
         <span class="text-6xl">📝</span>
         <span class="text-xl font-bold text-gray-800">담당자</span>
@@ -79,31 +84,94 @@
   </div>
 </div>
 
-<!-- ════════ 1. 담당자 로그인 ════════ -->
+<!-- ════════ 0-1. 월별 식단 업로드 (로그인 불필요) ════════ -->
+<div id="view-menu-upload" class="view">
+  <div class="min-h-screen px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2 mb-4">← 처음으로</button>
+      <div class="text-center mb-6">
+        <span class="text-5xl">🍚</span>
+        <h2 class="text-2xl font-bold text-gray-800 mt-2">월별 식단 입력하기</h2>
+        <p class="text-sm text-gray-500 mt-1">한글(HWPX) 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출해 저장합니다.</p>
+      </div>
+      <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 mb-4 text-sm text-amber-900">
+        <p class="font-bold">⚠️ HWPX 형식만 가능합니다.</p>
+        <p class="text-xs mt-1">한글에서 <b>다른 이름으로 저장 → HWPX(*.hwpx)</b> 형식으로 저장한 파일이어야 합니다. 구버전 HWP, DOCX, PDF는 지원하지 않습니다.</p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600">연도</label>
+            <input type="number" id="mu-year" min="2024" max="2030">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-600">월</label>
+            <input type="number" id="mu-month" min="1" max="12">
+          </div>
+          <div class="flex items-end">
+            <input type="file" id="mu-file" accept=".hwpx" class="text-xs">
+          </div>
+        </div>
+        <button data-action="mu-upload" class="w-full bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl">🤖 업로드 & AI 파싱</button>
+        <div id="mu-result" class="mt-3"></div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-gray-800 text-sm">저장된 월별 식단 조회</h3>
+          <div class="flex items-center gap-2">
+            <input type="month" id="mu-view-month" class="!w-32">
+            <button data-action="mu-list" class="bg-gray-600 text-white font-bold py-2 px-3 rounded-lg text-xs">조회</button>
+          </div>
+        </div>
+        <div id="mu-list" class="space-y-1 text-sm max-h-96 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 1. 담당자 로그인 / 가입 ════════ -->
 <div id="view-manager-login" class="view">
   <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
     <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2">← 처음으로</button>
     <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm">
       <div class="text-center mb-4">
         <span class="text-4xl">📝</span>
-        <h2 class="text-xl font-bold text-gray-800 mt-2">담당자 로그인</h2>
-        <p id="mgr-mode-hint" class="text-xs text-gray-500 mt-1">이름을 입력하세요</p>
+        <h2 class="text-xl font-bold text-gray-800 mt-2">담당자</h2>
       </div>
-      <div class="space-y-3">
+      <div class="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+        <button data-mgr-tab="login"  class="mgr-tab-btn flex-1 py-2 rounded-md text-sm font-bold">로그인</button>
+        <button data-mgr-tab="signup" class="mgr-tab-btn flex-1 py-2 rounded-md text-sm font-bold">회원가입</button>
+      </div>
+
+      <div id="mgr-tab-login" class="mgr-tab-pane space-y-3">
         <div>
           <label class="text-xs font-bold text-gray-600">이름</label>
-          <input type="text" id="mgr-name" placeholder="홍길동" autocomplete="off">
+          <select id="mgr-login-name"><option value="">— 가입자 선택 —</option></select>
+          <p class="text-[11px] text-gray-400 mt-1">목록에 없으면 회원가입 탭으로 이동하세요.</p>
         </div>
-        <div id="mgr-pw-wrap" class="hidden">
+        <div>
           <label class="text-xs font-bold text-gray-600">비밀번호</label>
-          <input type="password" id="mgr-pw" placeholder="비밀번호" autocomplete="current-password">
+          <input type="password" id="mgr-login-pw" placeholder="비밀번호" autocomplete="current-password">
         </div>
-        <div id="mgr-pw2-wrap" class="hidden">
-          <label class="text-xs font-bold text-gray-600">비밀번호 확인 (신규 가입)</label>
-          <input type="password" id="mgr-pw2" placeholder="동일 비밀번호" autocomplete="new-password">
+        <p id="mgr-login-err" class="text-xs text-red-500 hidden"></p>
+        <button data-action="mgr-login" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl">로그인</button>
+      </div>
+
+      <div id="mgr-tab-signup" class="mgr-tab-pane space-y-3 hidden">
+        <div>
+          <label class="text-xs font-bold text-gray-600">이름</label>
+          <input type="text" id="mgr-signup-name" placeholder="홍길동" autocomplete="off">
         </div>
-        <p id="mgr-err" class="text-xs text-red-500 hidden"></p>
-        <button id="mgr-login-btn" data-action="mgr-login" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl">로그인 / 가입</button>
+        <div>
+          <label class="text-xs font-bold text-gray-600">비밀번호 (4자 이상)</label>
+          <input type="password" id="mgr-signup-pw" placeholder="비밀번호" autocomplete="new-password">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600">비밀번호 확인</label>
+          <input type="password" id="mgr-signup-pw2" placeholder="동일 비밀번호" autocomplete="new-password">
+        </div>
+        <p id="mgr-signup-err" class="text-xs text-red-500 hidden"></p>
+        <button data-action="mgr-signup" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl">가입 & 로그인</button>
       </div>
     </div>
   </div>
@@ -119,6 +187,7 @@
       </div>
       <div class="flex items-center gap-2">
         <button data-action="mgr-new" class="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-2 rounded-lg">+ 새 일지</button>
+        <button data-action="open-mypage" class="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-2 rounded-lg">⚙️ 마이페이지</button>
         <button data-action="mgr-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
       </div>
     </div>
@@ -238,31 +307,49 @@
   </div>
 </div>
 
-<!-- ════════ 3. 부장 PIN 로그인 ════════ -->
+<!-- ════════ 3. 결재자 로그인 / 가입 ════════ -->
 <div id="view-boss-login" class="view">
   <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
     <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2">← 처음으로</button>
-    <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+    <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm">
       <div class="text-center mb-4">
         <span class="text-4xl">🔒</span>
-        <h2 class="text-xl font-bold text-white mt-2">결재자 전용</h2>
-        <p id="boss-mode-hint" class="text-xs text-gray-400 mt-1">확인 중...</p>
+        <h2 class="text-xl font-bold text-gray-800 mt-2">결재자(부장)</h2>
       </div>
-      <div class="space-y-3">
-        <div id="boss-name-wrap" class="hidden">
-          <label class="text-xs font-bold text-gray-300">결재자 이름 (최초 1회)</label>
-          <input type="text" id="boss-name" placeholder="홍부장" autocomplete="off" class="bg-gray-700 text-white border-gray-600">
+      <div class="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
+        <button data-boss-tab="login"  class="boss-tab-btn flex-1 py-2 rounded-md text-sm font-bold">로그인</button>
+        <button data-boss-tab="signup" class="boss-tab-btn flex-1 py-2 rounded-md text-sm font-bold">회원가입</button>
+      </div>
+
+      <div id="boss-tab-login" class="boss-tab-pane space-y-3">
+        <div>
+          <label class="text-xs font-bold text-gray-600">이름</label>
+          <select id="boss-login-name"><option value="">— 가입자 선택 —</option></select>
+          <p class="text-[11px] text-gray-400 mt-1">목록에 없으면 회원가입 탭으로 이동하세요.</p>
         </div>
         <div>
-          <label class="text-xs font-bold text-gray-300">PIN 4자리</label>
-          <input type="password" id="boss-pin" inputmode="numeric" maxlength="6" placeholder="••••" class="bg-gray-700 text-white border-gray-600 text-center tracking-[0.5em] text-xl font-bold">
+          <label class="text-xs font-bold text-gray-600">비밀번호</label>
+          <input type="password" id="boss-login-pw" placeholder="비밀번호" autocomplete="current-password">
         </div>
-        <div id="boss-pin2-wrap" class="hidden">
-          <label class="text-xs font-bold text-gray-300">PIN 확인</label>
-          <input type="password" id="boss-pin2" inputmode="numeric" maxlength="6" placeholder="••••" class="bg-gray-700 text-white border-gray-600 text-center tracking-[0.5em] text-xl font-bold">
+        <p id="boss-login-err" class="text-xs text-red-500 hidden"></p>
+        <button data-action="boss-login" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl">로그인</button>
+      </div>
+
+      <div id="boss-tab-signup" class="boss-tab-pane space-y-3 hidden">
+        <div>
+          <label class="text-xs font-bold text-gray-600">이름</label>
+          <input type="text" id="boss-signup-name" placeholder="홍부장" autocomplete="off">
         </div>
-        <p id="boss-err" class="text-xs text-red-400 hidden"></p>
-        <button id="boss-login-btn" data-action="boss-login" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl">입장</button>
+        <div>
+          <label class="text-xs font-bold text-gray-600">비밀번호 (4자 이상)</label>
+          <input type="password" id="boss-signup-pw" placeholder="비밀번호" autocomplete="new-password">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600">비밀번호 확인</label>
+          <input type="password" id="boss-signup-pw2" placeholder="동일 비밀번호" autocomplete="new-password">
+        </div>
+        <p id="boss-signup-err" class="text-xs text-red-500 hidden"></p>
+        <button data-action="boss-signup" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl">가입 & 로그인</button>
       </div>
     </div>
   </div>
@@ -276,7 +363,10 @@
         <span class="text-lg">✅</span>
         <span class="font-bold text-gray-800 text-sm">결재자 · <span id="boss-who"></span></span>
       </div>
-      <button data-action="boss-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
+      <div class="flex items-center gap-2">
+        <button data-action="open-mypage" class="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-2 rounded-lg">⚙️ 마이페이지</button>
+        <button data-action="boss-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
+      </div>
     </div>
     <div class="max-w-5xl mx-auto flex gap-1 px-2 overflow-x-auto">
       <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="pending">🟡 결재 대기</button>
@@ -402,6 +492,44 @@
   </div>
 </div>
 
+<!-- ════════ 마이페이지 모달 ════════ -->
+<div id="mypage-modal" class="modal">
+  <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-gray-800 text-lg">⚙️ 마이페이지</h3>
+      <button data-action="close-mypage" class="text-gray-500 font-bold px-2">✕</button>
+    </div>
+    <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+      <p><b>이름:</b> <span id="mp-name"></span></p>
+      <p><b>역할:</b> <span id="mp-role"></span></p>
+    </div>
+    <div class="space-y-3 mb-4">
+      <h4 class="font-bold text-sm text-gray-700">비밀번호 변경</h4>
+      <div>
+        <label class="text-xs font-bold text-gray-600">현재 비밀번호</label>
+        <input type="password" id="mp-current-pw" autocomplete="current-password">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600">새 비밀번호 (4자 이상)</label>
+        <input type="password" id="mp-new-pw" autocomplete="new-password">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600">새 비밀번호 확인</label>
+        <input type="password" id="mp-new-pw2" autocomplete="new-password">
+      </div>
+      <p id="mp-err" class="text-xs text-red-500 hidden"></p>
+      <p id="mp-ok" class="text-xs text-green-600 hidden"></p>
+      <button data-action="mp-change-pw" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl">비밀번호 변경</button>
+    </div>
+    <hr class="my-4 border-gray-200">
+    <div>
+      <h4 class="font-bold text-sm text-red-600 mb-2">계정 삭제</h4>
+      <p class="text-xs text-gray-500 mb-2">위의 <b>현재 비밀번호</b>를 입력한 뒤 클릭하세요. 복구 불가.</p>
+      <button data-action="mp-delete-account" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-xl text-sm">계정 영구 삭제</button>
+    </div>
+  </div>
+</div>
+
 <div id="loading">
   <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-blue-600 mb-4"></div>
   <div class="text-base font-bold text-gray-800 bg-white px-6 py-3 rounded-full shadow-lg" id="loading-text">처리 중...</div>
@@ -478,28 +606,27 @@ function showView(viewId) {
 }
 
 // ═══════════════════════════════════════════════
-// 세션 (LocalStorage, 8시간 만료)
+// 서버 세션 (X-Bap-Token, 30일, server.js와 연동)
 // ═══════════════════════════════════════════════
-const SESSION_KEY = 'bap_session_v1';
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-function saveSession(s) {
-  try {
-    const payload = { ...s, expireAt: Date.now() + SESSION_TTL_MS };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
-  } catch(e){}
+const TOKEN_KEY = 'bap_auth_token';
+function getBapToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e){ return ''; } }
+function setBapToken(t) { try { localStorage.setItem(TOKEN_KEY, t || ''); } catch(e){} }
+function clearBapToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(e){} }
+
+async function bapApi(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  const t = getBapToken();
+  if (t) headers['X-Bap-Token'] = t;
+  const res = await fetch('/api/bap/auth' + path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null
+  });
+  let data = {};
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok) throw new Error(data.error || ('서버 오류 ' + res.status));
+  return data;
 }
-function getSession() {
-  try {
-    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-    if (!s) return null;
-    if (!s.expireAt || s.expireAt < Date.now()) {
-      localStorage.removeItem(SESSION_KEY);
-      return null;
-    }
-    return s;
-  } catch(e){ return null; }
-}
-function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch(e){} }
 
 // ═══════════════════════════════════════════════
 // Firestore 래퍼 (bap-ready 이벤트 후)
@@ -635,12 +762,15 @@ function initSignature() {
 // 이벤트 위임 — data-go, data-back, data-action, data-sign
 // ═══════════════════════════════════════════════
 document.body.addEventListener('click', async (e) => {
-  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab]');
+  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-boss-tab]');
   if (!t) return;
   if (t.dataset.go === 'manager') { initManagerLogin(); showView('view-manager-login'); return; }
   if (t.dataset.go === 'boss')    { initBossLogin();    showView('view-boss-login'); return; }
+  if (t.dataset.go === 'menu')    { initMenuUploadView(); showView('view-menu-upload'); return; }
   if (t.dataset.back !== undefined) { showView('view-landing'); return; }
   if (t.dataset.tab) { switchBossTab(t.dataset.tab); return; }
+  if (t.dataset.mgrTab)  { setMgrTab(t.dataset.mgrTab);  return; }
+  if (t.dataset.bossTab) { setBossTab(t.dataset.bossTab); return; }
   if (t.dataset.sign) { openSigModal(t.dataset.sign); return; }
   const a = t.dataset.action;
   if (!a) return;
@@ -649,7 +779,8 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'sig-cancel')  { closeSigModal(); return; }
     if (a === 'sig-save')    { saveSigModal(); return; }
     if (a === 'mgr-login')   { await mgrLogin(); return; }
-    if (a === 'mgr-logout')  { mgrLogout(); return; }
+    if (a === 'mgr-signup')  { await mgrSignup(); return; }
+    if (a === 'mgr-logout')  { await mgrLogout(); return; }
     if (a === 'mgr-load')    { await mgrLoadForDate(); return; }
     if (a === 'mgr-reload-menu') { await mgrLoadMenu(); return; }
     if (a === 'mgr-submit')  { await mgrSubmit(); return; }
@@ -657,7 +788,12 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'mgr-sig-clear') { clearSigTarget('mgr-sig'); return; }
     if (a === 'mgr-add-staff') { addStaffRow(); return; }
     if (a === 'boss-login')  { await bossLogin(); return; }
-    if (a === 'boss-logout') { bossLogout(); return; }
+    if (a === 'boss-signup') { await bossSignup(); return; }
+    if (a === 'boss-logout') { await bossLogout(); return; }
+    if (a === 'open-mypage') { await openMyPage(); return; }
+    if (a === 'close-mypage') { closeMyPage(); return; }
+    if (a === 'mp-change-pw') { await mpChangePassword(); return; }
+    if (a === 'mp-delete-account') { await mpDeleteAccount(); return; }
     if (a === 'boss-refresh') { await loadPendingList(); return; }
     if (a === 'cal-reload')  { await loadCalendar(); return; }
     if (a === 'cal-prev')    { shiftCalMonth(-1); return; }
@@ -666,6 +802,8 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'batch-download-all') { await batchDownload(false); return; }
     if (a === 'menu-upload') { await menuUpload(); return; }
     if (a === 'menu-list')   { await loadMenuList(); return; }
+    if (a === 'mu-upload')   { await muUpload(); return; }
+    if (a === 'mu-list')     { await muList(); return; }
     if (a === 'preview-close') { closePreview(); return; }
     if (a === 'preview-approve') { await approveFromPreview(); return; }
     if (a === 'preview-print') { printPreview(); return; }
@@ -678,81 +816,92 @@ document.body.addEventListener('click', async (e) => {
 });
 
 // ═══════════════════════════════════════════════
-// 담당자 로그인 / 가입
+// 담당자 로그인 / 가입 (서버 인증)
 // ═══════════════════════════════════════════════
 let currentUser = null; // {name, role}
 
-function initManagerLogin(prefill) {
-  $('mgr-name').value = prefill?.name || '';
-  $('mgr-pw').value = '';
-  $('mgr-pw2').value = '';
-  $('mgr-pw-wrap').classList.add('hidden');
-  $('mgr-pw2-wrap').classList.add('hidden');
-  $('mgr-err').classList.add('hidden');
-  $('mgr-mode-hint').innerText = '이름을 입력하고 다음';
-  $('mgr-login-btn').innerText = '다음 →';
-  // blur는 보조. 실제 분기는 mgrLogin 버튼 클릭 시 처리
-  $('mgr-name').onblur = () => resolveMgrLoginMode(false);
+function setMgrTab(which) {
+  document.querySelectorAll('.mgr-tab-btn').forEach(b => {
+    b.classList.toggle('bg-white', b.dataset.mgrTab === which);
+    b.classList.toggle('text-blue-700', b.dataset.mgrTab === which);
+    b.classList.toggle('shadow-sm', b.dataset.mgrTab === which);
+    b.classList.toggle('text-gray-500', b.dataset.mgrTab !== which);
+  });
+  $('mgr-tab-login').classList.toggle('hidden', which !== 'login');
+  $('mgr-tab-signup').classList.toggle('hidden', which !== 'signup');
+  $('mgr-login-err').classList.add('hidden');
+  $('mgr-signup-err').classList.add('hidden');
 }
 
-// 이름을 보고 신규/기존 사용자 여부를 Firestore에 조회해 UI를 전환
-// showErr=true면 이름 비었을 때 에러 표시
-async function resolveMgrLoginMode(showErrIfEmpty) {
-  const name = $('mgr-name').value.trim();
-  if (!name) {
-    if (showErrIfEmpty) showErr('mgr-err', '이름을 입력하세요.');
-    return null;
-  }
+async function refreshMgrLoginNames() {
+  const sel = $('mgr-login-name');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— 가입자 선택 —</option>';
   try {
-    await waitForBap();
-    const u = await fsGet('bap_users', name);
-    $('mgr-pw-wrap').classList.remove('hidden');
-    if (u) {
-      $('mgr-pw2-wrap').classList.add('hidden');
-      $('mgr-pw2').value = '';
-      $('mgr-mode-hint').innerText = '기존 사용자 — 비밀번호를 입력하세요';
-      $('mgr-login-btn').innerText = '로그인';
-    } else {
-      $('mgr-pw2-wrap').classList.remove('hidden');
-      $('mgr-mode-hint').innerText = '신규 가입 — 비밀번호를 설정하세요';
-      $('mgr-login-btn').innerText = '가입 & 로그인';
-    }
-    return u;
-  } catch(e) {
-    showErr('mgr-err', '접속 오류: ' + e.message);
-    return null;
-  }
+    const res = await fetch('/api/bap/auth/list?role=manager');
+    const data = await res.json();
+    (data.names || []).forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+    if (prev && (data.names || []).includes(prev)) sel.value = prev;
+  } catch(e) { console.warn('manager list 실패', e); }
+}
+
+async function initManagerLogin() {
+  $('mgr-login-pw').value = '';
+  $('mgr-signup-name').value = '';
+  $('mgr-signup-pw').value = '';
+  $('mgr-signup-pw2').value = '';
+  $('mgr-login-err').classList.add('hidden');
+  $('mgr-signup-err').classList.add('hidden');
+  setMgrTab('login');
+  await refreshMgrLoginNames();
 }
 
 async function mgrLogin() {
-  const name = $('mgr-name').value.trim();
-  $('mgr-err').classList.add('hidden');
-  if (!name) return showErr('mgr-err', '이름을 입력하세요.');
-  // pw-wrap이 아직 안 열렸으면 먼저 사용자 조회로 UI 전환만 수행
-  if ($('mgr-pw-wrap').classList.contains('hidden')) {
-    await resolveMgrLoginMode(true);
-    return;
-  }
-  const pw = $('mgr-pw').value;
-  const pw2 = $('mgr-pw2').value;
-  if (!pw || pw.length < 4) return showErr('mgr-err', '비밀번호는 4자 이상');
-  await waitForBap();
-  const u = await fsGet('bap_users', name);
-  const hash = await sha256('bap-salt::' + name + '::' + pw);
-  if (u) {
-    if (u.pwHash !== hash) return showErr('mgr-err', '비밀번호가 틀렸습니다.');
-  } else {
-    if (pw !== pw2) return showErr('mgr-err', '비밀번호 확인이 일치하지 않습니다.');
-    await fsSet('bap_users', name, { pwHash: hash, createdAt: new Date().toISOString() });
-  }
-  currentUser = { name, role: 'manager', pwHash: hash };
-  saveSession({ role: 'manager', name, pwHash: hash });
-  $('mgr-who').innerText = name;
+  $('mgr-login-err').classList.add('hidden');
+  const name = $('mgr-login-name').value;
+  const password = $('mgr-login-pw').value;
+  if (!name) return showErr('mgr-login-err', '이름을 선택하세요.');
+  if (!password || password.length < 4) return showErr('mgr-login-err', '비밀번호는 4자 이상');
+  try {
+    const data = await bapApi('POST', '/login', { role: 'manager', name, password });
+    setBapToken(data.token);
+    currentUser = { name: data.name, role: 'manager' };
+    enterManagerMain();
+  } catch(e) { showErr('mgr-login-err', e.message); }
+}
+
+async function mgrSignup() {
+  $('mgr-signup-err').classList.add('hidden');
+  const name = $('mgr-signup-name').value.trim();
+  const pw  = $('mgr-signup-pw').value;
+  const pw2 = $('mgr-signup-pw2').value;
+  if (!name) return showErr('mgr-signup-err', '이름을 입력하세요.');
+  if (!pw || pw.length < 4) return showErr('mgr-signup-err', '비밀번호는 4자 이상');
+  if (pw !== pw2) return showErr('mgr-signup-err', '비밀번호 확인이 일치하지 않습니다.');
+  try {
+    const data = await bapApi('POST', '/signup', { role: 'manager', name, password: pw });
+    setBapToken(data.token);
+    currentUser = { name: data.name, role: 'manager' };
+    enterManagerMain();
+  } catch(e) { showErr('mgr-signup-err', e.message); }
+}
+
+function enterManagerMain() {
+  $('mgr-who').innerText = currentUser.name;
   showView('view-manager-main');
+  buildManagerForm();
   mgrResetForm();
 }
 
-function mgrLogout() { clearSession(); currentUser = null; showView('view-landing'); }
+async function mgrLogout() {
+  try { await bapApi('POST', '/logout'); } catch(e) {}
+  clearBapToken(); currentUser = null;
+  showView('view-landing');
+}
 
 // ═══════════════════════════════════════════════
 // 담당자 폼 렌더
@@ -946,11 +1095,13 @@ async function mgrSubmit() {
 
   await waitForBap();
 
-  // 1) 제출자 본인 인증 재검증 (세션 pwHash와 Firestore pwHash 일치 확인)
-  const u = await fsGet('bap_users', currentUser.name);
-  if (!u || u.pwHash !== currentUser.pwHash) {
-    alert('세션이 만료되었거나 비밀번호가 변경되었습니다. 다시 로그인하세요.');
-    mgrLogout();
+  // 1) 서버 세션 재확인 (만료/비번 변경 등)
+  try {
+    const me = await bapApi('GET', '/me');
+    if (me.role !== 'manager' || me.name !== currentUser.name) throw new Error('세션 불일치');
+  } catch(e) {
+    alert('세션이 만료되었습니다. 다시 로그인하세요.');
+    await mgrLogout();
     return;
   }
 
@@ -1031,64 +1182,99 @@ function collectFormData() {
 }
 
 // ═══════════════════════════════════════════════
-// 부장 로그인
+// 결재자 로그인 / 가입 (서버 인증)
 // ═══════════════════════════════════════════════
 let currentBoss = null;
 
-async function initBossLogin() {
-  $('boss-pin').value = '';
-  $('boss-pin2').value = '';
-  $('boss-name').value = '';
-  $('boss-err').classList.add('hidden');
-  $('boss-name-wrap').classList.add('hidden');
-  $('boss-pin2-wrap').classList.add('hidden');
-  $('boss-mode-hint').innerText = '확인 중...';
+function setBossTab(which) {
+  document.querySelectorAll('.boss-tab-btn').forEach(b => {
+    b.classList.toggle('bg-white', b.dataset.bossTab === which);
+    b.classList.toggle('text-emerald-700', b.dataset.bossTab === which);
+    b.classList.toggle('shadow-sm', b.dataset.bossTab === which);
+    b.classList.toggle('text-gray-500', b.dataset.bossTab !== which);
+  });
+  $('boss-tab-login').classList.toggle('hidden', which !== 'login');
+  $('boss-tab-signup').classList.toggle('hidden', which !== 'signup');
+  $('boss-login-err').classList.add('hidden');
+  $('boss-signup-err').classList.add('hidden');
+}
+
+async function refreshBossLoginNames() {
+  const sel = $('boss-login-name');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— 가입자 선택 —</option>';
   try {
-    await waitForBap();
-    const cfg = await fsGet('bap_config', 'boss');
-    if (cfg && cfg.pinHash) {
-      $('boss-mode-hint').innerText = 'PIN을 입력하세요';
-      $('boss-login-btn').innerText = '입장';
-    } else {
-      $('boss-mode-hint').innerText = '최초 설정 — 이름과 PIN을 정하세요';
-      $('boss-name-wrap').classList.remove('hidden');
-      $('boss-pin2-wrap').classList.remove('hidden');
-      $('boss-login-btn').innerText = 'PIN 설정 & 입장';
-    }
-  } catch(e) { $('boss-mode-hint').innerText = '오류: ' + e.message; }
+    const res = await fetch('/api/bap/auth/list?role=boss');
+    const data = await res.json();
+    (data.names || []).forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+    if (prev && (data.names || []).includes(prev)) sel.value = prev;
+  } catch(e) { console.warn('boss list 실패', e); }
+}
+
+async function initBossLogin() {
+  $('boss-login-pw').value = '';
+  $('boss-signup-name').value = '';
+  $('boss-signup-pw').value = '';
+  $('boss-signup-pw2').value = '';
+  $('boss-login-err').classList.add('hidden');
+  $('boss-signup-err').classList.add('hidden');
+  setBossTab('login');
+  await refreshBossLoginNames();
 }
 
 async function bossLogin() {
-  const pin = $('boss-pin').value.trim();
-  const pin2 = $('boss-pin2').value.trim();
-  const name = $('boss-name').value.trim();
-  $('boss-err').classList.add('hidden');
-  if (!pin || pin.length < 4) return showErr('boss-err', 'PIN은 4자리 이상');
-  await waitForBap();
-  const cfg = await fsGet('bap_config', 'boss');
-  const hash = await sha256('bap-boss-salt::' + pin);
-  if (cfg && cfg.pinHash) {
-    if (cfg.pinHash !== hash) return showErr('boss-err', 'PIN이 틀렸습니다.');
-    currentBoss = { name: cfg.bossName || '결재자' };
-  } else {
-    if (!name) return showErr('boss-err', '이름을 입력하세요.');
-    if (pin !== pin2) return showErr('boss-err', 'PIN 확인이 일치하지 않습니다.');
-    await fsSet('bap_config', 'boss', { pinHash: hash, bossName: name, setAt: new Date().toISOString() });
-    currentBoss = { name };
-  }
-  saveSession({ role: 'boss', name: currentBoss.name });
-  $('boss-who').innerText = currentBoss.name;
-  showView('view-boss-main');
-  switchBossTab('pending');
-  // 식단표지 기본값
-  const n = new Date();
-  $('menu-year').value = n.getFullYear();
-  $('menu-month').value = n.getMonth() + 1;
-  $('menu-view-month').value = currentYM();
-  $('cal-month').value = currentYM();
+  $('boss-login-err').classList.add('hidden');
+  const name = $('boss-login-name').value;
+  const password = $('boss-login-pw').value;
+  if (!name) return showErr('boss-login-err', '이름을 선택하세요.');
+  if (!password || password.length < 4) return showErr('boss-login-err', '비밀번호는 4자 이상');
+  try {
+    const data = await bapApi('POST', '/login', { role: 'boss', name, password });
+    setBapToken(data.token);
+    currentBoss = { name: data.name };
+    await enterBossMain();
+  } catch(e) { showErr('boss-login-err', e.message); }
 }
 
-function bossLogout() { clearSession(); currentBoss = null; showView('view-landing'); }
+async function bossSignup() {
+  $('boss-signup-err').classList.add('hidden');
+  const name = $('boss-signup-name').value.trim();
+  const pw  = $('boss-signup-pw').value;
+  const pw2 = $('boss-signup-pw2').value;
+  if (!name) return showErr('boss-signup-err', '이름을 입력하세요.');
+  if (!pw || pw.length < 4) return showErr('boss-signup-err', '비밀번호는 4자 이상');
+  if (pw !== pw2) return showErr('boss-signup-err', '비밀번호 확인이 일치하지 않습니다.');
+  try {
+    const data = await bapApi('POST', '/signup', { role: 'boss', name, password: pw });
+    setBapToken(data.token);
+    currentBoss = { name: data.name };
+    await enterBossMain();
+  } catch(e) { showErr('boss-signup-err', e.message); }
+}
+
+async function enterBossMain() {
+  $('boss-who').innerText = currentBoss.name;
+  showView('view-boss-main');
+  try {
+    await waitForBap();
+    const n = new Date();
+    if (!$('menu-year').value)  $('menu-year').value  = n.getFullYear();
+    if (!$('menu-month').value) $('menu-month').value = n.getMonth() + 1;
+    if (!$('menu-view-month').value) $('menu-view-month').value = currentYM();
+    if (!$('cal-month').value) $('cal-month').value = currentYM();
+    switchBossTab('pending');
+  } catch(e) { console.warn(e); }
+}
+
+async function bossLogout() {
+  try { await bapApi('POST', '/logout'); } catch(e) {}
+  clearBapToken(); currentBoss = null;
+  showView('view-landing');
+}
 
 function switchBossTab(tab) {
   document.querySelectorAll('.boss-tab').forEach(b => {
@@ -1487,6 +1673,174 @@ async function loadMenuList() {
 }
 
 // ═══════════════════════════════════════════════
+// 마이페이지 (담당자/결재자 공용 모달)
+// ═══════════════════════════════════════════════
+async function openMyPage() {
+  const role = currentUser ? 'manager' : (currentBoss ? 'boss' : null);
+  const name = currentUser ? currentUser.name : (currentBoss ? currentBoss.name : '');
+  if (!role) return alert('로그인이 필요합니다.');
+  $('mp-name').innerText = name;
+  $('mp-role').innerText = role === 'manager' ? '담당자' : '결재자';
+  $('mp-current-pw').value = '';
+  $('mp-new-pw').value = '';
+  $('mp-new-pw2').value = '';
+  $('mp-err').classList.add('hidden');
+  $('mp-ok').classList.add('hidden');
+  $('mypage-modal').classList.add('show');
+}
+function closeMyPage() { $('mypage-modal').classList.remove('show'); }
+
+async function mpChangePassword() {
+  $('mp-err').classList.add('hidden');
+  $('mp-ok').classList.add('hidden');
+  const cur = $('mp-current-pw').value;
+  const np  = $('mp-new-pw').value;
+  const np2 = $('mp-new-pw2').value;
+  if (!cur || cur.length < 4) return showErr('mp-err', '현재 비밀번호를 입력하세요.');
+  if (!np  || np.length  < 4) return showErr('mp-err', '새 비밀번호는 4자 이상');
+  if (np !== np2) return showErr('mp-err', '새 비밀번호 확인이 일치하지 않습니다.');
+  try {
+    await bapApi('POST', '/change-password', { currentPassword: cur, newPassword: np });
+    const ok = $('mp-ok'); ok.innerText = '✅ 비밀번호가 변경되었습니다.'; ok.classList.remove('hidden');
+    $('mp-current-pw').value = ''; $('mp-new-pw').value = ''; $('mp-new-pw2').value = '';
+  } catch(e) { showErr('mp-err', e.message); }
+}
+
+async function mpDeleteAccount() {
+  $('mp-err').classList.add('hidden');
+  const cur = $('mp-current-pw').value;
+  if (!cur || cur.length < 4) return showErr('mp-err', '계정 삭제: 현재 비밀번호를 위에 입력하세요.');
+  if (!confirm('정말 계정을 영구 삭제하시겠습니까?\n복구할 수 없습니다.')) return;
+  try {
+    await bapApi('DELETE', '/account', { currentPassword: cur });
+    clearBapToken();
+    closeMyPage();
+    currentUser = null; currentBoss = null;
+    alert('계정이 삭제되었습니다.');
+    showView('view-landing');
+  } catch(e) { showErr('mp-err', e.message); }
+}
+
+// ═══════════════════════════════════════════════
+// 월별 식단 업로드 (랜딩에서 직접 진입, 로그인 불필요)
+// ═══════════════════════════════════════════════
+function initMenuUploadView() {
+  const now = new Date();
+  if (!$('mu-year').value)  $('mu-year').value  = now.getFullYear();
+  if (!$('mu-month').value) $('mu-month').value = now.getMonth() + 1;
+  if (!$('mu-view-month').value) $('mu-view-month').value = currentYM();
+  $('mu-result').innerHTML = '';
+  $('mu-list').innerHTML = '';
+}
+
+async function muUpload() {
+  const file = $('mu-file').files[0];
+  const year = parseInt($('mu-year').value, 10);
+  const month = parseInt($('mu-month').value, 10);
+  if (!year || !month) return alert('연도/월을 입력하세요.');
+  if (!file) return alert('HWPX 파일을 선택하세요.');
+  if (!/\.hwpx$/i.test(file.name)) return alert('HWPX 형식 파일만 업로드 가능합니다. 한글에서 "다른 이름으로 저장 → HWPX"로 저장하세요.');
+  if (file.size > 30 * 1024 * 1024) return alert('파일이 너무 큽니다 (30MB 이하).');
+
+  // 1) 같은 월에 이미 저장된 식단이 있으면 확인
+  showLoading('기존 식단 확인 중...');
+  let existingCount = 0;
+  try {
+    await waitForBap();
+    const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId } = db();
+    const rangeStart = `${year}-${String(month).padStart(2, '0')}-01`;
+    const rangeEnd   = `${year}-${String(month).padStart(2, '0')}-31`;
+    const snap = await gdFn(qy(coll(firestore, 'bap_menus'),
+      whereFn(docId(), '>=', rangeStart),
+      whereFn(docId(), '<=', rangeEnd)));
+    existingCount = snap.size;
+  } catch(e) {
+    hideLoading();
+    return alert('기존 식단 조회 실패: ' + e.message);
+  }
+  hideLoading();
+  if (existingCount > 0) {
+    const ok = confirm(`현재 ${month}월 식단표가 업로드 되어있습니다.\n수정하시겠습니까?\n\n(기존 ${existingCount}건이 새 데이터로 교체됩니다.)`);
+    if (!ok) return;
+  }
+
+  // 2) 파싱 + 저장
+  showLoading('AI가 식단표지를 분석 중...');
+  try {
+    const buf = await file.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    const res = await fetch('/api/bap/parse-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hwpxBase64: b64, year, month })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'AI 파싱 실패');
+
+    $('loading-text').innerText = '기존 데이터 정리 중...';
+    const entries = Object.entries(data.menus);
+    const newKeys = new Set(entries.map(([d]) => d));
+    const rangeStart = `${year}-${String(month).padStart(2, '0')}-01`;
+    const rangeEnd   = `${year}-${String(month).padStart(2, '0')}-31`;
+    const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId, deleteDoc: delFn, doc: docFn } = db();
+    const existing = await gdFn(qy(coll(firestore, 'bap_menus'),
+      whereFn(docId(), '>=', rangeStart),
+      whereFn(docId(), '<=', rangeEnd)));
+    const orphanDates = [];
+    existing.forEach(snap => { if (!newKeys.has(snap.id)) orphanDates.push(snap.id); });
+    for (const od of orphanDates) {
+      await delFn(docFn(firestore, 'bap_menus', od));
+    }
+
+    $('loading-text').innerText = '저장 중...';
+    for (const [date, lunch] of entries) {
+      await fsSet('bap_menus', date, { lunch, parsedAt: new Date().toISOString(), uploadedBy: '' });
+    }
+
+    hideLoading();
+    $('mu-result').innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+      <p class="font-bold text-green-800">✅ ${entries.length}개 날짜 메뉴 저장 완료${orphanDates.length ? ` · 이전 잔여 ${orphanDates.length}건 삭제` : ''}</p>
+      <ul class="text-xs text-gray-600 mt-2 space-y-1 max-h-40 overflow-y-auto">
+        ${entries.map(([d,m]) => `<li><b>${esc(d)}</b> · ${esc(m)}</li>`).join('')}
+      </ul>
+    </div>`;
+    // 조회 패널도 자동 갱신
+    $('mu-view-month').value = `${year}-${String(month).padStart(2, '0')}`;
+    await muList();
+  } catch(e) {
+    hideLoading();
+    $('mu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
+  }
+}
+
+async function muList() {
+  const ym = $('mu-view-month').value || currentYM();
+  const [y, m] = ym.split('-').map(Number);
+  const wrap = $('mu-list');
+  wrap.innerHTML = '<div class="text-gray-400 text-xs">로딩...</div>';
+  try {
+    await waitForBap();
+    const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId } = db();
+    const rangeStart = `${y}-${pad(m)}-01`;
+    const rangeEnd   = `${y}-${pad(m)}-31`;
+    const snap = await gdFn(qy(coll(firestore, 'bap_menus'),
+      whereFn(docId(), '>=', rangeStart),
+      whereFn(docId(), '<=', rangeEnd)));
+    const rows = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data && data.lunch) {
+        rows.push(`<div class="flex items-start gap-2 py-1 border-b border-gray-100"><b class="text-xs text-blue-700 w-20 shrink-0">${esc(d.id)}</b><span class="text-xs">${esc(data.lunch)}</span></div>`);
+      }
+    });
+    rows.sort();
+    wrap.innerHTML = rows.length ? rows.join('') : '<div class="text-gray-400 text-xs">저장된 식단이 없습니다.</div>';
+  } catch(e) {
+    wrap.innerHTML = '<div class="text-red-500 text-xs">오류: ' + esc(e.message) + '</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════
 // 유틸
 // ═══════════════════════════════════════════════
 function showErr(id, msg) { const el = $(id); el.innerText = msg; el.classList.remove('hidden'); }
@@ -1504,32 +1858,23 @@ function waitForBap() {
 // ═══════════════════════════════════════════════
 // 부트
 // ═══════════════════════════════════════════════
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   initSignature();
-  // 세션 복구 (8시간 유효)
-  const s = getSession();
-  if (s && s.role === 'manager' && s.pwHash) {
-    currentUser = { name: s.name, role: 'manager', pwHash: s.pwHash };
-    $('mgr-who').innerText = s.name;
-    showView('view-manager-main');
-    buildManagerForm();
-    mgrResetForm();
-  } else if (s && s.role === 'boss') {
-    currentBoss = { name: s.name };
-    $('boss-who').innerText = s.name;
-    showView('view-boss-main');
-    // Firestore 초기화 대기 후 탭 로드
-    waitForBap().then(() => {
-      const n = new Date();
-      $('menu-year').value = n.getFullYear();
-      $('menu-month').value = n.getMonth() + 1;
-      $('menu-view-month').value = currentYM();
-      $('cal-month').value = currentYM();
-      switchBossTab('pending');
-    }).catch(() => {});
-  } else if (s) {
-    // 세션이 있었으나 스키마가 변경되어(pwHash 없음) 유효하지 않음 → 정리
-    clearSession();
+  // 토큰 있으면 서버에 me 조회로 세션 복구
+  const t = getBapToken();
+  if (!t) return;
+  try {
+    const me = await bapApi('GET', '/me');
+    if (me.role === 'manager') {
+      currentUser = { name: me.name, role: 'manager' };
+      enterManagerMain();
+    } else if (me.role === 'boss') {
+      currentBoss = { name: me.name };
+      await enterBossMain();
+    }
+  } catch(e) {
+    // 토큰 만료/무효
+    clearBapToken();
   }
 });
 </script>
