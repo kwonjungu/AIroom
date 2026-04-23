@@ -22,6 +22,7 @@
     "express": "^5.2.1",
     "jszip": "^3.10.1",
     "pdfjs-dist": "^5.6.205",
-    "pptxgenjs": "^4.0.1"
+    "pptxgenjs": "^4.0.1",
+    "unpdf": "^1.6.0"
   }
 }

@@ -723,7 +723,10 @@ function openSigModal(targetId) {
     clearSigTarget(targetId);
   }
   sig.targetId = targetId;
-  $('sig-modal').classList.add('show');
+  const m = $('sig-modal');
+  // 다른 모달(preview-modal 등) 위에서 열릴 때 stacking context 안전하게 최상단으로
+  document.body.appendChild(m);
+  m.classList.add('show');
   setTimeout(() => { resizeSigCanvas(); sigClear(); }, 50);
 }
 function closeSigModal() { $('sig-modal').classList.remove('show'); }
