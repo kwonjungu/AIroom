@@ -2266,14 +2266,11 @@ async function updateScheduleItem(id,field,val){
     saveToLocal();
 }
 
-// ===== 공휴일 (법정 + 학교 재량) =====
-// 학교 재량 휴업일 + 근로자의 날 등 법정공휴일 API에서 누락되는 일자
-// 향후 관리자 UI로 편집 가능하게 할 예정. 현재는 하드코딩.
-const SCHOOL_HOLIDAYS = [
-    { date: '2026-05-01', name: '근로자의 날(노동절)' },
-    { date: '2026-05-04', name: '학교장 재량 휴업일' }
-];
-let holidaysCache = {}; // year → [{date, name}]  (법정공휴일 API 캐시)
+// ===== 공휴일 (법정 + 대체 + 학교 재량 — 모두 서버가 제공) =====
+// 서버 /api/winter-schedule/holidays 가 date.nager.at 응답에 대체공휴일 자동 계산 +
+// 학교 추가공휴일(근로자의 날, 학교장 재량 휴업일, 선거일 등)을 모두 합쳐 반환.
+// 프론트는 연도별 캐시만 관리. 학교일정 탭과 방학근무 탭이 같은 데이터를 공유.
+let holidaysCache = {}; // year → [{date, name}]
 async function loadHolidaysForYear(year){
     if(year in holidaysCache) return holidaysCache[year];
     holidaysCache[year] = []; // 선점하여 중복 fetch 방지
@@ -2283,19 +2280,17 @@ async function loadHolidaysForYear(year){
         });
         if(r.ok){
             holidaysCache[year] = await r.json();
-            // 현재 보고있는 탭이 학교 일정이면 자동 재렌더
+            // 현재 보고있는 탭에 따라 자동 재렌더
             if(activeTabId==='schedule') renderSchedule();
+            else if(activeTabId==='winter-schedule' && typeof renderWinterSchedule==='function') renderWinterSchedule();
         }
     } catch(e){}
     return holidaysCache[year];
 }
 function getHolidayName(iso){
     const y = parseInt(iso.slice(0,4), 10);
-    const fromApi = (holidaysCache[y]||[]).find(h => h.date===iso);
-    if(fromApi) return fromApi.name;
-    const fromSchool = SCHOOL_HOLIDAYS.find(h => h.date===iso);
-    if(fromSchool) return fromSchool.name;
-    return null;
+    const hit = (holidaysCache[y]||[]).find(h => h.date===iso);
+    return hit ? hit.name : null;
 }
 
 function renderSchedule(){
@@ -10217,7 +10212,10 @@ function wsStatusByValue(v){ return WS_STATUSES.find(s=>s.value===v)||WS_STATUSE
 function wsIsHolidayOrWeekend(iso, holidays){
     const d=new Date(iso+'T00:00:00Z').getUTCDay();
     if(d===0||d===6)return true;
-    return (holidays||[]).some(h=>(h.date||h)===iso);
+    if((holidays||[]).some(h=>(h.date||h)===iso)) return true;
+    // 서버 API 최신 공휴일 반영 (방학 세팅 이후에 공휴일 목록이 업데이트됐을 경우 대비)
+    if(typeof getHolidayName==='function' && getHolidayName(iso)) return true;
+    return false;
 }
 async function wsLoad(){
     const data = await api('GET','/api/winter-schedule');
@@ -10274,6 +10272,12 @@ function renderWinterSchedule(){
         hint.textContent='방학 기간이 설정되지 않았습니다. 관리자에게 문의하세요.';
         head.innerHTML='';body.innerHTML='';
         return;
+    }
+    // 방학 기간이 걸치는 모든 연도의 공휴일 캐시 로드 (학교일정 탭과 공유)
+    const yStart=parseInt(cfg.startDate.slice(0,4),10);
+    const yEnd=parseInt(cfg.endDate.slice(0,4),10);
+    for(let yy=yStart; yy<=yEnd; yy++){
+        if(!(yy in holidaysCache)) loadHolidaysForYear(yy);
     }
     hint.textContent=`📅 ${cfg.startDate} ~ ${cfg.endDate}${cfg.holidays&&cfg.holidays.length?` (공휴일 ${cfg.holidays.length}일)`:''}`;
 

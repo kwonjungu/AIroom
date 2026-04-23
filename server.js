@@ -510,9 +510,15 @@ const SUBSTITUTABLE_SINGLE_NAMES = new Set([
 ]);
 const HOLIDAY_GROUPS = { 'Lunar New Year': '설날', 'Chuseok': '추석' }; // 3일 연휴
 
-// date.nager.at가 누락하는 연도별 추가 공휴일 (전국동시선거, 임시공휴일 등)
+// date.nager.at가 누락하는 연도별 추가 공휴일
+// - 근로자의 날 (공공기관 공휴일 아니지만 학교는 휴업)
+// - 학교장 재량 휴업일 (학교 내규)
+// - 전국동시선거 / 임시공휴일 등
+// 여기 추가하면 학교일정 탭과 방학근무 탭 양쪽에 자동 반영된다.
 const EXTRA_HOLIDAYS_BY_YEAR = {
     2026: [
+        { date: '2026-05-01', name: '근로자의 날' },
+        { date: '2026-05-04', name: '학교장 재량 휴업일' },
         { date: '2026-06-03', name: '제9회 전국동시지방선거' },
     ],
 };
