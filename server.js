@@ -1336,6 +1336,14 @@ app.get('/api/ai/pptx/history', requireAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// 히스토리 전체 삭제
+app.delete('/api/ai/pptx/history', requireAuth, async (req, res) => {
+    try {
+        await writeData(PPTX_HISTORY_FILE, []);
+        res.json({ success: true, cleared: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // 테마 목록
 app.get('/api/ai/pptx/themes', requireAuth, (req, res) => {
     const { THEMES } = require('./lib/pptx-gen');
