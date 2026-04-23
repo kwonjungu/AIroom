@@ -7642,14 +7642,16 @@ function closeAiTool(){
 
 // --- 1. 가정통신문 자동 작성기 ---
 // ===== AI 프레젠테이션 (PPTX) =====
-let _aiPptxSources = [];          // [{name, text, size}]
-let _aiPptxOutline = null;        // Stage 1 결과
-let _aiPptxDeck = null;           // Stage 2 결과
-let _aiPptxCtx = null;            // 재생성 시 재사용
-let _aiPptxThemes = [];           // 서버에서 받은 테마 목록
-let _aiPptxHistory = [];          // 최근 3개 deck
+let _aiPptxSources = [];          // [{name, text, size}] — PDF/HWPX 텍스트
+let _aiPptxImages = [];           // [{name, dataUrl, size}] — 업로드 이미지
+let _aiPptxOutline = null;
+let _aiPptxDeck = null;
+let _aiPptxCtx = null;
+let _aiPptxThemes = [];
+let _aiPptxHistory = [];
 let _aiPptxSelectedTheme = 'education';
-let _aiPptxSelectedReferences = []; // 스타일 레퍼런스 선택된 id 리스트
+let _aiPptxSelectedReferences = [];
+let _aiPptxWebSearch = false;
 
 async function _aiPptxLoadMeta(){
     try {
@@ -7665,18 +7667,42 @@ async function _aiPptxLoadMeta(){
 async function renderAiPptx(ws){
     await _aiPptxLoadMeta();
     _aiPptxSources=[];
+    _aiPptxImages=[];
     _aiPptxOutline=null;
     _aiPptxDeck=null;
     _aiPptxCtx=null;
     _aiPptxSelectedTheme='education';
     _aiPptxSelectedReferences=[];
+    _aiPptxWebSearch=false;
     _aiPptxRenderStep1(ws);
 }
 
-function _aiPptxHeader(title){
-    return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-        <h3 style="margin:0;font-size:20px;font-weight:800;">🎨 ${title}</h3>
-        <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+// 진행 표시: step = 1(입력) / 2(개요) / 3(결과)
+function _aiPptxHeader(step){
+    const steps = [
+        { n:1, label:'입력' },
+        { n:2, label:'개요' },
+        { n:3, label:'슬라이드' },
+    ];
+    const chips = steps.map(s => {
+        const done = step > s.n;
+        const active = step === s.n;
+        const bg = done ? '#d14d41' : active ? '#d14d41' : '#e5e7eb';
+        const fg = (done || active) ? 'white' : '#9ca3af';
+        const weight = active ? '700' : '500';
+        return `<div style="display:flex;align-items:center;gap:6px;">
+            <span style="width:22px;height:22px;border-radius:50%;background:${bg};color:${fg};display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:${weight};">${done?'✓':s.n}</span>
+            <span style="font-size:12px;color:${active?'#d14d41':done?'#6b7280':'#9ca3af'};font-weight:${weight};">${s.label}</span>
+        </div>`;
+    }).join('<span style="color:#d1d5db;font-size:11px;margin:0 6px;">—</span>');
+
+    return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid #f1f3f5;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">🎨</span>
+            <h3 style="margin:0;font-size:18px;font-weight:700;color:#111827;">AI 프레젠테이션</h3>
+        </div>
+        <div style="display:flex;align-items:center;">${chips}</div>
+        <button onclick="closeAiTool()" style="padding:7px 14px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:12px;color:#6b7280;">닫기</button>
     </div>`;
 }
 
@@ -7716,8 +7742,7 @@ function _aiPptxRenderStep1(ws){
         </div>` : '';
 
     ws.innerHTML = _aiPptxWrap(`
-        ${_aiPptxHeader('AI 프레젠테이션 · Step 1/3 입력')}
-        <p style="margin:0 0 20px;font-size:13px;color:#666;line-height:1.6;">입력 → <strong>Step 2 개요 검토</strong> → <strong>Step 3 슬라이드 생성</strong> 순서로 진행합니다.</p>
+        ${_aiPptxHeader(1)}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
             <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">발표 제목 <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
@@ -7747,6 +7772,26 @@ function _aiPptxRenderStep1(ws){
         </div>
 
         ${historyHtml}
+
+        <!-- 웹검색 -->
+        <div style="margin-bottom:14px;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#065f46;">
+                <input type="checkbox" id="aiPptxWebSearchChk" ${_aiPptxWebSearch?'checked':''} onchange="_aiPptxWebSearch=this.checked">
+                🌐 웹검색으로 최신 정보 자동 보강 <span style="color:#10b981;font-weight:400;">(Tavily API · TAVILY_API_KEY 필요)</span>
+            </label>
+            <div style="font-size:11px;color:#047857;margin-top:4px;padding-left:26px;">체크 시 발표 제목·주제로 Tavily 검색 → 결과 5건을 Strategy 에이전트에 참고자료로 자동 추가합니다.</div>
+        </div>
+
+        <!-- 이미지 업로드 -->
+        <div style="margin-bottom:14px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">🖼️ 사진 업로드 <span style="color:#9ca3af;font-weight:400;">(JPG · PNG · 최대 8개 · AI가 적절한 슬라이드에 자동 배치)</span></label>
+            <div style="border:2px dashed #d1d5db;border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;" onclick="document.getElementById('aiPptxImgInput').click()" ondragover="event.preventDefault();this.style.background='#fff7ed';this.style.borderColor='#f59e0b'" ondragleave="this.style.background='#fafafa';this.style.borderColor='#d1d5db'" ondrop="_aiPptxHandleImgDrop(event)">
+                <div style="font-size:22px;">📷</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px;">클릭하거나 드래그하여 사진 업로드</div>
+                <input type="file" id="aiPptxImgInput" accept="image/*" multiple style="display:none;" onchange="_aiPptxHandleImages(this.files)">
+            </div>
+            <div id="aiPptxImageGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin-top:8px;"></div>
+        </div>
 
         <div style="margin-bottom:14px;">
             <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📎 참고 자료 <span style="color:#9ca3af;font-weight:400;">(PDF · HWPX · 최대 5개)</span></label>
@@ -7813,7 +7858,13 @@ async function _aiPptxGoStep2(){
     if(_aiPptxSources.some(f=>f.loading)){ showToast('파일 추출이 끝난 뒤 다시 눌러주세요','error'); return; }
     if(content.length<5 && sources.length===0){ showToast('발표 내용 또는 파일 첨부 필요','error'); return; }
 
-    _aiPptxCtx = { title, audience, content, length, tone, sources, theme: _aiPptxSelectedTheme, referenceIds: _aiPptxSelectedReferences.slice() };
+    _aiPptxCtx = {
+        title, audience, content, length, tone, sources,
+        theme: _aiPptxSelectedTheme,
+        referenceIds: _aiPptxSelectedReferences.slice(),
+        images: _aiPptxImages.map(i=>i.dataUrl),
+        webSearch: _aiPptxWebSearch,
+    };
 
     const btn=document.getElementById('aiPptxNextBtn');
     const status=document.getElementById('aiPptxStatus');
@@ -7865,7 +7916,7 @@ function _aiPptxRenderStep2(ws){
     `).join('');
 
     ws.innerHTML = _aiPptxWrap(`
-        ${_aiPptxHeader('AI 프레젠테이션 · Step 2/3 개요 검토')}
+        ${_aiPptxHeader(2)}
         <div style="padding:16px;background:linear-gradient(135deg,#eff6ff,#ffffff);border-radius:10px;margin-bottom:16px;">
             <div style="font-size:20px;font-weight:800;color:#1e3a8a;margin-bottom:6px;">${esc(o.title||'제목 없음')}</div>
             <div style="font-size:14px;color:#64748b;">${esc(o.subtitle||'')}</div>
@@ -7919,24 +7970,40 @@ async function _aiPptxGoStep3(){
 // ===== STEP 3: 슬라이드 프리뷰 + 슬라이드별 재생성 + 다운로드 =====
 function _aiPptxRenderStep3(ws){
     const d = _aiPptxDeck || {};
-    const slidesHtml = (d.slides||[]).map((s, i)=>`
-        <div id="aiPptxSlide${i}" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#1e3a8a;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${i+1}</span>
-                    <strong style="font-size:15px;color:#1e3a8a;">${esc(s.title||'')}</strong>
+    const layoutLabel = {
+        bullets:'목록', stat:'통계', comparison:'비교', process:'단계',
+        chart:'차트', quote:'인용', 'image-left':'사진+텍스트', 'image-right':'텍스트+사진', 'image-full':'전체사진'
+    };
+    const slidesHtml = (d.slides||[]).map((s, i)=>{
+        const ly = String(s.layout||'bullets').toLowerCase();
+        const lyName = layoutLabel[ly] || ly;
+        const extraLines = [];
+        if (s.stat) extraLines.push(`📊 ${esc(s.stat.number)}${esc(s.stat.unit||'')} — ${esc(s.stat.label||'')}`);
+        if (s.process) extraLines.push(`➡️ ${s.process.map(p=>esc(p.title)).join(' → ')}`);
+        if (s.comparison) extraLines.push(`⚖️ ${esc(s.comparison.leftTitle||'A')} vs ${esc(s.comparison.rightTitle||'B')}`);
+        if (s.chart) extraLines.push(`📈 ${esc(s.chart.type||'')} (${(s.chart.labels||[]).length}개 항목)`);
+        if (s.quote) extraLines.push(`💬 "${esc(s.quote).slice(0,40)}..."`);
+        if (typeof s.imageIndex === 'number' && _aiPptxImages[s.imageIndex]) extraLines.push(`🖼️ 사진 #${s.imageIndex}`);
+        return `
+        <div id="aiPptxSlide${i}" style="padding:14px;background:white;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                    <span style="flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#1e3a8a;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">${i+1}</span>
+                    <strong style="font-size:14px;color:#1e3a8a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s.title||'')}</strong>
+                    <span style="flex-shrink:0;padding:2px 8px;background:#eef2ff;color:#4338ca;border-radius:4px;font-size:10px;font-weight:600;">${lyName}</span>
                 </div>
-                <button onclick="_aiPptxRegenSlide(${i})" id="aiPptxRegenBtn${i}" style="padding:6px 12px;border:1px solid #d14d41;border-radius:6px;background:white;color:#d14d41;cursor:pointer;font-size:12px;font-weight:600;">🔄 이 슬라이드만 다시</button>
+                <button onclick="_aiPptxRegenSlide(${i})" id="aiPptxRegenBtn${i}" style="flex-shrink:0;padding:5px 10px;border:1px solid #d14d41;border-radius:6px;background:white;color:#d14d41;cursor:pointer;font-size:11px;font-weight:600;">🔄 재생성</button>
             </div>
-            <ul style="margin:0;padding-left:20px;font-size:13px;color:#374151;line-height:1.8;">
-                ${(s.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}
+            ${extraLines.length ? `<div style="font-size:11px;color:#6b7280;margin-bottom:6px;padding-left:36px;">${extraLines.join(' · ')}</div>` : ''}
+            <ul style="margin:0;padding-left:36px;font-size:13px;color:#374151;line-height:1.7;">
+                ${(s.bullets||[]).slice(0,6).map(b=>`<li>${esc(b)}</li>`).join('')}
             </ul>
-            ${s.notes?`<div style="margin-top:8px;padding:8px;background:#fffbeb;border-left:3px solid #f59e0b;font-size:12px;color:#78350f;"><strong>📝 발표자 노트:</strong> ${esc(s.notes)}</div>`:''}
-        </div>
-    `).join('');
+            ${s.notes?`<div style="margin-top:6px;margin-left:36px;padding:6px 10px;background:#fffbeb;border-left:3px solid #f59e0b;font-size:11px;color:#78350f;"><strong>발표자 노트:</strong> ${esc(s.notes)}</div>`:''}
+        </div>`;
+    }).join('');
 
     ws.innerHTML = _aiPptxWrap(`
-        ${_aiPptxHeader('AI 프레젠테이션 · Step 3/3 결과')}
+        ${_aiPptxHeader(3)}
         <div style="padding:14px;background:linear-gradient(135deg,#fef3c7,#fffbeb);border-radius:10px;margin-bottom:14px;font-size:13px;color:#92400e;">
             📦 <strong>${esc(d.title||'')}</strong> · ${(d.slides||[]).length}장 · 테마: <strong>${esc((_aiPptxThemes.find(t=>t.key===_aiPptxSelectedTheme)||{}).name || _aiPptxSelectedTheme)}</strong>
             ${d._meta?` · 파이프라인: <code style="background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:3px;">${esc(d._meta.pipeline||'')}</code>`:''}
@@ -7993,7 +8060,7 @@ async function _aiPptxDownload(){
         const r = await fetch('/api/ai/pptx/render',{
             method:'POST',
             headers:{'Content-Type':'application/json', ...(authToken?{'X-Auth-Token':authToken}:{})},
-            body:JSON.stringify({ deck: _aiPptxDeck, theme: _aiPptxSelectedTheme })
+            body:JSON.stringify({ deck: _aiPptxDeck, theme: _aiPptxSelectedTheme, images: _aiPptxImages.map(i=>i.dataUrl) })
         });
         if(!r.ok){ const err=await r.json().catch(()=>({})); throw new Error(err.error||`서버 오류 (${r.status})`); }
         const blob=await r.blob();
@@ -8011,6 +8078,44 @@ async function _aiPptxDownload(){
     } finally {
         btn.disabled=false; btn.textContent=orig;
     }
+}
+
+// ===== 이미지 업로드 =====
+function _aiPptxHandleImgDrop(event){
+    event.preventDefault();
+    event.currentTarget.style.background='#fafafa';
+    event.currentTarget.style.borderColor='#d1d5db';
+    const files=event.dataTransfer.files;
+    if(files && files.length) _aiPptxHandleImages(files);
+}
+async function _aiPptxHandleImages(fileList){
+    const files=Array.from(fileList||[]);
+    for(const file of files){
+        if(_aiPptxImages.length>=8){ showToast('최대 8개까지 업로드 가능','error'); break; }
+        if(!file.type.startsWith('image/')){ showToast(`이미지 아님: ${file.name}`,'error'); continue; }
+        if(file.size > 5*1024*1024){ showToast(`파일 너무 큼 (5MB 초과): ${file.name}`,'error'); continue; }
+        try {
+            const dataUrl = await new Promise((resolve, reject)=>{
+                const rd=new FileReader();
+                rd.onload=()=>resolve(rd.result);
+                rd.onerror=()=>reject(rd.error);
+                rd.readAsDataURL(file);
+            });
+            _aiPptxImages.push({ name:file.name, dataUrl, size:file.size });
+        } catch(e){ showToast(`읽기 실패: ${file.name}`,'error'); }
+    }
+    _aiPptxRenderImageGrid();
+}
+function _aiPptxRenderImageGrid(){
+    const grid=document.getElementById('aiPptxImageGrid');
+    if(!grid)return;
+    grid.innerHTML=_aiPptxImages.map((im, i)=>`
+        <div style="position:relative;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#fff;aspect-ratio:4/3;">
+            <img src="${im.dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt="${esc(im.name)}">
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:2px 6px;background:rgba(0,0,0,0.6);color:white;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">#${i} · ${esc(im.name)}</div>
+            <button onclick="_aiPptxImages.splice(${i},1);_aiPptxRenderImageGrid()" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;">✕</button>
+        </div>
+    `).join('');
 }
 
 function aiPptxHandleDrop(event){

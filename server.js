@@ -974,10 +974,14 @@ async function savePptxToHistory(entry) {
 }
 
 function pptxCtxFromBody(body) {
-    const { content, title, audience, length, tone, sources, theme } = body || {};
+    const { content, title, audience, length, tone, sources, theme, images, webSearch } = body || {};
+    const imgArr = Array.isArray(images) ? images : [];
     return {
         content, title, audience, length, tone, sources,
         theme: theme || 'education',
+        images: imgArr,           // base64 dataURL 배열
+        imageCount: imgArr.length, // Writer 프롬프트가 참고
+        webSearch: !!webSearch,
         footer: audience || '',
     };
 }
@@ -1051,12 +1055,14 @@ app.post('/api/ai/pptx/regen-slide', requireAuth, async (req, res) => {
 // Step 3: deck → PPTX 바이너리 렌더 (+ 히스토리 저장)
 app.post('/api/ai/pptx/render', requireAuth, async (req, res) => {
     try {
-        const { deck, theme } = req.body || {};
+        const { deck, theme, images } = req.body || {};
         if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) {
             return res.status(400).json({ error: 'deck.slides가 비어있습니다.' });
         }
         const { generatePptx, THEMES } = require('./lib/pptx-gen');
         const themeKey = THEMES[theme] ? theme : 'education';
+        // 렌더 시 이미지 배열을 deck에 주입 (프론트가 base64로 보냄)
+        if (Array.isArray(images) && images.length > 0) deck.images = images;
         const buf = await generatePptx(deck, themeKey);
 
         // 히스토리 저장 (제목 + outline 요약 + 각 슬라이드 제목)
