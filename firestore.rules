@@ -35,8 +35,17 @@ service cloud.firestore {
     }
 
     // ─── 식단표지 메뉴 ───
+    // 세 학교 완전 분리: bap_menus(백암) / bap2_menus(백봉) / bap3_menus(장평)
     // Auth가 없어 부장만 쓰도록 rules로 강제 불가 (내부 보안은 PIN으로 제어)
     match /bap_menus/{date} {
+      allow read: if true;
+      allow write: if date.matches('\\d{4}-\\d{2}-\\d{2}');
+    }
+    match /bap2_menus/{date} {
+      allow read: if true;
+      allow write: if date.matches('\\d{4}-\\d{2}-\\d{2}');
+    }
+    match /bap3_menus/{date} {
       allow read: if true;
       allow write: if date.matches('\\d{4}-\\d{2}-\\d{2}');
     }
@@ -44,6 +53,7 @@ service cloud.firestore {
     // ─── 급식일지 ───
     // 핵심: approved 상태 일지는 수정·삭제 절대 불가
     // submitted 상태에서만 approved로 전환 허용
+    // 세 학교 완전 분리: bap_journals / bap2_journals / bap3_journals
     match /bap_journals/{date} {
       // list 쿼리 호환을 위해 read는 전면 허용 (내부 보안은 PIN으로 제어)
       allow read: if true;
@@ -70,6 +80,42 @@ service cloud.firestore {
         );
 
       // 삭제 금지 (감사 목적)
+      allow delete: if false;
+    }
+    match /bap2_journals/{date} {
+      allow read: if true;
+      allow create: if request.resource.data.status == 'submitted'
+                 && request.resource.data.managerName is string
+                 && request.resource.data.managerName.size() > 0
+                 && date.matches('\\d{4}-\\d{2}-\\d{2}');
+      allow update: if
+        resource.data.status != 'approved' && (
+          (request.resource.data.status == 'submitted'
+           && request.resource.data.managerName == resource.data.managerName)
+          ||
+          (resource.data.status == 'submitted'
+           && request.resource.data.status == 'approved'
+           && request.resource.data.managerName == resource.data.managerName
+           && request.resource.data.bossName is string)
+        );
+      allow delete: if false;
+    }
+    match /bap3_journals/{date} {
+      allow read: if true;
+      allow create: if request.resource.data.status == 'submitted'
+                 && request.resource.data.managerName is string
+                 && request.resource.data.managerName.size() > 0
+                 && date.matches('\\d{4}-\\d{2}-\\d{2}');
+      allow update: if
+        resource.data.status != 'approved' && (
+          (request.resource.data.status == 'submitted'
+           && request.resource.data.managerName == resource.data.managerName)
+          ||
+          (resource.data.status == 'submitted'
+           && request.resource.data.status == 'approved'
+           && request.resource.data.managerName == resource.data.managerName
+           && request.resource.data.bossName is string)
+        );
       allow delete: if false;
     }
   }

@@ -236,6 +236,12 @@
                     {"id":"sj21","text":"특수교육(장애이해교육, 학맞춤특수지원 등) 총괄","icon":"📋"},
                     {"id":"sj22","text":"급식(우유)업무","icon":"🥛"}
                 ]
+            },
+            {
+                "id":"cs_sj6","title":"급식","icon":"🍱","color":"#FFF3E0","borderColor":"#FFB74D","order":5,
+                "items":[
+                    {"id":"sj23","text":"백암초등학교 디지털 급식일지","description":"메뉴 입력·결재·월별 HTML 내보내기","icon":"🍱","bold":true,"url":"/bap/"}
+                ]
             }
         ]
     },
