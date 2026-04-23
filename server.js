@@ -962,56 +962,27 @@ app.post('/api/ai/chat', requireAuth, async (req, res) => {
 // 출력: .pptx 파일 다운로드
 app.post('/api/ai/generate-pptx', requireAuth, async (req, res) => {
     try {
-        const { content, title, audience } = req.body || {};
-        if (!content || typeof content !== 'string' || content.trim().length < 5) {
-            return res.status(400).json({ error: '내용(content)을 5자 이상 입력해주세요.' });
+        const { content, title, audience, length, tone, sources } = req.body || {};
+        const hasContent = content && typeof content === 'string' && content.trim().length >= 5;
+        const hasSources = Array.isArray(sources) && sources.length > 0 && sources.some(s => s && s.text);
+        if (!hasContent && !hasSources) {
+            return res.status(400).json({ error: '내용(content) 또는 참고자료(sources) 중 하나 이상 제공해주세요.' });
         }
 
-        const systemPrompt = `당신은 교사용 발표 자료(한국어)를 만드는 전문가입니다.
-주어진 내용을 깔끔한 프레젠테이션 구조로 정리하세요.
-
-반드시 다음 JSON 스키마로만 응답하세요. 설명·주석·markdown 없이 JSON 한 개만 반환:
-{
-  "title": "발표 대제목 (25자 이내)",
-  "subtitle": "부제목 (40자 이내, 선택)",
-  "slides": [
-    { "title": "슬라이드 제목 (20자 이내)", "bullets": ["짧은 문장 1", "짧은 문장 2", "..."], "notes": "발표자 노트 (선택)" }
-  ]
-}
-
-규칙:
-- 슬라이드 수: 5~10장 (너무 많지 않게)
-- 각 슬라이드의 bullets는 3~6개, 한 줄당 25자 이내
-- 불필요한 중복·수식어 제거, 핵심만
-- 교사/학부모/학생 중 청중에 맞는 어휘 사용${audience ? ` (이번 청중: ${audience})` : ''}
-- 마지막에 "감사합니다" 슬라이드는 넣지 않음 (자동 추가됨)`;
-
-        const result = await callGroqWithFallback({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: (title ? `제목 힌트: ${title}\n\n` : '') + content }
-            ],
-            temperature: 0.4,
-            max_tokens: 4096,
-            response_format: { type: 'json_object' }
-        });
-
-        if (!result.ok) return res.status(result.status).json(result.data);
-
+        const { generateDeck } = require('./lib/pptx-agent');
         let deck;
         try {
-            const raw = result.data.choices?.[0]?.message?.content || '{}';
-            deck = JSON.parse(raw);
+            deck = await generateDeck(
+                { content, title, audience, length, tone, sources, footer: audience || '' },
+                callGroqWithFallback
+            );
         } catch (e) {
-            return res.status(502).json({ error: 'AI 응답을 JSON으로 해석할 수 없습니다. 다시 시도해주세요.' });
+            console.error('pptx-agent pipeline 실패:', e.stage || '', e.message);
+            const status = e.apiStatus || 502;
+            const data = e.apiData || { error: e.message || 'AI 파이프라인 오류' };
+            return res.status(status).json(data);
         }
 
-        if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
-            return res.status(502).json({ error: '슬라이드 데이터가 비어있습니다.' });
-        }
-
-        deck.footer = deck.footer || audience || '';
         const { generatePptx } = require('./lib/pptx-gen');
         const buf = await generatePptx(deck);
 
