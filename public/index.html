@@ -1484,13 +1484,13 @@
                 </div>
             </div>
             <div style="overflow:auto;max-height:400px;border:1px solid var(--border);border-radius:8px;background:#fff;">
-                <table id="wsStaffTable" style="border-collapse:collapse;font-size:13px;width:100%;">
+                <table id="wsStaffTable" style="border-collapse:collapse;font-size:13px;width:auto;min-width:100%;table-layout:auto;">
                     <thead style="background:#f8f9fa;position:sticky;top:0;z-index:1;">
                         <tr>
-                            <th style="padding:8px;border-bottom:1px solid var(--border);width:70px;">번호</th>
-                            <th style="padding:8px;border-bottom:1px solid var(--border);width:140px;">직책/소속</th>
-                            <th style="padding:8px;border-bottom:1px solid var(--border);">이름</th>
-                            <th style="padding:8px;border-bottom:1px solid var(--border);width:70px;">삭제</th>
+                            <th style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">번호</th>
+                            <th style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">직책/소속</th>
+                            <th style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">이름</th>
+                            <th style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;">삭제</th>
                         </tr>
                     </thead>
                     <tbody id="wsStaffBody"></tbody>
@@ -10310,21 +10310,43 @@ function renderWinterSchedule(){
 }
 
 // ===== 교직원 명단 관리 (관리자 전용) =====
-let _wsStaffDirty = false; // 저장 여부 표시용
+let _wsStaffDirty = false;
+const _wsFieldSizingSupported = (typeof CSS !== 'undefined' && CSS.supports && CSS.supports('field-sizing','content'));
+
+// field-sizing:content 미지원 브라우저용 JS 폴백 (숨은 span으로 너비 측정)
+function wsAutoSize(el){
+    if(!el)return;
+    const mirror=document.createElement('span');
+    const s=getComputedStyle(el);
+    mirror.style.cssText=`position:absolute;visibility:hidden;white-space:pre;font:${s.font};letter-spacing:${s.letterSpacing};padding:0;margin:0;border:0;`;
+    mirror.textContent=el.value||el.placeholder||'';
+    document.body.appendChild(mirror);
+    const pad=parseFloat(s.paddingLeft||0)+parseFloat(s.paddingRight||0);
+    const minW=parseFloat(el.style.minWidth||'50');
+    el.style.width=Math.max(mirror.offsetWidth+pad+8, minW)+'px';
+    document.body.removeChild(mirror);
+}
+
 function renderWsStaffEditor(){
     const tbody=document.getElementById('wsStaffBody');
     if(!tbody)return;
     const list=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0));
     let html='';
+    const inputBase='padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:13px;box-sizing:content-box;field-sizing:content;';
+    const handler='_wsStaffDirty=true' + (_wsFieldSizingSupported ? '' : ';wsAutoSize(this)');
     for(const s of list){
         html+=`<tr data-id="${esc(s.id||'')}">`
-            +`<td style="padding:4px;border-bottom:1px solid var(--border);text-align:center;"><input type="number" value="${s.no||''}" data-field="no" oninput="_wsStaffDirty=true" style="width:60px;padding:4px;border:1px solid var(--border);border-radius:4px;text-align:center;"></td>`
-            +`<td style="padding:4px;border-bottom:1px solid var(--border);"><input type="text" value="${esc(s.position||'')}" data-field="position" oninput="_wsStaffDirty=true" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;"></td>`
-            +`<td style="padding:4px;border-bottom:1px solid var(--border);"><input type="text" value="${esc(s.name||'')}" data-field="name" oninput="_wsStaffDirty=true" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;"></td>`
-            +`<td style="padding:4px;border-bottom:1px solid var(--border);text-align:center;"><button onclick="wsStaffDelete('${esc(s.id||'')}')" style="border:none;background:none;color:#c92a2a;font-size:16px;cursor:pointer;" title="삭제">✕</button></td>`
+            +`<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap;"><input type="number" value="${s.no||''}" data-field="no" oninput="${handler}" style="${inputBase}min-width:48px;text-align:center;"></td>`
+            +`<td style="padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap;"><input type="text" value="${esc(s.position||'')}" data-field="position" oninput="${handler}" placeholder="예: 3-친절" style="${inputBase}min-width:90px;"></td>`
+            +`<td style="padding:4px 8px;border-bottom:1px solid var(--border);white-space:nowrap;"><input type="text" value="${esc(s.name||'')}" data-field="name" oninput="${handler}" placeholder="이름" style="${inputBase}min-width:70px;"></td>`
+            +`<td style="padding:4px 8px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap;"><button onclick="wsStaffDelete('${esc(s.id||'')}')" style="border:none;background:none;color:#c92a2a;font-size:16px;cursor:pointer;" title="삭제">✕</button></td>`
             +`</tr>`;
     }
     tbody.innerHTML=html;
+    // 폴백: 초기 렌더 시에도 한 번 사이징
+    if(!_wsFieldSizingSupported){
+        document.querySelectorAll('#wsStaffBody input').forEach(wsAutoSize);
+    }
 }
 function wsStaffAddRow(){
     const nextNo=((staff||[]).reduce((m,s)=>Math.max(m,s.no||0),0))+1;
