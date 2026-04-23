@@ -423,7 +423,7 @@ async function bootstrap() {
     if (!res.ok) throw new Error('Firebase config 로드 실패: ' + res.status);
     const cfg = await res.json();
     const app = initializeApp(cfg);
-    const db = getFirestore(app);
+    const db = getFirestore(app, 'kwon');
     window.__bap = {
       db, doc, setDoc, getDoc, updateDoc, deleteDoc, collection,
       query, where, getDocs, orderBy, documentId, runTransaction
