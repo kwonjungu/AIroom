@@ -7642,82 +7642,364 @@ function closeAiTool(){
 
 // --- 1. 가정통신문 자동 작성기 ---
 // ===== AI 프레젠테이션 (PPTX) =====
-let _aiPptxSources = []; // [{name, text, size}]
-function renderAiPptx(ws){
-    ws.innerHTML=`<div style="display:flex;justify-content:center;width:100%;">
-    <div style="background:white;border-radius:16px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,0.08);width:100%;max-width:880px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <h3 style="margin:0;font-size:20px;font-weight:800;">🎨 AI 프레젠테이션 생성</h3>
-            <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
-        </div>
-        <p style="margin:0 0 20px;font-size:13px;color:#666;line-height:1.6;">내용을 붙여넣거나 <strong>PDF·HWPX 첨부</strong>, 또는 둘 다 사용할 수 있습니다. 톤과 길이를 지정하면 AI가 그에 맞춰 슬라이드를 구성합니다.</p>
+let _aiPptxSources = [];          // [{name, text, size}]
+let _aiPptxOutline = null;        // Stage 1 결과
+let _aiPptxDeck = null;           // Stage 2 결과
+let _aiPptxCtx = null;            // 재생성 시 재사용
+let _aiPptxThemes = [];           // 서버에서 받은 테마 목록
+let _aiPptxHistory = [];          // 최근 3개 deck
+let _aiPptxSelectedTheme = 'education';
+let _aiPptxSelectedReferences = []; // 스타일 레퍼런스 선택된 id 리스트
 
-        <!-- 제목 / 청중 -->
+async function _aiPptxLoadMeta(){
+    try {
+        const [themes, history] = await Promise.all([
+            fetch('/api/ai/pptx/themes', {headers: authToken?{'X-Auth-Token':authToken}:{}}).then(r=>r.ok?r.json():[]),
+            fetch('/api/ai/pptx/history', {headers: authToken?{'X-Auth-Token':authToken}:{}}).then(r=>r.ok?r.json():[]),
+        ]);
+        _aiPptxThemes = themes;
+        _aiPptxHistory = history;
+    } catch(e){ _aiPptxThemes=[]; _aiPptxHistory=[]; }
+}
+
+async function renderAiPptx(ws){
+    await _aiPptxLoadMeta();
+    _aiPptxSources=[];
+    _aiPptxOutline=null;
+    _aiPptxDeck=null;
+    _aiPptxCtx=null;
+    _aiPptxSelectedTheme='education';
+    _aiPptxSelectedReferences=[];
+    _aiPptxRenderStep1(ws);
+}
+
+function _aiPptxHeader(title){
+    return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <h3 style="margin:0;font-size:20px;font-weight:800;">🎨 ${title}</h3>
+        <button onclick="closeAiTool()" style="padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;">← 도구 목록</button>
+    </div>`;
+}
+
+function _aiPptxWrap(inner){
+    return `<div style="display:flex;justify-content:center;width:100%;"><div style="background:white;border-radius:16px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,0.08);width:100%;max-width:960px;">${inner}</div></div>`;
+}
+
+// ===== STEP 1: 입력 폼 =====
+function _aiPptxRenderStep1(ws){
+    const themeOptions = _aiPptxThemes.length ? _aiPptxThemes : [
+        {key:'education', name:'교육 블루 · 깔끔', primary:'2E5BFF', accent:'FFB800'}
+    ];
+    const themeHtml = themeOptions.map(t=>`
+        <label style="cursor:pointer;">
+            <input type="radio" name="aiPptxTheme" value="${esc(t.key)}" ${t.key===_aiPptxSelectedTheme?'checked':''} style="display:none;">
+            <span data-theme-chip="${esc(t.key)}" style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:2px solid ${t.key===_aiPptxSelectedTheme?t.primary:'#d1d5db'};border-radius:8px;font-size:12px;background:${t.key===_aiPptxSelectedTheme?'#'+t.primary+'10':'white'};color:${t.key===_aiPptxSelectedTheme?'#'+t.primary:'#6b7280'};font-weight:${t.key===_aiPptxSelectedTheme?'600':'400'};transition:all .15s;">
+                <span style="display:inline-flex;gap:2px;">
+                    <span style="display:block;width:8px;height:14px;background:#${t.primary};border-radius:2px;"></span>
+                    <span style="display:block;width:8px;height:14px;background:#${t.accent};border-radius:2px;"></span>
+                </span>
+                ${esc(t.name)}
+            </span>
+        </label>`).join('');
+
+    const historyHtml = _aiPptxHistory.length > 0 ? `
+        <div style="margin-bottom:14px;padding:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;color:#075985;">🧠 이전 스타일 참고 <span style="color:#9ca3af;font-weight:400;">(구조·톤만 참고, 내용은 새로 생성)</span></label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                ${_aiPptxHistory.map(h=>`
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;padding:6px 8px;background:white;border-radius:6px;">
+                        <input type="checkbox" value="${esc(h.id)}" onchange="_aiPptxToggleRef(this)" ${_aiPptxSelectedReferences.includes(h.id)?'checked':''}>
+                        <span style="flex:1;"><strong>${esc(h.title||'(제목 없음)')}</strong> · ${esc(h.subtitle||'')}</span>
+                        <span style="color:#6b7280;">${(h.slides||[]).length}장 · ${new Date(h.createdAt).toLocaleDateString('ko-KR')}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>` : '';
+
+    ws.innerHTML = _aiPptxWrap(`
+        ${_aiPptxHeader('AI 프레젠테이션 · Step 1/3 입력')}
+        <p style="margin:0 0 20px;font-size:13px;color:#666;line-height:1.6;">입력 → <strong>Step 2 개요 검토</strong> → <strong>Step 3 슬라이드 생성</strong> 순서로 진행합니다.</p>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-            <div>
-                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">발표 제목 <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
-                <input type="text" id="aiPptxTitle" placeholder="예: 2026학년도 AI 교육 방안" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">
-            </div>
-            <div>
-                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">청중 <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
-                <input type="text" id="aiPptxAudience" placeholder="예: 교직원, 학부모, 학생" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">
-            </div>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">발표 제목 <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
+                <input type="text" id="aiPptxTitle" placeholder="예: 2026 AI 교육 방안" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"></div>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">청중 <span style="color:#9ca3af;font-weight:400;">(선택)</span></label>
+                <input type="text" id="aiPptxAudience" placeholder="예: 교직원, 학부모" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;"></div>
         </div>
 
-        <!-- 길이 / 톤 -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-            <div>
-                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📏 길이</label>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📏 길이</label>
                 <div style="display:flex;gap:6px;">
-                    <label class="aiPptxChip"><input type="radio" name="aiPptxLength" value="short" style="display:none;" onchange="aiPptxChipUpdate()"><span>짧게 · 4~5장</span></label>
-                    <label class="aiPptxChip"><input type="radio" name="aiPptxLength" value="medium" value="medium" checked style="display:none;" onchange="aiPptxChipUpdate()"><span>보통 · 7~8장</span></label>
-                    <label class="aiPptxChip"><input type="radio" name="aiPptxLength" value="long" style="display:none;" onchange="aiPptxChipUpdate()"><span>길게 · 12~15장</span></label>
-                </div>
-            </div>
-            <div>
-                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">🎭 톤</label>
+                    <label class="aiPptxChip"><input type="radio" name="aiPptxLength" value="short" style="display:none;"><span>짧게 4~5장</span></label>
+                    <label class="aiPptxChip"><input type="radio" name="aiPptxLength" value="medium" checked style="display:none;"><span>보통 7~8장</span></label>
+                    <label class="aiPptxChip"><input type="radio" name="aiPptxLength" value="long" style="display:none;"><span>길게 12~15장</span></label>
+                </div></div>
+            <div><label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">🎭 톤</label>
                 <div style="display:flex;gap:6px;">
-                    <label class="aiPptxChip"><input type="radio" name="aiPptxTone" value="brief" style="display:none;" onchange="aiPptxChipUpdate()"><span>간결</span></label>
-                    <label class="aiPptxChip"><input type="radio" name="aiPptxTone" value="standard" checked style="display:none;" onchange="aiPptxChipUpdate()"><span>표준</span></label>
-                    <label class="aiPptxChip"><input type="radio" name="aiPptxTone" value="detailed" style="display:none;" onchange="aiPptxChipUpdate()"><span>상세·서술형</span></label>
-                </div>
-            </div>
+                    <label class="aiPptxChip"><input type="radio" name="aiPptxTone" value="brief" style="display:none;"><span>간결</span></label>
+                    <label class="aiPptxChip"><input type="radio" name="aiPptxTone" value="standard" checked style="display:none;"><span>표준</span></label>
+                    <label class="aiPptxChip"><input type="radio" name="aiPptxTone" value="detailed" style="display:none;"><span>상세</span></label>
+                </div></div>
         </div>
 
-        <!-- 파일 첨부 -->
         <div style="margin-bottom:14px;">
-            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📎 참고 자료 첨부 <span style="color:#9ca3af;font-weight:400;">(PDF · HWPX · 최대 5개)</span></label>
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;color:#374151;">🎨 디자인 테마</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="aiPptxThemeGroup" onchange="_aiPptxOnThemeChange()">${themeHtml}</div>
+        </div>
+
+        ${historyHtml}
+
+        <div style="margin-bottom:14px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📎 참고 자료 <span style="color:#9ca3af;font-weight:400;">(PDF · HWPX · 최대 5개)</span></label>
             <div id="aiPptxDropZone" style="border:2px dashed #d1d5db;border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;" onclick="document.getElementById('aiPptxFileInput').click()" ondragover="event.preventDefault();this.style.background='#e0f2fe';this.style.borderColor='#0891b2'" ondragleave="this.style.background='#fafafa';this.style.borderColor='#d1d5db'" ondrop="aiPptxHandleDrop(event)">
                 <div style="font-size:24px;margin-bottom:4px;">📁</div>
                 <div style="font-size:13px;color:#6b7280;">클릭하거나 파일을 여기로 드래그하세요</div>
-                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">텍스트만 추출되어 AI에게 전달됩니다 (파일은 업로드되지 않음)</div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">텍스트만 추출되어 AI에게 전달됩니다</div>
                 <input type="file" id="aiPptxFileInput" accept=".pdf,.hwpx" multiple style="display:none;" onchange="aiPptxHandleFiles(this.files)">
             </div>
             <div id="aiPptxFileList" style="margin-top:8px;"></div>
         </div>
 
-        <!-- 본문 -->
         <div style="margin-bottom:16px;">
-            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📝 발표 내용 <span style="color:#9ca3af;font-weight:400;">(첨부파일만 쓸 거면 비워도 됨)</span></label>
-            <textarea id="aiPptxContent" rows="8" placeholder="발표 주제·요점을 자유롭게 입력하세요.&#10;&#10;예) 생성형 AI를 수업에 활용하는 3가지 방법&#10;1) 수업 준비 자동화&#10;2) 개별화 학습 지원&#10;3) 평가 피드백 강화" style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;resize:vertical;font-family:inherit;line-height:1.6;box-sizing:border-box;"></textarea>
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:5px;color:#374151;">📝 발표 내용 <span style="color:#9ca3af;font-weight:400;">(첨부만 쓸 거면 비워도 됨)</span></label>
+            <textarea id="aiPptxContent" rows="7" placeholder="발표 주제·요점을 자유롭게 입력하세요." style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;resize:vertical;font-family:inherit;line-height:1.6;box-sizing:border-box;"></textarea>
         </div>
 
-        <button onclick="generateAiPptx()" id="aiPptxBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#d14d41,#b32b2b);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">🎨 PPTX 슬라이드 생성</button>
+        <button onclick="_aiPptxGoStep2()" id="aiPptxNextBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#d14d41,#b32b2b);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">📝 개요 생성하기 (Step 2)</button>
 
         <div id="aiPptxStatus" style="display:none;margin-top:16px;padding:16px;background:#f8f9fa;border-radius:10px;font-size:13px;text-align:center;"></div>
-    </div>
-    <style>
-        .aiPptxChip{flex:1;cursor:pointer;}
-        .aiPptxChip span{display:block;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;text-align:center;font-size:12px;background:white;color:#6b7280;transition:all .15s;user-select:none;}
-        .aiPptxChip:hover span{border-color:#9ca3af;color:#374151;}
-        .aiPptxChip input:checked+span{background:#d14d41;color:white;border-color:#d14d41;font-weight:600;}
-    </style>
-    </div>`;
-    _aiPptxSources=[];
-    aiPptxChipUpdate();
+
+        <style>
+            .aiPptxChip{flex:1;cursor:pointer;}
+            .aiPptxChip span{display:block;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;text-align:center;font-size:12px;background:white;color:#6b7280;transition:all .15s;user-select:none;}
+            .aiPptxChip:hover span{border-color:#9ca3af;color:#374151;}
+            .aiPptxChip input:checked+span{background:#d14d41;color:white;border-color:#d14d41;font-weight:600;}
+        </style>
+    `);
+    aiPptxRenderFileList();
+    // 지금까지 가진 files 리스트 유지
 }
 
-function aiPptxChipUpdate(){} // placeholder (CSS가 radio:checked 기반이라 JS 불필요)
+function _aiPptxOnThemeChange(){
+    const sel = document.querySelector('input[name="aiPptxTheme"]:checked');
+    if(sel){ _aiPptxSelectedTheme = sel.value;
+        // 칩 스타일 업데이트
+        document.querySelectorAll('[data-theme-chip]').forEach(el=>{
+            const key=el.getAttribute('data-theme-chip');
+            const active=(key===_aiPptxSelectedTheme);
+            const theme=_aiPptxThemes.find(t=>t.key===key) || {primary:'2E5BFF'};
+            el.style.borderColor = active ? '#'+theme.primary : '#d1d5db';
+            el.style.background = active ? '#'+theme.primary+'10' : 'white';
+            el.style.color = active ? '#'+theme.primary : '#6b7280';
+            el.style.fontWeight = active ? '600' : '400';
+        });
+    }
+}
+
+function _aiPptxToggleRef(el){
+    const id=el.value;
+    if(el.checked && !_aiPptxSelectedReferences.includes(id)) _aiPptxSelectedReferences.push(id);
+    else _aiPptxSelectedReferences = _aiPptxSelectedReferences.filter(x=>x!==id);
+}
+
+// ===== STEP 2로 이동: outline 생성 =====
+async function _aiPptxGoStep2(){
+    const title=document.getElementById('aiPptxTitle').value.trim();
+    const audience=document.getElementById('aiPptxAudience').value.trim();
+    const content=document.getElementById('aiPptxContent').value.trim();
+    const length=document.querySelector('input[name="aiPptxLength"]:checked')?.value || 'medium';
+    const tone=document.querySelector('input[name="aiPptxTone"]:checked')?.value || 'standard';
+    const sources=_aiPptxSources.filter(f=>!f.loading && !f.error && f.text).map(f=>({name:f.name, text:f.text}));
+
+    if(_aiPptxSources.some(f=>f.loading)){ showToast('파일 추출이 끝난 뒤 다시 눌러주세요','error'); return; }
+    if(content.length<5 && sources.length===0){ showToast('발표 내용 또는 파일 첨부 필요','error'); return; }
+
+    _aiPptxCtx = { title, audience, content, length, tone, sources, theme: _aiPptxSelectedTheme, referenceIds: _aiPptxSelectedReferences.slice() };
+
+    const btn=document.getElementById('aiPptxNextBtn');
+    const status=document.getElementById('aiPptxStatus');
+    btn.disabled=true;
+    const orig=btn.textContent;
+    btn.textContent='⏳ AI가 개요를 짜는 중...';
+    status.style.display='block';
+    status.innerHTML='<span style="color:#666;">Strategy 에이전트가 흐름을 설계하는 중입니다 (10~20초)</span>';
+
+    try {
+        const r = await fetch('/api/ai/pptx/outline',{
+            method:'POST',
+            headers:{'Content-Type':'application/json', ...(authToken?{'X-Auth-Token':authToken}:{})},
+            body:JSON.stringify(_aiPptxCtx)
+        });
+        if(!r.ok){ const err=await r.json().catch(()=>({})); throw new Error(err.error||`서버 오류 (${r.status})`); }
+        _aiPptxOutline = await r.json();
+        _aiPptxRenderStep2(document.getElementById('aiToolWorkspace'));
+    } catch(e) {
+        status.innerHTML=`<span style="color:#c62828;font-weight:600;">❌ ${esc(e.message)}</span>`;
+    } finally {
+        btn.disabled=false; btn.textContent=orig;
+    }
+}
+
+// ===== STEP 2: 개요 미리보기 =====
+function _aiPptxRenderStep2(ws){
+    const o = _aiPptxOutline || {};
+    const items = (o.outline||[]).map((item, i)=>`
+        <div style="display:flex;gap:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;">
+            <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#d14d41;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">${item.n||i+1}</div>
+            <div style="flex:1;">
+                <input type="text" id="aiPptxOutlineTitle${i}" value="${esc(item.title||'')}" oninput="_aiPptxOutline.outline[${i}].title=this.value" style="width:100%;padding:6px 8px;border:1px solid transparent;border-radius:6px;font-size:14px;font-weight:600;color:#1f2937;background:transparent;" onfocus="this.style.background='white';this.style.borderColor='#d1d5db'" onblur="this.style.background='transparent';this.style.borderColor='transparent'">
+                <input type="text" id="aiPptxOutlineFocus${i}" value="${esc(item.focus||'')}" oninput="_aiPptxOutline.outline[${i}].focus=this.value" placeholder="이 슬라이드의 목적" style="width:100%;padding:4px 8px;margin-top:4px;border:1px solid transparent;border-radius:6px;font-size:12px;color:#6b7280;background:transparent;" onfocus="this.style.background='white';this.style.borderColor='#d1d5db'" onblur="this.style.background='transparent';this.style.borderColor='transparent'">
+            </div>
+        </div>
+    `).join('');
+
+    ws.innerHTML = _aiPptxWrap(`
+        ${_aiPptxHeader('AI 프레젠테이션 · Step 2/3 개요 검토')}
+        <div style="padding:16px;background:linear-gradient(135deg,#eff6ff,#ffffff);border-radius:10px;margin-bottom:16px;">
+            <div style="font-size:20px;font-weight:800;color:#1e3a8a;margin-bottom:6px;">${esc(o.title||'제목 없음')}</div>
+            <div style="font-size:14px;color:#64748b;">${esc(o.subtitle||'')}</div>
+            ${o.coreMessage?`<div style="margin-top:10px;padding:10px;background:white;border-radius:6px;font-size:13px;color:#334155;"><strong>💡 핵심 메시지:</strong> ${esc(o.coreMessage)}</div>`:''}
+            ${o.audienceProfile?`<div style="margin-top:6px;font-size:12px;color:#64748b;">🎯 ${esc(o.audienceProfile)}</div>`:''}
+        </div>
+
+        <p style="margin:0 0 10px;font-size:13px;color:#666;">아래 개요는 수정할 수 있습니다. 제목·목적을 클릭해 바로 편집하세요. 확정되면 "슬라이드 생성" 버튼 클릭.</p>
+
+        <div style="margin-bottom:16px;">${items}</div>
+
+        <div style="display:flex;gap:8px;">
+            <button onclick="_aiPptxBackToStep1()" style="padding:12px 20px;border:1px solid #d1d5db;border-radius:10px;background:white;cursor:pointer;font-size:14px;">← 이전</button>
+            <button onclick="_aiPptxGoStep3()" id="aiPptxBuildBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,#d14d41,#b32b2b);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">🎨 슬라이드 본문 생성하기 (Step 3)</button>
+        </div>
+
+        <div id="aiPptxStatus" style="display:none;margin-top:16px;padding:16px;background:#f8f9fa;border-radius:10px;font-size:13px;text-align:center;"></div>
+    `);
+}
+
+function _aiPptxBackToStep1(){
+    _aiPptxRenderStep1(document.getElementById('aiToolWorkspace'));
+}
+
+// ===== STEP 3으로 이동: Writer + Reviewer =====
+async function _aiPptxGoStep3(){
+    const btn=document.getElementById('aiPptxBuildBtn');
+    const status=document.getElementById('aiPptxStatus');
+    btn.disabled=true;
+    const orig=btn.textContent;
+    btn.textContent='⏳ 슬라이드 생성 중...';
+    status.style.display='block';
+    status.innerHTML='<span style="color:#666;">Writer + Reviewer 에이전트 순차 실행... (20~60초)</span>';
+
+    try {
+        const r = await fetch('/api/ai/pptx/build',{
+            method:'POST',
+            headers:{'Content-Type':'application/json', ...(authToken?{'X-Auth-Token':authToken}:{})},
+            body:JSON.stringify({ ..._aiPptxCtx, outline: _aiPptxOutline })
+        });
+        if(!r.ok){ const err=await r.json().catch(()=>({})); throw new Error(err.error||`서버 오류 (${r.status})`); }
+        _aiPptxDeck = await r.json();
+        _aiPptxRenderStep3(document.getElementById('aiToolWorkspace'));
+    } catch(e) {
+        status.innerHTML=`<span style="color:#c62828;font-weight:600;">❌ ${esc(e.message)}</span>`;
+    } finally {
+        btn.disabled=false; btn.textContent=orig;
+    }
+}
+
+// ===== STEP 3: 슬라이드 프리뷰 + 슬라이드별 재생성 + 다운로드 =====
+function _aiPptxRenderStep3(ws){
+    const d = _aiPptxDeck || {};
+    const slidesHtml = (d.slides||[]).map((s, i)=>`
+        <div id="aiPptxSlide${i}" style="padding:16px;background:white;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#1e3a8a;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${i+1}</span>
+                    <strong style="font-size:15px;color:#1e3a8a;">${esc(s.title||'')}</strong>
+                </div>
+                <button onclick="_aiPptxRegenSlide(${i})" id="aiPptxRegenBtn${i}" style="padding:6px 12px;border:1px solid #d14d41;border-radius:6px;background:white;color:#d14d41;cursor:pointer;font-size:12px;font-weight:600;">🔄 이 슬라이드만 다시</button>
+            </div>
+            <ul style="margin:0;padding-left:20px;font-size:13px;color:#374151;line-height:1.8;">
+                ${(s.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}
+            </ul>
+            ${s.notes?`<div style="margin-top:8px;padding:8px;background:#fffbeb;border-left:3px solid #f59e0b;font-size:12px;color:#78350f;"><strong>📝 발표자 노트:</strong> ${esc(s.notes)}</div>`:''}
+        </div>
+    `).join('');
+
+    ws.innerHTML = _aiPptxWrap(`
+        ${_aiPptxHeader('AI 프레젠테이션 · Step 3/3 결과')}
+        <div style="padding:14px;background:linear-gradient(135deg,#fef3c7,#fffbeb);border-radius:10px;margin-bottom:14px;font-size:13px;color:#92400e;">
+            📦 <strong>${esc(d.title||'')}</strong> · ${(d.slides||[]).length}장 · 테마: <strong>${esc((_aiPptxThemes.find(t=>t.key===_aiPptxSelectedTheme)||{}).name || _aiPptxSelectedTheme)}</strong>
+            ${d._meta?` · 파이프라인: <code style="background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:3px;">${esc(d._meta.pipeline||'')}</code>`:''}
+        </div>
+
+        <div>${slidesHtml}</div>
+
+        <div style="position:sticky;bottom:0;background:white;padding:12px 0;border-top:2px solid #e5e7eb;margin-top:20px;">
+            <div style="display:flex;gap:8px;">
+                <button onclick="_aiPptxRenderStep2(document.getElementById('aiToolWorkspace'))" style="padding:12px 20px;border:1px solid #d1d5db;border-radius:10px;background:white;cursor:pointer;font-size:14px;">← 개요로</button>
+                <button onclick="_aiPptxDownload()" id="aiPptxDlBtn" style="flex:1;padding:14px;background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:15px;">📥 PPTX 다운로드</button>
+            </div>
+            <div id="aiPptxStatus" style="display:none;margin-top:10px;padding:10px;background:#f8f9fa;border-radius:8px;font-size:12px;text-align:center;"></div>
+        </div>
+    `);
+}
+
+// ===== 슬라이드 재생성 =====
+async function _aiPptxRegenSlide(idx){
+    const hint = prompt(`${idx+1}번 슬라이드를 어떻게 바꿀까요? (선택, 엔터로 자동 개선)`, '');
+    if(hint===null)return; // 취소
+    const btn=document.getElementById(`aiPptxRegenBtn${idx}`);
+    const orig=btn.textContent;
+    btn.disabled=true; btn.textContent='⏳...';
+    try {
+        const r = await fetch('/api/ai/pptx/regen-slide',{
+            method:'POST',
+            headers:{'Content-Type':'application/json', ...(authToken?{'X-Auth-Token':authToken}:{})},
+            body:JSON.stringify({ ..._aiPptxCtx, deck: _aiPptxDeck, slideIndex: idx, hint })
+        });
+        if(!r.ok){ const err=await r.json().catch(()=>({})); throw new Error(err.error||`서버 오류 (${r.status})`); }
+        const data = await r.json();
+        _aiPptxDeck.slides[idx] = data.slide;
+        _aiPptxRenderStep3(document.getElementById('aiToolWorkspace'));
+        showToast(`${idx+1}번 슬라이드 업데이트 완료`,'success');
+    } catch(e) {
+        showToast(`재생성 실패: ${e.message}`,'error');
+    } finally {
+        if(btn){btn.disabled=false;btn.textContent=orig;}
+    }
+}
+
+// ===== 최종 다운로드 (PPTX 바이너리 렌더) =====
+async function _aiPptxDownload(){
+    const btn=document.getElementById('aiPptxDlBtn');
+    const status=document.getElementById('aiPptxStatus');
+    btn.disabled=true;
+    const orig=btn.textContent;
+    btn.textContent='⏳ PPTX 렌더링 중...';
+    status.style.display='block';
+    status.innerHTML='<span style="color:#666;">테마 적용 + 파일 생성 중...</span>';
+
+    try {
+        const r = await fetch('/api/ai/pptx/render',{
+            method:'POST',
+            headers:{'Content-Type':'application/json', ...(authToken?{'X-Auth-Token':authToken}:{})},
+            body:JSON.stringify({ deck: _aiPptxDeck, theme: _aiPptxSelectedTheme })
+        });
+        if(!r.ok){ const err=await r.json().catch(()=>({})); throw new Error(err.error||`서버 오류 (${r.status})`); }
+        const blob=await r.blob();
+        const cd=r.headers.get('Content-Disposition')||'';
+        const m=cd.match(/filename\*=UTF-8''([^;]+)/i);
+        const filename=m?decodeURIComponent(m[1]):`${_aiPptxDeck.title||'presentation'}.pptx`;
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=filename;
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+        status.innerHTML=`<span style="color:#059669;font-weight:600;">✅ ${esc(filename)} 다운로드 완료!</span>`;
+    } catch(e) {
+        status.innerHTML=`<span style="color:#c62828;font-weight:600;">❌ ${esc(e.message)}</span>`;
+    } finally {
+        btn.disabled=false; btn.textContent=orig;
+    }
+}
 
 function aiPptxHandleDrop(event){
     event.preventDefault();
@@ -7801,61 +8083,6 @@ function aiPptxRenderFileList(){
             <button onclick="_aiPptxSources.splice(${i},1);aiPptxRenderFileList()" style="border:none;background:none;color:#c62828;font-size:14px;cursor:pointer;padding:2px 6px;">✕</button>
         </div>`;
     }).join('');
-}
-
-async function generateAiPptx(){
-    const title=document.getElementById('aiPptxTitle').value.trim();
-    const audience=document.getElementById('aiPptxAudience').value.trim();
-    const content=document.getElementById('aiPptxContent').value.trim();
-    const length=document.querySelector('input[name="aiPptxLength"]:checked')?.value || 'medium';
-    const tone=document.querySelector('input[name="aiPptxTone"]:checked')?.value || 'standard';
-    const sources=_aiPptxSources.filter(f=>!f.loading && !f.error && f.text).map(f=>({name:f.name, text:f.text}));
-
-    if(sources.some(s=>s.text && false)){} // no-op
-    if(_aiPptxSources.some(f=>f.loading)){
-        showToast('파일 추출이 끝난 뒤 다시 눌러주세요','error');
-        return;
-    }
-    if(content.length<5 && sources.length===0){
-        showToast('발표 내용 입력 또는 파일 첨부 중 하나는 필요합니다','error');
-        return;
-    }
-
-    const btn=document.getElementById('aiPptxBtn');
-    const status=document.getElementById('aiPptxStatus');
-    btn.disabled=true;
-    const origTxt=btn.textContent;
-    btn.textContent='⏳ AI가 슬라이드를 구성하는 중... (10~60초)';
-    status.style.display='block';
-    const sourceNote=sources.length?` · 참고자료 ${sources.length}개 포함`:'';
-    status.innerHTML=`<span style="color:#666;">서버에 전송했습니다${sourceNote}. 완료되면 자동 다운로드됩니다.</span>`;
-
-    try {
-        const r=await fetch('/api/ai/generate-pptx',{
-            method:'POST',
-            headers:{'Content-Type':'application/json', ...(authToken?{'X-Auth-Token':authToken}:{})},
-            body:JSON.stringify({ title, audience, content, length, tone, sources })
-        });
-        if(!r.ok){
-            const errJson=await r.json().catch(()=>({error:'알 수 없는 오류'}));
-            throw new Error(errJson.error || `서버 오류 (${r.status})`);
-        }
-        const blob=await r.blob();
-        const cd=r.headers.get('Content-Disposition')||'';
-        const m=cd.match(/filename\*=UTF-8''([^;]+)/i);
-        const filename=m?decodeURIComponent(m[1]):`${title||'presentation'}.pptx`;
-        const a=document.createElement('a');
-        a.href=URL.createObjectURL(blob);
-        a.download=filename;
-        document.body.appendChild(a);a.click();a.remove();
-        setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-        status.innerHTML=`<span style="color:#2e7d32;font-weight:600;">✅ ${esc(filename)} 다운로드 시작!</span><br><span style="font-size:12px;color:#666;">파워포인트/한쇼에서 여신 뒤 편집하세요.</span>`;
-    } catch(e) {
-        status.innerHTML=`<span style="color:#c62828;font-weight:600;">❌ ${esc(e.message)}</span>`;
-    } finally {
-        btn.disabled=false;
-        btn.textContent=origTxt;
-    }
 }
 
 function renderAiLetter(ws){

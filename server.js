@@ -960,31 +960,110 @@ app.post('/api/ai/chat', requireAuth, async (req, res) => {
 // ===== AI 프레젠테이션 생성 (PPTX) =====
 // 입력: { content, title?, audience? }
 // 출력: .pptx 파일 다운로드
-app.post('/api/ai/generate-pptx', requireAuth, async (req, res) => {
+// ===== PPTX 생성 파이프라인 (3단계 분리 + 재생성 + 히스토리) =====
+const PPTX_HISTORY_FILE = 'pptx-history.json';
+const PPTX_HISTORY_MAX = 3;
+
+async function savePptxToHistory(entry) {
     try {
-        const { content, title, audience, length, tone, sources } = req.body || {};
-        const hasContent = content && typeof content === 'string' && content.trim().length >= 5;
-        const hasSources = Array.isArray(sources) && sources.length > 0 && sources.some(s => s && s.text);
-        if (!hasContent && !hasSources) {
-            return res.status(400).json({ error: '내용(content) 또는 참고자료(sources) 중 하나 이상 제공해주세요.' });
+        const list = (await readData(PPTX_HISTORY_FILE)) || [];
+        list.unshift(entry);
+        while (list.length > PPTX_HISTORY_MAX) list.pop();
+        await writeData(PPTX_HISTORY_FILE, list);
+    } catch (e) { console.warn('pptx history 저장 실패:', e.message); }
+}
+
+function pptxCtxFromBody(body) {
+    const { content, title, audience, length, tone, sources, theme } = body || {};
+    return {
+        content, title, audience, length, tone, sources,
+        theme: theme || 'education',
+        footer: audience || '',
+    };
+}
+
+// Step 1: outline 생성 (미리보기용)
+app.post('/api/ai/pptx/outline', requireAuth, async (req, res) => {
+    try {
+        const ctx = pptxCtxFromBody(req.body);
+        const { content, sources } = ctx;
+        const hasContent = content && content.trim().length >= 5;
+        const hasSources = Array.isArray(sources) && sources.some(s => s && s.text);
+        if (!hasContent && !hasSources) return res.status(400).json({ error: '내용 또는 참고자료 중 하나는 필요합니다.' });
+
+        // 스타일 레퍼런스: referenceIds 배열로 history 조회
+        if (Array.isArray(req.body.referenceIds) && req.body.referenceIds.length > 0) {
+            const hist = (await readData(PPTX_HISTORY_FILE)) || [];
+            ctx.referenceDecks = hist.filter(h => req.body.referenceIds.includes(h.id));
         }
 
-        const { generateDeck } = require('./lib/pptx-agent');
-        let deck;
-        try {
-            deck = await generateDeck(
-                { content, title, audience, length, tone, sources, footer: audience || '' },
-                callGroqWithFallback
-            );
-        } catch (e) {
-            console.error('pptx-agent pipeline 실패:', e.stage || '', e.message);
-            const status = e.apiStatus || 502;
-            const data = e.apiData || { error: e.message || 'AI 파이프라인 오류' };
-            return res.status(status).json(data);
-        }
+        const { generateOutlineOnly } = require('./lib/pptx-agent');
+        const outline = await generateOutlineOnly(ctx, callGroqWithFallback);
+        res.json(outline);
+    } catch (e) {
+        console.error('pptx outline error:', e.stage || '', e.message);
+        const status = e.apiStatus || 500;
+        res.status(status).json(e.apiData || { error: e.message });
+    }
+});
 
-        const { generatePptx } = require('./lib/pptx-gen');
-        const buf = await generatePptx(deck);
+// Step 2: outline → deck 완성 (Writer + Reviewer)
+app.post('/api/ai/pptx/build', requireAuth, async (req, res) => {
+    try {
+        const ctx = pptxCtxFromBody(req.body);
+        const outline = req.body.outline;
+        if (!outline || !Array.isArray(outline.outline) || outline.outline.length === 0) {
+            return res.status(400).json({ error: 'outline이 필요합니다.' });
+        }
+        const { buildDeckFromOutline } = require('./lib/pptx-agent');
+        const deck = await buildDeckFromOutline(ctx, outline, callGroqWithFallback);
+        res.json(deck);
+    } catch (e) {
+        console.error('pptx build error:', e.stage || '', e.message);
+        const status = e.apiStatus || 500;
+        res.status(status).json(e.apiData || { error: e.message });
+    }
+});
+
+// Step 2.5: 한 슬라이드만 재생성
+app.post('/api/ai/pptx/regen-slide', requireAuth, async (req, res) => {
+    try {
+        const ctx = pptxCtxFromBody(req.body);
+        const { deck, slideIndex, hint } = req.body;
+        if (!deck || typeof slideIndex !== 'number') {
+            return res.status(400).json({ error: 'deck과 slideIndex가 필요합니다.' });
+        }
+        const { regenerateSlide } = require('./lib/pptx-agent');
+        const updated = await regenerateSlide(ctx, deck, slideIndex, callGroqWithFallback, hint);
+        res.json({ slide: updated, slideIndex });
+    } catch (e) {
+        console.error('pptx regen error:', e.message);
+        const status = e.apiStatus || 500;
+        res.status(status).json(e.apiData || { error: e.message });
+    }
+});
+
+// Step 3: deck → PPTX 바이너리 렌더 (+ 히스토리 저장)
+app.post('/api/ai/pptx/render', requireAuth, async (req, res) => {
+    try {
+        const { deck, theme } = req.body || {};
+        if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) {
+            return res.status(400).json({ error: 'deck.slides가 비어있습니다.' });
+        }
+        const { generatePptx, THEMES } = require('./lib/pptx-gen');
+        const themeKey = THEMES[theme] ? theme : 'education';
+        const buf = await generatePptx(deck, themeKey);
+
+        // 히스토리 저장 (제목 + outline 요약 + 각 슬라이드 제목)
+        const histEntry = {
+            id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            createdAt: new Date().toISOString(),
+            title: deck.title,
+            subtitle: deck.subtitle || '',
+            theme: themeKey,
+            slides: (deck.slides || []).map(s => ({ title: s.title })),
+        };
+        savePptxToHistory(histEntry);
 
         const safeTitle = String(deck.title || 'presentation').replace(/[^가-힣A-Za-z0-9 _-]/g, '_').slice(0, 40);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
@@ -992,9 +1071,25 @@ app.post('/api/ai/generate-pptx', requireAuth, async (req, res) => {
             `attachment; filename*=UTF-8''${encodeURIComponent(`${safeTitle}.pptx`)}`);
         res.send(buf);
     } catch (e) {
-        console.error('pptx gen error:', e);
+        console.error('pptx render error:', e);
         res.status(500).json({ error: e.message });
     }
+});
+
+// 히스토리 조회 (스타일 레퍼런스 선택용)
+app.get('/api/ai/pptx/history', requireAuth, async (req, res) => {
+    try {
+        const list = (await readData(PPTX_HISTORY_FILE)) || [];
+        res.json(list);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 테마 목록
+app.get('/api/ai/pptx/themes', requireAuth, (req, res) => {
+    const { THEMES } = require('./lib/pptx-gen');
+    res.json(Object.entries(THEMES).map(([key, v]) => ({
+        key, name: v.name, primary: v.primary, accent: v.accent,
+    })));
 });
 
 // ===== 가정통신문 번역 API (Groq) =====
