@@ -731,7 +731,23 @@ const HELP_SLIDES = [
     `
   },
   {
-    badge: { cls: 'bg-purple-100 text-purple-800', num: 4 },
+    badge: { cls: 'bg-rose-100 text-rose-800', num: 4 },
+    icon: '👀',
+    title: '완성된 일지 — 이렇게 생겼어요',
+    sub: '결재완료 예시 미리보기',
+    body: `
+      <p class="text-gray-700 leading-relaxed mb-3">위 과정을 모두 마치면 아래와 같은 형태의 일지가 만들어집니다. 실제 다운로드되는 HTML과 동일한 화면입니다.</p>
+      <div class="rounded-lg border-2 border-gray-300 overflow-hidden bg-gray-50 mb-3" style="height:400px;">
+        <iframe src="/bap/sample.html" class="w-full h-full bg-white" style="border:0;" title="급식일지 완성 예시"></iframe>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-xs text-gray-500">💡 담당자·결재자 서명까지 포함된 실제 예시</div>
+        <a href="/bap/sample.html" target="_blank" rel="noopener" class="text-xs text-blue-600 font-bold hover:underline">새 창으로 보기 ↗</a>
+      </div>
+    `
+  },
+  {
+    badge: { cls: 'bg-purple-100 text-purple-800', num: 5 },
     icon: '📥',
     title: '다운로드 & PDF로 저장',
     sub: 'HTML 저장 → 인쇄 → PDF',
@@ -750,7 +766,7 @@ const HELP_SLIDES = [
     `
   },
   {
-    badge: { cls: 'bg-gray-200 text-gray-800', num: 5 },
+    badge: { cls: 'bg-gray-200 text-gray-800', num: 6 },
     icon: '🎨',
     title: '상태 색 안내',
     sub: '달력에서 한눈에 확인',
