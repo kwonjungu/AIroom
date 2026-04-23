@@ -7842,7 +7842,19 @@ async function _aiPptxGoStep2(){
 // ===== STEP 2: 개요 미리보기 =====
 function _aiPptxRenderStep2(ws){
     const o = _aiPptxOutline || {};
-    const items = (o.outline||[]).map((item, i)=>`
+    if (!Array.isArray(o.outline) || o.outline.length === 0){
+        ws.innerHTML = _aiPptxWrap(`
+            ${_aiPptxHeader('AI 프레젠테이션 · Step 2/3 개요 검토')}
+            <div style="padding:24px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:16px;text-align:center;">
+                <div style="font-size:40px;margin-bottom:8px;">⚠️</div>
+                <div style="font-size:15px;font-weight:700;color:#991b1b;margin-bottom:4px;">개요가 비어있습니다</div>
+                <div style="font-size:13px;color:#7f1d1d;">AI 응답이 예상치 못한 형식이었어요. 발표 내용을 좀 더 구체적으로 적고 다시 시도해보세요.</div>
+            </div>
+            <button onclick="_aiPptxBackToStep1()" style="width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;background:white;cursor:pointer;font-size:14px;">← 입력으로 돌아가기</button>
+        `);
+        return;
+    }
+    const items = o.outline.map((item, i)=>`
         <div style="display:flex;gap:12px;padding:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;">
             <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#d14d41;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">${item.n||i+1}</div>
             <div style="flex:1;">

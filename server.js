@@ -1011,11 +1011,16 @@ app.post('/api/ai/pptx/outline', requireAuth, async (req, res) => {
 app.post('/api/ai/pptx/build', requireAuth, async (req, res) => {
     try {
         const ctx = pptxCtxFromBody(req.body);
-        const outline = req.body.outline;
-        if (!outline || !Array.isArray(outline.outline) || outline.outline.length === 0) {
-            return res.status(400).json({ error: 'outline이 필요합니다.' });
+        const outlineRaw = req.body.outline;
+        if (!outlineRaw || typeof outlineRaw !== 'object') {
+            return res.status(400).json({ error: 'outline 객체가 필요합니다.' });
         }
-        const { buildDeckFromOutline } = require('./lib/pptx-agent');
+        const { buildDeckFromOutline, normalizeOutline } = require('./lib/pptx-agent');
+        const outline = normalizeOutline(outlineRaw);
+        if (outline.outline.length === 0) {
+            console.warn('[/api/ai/pptx/build] outline.outline 비어있음. 받은 원본:', JSON.stringify(outlineRaw).slice(0, 400));
+            return res.status(400).json({ error: '개요에 슬라이드가 없습니다. 개요 생성을 다시 해주세요.' });
+        }
         const deck = await buildDeckFromOutline(ctx, outline, callGroqWithFallback);
         res.json(deck);
     } catch (e) {
