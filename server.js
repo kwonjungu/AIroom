@@ -846,8 +846,21 @@ app.get('/doc/:token', (req, res) => {
 
 // ===== AI 프록시 (Groq API) =====
 // 환경변수에 키가 있으면 서버 키 우선 사용, 없으면 클라이언트 키 사용
+// Groq API 키 리스트 — 환경변수에서 최대 4개까지 자동 수집
+// GROQ_API_KEY (기본) + GROQ_API_KEY_2 + GROQ_API_KEY_3 + GROQ_API_KEY_4
+// 한 키가 할당량 초과되면 다음 키로 자동 폴백한다.
+function getGroqApiKeys() {
+    return [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_2,
+        process.env.GROQ_API_KEY_3,
+        process.env.GROQ_API_KEY_4,
+    ].filter(k => typeof k === 'string' && k.trim().length > 0);
+}
+
 app.get('/api/ai/status', (req, res) => {
-    res.json({ hasServerKey: !!process.env.GROQ_API_KEY });
+    const keys = getGroqApiKeys();
+    res.json({ hasServerKey: keys.length > 0, keyCount: keys.length });
 });
 
 // Groq 모델 폴백 순서 — 앞의 모델이 할당량 초과/폐기 시 다음 모델로 자동 전환
@@ -878,10 +891,17 @@ function isGroqQuotaError(status, data) {
     );
 }
 
-// Groq 호출 + 폴백 — body.model은 1순위로 쓰고, 실패 시 폴백 리스트 순회
-async function callGroqWithFallback(apiKey, body) {
+// Groq 호출 + 2단계 폴백
+//   1) 같은 키로 모델 순회 (70B → 8B)
+//   2) 모든 모델 실패 시 다음 키로 전환하여 다시 1) 수행
+// 반환: { ok, status, data }  — data._fallbackModel / _fallbackKeyIndex 포함
+async function callGroqWithFallback(body) {
+    const keys = getGroqApiKeys();
+    if (keys.length === 0) {
+        return { ok: false, status: 400, data: { error: 'Groq API 키가 설정되지 않았습니다. Vercel 환경변수 GROQ_API_KEY를 설정하세요.' } };
+    }
+
     const requested = body.model;
-    // 우선순위: 요청 모델 → 폴백 리스트 (중복 제거)
     const models = [requested, ...GROQ_FALLBACK_MODELS].filter(
         (m, i, arr) => m && arr.indexOf(m) === i
     );
@@ -889,46 +909,126 @@ async function callGroqWithFallback(apiKey, body) {
     let lastStatus = 500;
     let lastData = { error: 'AI 호출 실패' };
 
-    for (const model of models) {
-        try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-                body: JSON.stringify({ ...body, model })
-            });
-            const data = await response.json();
-            if (response.ok) {
-                if (model !== requested) {
-                    console.log(`[Groq] 폴백 사용: ${requested} → ${model}`);
-                    data._fallbackModel = model;
+    for (let ki = 0; ki < keys.length; ki++) {
+        const apiKey = keys[ki];
+        let authErrorOnThisKey = false;
+        for (const model of models) {
+            try {
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                    body: JSON.stringify({ ...body, model })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    if (ki > 0 || model !== requested) {
+                        console.log(`[Groq] 폴백 사용: key#${ki + 1}, model=${model}`);
+                        data._fallbackModel = model;
+                        data._fallbackKeyIndex = ki;
+                    }
+                    return { ok: true, status: 200, data };
                 }
-                return { ok: true, status: 200, data };
+                lastStatus = response.status;
+                lastData = data;
+                // 인증 오류 → 이 키는 버리고 다음 키로 (잘못된 키나 취소된 키일 수 있음)
+                if (response.status === 401 || response.status === 403) {
+                    console.warn(`[Groq] key#${ki + 1} 인증 실패(${response.status}) — 다음 키로 전환`);
+                    authErrorOnThisKey = true;
+                    break;
+                }
+                // 할당량 외 에러(잘못된 요청 등) → 바로 중단
+                if (!isGroqQuotaError(response.status, data)) {
+                    return { ok: false, status: response.status, data };
+                }
+                console.warn(`[Groq] key#${ki + 1}/${model} 할당량 초과 — 다음 모델로`);
+            } catch (e) {
+                lastData = { error: 'AI API 호출 실패: ' + e.message };
             }
-            lastStatus = response.status;
-            lastData = data;
-            if (!isGroqQuotaError(response.status, data)) {
-                // 할당량 외 에러(잘못된 요청 등)는 바로 중단
-                return { ok: false, status: response.status, data };
-            }
-            console.warn(`[Groq] ${model} 할당량 초과/불가 — 다음 모델로 전환`);
-        } catch (e) {
-            lastData = { error: 'AI API 호출 실패: ' + e.message };
+        }
+        if (!authErrorOnThisKey) {
+            console.warn(`[Groq] key#${ki + 1} 전 모델 소진 — 다음 키로 전환`);
         }
     }
     return { ok: false, status: lastStatus, data: lastData };
 }
 
 app.post('/api/ai/chat', requireAuth, async (req, res) => {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) return res.status(400).json({ error: 'API 키가 필요합니다.' });
-    const result = await callGroqWithFallback(apiKey, req.body);
+    const result = await callGroqWithFallback(req.body);
     res.status(result.status).json(result.data);
+});
+
+// ===== AI 프레젠테이션 생성 (PPTX) =====
+// 입력: { content, title?, audience? }
+// 출력: .pptx 파일 다운로드
+app.post('/api/ai/generate-pptx', requireAuth, async (req, res) => {
+    try {
+        const { content, title, audience } = req.body || {};
+        if (!content || typeof content !== 'string' || content.trim().length < 5) {
+            return res.status(400).json({ error: '내용(content)을 5자 이상 입력해주세요.' });
+        }
+
+        const systemPrompt = `당신은 교사용 발표 자료(한국어)를 만드는 전문가입니다.
+주어진 내용을 깔끔한 프레젠테이션 구조로 정리하세요.
+
+반드시 다음 JSON 스키마로만 응답하세요. 설명·주석·markdown 없이 JSON 한 개만 반환:
+{
+  "title": "발표 대제목 (25자 이내)",
+  "subtitle": "부제목 (40자 이내, 선택)",
+  "slides": [
+    { "title": "슬라이드 제목 (20자 이내)", "bullets": ["짧은 문장 1", "짧은 문장 2", "..."], "notes": "발표자 노트 (선택)" }
+  ]
+}
+
+규칙:
+- 슬라이드 수: 5~10장 (너무 많지 않게)
+- 각 슬라이드의 bullets는 3~6개, 한 줄당 25자 이내
+- 불필요한 중복·수식어 제거, 핵심만
+- 교사/학부모/학생 중 청중에 맞는 어휘 사용${audience ? ` (이번 청중: ${audience})` : ''}
+- 마지막에 "감사합니다" 슬라이드는 넣지 않음 (자동 추가됨)`;
+
+        const result = await callGroqWithFallback({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: (title ? `제목 힌트: ${title}\n\n` : '') + content }
+            ],
+            temperature: 0.4,
+            max_tokens: 4096,
+            response_format: { type: 'json_object' }
+        });
+
+        if (!result.ok) return res.status(result.status).json(result.data);
+
+        let deck;
+        try {
+            const raw = result.data.choices?.[0]?.message?.content || '{}';
+            deck = JSON.parse(raw);
+        } catch (e) {
+            return res.status(502).json({ error: 'AI 응답을 JSON으로 해석할 수 없습니다. 다시 시도해주세요.' });
+        }
+
+        if (!deck.slides || !Array.isArray(deck.slides) || deck.slides.length === 0) {
+            return res.status(502).json({ error: '슬라이드 데이터가 비어있습니다.' });
+        }
+
+        deck.footer = deck.footer || audience || '';
+        const { generatePptx } = require('./lib/pptx-gen');
+        const buf = await generatePptx(deck);
+
+        const safeTitle = String(deck.title || 'presentation').replace(/[^가-힣A-Za-z0-9 _-]/g, '_').slice(0, 40);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+        res.setHeader('Content-Disposition',
+            `attachment; filename*=UTF-8''${encodeURIComponent(`${safeTitle}.pptx`)}`);
+        res.send(buf);
+    } catch (e) {
+        console.error('pptx gen error:', e);
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // ===== 가정통신문 번역 API (Groq) =====
 app.post('/api/translate', requireAuth, async (req, res) => {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) return res.status(400).json({ error: 'API 키가 설정되지 않았습니다.' });
+    if (getGroqApiKeys().length === 0) return res.status(400).json({ error: 'API 키가 설정되지 않았습니다.' });
     const { blocks, targetLang } = req.body;
     if (!blocks || !blocks.length || !targetLang) return res.status(400).json({ error: 'blocks와 targetLang이 필요합니다.' });
 
@@ -950,7 +1050,7 @@ CRITICAL RULES:
 - This is a school document for parents — translate naturally and clearly.`;
 
     try {
-        const result = await callGroqWithFallback(apiKey, {
+        const result = await callGroqWithFallback({
             model: 'llama-3.3-70b-versatile',
             messages: [
                 { role: 'system', content: systemPrompt },
