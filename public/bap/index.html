@@ -95,8 +95,8 @@
         <p class="text-sm text-gray-500 mt-1">한글(HWPX) 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출해 저장합니다.</p>
       </div>
       <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 mb-4 text-sm text-amber-900">
-        <p class="font-bold">⚠️ HWPX 형식만 가능합니다.</p>
-        <p class="text-xs mt-1">한글에서 <b>다른 이름으로 저장 → HWPX(*.hwpx)</b> 형식으로 저장한 파일이어야 합니다. 구버전 HWP, DOCX, PDF는 지원하지 않습니다.</p>
+        <p class="font-bold">⚠️ HWPX 또는 PDF 형식만 가능합니다.</p>
+        <p class="text-xs mt-1">한글 식단표는 <b>다른 이름으로 저장 → HWPX(*.hwpx)</b>, 또는 <b>PDF로 인쇄/저장</b> 한 파일이어야 합니다. 구버전 HWP, DOCX, 이미지(jpg/png)는 지원하지 않습니다.</p>
       </div>
       <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
@@ -109,7 +109,7 @@
             <input type="number" id="mu-month" min="1" max="12">
           </div>
           <div class="flex items-end">
-            <input type="file" id="mu-file" accept=".hwpx" class="text-xs">
+            <input type="file" id="mu-file" accept=".hwpx,.pdf" class="text-xs">
           </div>
         </div>
         <button data-action="mu-upload" class="w-full bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl">🤖 업로드 & AI 파싱</button>
@@ -420,8 +420,8 @@
     <!-- 탭: 식단표지 -->
     <div id="tab-menu" class="boss-tab-content hidden">
       <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-        <h3 class="font-bold text-gray-800 text-sm mb-2">📤 식단표지 HWPX 업로드 (월 1회)</h3>
-        <p class="text-xs text-gray-500 mb-3">한글(HWPX) 파일의 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출하여 저장합니다. 담당자가 일지 작성 시 자동으로 식단명이 채워집니다.</p>
+        <h3 class="font-bold text-gray-800 text-sm mb-2">📤 식단표지 HWPX/PDF 업로드 (월 1회)</h3>
+        <p class="text-xs text-gray-500 mb-3">HWPX 또는 PDF 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출하여 저장합니다. 담당자가 일지 작성 시 자동으로 식단명이 채워집니다.</p>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
           <div>
             <label class="text-xs font-bold text-gray-600">연도</label>
@@ -432,7 +432,7 @@
             <input type="number" id="menu-month" min="1" max="12">
           </div>
           <div class="flex items-end">
-            <input type="file" id="menu-file" accept=".hwpx" class="text-xs">
+            <input type="file" id="menu-file" accept=".hwpx,.pdf" class="text-xs">
           </div>
         </div>
         <button data-action="menu-upload" class="bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">🤖 업로드 & AI 파싱</button>
@@ -1583,9 +1583,9 @@ async function menuUpload() {
   const file = $('menu-file').files[0];
   const year = parseInt($('menu-year').value, 10);
   const month = parseInt($('menu-month').value, 10);
-  if (!file) return alert('HWPX 파일을 선택하세요.');
+  if (!file) return alert('HWPX 또는 PDF 파일을 선택하세요.');
   if (!year || !month) return alert('연도/월을 입력하세요.');
-  if (!/\.hwpx$/i.test(file.name)) return alert('HWPX 파일만 업로드 가능합니다.');
+  if (!/\.(hwpx|pdf)$/i.test(file.name)) return alert('HWPX 또는 PDF 형식만 업로드 가능합니다.');
   if (file.size > 30 * 1024 * 1024) return alert('파일이 너무 큽니다 (30MB 이하).');
 
   showLoading('AI가 식단표지를 분석 중...');
@@ -1595,7 +1595,7 @@ async function menuUpload() {
     const res = await fetch('/api/bap/parse-menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hwpxBase64: b64, year, month })
+      body: JSON.stringify({ fileBase64: b64, filename: file.name, year, month })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'AI 파싱 실패');
@@ -1738,8 +1738,8 @@ async function muUpload() {
   const year = parseInt($('mu-year').value, 10);
   const month = parseInt($('mu-month').value, 10);
   if (!year || !month) return alert('연도/월을 입력하세요.');
-  if (!file) return alert('HWPX 파일을 선택하세요.');
-  if (!/\.hwpx$/i.test(file.name)) return alert('HWPX 형식 파일만 업로드 가능합니다. 한글에서 "다른 이름으로 저장 → HWPX"로 저장하세요.');
+  if (!file) return alert('HWPX 또는 PDF 파일을 선택하세요.');
+  if (!/\.(hwpx|pdf)$/i.test(file.name)) return alert('HWPX 또는 PDF 형식만 업로드 가능합니다.');
   if (file.size > 30 * 1024 * 1024) return alert('파일이 너무 큽니다 (30MB 이하).');
 
   // 1) 같은 월에 이미 저장된 식단이 있으면 확인
@@ -1772,7 +1772,7 @@ async function muUpload() {
     const res = await fetch('/api/bap/parse-menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hwpxBase64: b64, year, month })
+      body: JSON.stringify({ fileBase64: b64, filename: file.name, year, month })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'AI 파싱 실패');
