@@ -90,79 +90,33 @@
   </div>
 </div>
 
-<!-- ════════ 0-H. 사용방법 (도움말) ════════ -->
+<!-- ════════ 0-H. 사용방법 (단계별 슬라이드) ════════ -->
 <div id="view-help" class="view">
-  <div class="min-h-screen px-4 py-8">
-    <div class="max-w-3xl mx-auto">
-      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2 mb-4">← 처음으로</button>
-      <div class="text-center mb-6">
-        <span class="text-5xl">📖</span>
-        <h2 class="text-2xl font-bold text-gray-800 mt-2">사용방법</h2>
-        <p class="text-sm text-gray-500 mt-1">급식일지 시스템 단계별 안내</p>
+  <div class="min-h-screen px-4 py-8 flex flex-col">
+    <div class="max-w-2xl w-full mx-auto flex-1 flex flex-col">
+      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2 mb-4 self-start">← 처음으로</button>
+
+      <!-- 진행 표시 -->
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-gray-500"><span id="help-cur">1</span> / <span id="help-total">5</span></span>
+        <span id="help-skip" class="text-xs text-gray-400 cursor-pointer hover:text-gray-600" data-help-skip>건너뛰기 ✕</span>
+      </div>
+      <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-6">
+        <div id="help-bar" class="h-full bg-amber-400 transition-all duration-300" style="width:20%"></div>
       </div>
 
-      <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <span class="bg-amber-100 text-amber-800 font-bold rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0">1</span>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800 mb-1">🍚 월별 식단 입력하기 <span class="text-xs font-normal text-gray-500">(로그인 불필요)</span></h3>
-            <p class="text-sm text-gray-600 leading-relaxed">교육청에서 받은 <b>한글(HWPX)·PDF 식단표지</b>를 업로드하면 AI가 날짜별 점심 메뉴를 추출해 자동 저장합니다. 이 단계는 한 달에 한 번만 하면 됩니다. 저장된 식단은 담당자가 일지를 쓸 때 자동으로 불러와집니다.</p>
-            <p class="text-xs text-gray-500 mt-2">💡 이미 업로드한 월을 다시 올리면 해당 월의 기존 메뉴는 전부 덮어씁니다.</p>
-          </div>
-        </div>
+      <!-- 슬라이드 카드 -->
+      <div id="help-card" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-7 flex-1 flex flex-col transition-opacity duration-200 ease-out">
+        <!-- JS로 주입됨 -->
       </div>
 
-      <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <span class="bg-blue-100 text-blue-800 font-bold rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0">2</span>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800 mb-1">📝 담당자 — 일지 작성·서명·제출</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">급식 담당자는 <b>이름+비밀번호</b>로 회원가입/로그인 후, 날짜를 선택해 그날의 일지를 작성합니다. 식수·검수·위생 점검·특이사항을 입력하고 서명란에 손글씨 서명한 뒤 <b>제출</b>하면 결재 대기 상태가 됩니다.</p>
-            <p class="text-xs text-gray-500 mt-2">💡 임시저장(초안)도 가능하고, 결재 전이면 언제든 다시 수정해 재제출할 수 있습니다.</p>
-          </div>
-        </div>
+      <!-- 네비게이션 -->
+      <div class="flex items-center justify-between gap-3 mt-6">
+        <button id="help-prev" data-help-prev class="flex-1 max-w-[130px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed">← 이전</button>
+        <!-- 인디케이터 점 -->
+        <div id="help-dots" class="flex items-center gap-2"></div>
+        <button id="help-next" data-help-next class="flex-1 max-w-[130px] bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl">다음 →</button>
       </div>
-
-      <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <span class="bg-emerald-100 text-emerald-800 font-bold rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0">3</span>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800 mb-1">✅ 결재자(부장) — 결재·관리</h3>
-            <p class="text-sm text-gray-600 leading-relaxed">결재자는 부장 계정으로 로그인해 <b>제출된 일지를 확인</b>하고 서명 후 결재 승인합니다. 승인된 일지는 <b>수정·삭제가 불가</b>능합니다(감사용 보존). 월별 현황을 달력으로 볼 수 있고, 필요시 담당자 계정 관리도 가능합니다.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <span class="bg-purple-100 text-purple-800 font-bold rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0">4</span>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800 mb-1">📥 다운로드 & 인쇄</h3>
-            <p class="text-sm text-gray-600 leading-relaxed mb-2">일지는 <b>HTML 파일</b>로 다운로드됩니다. 개별 일지 단건, 또는 월 단위(결재완료만/전체)로 한 번에 묶어 받을 수 있습니다.</p>
-            <div class="bg-amber-50 border border-amber-300 rounded-lg p-3 mt-2">
-              <p class="text-sm text-amber-900 font-semibold mb-1">📄 PDF로 저장하려면?</p>
-              <p class="text-xs text-amber-800 leading-relaxed">다운로드한 HTML 파일을 브라우저로 열고 <b>Ctrl+P</b>(또는 메뉴 → 인쇄)를 누른 뒤, 프린터 선택에서 <b>"PDF로 저장"</b>을 고르면 그대로 PDF 파일이 됩니다. 미리보기 창 안에서도 🖨️ 인쇄 버튼으로 바로 PDF 저장이 가능합니다.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl border border-gray-200 p-5 mb-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <span class="bg-gray-100 text-gray-700 font-bold rounded-full w-9 h-9 flex items-center justify-center flex-shrink-0">5</span>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800 mb-1">🎨 상태 색 안내</h3>
-            <div class="text-sm text-gray-600 space-y-1 mt-1">
-              <div class="flex items-center gap-2"><span class="inline-block w-5 h-5 rounded bg-amber-200"></span><span>임시저장(초안)</span></div>
-              <div class="flex items-center gap-2"><span class="inline-block w-5 h-5 rounded bg-amber-300"></span><span>제출완료 (결재대기)</span></div>
-              <div class="flex items-center gap-2"><span class="inline-block w-5 h-5 rounded bg-emerald-300"></span><span>결재완료</span></div>
-              <div class="flex items-center gap-2"><span class="inline-block w-5 h-5 rounded bg-red-200 opacity-60"></span><span>주말 (작성 불필요)</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button data-back class="w-full bg-gray-800 text-white font-bold py-3 rounded-xl mt-2">← 처음으로 돌아가기</button>
     </div>
   </div>
 </div>
@@ -306,7 +260,13 @@
 
     <!-- 검식/급식량/급식인원 표 -->
     <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 overflow-x-auto">
-      <h3 class="font-bold text-gray-800 text-sm mb-2">📋 검식 · 급식량 · 급식인원</h3>
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+        <h3 class="font-bold text-gray-800 text-sm">📋 검식 · 급식량 · 급식인원</h3>
+        <div class="no-print flex items-center gap-2">
+          <button data-action="bulk-check-ok" class="text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg px-3 py-1.5" title="검식내용을 전부 '양호'로 설정">✓ 일괄 양호</button>
+          <button data-action="bulk-amt-ok" class="text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 rounded-lg px-3 py-1.5" title="급식량을 전부 '적당'으로 설정">⚖ 일괄 적당</button>
+        </div>
+      </div>
       <table class="meal-table min-w-[520px]">
         <thead>
           <tr>
@@ -719,6 +679,163 @@ function showView(viewId) {
 }
 
 // ═══════════════════════════════════════════════
+// 사용방법 슬라이드 (한 번에 한 단계씩)
+// ═══════════════════════════════════════════════
+const HELP_SLIDES = [
+  {
+    badge: { cls: 'bg-amber-100 text-amber-800', num: 1 },
+    icon: '🍚',
+    title: '월별 식단 입력하기',
+    sub: '로그인 불필요 · 한 달에 한 번',
+    body: `
+      <p class="text-gray-700 leading-relaxed mb-3"><b>백암초등학교 본교</b>에서 받은 <b>한글(HWPX) 또는 PDF 식단표지</b>를 업로드하면 AI가 날짜별 점심 메뉴를 자동으로 추출해 저장합니다.</p>
+      <ul class="text-sm text-gray-600 space-y-1.5 pl-1 mb-3">
+        <li>• 시작 화면의 <b>🍚 월별 식단 입력하기</b> 버튼 클릭</li>
+        <li>• 해당 월 선택 후 파일 업로드</li>
+        <li>• 추출된 메뉴는 담당자 일지 작성 시 자동으로 불러와짐</li>
+      </ul>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">💡 이미 올린 달을 다시 업로드하면 <b>기존 메뉴는 전부 덮어쓰기</b>됩니다.</div>
+    `
+  },
+  {
+    badge: { cls: 'bg-blue-100 text-blue-800', num: 2 },
+    icon: '📝',
+    title: '담당자 — 일지 작성·서명·제출',
+    sub: '급식 담당 교직원용',
+    body: `
+      <p class="text-gray-700 leading-relaxed mb-3"><b>이름 + 비밀번호</b>로 가입/로그인 후 날짜를 선택해 그날의 일지를 작성합니다.</p>
+      <ol class="text-sm text-gray-600 space-y-1.5 pl-4 list-decimal mb-3">
+        <li>식수 인원 · 검수 내역 입력</li>
+        <li>위생 점검 항목 체크(청결/미흡/불량)</li>
+        <li>특이사항·개선사항 메모</li>
+        <li>서명란에 손글씨 서명</li>
+        <li><b>제출</b> → 결재 대기 상태</li>
+      </ol>
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900">💡 임시저장(초안)도 가능하고, 결재 전에는 언제든 수정해 재제출할 수 있습니다.</div>
+    `
+  },
+  {
+    badge: { cls: 'bg-emerald-100 text-emerald-800', num: 3 },
+    icon: '✅',
+    title: '결재자(부장) — 결재·관리',
+    sub: '영양(교)사 / 부장용',
+    body: `
+      <p class="text-gray-700 leading-relaxed mb-3">부장 계정으로 로그인해 담당자가 제출한 일지를 확인하고 결재 승인합니다.</p>
+      <ul class="text-sm text-gray-600 space-y-1.5 pl-1 mb-3">
+        <li>• 달력에서 <b>제출된 일지(주황)</b>를 클릭해 미리보기</li>
+        <li>• 내용 확인 후 서명 → <b>✅ 결재 승인</b></li>
+        <li>• 월별 현황을 한눈에 파악(담당자별/상태별)</li>
+        <li>• 필요 시 담당자 계정 관리</li>
+      </ul>
+      <div class="bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs text-rose-900"><b>⚠️ 승인된 일지는 수정·삭제 불가</b> (감사 목적 보존). 승인 전에 충분히 검토하세요.</div>
+    `
+  },
+  {
+    badge: { cls: 'bg-purple-100 text-purple-800', num: 4 },
+    icon: '📥',
+    title: '다운로드 & PDF로 저장',
+    sub: 'HTML 저장 → 인쇄 → PDF',
+    body: `
+      <p class="text-gray-700 leading-relaxed mb-3">일지는 <b>HTML 파일</b>로 다운로드됩니다. 개별 단건 또는 월 단위(결재완료만 / 전체)로 한 번에 받을 수 있습니다.</p>
+      <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-3">
+        <p class="text-sm text-amber-900 font-bold mb-2">📄 PDF로 저장하려면?</p>
+        <ol class="text-xs text-amber-900 space-y-1 pl-4 list-decimal leading-relaxed">
+          <li>다운로드한 <b>HTML 파일을 브라우저로 열기</b></li>
+          <li>키보드 <b>Ctrl + P</b> (또는 브라우저 메뉴 → 인쇄)</li>
+          <li>프린터 선택에서 <b>"PDF로 저장"</b> 고르기</li>
+          <li>저장 위치 지정 → 완료</li>
+        </ol>
+      </div>
+      <div class="text-xs text-gray-500">💡 미리보기 창 안의 🖨️ <b>인쇄</b> 버튼을 눌러도 같은 방식으로 바로 PDF 저장할 수 있습니다.</div>
+    `
+  },
+  {
+    badge: { cls: 'bg-gray-200 text-gray-800', num: 5 },
+    icon: '🎨',
+    title: '상태 색 안내',
+    sub: '달력에서 한눈에 확인',
+    body: `
+      <p class="text-gray-700 leading-relaxed mb-4">달력 셀의 배경색으로 각 날짜의 진행 상태를 표시합니다.</p>
+      <div class="space-y-3">
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-amber-200 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">임시저장</div><div class="text-xs text-gray-500">초안 상태 · 아직 제출 전</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-amber-300 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">제출완료</div><div class="text-xs text-gray-500">결재 대기 중</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-emerald-300 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">결재완료</div><div class="text-xs text-gray-500">수정·삭제 불가</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-red-200 opacity-60 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">주말</div><div class="text-xs text-gray-500">작성 불필요</div></div></div>
+      </div>
+    `
+  }
+];
+let helpIdx = 0;
+function initHelpSlides() {
+  helpIdx = 0;
+  const total = HELP_SLIDES.length;
+  $('help-total').textContent = total;
+  // 인디케이터 점 생성
+  const dots = $('help-dots');
+  dots.innerHTML = HELP_SLIDES.map((_, i) =>
+    `<button data-help-dot="${i}" class="help-dot w-2 h-2 rounded-full bg-gray-300 hover:bg-gray-400" aria-label="${i+1}단계로 이동"></button>`
+  ).join('');
+  helpRender();
+}
+function helpRender() {
+  const s = HELP_SLIDES[helpIdx];
+  const total = HELP_SLIDES.length;
+  const card = $('help-card');
+  card.innerHTML = `
+    <div class="flex items-center gap-3 mb-4">
+      <span class="${s.badge.cls} font-bold rounded-full w-11 h-11 flex items-center justify-center text-lg flex-shrink-0">${s.badge.num}</span>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-xl font-bold text-gray-800 truncate">${s.icon} ${esc(s.title)}</h3>
+        <p class="text-xs text-gray-500 mt-0.5">${esc(s.sub)}</p>
+      </div>
+    </div>
+    <div class="flex-1 overflow-auto">${s.body}</div>
+  `;
+  // 진행 바
+  $('help-cur').textContent = helpIdx + 1;
+  $('help-bar').style.width = Math.round(((helpIdx + 1) / total) * 100) + '%';
+  // 점 활성화
+  document.querySelectorAll('.help-dot').forEach((d, i) => {
+    d.classList.toggle('bg-amber-400', i === helpIdx);
+    d.classList.toggle('w-6', i === helpIdx);
+    d.classList.toggle('bg-gray-300', i !== helpIdx);
+  });
+  // 버튼 상태
+  $('help-prev').disabled = helpIdx === 0;
+  const nextBtn = $('help-next');
+  if (helpIdx === total - 1) {
+    nextBtn.textContent = '처음으로 ✓';
+    nextBtn.dataset.helpFinish = '1';
+  } else {
+    nextBtn.textContent = '다음 →';
+    delete nextBtn.dataset.helpFinish;
+  }
+  // 간단한 페이드 효과
+  card.style.opacity = '0';
+  requestAnimationFrame(() => { card.style.opacity = '1'; });
+}
+function helpGo(delta) {
+  const total = HELP_SLIDES.length;
+  const next = helpIdx + delta;
+  if (next < 0) return;
+  if (next >= total) { showView('view-landing'); return; }
+  helpIdx = next;
+  helpRender();
+}
+function helpJump(i) {
+  if (i < 0 || i >= HELP_SLIDES.length) return;
+  helpIdx = i;
+  helpRender();
+}
+// 키보드: ← → Esc
+document.addEventListener('keydown', (e) => {
+  if (!$('view-help').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft')  { helpGo(-1); e.preventDefault(); }
+  if (e.key === 'ArrowRight') { helpGo(+1); e.preventDefault(); }
+  if (e.key === 'Escape')     { showView('view-landing'); e.preventDefault(); }
+});
+
+// ═══════════════════════════════════════════════
 // 서버 세션 (X-Bap-Token, 30일, server.js와 연동)
 // TOKEN_KEY는 학교별 분리되어 상단에서 정의됨
 // ═══════════════════════════════════════════════
@@ -878,12 +995,16 @@ function initSignature() {
 // 이벤트 위임 — data-go, data-back, data-action, data-sign
 // ═══════════════════════════════════════════════
 document.body.addEventListener('click', async (e) => {
-  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-boss-tab]');
+  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-boss-tab],[data-help-prev],[data-help-next],[data-help-skip],[data-help-dot]');
   if (!t) return;
   if (t.dataset.go === 'manager') { initManagerLogin(); showView('view-manager-login'); return; }
   if (t.dataset.go === 'boss')    { initBossLogin();    showView('view-boss-login'); return; }
   if (t.dataset.go === 'menu')    { initMenuUploadView(); showView('view-menu-upload'); return; }
-  if (t.dataset.go === 'help')    { showView('view-help'); return; }
+  if (t.dataset.go === 'help')    { initHelpSlides(); showView('view-help'); return; }
+  if (t.dataset.helpPrev !== undefined) { helpGo(-1); return; }
+  if (t.dataset.helpNext !== undefined) { helpGo(+1); return; }
+  if (t.dataset.helpSkip !== undefined) { showView('view-landing'); return; }
+  if (t.dataset.helpDot !== undefined) { helpJump(parseInt(t.dataset.helpDot, 10)); return; }
   if (t.dataset.back !== undefined) { showView('view-landing'); return; }
   if (t.dataset.tab) { switchBossTab(t.dataset.tab); return; }
   if (t.dataset.mgrTab)  { setMgrTab(t.dataset.mgrTab);  return; }
@@ -900,6 +1021,8 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'mgr-logout')  { await mgrLogout(); return; }
     if (a === 'mgr-load')    { await mgrLoadForDate(); return; }
     if (a === 'mgr-reload-menu') { await mgrLoadMenu(); return; }
+    if (a === 'bulk-check-ok') { PORTION_ROWS.forEach(r => setRadioValue('p-check-' + r, '양호')); return; }
+    if (a === 'bulk-amt-ok')   { PORTION_ROWS.forEach(r => setRadioValue('p-amt-'   + r, '적당')); return; }
     if (a === 'mgr-submit')  { await mgrSubmit(); return; }
     if (a === 'mgr-new')     { mgrResetForm(); return; }
     if (a === 'mgr-sig-clear') { clearSigTarget('mgr-sig'); return; }
