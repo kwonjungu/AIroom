@@ -722,6 +722,57 @@ app.get('/api/firebase-config', requireAuth, (req, res) => {
     res.json(cfg);
 });
 
+// ===== 급식일지 시스템 (/bap) =====
+// Firebase 웹 API 키는 공개되어도 되는 값이므로 인증 없이 노출
+// (보안은 Firestore 규칙에서 수행)
+app.get('/api/bap/config', (req, res) => {
+    const cfg = {
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID
+    };
+    if (!cfg.apiKey) {
+        return res.status(503).json({ error: 'Firebase config 환경변수가 설정되지 않았습니다.' });
+    }
+    res.json(cfg);
+});
+
+// 식단표지 HWPX 파싱 → Groq로 날짜별 메뉴 JSON 추출
+// body: { hwpxBase64: string, year: number, month: number }
+// 전역 express.json 제한(10MB)을 이 라우트만 50MB로 상향
+app.post('/api/bap/parse-menu', express.json({ limit: '50mb' }), async (req, res) => {
+    try {
+        const { hwpxBase64, year, month } = req.body || {};
+        if (!hwpxBase64) return res.status(400).json({ error: 'hwpxBase64 파라미터가 필요합니다.' });
+        const y = parseInt(year, 10);
+        const m = parseInt(month, 10);
+        if (!y || !m || m < 1 || m > 12) {
+            return res.status(400).json({ error: 'year, month 파라미터가 유효하지 않습니다.' });
+        }
+        const buf = Buffer.from(hwpxBase64, 'base64');
+        if (buf.length < 100 || buf.length > 50 * 1024 * 1024) {
+            return res.status(400).json({ error: '파일 크기가 유효하지 않습니다.' });
+        }
+        const { extractHwpxText, parseMenuWithGroq } = require('./lib/bap-menu-parse');
+        const text = await extractHwpxText(buf);
+        if (!text || text.length < 50) {
+            return res.status(400).json({ error: 'HWPX에서 텍스트를 추출하지 못했습니다.' });
+        }
+        const menus = await parseMenuWithGroq(text, y, m, callGroqWithFallback);
+        const count = Object.keys(menus).length;
+        if (count === 0) {
+            return res.status(422).json({ error: 'AI가 메뉴를 추출하지 못했습니다. 파일을 확인하세요.', textPreview: text.slice(0, 500) });
+        }
+        res.json({ menus, count });
+    } catch (e) {
+        console.error('[/api/bap/parse-menu]', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // ===== Firebase Storage 다운로드 프록시 (CORS 우회) =====
 const https = require('https');
 app.get('/api/proxy-download', requireAuth, (req, res) => {

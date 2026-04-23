@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>백암초 급식일지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  body { font-family: 'Noto Sans KR', sans-serif; -webkit-text-size-adjust: 100%; background: #f3f4f6; }
+  input[type="text"], input[type="date"], input[type="month"], input[type="password"], input[type="number"], input[type="tel"], textarea, select {
+    padding: 0.5rem 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; outline: none;
+    font-size: 16px; background: #fff; min-height: 40px; width: 100%;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #2563eb; }
+  .input-line { border: none; border-bottom: 1.5px solid #9ca3af; border-radius: 0; padding: 0.3rem 0.25rem; background: transparent; text-align: center; }
+  .input-line:focus { border-bottom: 2px solid #2563eb; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn 0.25s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .landing-btn { transition: transform 0.15s, box-shadow 0.15s; }
+  .landing-btn:active { transform: scale(0.97); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .tag-submitted { background: #fef3c7; color: #92400e; }
+  .tag-approved { background: #d1fae5; color: #065f46; }
+  .tag-draft { background: #e5e7eb; color: #4b5563; }
+  button { min-height: 40px; touch-action: manipulation; }
+  .radio-pill { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border: 1.5px solid #d1d5db; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; user-select: none; }
+  .radio-pill.active { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+  .meal-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+  .meal-table th, .meal-table td { border: 1px solid #6b7280; padding: 6px 4px; }
+  .meal-table th { background: #f3f4f6; font-weight: 600; }
+  .meal-table input[type="text"], .meal-table input[type="number"] { border: none; border-radius: 0; min-height: 32px; padding: 4px; text-align: center; font-size: 14px; }
+  .meal-table input:focus { background: #eff6ff; }
+  #sig-canvas { touch-action: none; cursor: crosshair; display: block; width: 100%; height: 200px; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; background: #f3f4f6; }
+  .cal-cell.has-draft { background: #fef3c7; color: #92400e; }
+  .cal-cell.has-submitted { background: #fde68a; color: #78350f; }
+  .cal-cell.has-approved { background: #6ee7b7; color: #064e3b; }
+  .cal-cell.weekend { background: #fee2e2; color: #b91c1c; opacity: 0.6; }
+  .cal-cell.disabled { opacity: 0.3; cursor: default; }
+  .cal-cell.today { box-shadow: 0 0 0 2px #2563eb inset; }
+  #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; align-items: center; justify-content: center; padding: 1rem; }
+  .modal.show { display: flex; }
+  @media print {
+    @page { size: A4 portrait; margin: 10mm; }
+    body { background: #fff; }
+    .print-hide, nav, button, .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ════════ 0. 랜딩 ════════ -->
+<div id="view-landing" class="view active">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">🍱 백암초 급식일지</h1>
+      <p class="text-sm text-gray-500 mt-1">비조리교 학교급식 일일 기록 시스템</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+      <button data-go="manager" class="landing-btn bg-white hover:bg-blue-50 border-2 border-blue-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
+        <span class="text-6xl">📝</span>
+        <span class="text-xl font-bold text-gray-800">담당자</span>
+        <span class="text-xs text-gray-500 text-center">일지 작성 · 서명 · 제출</span>
+      </button>
+      <button data-go="boss" class="landing-btn bg-white hover:bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
+        <span class="text-6xl">✅</span>
+        <span class="text-xl font-bold text-gray-800">결재자(부장)</span>
+        <span class="text-xs text-gray-500 text-center">결재 · 관리 · 다운로드</span>
+      </button>
+    </div>
+    <p class="text-xs text-gray-400 mt-8">백암초등학교 · 비조리교 급식</p>
+  </div>
+</div>
+
+<!-- ════════ 1. 담당자 로그인 ════════ -->
+<div id="view-manager-login" class="view">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+    <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2">← 처음으로</button>
+    <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm">
+      <div class="text-center mb-4">
+        <span class="text-4xl">📝</span>
+        <h2 class="text-xl font-bold text-gray-800 mt-2">담당자 로그인</h2>
+        <p id="mgr-mode-hint" class="text-xs text-gray-500 mt-1">이름을 입력하세요</p>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-bold text-gray-600">이름</label>
+          <input type="text" id="mgr-name" placeholder="홍길동" autocomplete="off">
+        </div>
+        <div id="mgr-pw-wrap" class="hidden">
+          <label class="text-xs font-bold text-gray-600">비밀번호</label>
+          <input type="password" id="mgr-pw" placeholder="비밀번호" autocomplete="current-password">
+        </div>
+        <div id="mgr-pw2-wrap" class="hidden">
+          <label class="text-xs font-bold text-gray-600">비밀번호 확인 (신규 가입)</label>
+          <input type="password" id="mgr-pw2" placeholder="동일 비밀번호" autocomplete="new-password">
+        </div>
+        <p id="mgr-err" class="text-xs text-red-500 hidden"></p>
+        <button id="mgr-login-btn" data-action="mgr-login" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl">로그인 / 가입</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 2. 담당자 메인 (폼) ════════ -->
+<div id="view-manager-main" class="view">
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 print-hide">
+    <div class="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">📝</span>
+        <span class="font-bold text-gray-800 text-sm">급식일지 · <span id="mgr-who"></span></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button data-action="mgr-new" class="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-2 rounded-lg">+ 새 일지</button>
+        <button data-action="mgr-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-4xl mx-auto p-3 sm:p-6">
+
+    <!-- 날짜 선택 & 내 일지 목록 -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        <div>
+          <label class="text-xs font-bold text-gray-600">급식일자</label>
+          <input type="date" id="mgr-date">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600">연 급식회수</label>
+          <input type="number" id="mgr-count" min="1" placeholder="예: 50">
+        </div>
+        <button data-action="mgr-load" class="bg-gray-800 text-white font-bold py-2.5 rounded-xl">📅 해당 날짜 불러오기</button>
+      </div>
+      <p id="mgr-status-line" class="text-xs text-gray-500 mt-2"></p>
+    </div>
+
+    <!-- 메뉴 (자동 채움) -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-bold text-gray-800 text-sm">🍚 식단명 (자동 불러오기)</h3>
+        <button data-action="mgr-reload-menu" class="text-xs text-blue-600 font-bold">↻ 다시 불러오기</button>
+      </div>
+      <textarea id="mgr-menu" rows="2" placeholder="예: 쌀밥, 미역국, 돈까스, 양배추샐러드, 김치"></textarea>
+      <p class="text-[11px] text-gray-400 mt-1">관리자가 식단표지를 업로드한 경우 자동으로 채워집니다.</p>
+    </div>
+
+    <!-- 검식/급식량/급식인원 표 -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 overflow-x-auto">
+      <h3 class="font-bold text-gray-800 text-sm mb-2">📋 검식 · 급식량 · 급식인원</h3>
+      <table class="meal-table min-w-[520px]">
+        <thead>
+          <tr>
+            <th class="w-20">구분</th>
+            <th>검식내용</th>
+            <th>급식량</th>
+            <th class="w-20">인원(명)</th>
+          </tr>
+        </thead>
+        <tbody id="mgr-portion-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- 일정표/점검사항 -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <h3 class="font-bold text-gray-800 text-sm mb-3">🚚 일정표 & 점검사항</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="text-xs font-bold text-gray-600">급식운반차 도착시간</label>
+          <input type="text" data-f="arriveTime" placeholder="예: 11:00">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-600">급식운반차 인계시간</label>
+          <input type="text" data-f="handoverTime" placeholder="예: 11:30">
+        </div>
+      </div>
+      <div class="space-y-2 text-sm" id="mgr-check-items"></div>
+    </div>
+
+    <!-- 급식종사자 위생 -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 overflow-x-auto">
+      <h3 class="font-bold text-gray-800 text-sm mb-2">👤 급식종사자 위생사항</h3>
+      <table class="meal-table min-w-[440px]">
+        <thead>
+          <tr>
+            <th class="w-28">성명</th>
+            <th>건강상태</th>
+            <th>복장 및 위생상태</th>
+          </tr>
+        </thead>
+        <tbody id="mgr-staff-tbody"></tbody>
+      </table>
+      <button data-action="mgr-add-staff" class="mt-2 text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">+ 종사자 추가</button>
+    </div>
+
+    <!-- 보존식 / 교육내용 -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 space-y-3">
+      <div>
+        <label class="text-xs font-bold text-gray-600">보존식 관리</label>
+        <div class="flex gap-2 mt-1">
+          <span class="radio-pill" data-group="preserve-do" data-val="실시">실시</span>
+          <span class="radio-pill" data-group="preserve-do" data-val="미실시">미실시</span>
+          <span class="radio-pill ml-2" data-group="preserve-state" data-val="양호">양호</span>
+          <span class="radio-pill" data-group="preserve-state" data-val="미흡">미흡</span>
+          <span class="radio-pill" data-group="preserve-state" data-val="불량">불량</span>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-bold text-gray-600">교육내용 및 기타사항 (문제발견내용)</label>
+        <textarea data-f="education" rows="3" placeholder="교육내용, 특이사항, 문제발견 등"></textarea>
+      </div>
+    </div>
+
+    <!-- 담당자 서명 -->
+    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
+      <h3 class="font-bold text-blue-800 text-sm mb-3">✍️ 담당자 서명</h3>
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-bold">담당</span>
+        <div class="relative w-32 h-14 border border-gray-300 bg-white rounded-lg flex items-center justify-center">
+          <img id="mgr-sig-img" class="absolute inset-0 w-full h-full object-contain hidden" src="">
+          <button id="mgr-sig-btn" data-sign="mgr-sig" class="text-blue-600 text-sm font-bold w-full h-full">(서명하기)</button>
+        </div>
+        <button data-action="mgr-sig-clear" class="text-xs text-red-500">지우기</button>
+      </div>
+    </div>
+
+    <!-- 제출 버튼 -->
+    <div class="sticky bottom-0 bg-white border-t border-gray-200 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 print-hide">
+      <button data-action="mgr-submit" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg">📤 결재자에게 제출하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 3. 부장 PIN 로그인 ════════ -->
+<div id="view-boss-login" class="view">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+    <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2">← 처음으로</button>
+    <div class="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+      <div class="text-center mb-4">
+        <span class="text-4xl">🔒</span>
+        <h2 class="text-xl font-bold text-white mt-2">결재자 전용</h2>
+        <p id="boss-mode-hint" class="text-xs text-gray-400 mt-1">확인 중...</p>
+      </div>
+      <div class="space-y-3">
+        <div id="boss-name-wrap" class="hidden">
+          <label class="text-xs font-bold text-gray-300">결재자 이름 (최초 1회)</label>
+          <input type="text" id="boss-name" placeholder="홍부장" autocomplete="off" class="bg-gray-700 text-white border-gray-600">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-300">PIN 4자리</label>
+          <input type="password" id="boss-pin" inputmode="numeric" maxlength="6" placeholder="••••" class="bg-gray-700 text-white border-gray-600 text-center tracking-[0.5em] text-xl font-bold">
+        </div>
+        <div id="boss-pin2-wrap" class="hidden">
+          <label class="text-xs font-bold text-gray-300">PIN 확인</label>
+          <input type="password" id="boss-pin2" inputmode="numeric" maxlength="6" placeholder="••••" class="bg-gray-700 text-white border-gray-600 text-center tracking-[0.5em] text-xl font-bold">
+        </div>
+        <p id="boss-err" class="text-xs text-red-400 hidden"></p>
+        <button id="boss-login-btn" data-action="boss-login" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl">입장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 4. 부장 메인 (결재 + 관리) ════════ -->
+<div id="view-boss-main" class="view">
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 print-hide">
+    <div class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">✅</span>
+        <span class="font-bold text-gray-800 text-sm">결재자 · <span id="boss-who"></span></span>
+      </div>
+      <button data-action="boss-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
+    </div>
+    <div class="max-w-5xl mx-auto flex gap-1 px-2 overflow-x-auto">
+      <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="pending">🟡 결재 대기</button>
+      <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="calendar">📅 월별 현황</button>
+      <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="menu">🍚 식단표지</button>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto p-3 sm:p-6">
+
+    <!-- 탭: 결재 대기 -->
+    <div id="tab-pending" class="boss-tab-content">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-gray-800">결재 대기 문서</h2>
+        <button data-action="boss-refresh" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">↻ 새로고침</button>
+      </div>
+      <div id="pending-list" class="space-y-2"></div>
+    </div>
+
+    <!-- 탭: 캘린더 -->
+    <div id="tab-calendar" class="boss-tab-content hidden">
+      <div class="flex items-center gap-2 mb-3">
+        <button data-action="cal-prev" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&lt;</button>
+        <input type="month" id="cal-month">
+        <button data-action="cal-next" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&gt;</button>
+        <button data-action="cal-reload" class="bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-sm">조회</button>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500">
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div id="cal-grid" class="cal"></div>
+        <div class="flex flex-wrap gap-3 mt-3 text-[11px] text-gray-600">
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#6ee7b7"></span> 결재완료</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fde68a"></span> 결재대기</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fef3c7"></span> 담당자 작성중</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#f3f4f6"></span> 미작성</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fee2e2"></span> 주말</span>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4">
+        <h3 class="font-bold text-gray-800 text-sm mb-2">월별 일괄 다운로드</h3>
+        <p class="text-xs text-gray-500 mb-3">선택한 월의 모든 결재완료 급식일지를 하나의 HTML로 묶어 다운로드합니다. (인쇄 가능)</p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button data-action="batch-download" class="bg-purple-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">📥 결재완료본 일괄 다운로드</button>
+          <button data-action="batch-download-all" class="bg-gray-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">📥 전체(대기 포함) 일괄 다운로드</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 탭: 식단표지 -->
+    <div id="tab-menu" class="boss-tab-content hidden">
+      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <h3 class="font-bold text-gray-800 text-sm mb-2">📤 식단표지 HWPX 업로드 (월 1회)</h3>
+        <p class="text-xs text-gray-500 mb-3">한글(HWPX) 파일의 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출하여 저장합니다. 담당자가 일지 작성 시 자동으로 식단명이 채워집니다.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          <div>
+            <label class="text-xs font-bold text-gray-600">연도</label>
+            <input type="number" id="menu-year" min="2024" max="2030">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-600">월</label>
+            <input type="number" id="menu-month" min="1" max="12">
+          </div>
+          <div class="flex items-end">
+            <input type="file" id="menu-file" accept=".hwpx" class="text-xs">
+          </div>
+        </div>
+        <button data-action="menu-upload" class="bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">🤖 업로드 & AI 파싱</button>
+        <div id="menu-result" class="mt-3"></div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-bold text-gray-800 text-sm">저장된 월별 식단</h3>
+          <div class="flex items-center gap-2">
+            <input type="month" id="menu-view-month" class="!w-32">
+            <button data-action="menu-list" class="bg-gray-600 text-white font-bold py-2 px-3 rounded-lg text-xs">조회</button>
+          </div>
+        </div>
+        <div id="menu-list" class="space-y-1 text-sm max-h-96 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 서명 모달 ════════ -->
+<div id="sig-modal" class="modal">
+  <div class="bg-white rounded-2xl p-5 w-full max-w-sm">
+    <h3 class="font-bold text-gray-800 mb-3 text-center">화면에 서명해주세요</h3>
+    <div class="border-2 border-dashed border-gray-400 rounded-xl bg-white mb-4 overflow-hidden" style="touch-action:none;">
+      <canvas id="sig-canvas"></canvas>
+    </div>
+    <div class="flex gap-2">
+      <button data-action="sig-clear" class="py-3 px-4 bg-gray-200 rounded-xl font-bold text-sm">지우기</button>
+      <button data-action="sig-cancel" class="py-3 px-4 bg-red-100 text-red-700 rounded-xl font-bold text-sm">취소</button>
+      <button data-action="sig-save" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-sm">완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 일지 미리보기 모달 ════════ -->
+<div id="preview-modal" class="modal">
+  <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-gray-200">
+      <h3 class="font-bold text-gray-800 text-sm" id="preview-title">급식일지 미리보기</h3>
+      <div class="flex items-center gap-2">
+        <button data-action="preview-download" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">📥 다운로드</button>
+        <button data-action="preview-print" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">🖨️ 인쇄</button>
+        <button data-action="preview-close" class="text-gray-500 font-bold px-2">✕</button>
+      </div>
+    </div>
+    <div id="preview-body" class="flex-1 overflow-auto p-4 bg-gray-50"></div>
+    <div id="preview-approve-area" class="p-4 border-t border-gray-200 bg-emerald-50 hidden">
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="text-sm font-bold text-emerald-800">결재 서명:</span>
+        <div class="relative w-32 h-12 border border-gray-300 bg-white rounded-lg flex items-center justify-center">
+          <img id="boss-sig-img" class="absolute inset-0 w-full h-full object-contain hidden" src="">
+          <button id="boss-sig-btn" data-sign="boss-sig" class="text-emerald-700 text-sm font-bold w-full h-full">(서명하기)</button>
+        </div>
+        <button data-action="preview-approve" class="bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm ml-auto">✅ 결재 승인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="loading">
+  <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+  <div class="text-base font-bold text-gray-800 bg-white px-6 py-3 rounded-full shadow-lg" id="loading-text">처리 중...</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     스크립트
+═══════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection,
+  query, where, getDocs, orderBy, documentId, runTransaction
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+async function bootstrap() {
+  try {
+    const res = await fetch('/api/bap/config');
+    if (!res.ok) throw new Error('Firebase config 로드 실패: ' + res.status);
+    const cfg = await res.json();
+    const app = initializeApp(cfg);
+    const db = getFirestore(app);
+    window.__bap = {
+      db, doc, setDoc, getDoc, updateDoc, deleteDoc, collection,
+      query, where, getDocs, orderBy, documentId, runTransaction
+    };
+    document.dispatchEvent(new Event('bap-ready'));
+  } catch (e) {
+    alert('Firebase 초기화 실패: ' + e.message + '\n\nVercel 환경변수(FIREBASE_*)를 확인하세요.');
+  }
+}
+bootstrap();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════
+// 헬퍼
+// ═══════════════════════════════════════════════
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, '0');
+function showLoading(msg) { $('loading-text').innerText = msg || '처리 중...'; $('loading').style.display = 'flex'; }
+function hideLoading() { $('loading').style.display = 'none'; }
+function todayISO() { const n = new Date(); return n.getFullYear() + '-' + pad(n.getMonth()+1) + '-' + pad(n.getDate()); }
+function currentYM() { const n = new Date(); return n.getFullYear() + '-' + pad(n.getMonth()+1); }
+function weekdayKr(dateStr) { const d = new Date(dateStr); return ['일','월','화','수','목','금','토'][d.getDay()]; }
+function formatDateKr(dateStr) { if (!dateStr) return ''; return dateStr.replace(/-/g,'. ') + '. (' + weekdayKr(dateStr) + ')'; }
+
+async function sha256(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// HTML 이스케이프 (XSS 방어)
+function esc(s) {
+  if (s === undefined || s === null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+// 서명 dataURL 검증 (data:image/png;base64,... 만 허용)
+function safeDataUrl(s) {
+  if (typeof s !== 'string') return '';
+  return /^data:image\/(png|jpeg|jpg);base64,[A-Za-z0-9+/=]+$/.test(s) ? s : '';
+}
+
+function showView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $(viewId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════
+// 세션 (LocalStorage, 8시간 만료)
+// ═══════════════════════════════════════════════
+const SESSION_KEY = 'bap_session_v1';
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+function saveSession(s) {
+  try {
+    const payload = { ...s, expireAt: Date.now() + SESSION_TTL_MS };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  } catch(e){}
+}
+function getSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (!s) return null;
+    if (!s.expireAt || s.expireAt < Date.now()) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return s;
+  } catch(e){ return null; }
+}
+function clearSession() { try { localStorage.removeItem(SESSION_KEY); } catch(e){} }
+
+// ═══════════════════════════════════════════════
+// Firestore 래퍼 (bap-ready 이벤트 후)
+// ═══════════════════════════════════════════════
+function db() { return window.__bap; }
+async function fsGet(coll, id) { const d = await db().getDoc(db().doc(db().db, coll, id)); return d.exists() ? d.data() : null; }
+async function fsSet(coll, id, data) { return db().setDoc(db().doc(db().db, coll, id), data, { merge: true }); }
+async function fsUpdate(coll, id, data) { return db().updateDoc(db().doc(db().db, coll, id), data); }
+async function fsQuery(coll, ...wheres) {
+  const { query, where, getDocs, collection } = db();
+  const q = wheres.length > 0 ? query(collection(db().db, coll), ...wheres) : query(collection(db().db, coll));
+  const snap = await getDocs(q);
+  const out = [];
+  snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+  return out;
+}
+
+// ═══════════════════════════════════════════════
+// 급식일지 필드 정의
+// ═══════════════════════════════════════════════
+const PORTION_ROWS = ['학생','교직원','유치원','조리원','기타','계'];
+const CHECK_ITEMS = [
+  { key: 'carryContainer', label: '운반통·컨테이너 위생상태', opts: ['청결','미흡','불량'] },
+  { key: 'facility',       label: '시설설비·기구 정리사항',   opts: ['청결','미흡','불량'] },
+  { key: 'washRoom',       label: '세척실 청소상태',           opts: ['청결','미흡','불량'] }
+];
+
+// radio-pill 상태 관리
+function setRadioValue(group, val) {
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(el => {
+    el.classList.toggle('active', el.dataset.val === val);
+  });
+}
+function getRadioValue(group) {
+  const el = document.querySelector(`[data-group="${group}"].active`);
+  return el ? el.dataset.val : '';
+}
+document.body.addEventListener('click', (e) => {
+  const pill = e.target.closest('.radio-pill');
+  if (pill && pill.dataset.group) {
+    const cur = getRadioValue(pill.dataset.group);
+    setRadioValue(pill.dataset.group, cur === pill.dataset.val ? '' : pill.dataset.val);
+  }
+});
+
+// ═══════════════════════════════════════════════
+// 서명 패드
+// ═══════════════════════════════════════════════
+const sig = { canvas: null, ctx: null, drawing: false, hasDrawn: false, targetId: '', cache: {} };
+
+function resizeSigCanvas() {
+  if (!sig.canvas || !sig.canvas.parentElement) return;
+  const w = sig.canvas.parentElement.clientWidth || 300;
+  const dpr = window.devicePixelRatio || 1;
+  sig.canvas.width = w * dpr;
+  sig.canvas.height = 200 * dpr;
+  sig.canvas.style.width = w + 'px';
+  sig.canvas.style.height = '200px';
+  sig.ctx = sig.canvas.getContext('2d');
+  sig.ctx.setTransform(1,0,0,1,0,0);
+  sig.ctx.scale(dpr, dpr);
+}
+function sigPos(e) {
+  const rect = sig.canvas.getBoundingClientRect();
+  if (e.touches && e.touches[0]) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+function sigStart(e) {
+  sig.drawing = true; sig.hasDrawn = true;
+  const p = sigPos(e);
+  sig.ctx.beginPath(); sig.ctx.moveTo(p.x, p.y);
+  sig.ctx.lineWidth = 3; sig.ctx.lineCap = 'round'; sig.ctx.lineJoin = 'round'; sig.ctx.strokeStyle = '#111';
+}
+function sigMove(e) {
+  if (!sig.drawing) return;
+  if (e.cancelable) e.preventDefault();
+  const p = sigPos(e);
+  sig.ctx.lineTo(p.x, p.y); sig.ctx.stroke();
+  sig.ctx.beginPath(); sig.ctx.moveTo(p.x, p.y);
+}
+function sigStop() { sig.drawing = false; sig.ctx.beginPath(); }
+function sigClear() {
+  const dpr = window.devicePixelRatio || 1;
+  sig.ctx.clearRect(0, 0, sig.canvas.width/dpr, sig.canvas.height/dpr);
+  sig.hasDrawn = false;
+}
+function openSigModal(targetId) {
+  const cachedDataUrl = sig.cache[targetId];
+  if (cachedDataUrl) {
+    if (!confirm('기존 서명을 지우고 다시 서명하시겠습니까?')) return;
+    clearSigTarget(targetId);
+  }
+  sig.targetId = targetId;
+  $('sig-modal').classList.add('show');
+  setTimeout(() => { resizeSigCanvas(); sigClear(); }, 50);
+}
+function closeSigModal() { $('sig-modal').classList.remove('show'); }
+function saveSigModal() {
+  if (!sig.hasDrawn) { alert('서명을 해주세요.'); return; }
+  try {
+    const data = sig.canvas.toDataURL('image/png');
+    const imgId = sig.targetId + '-img';
+    const btnId = sig.targetId + '-btn';
+    const img = $(imgId); const btn = $(btnId);
+    if (img) { img.src = data; img.classList.remove('hidden'); }
+    if (btn) btn.style.display = 'none';
+    sig.cache[sig.targetId] = data;
+    closeSigModal();
+  } catch(e) { alert('서명 저장 오류: ' + e.message); }
+}
+function clearSigTarget(targetId) {
+  const img = $(targetId + '-img'); const btn = $(targetId + '-btn');
+  if (img) { img.src = ''; img.classList.add('hidden'); }
+  if (btn) btn.style.display = '';
+  delete sig.cache[targetId];
+}
+
+function initSignature() {
+  sig.canvas = $('sig-canvas');
+  if (!sig.canvas) return;
+  resizeSigCanvas();
+  window.addEventListener('resize', resizeSigCanvas);
+  sig.canvas.addEventListener('mousedown', sigStart);
+  sig.canvas.addEventListener('mousemove', sigMove);
+  sig.canvas.addEventListener('mouseup', sigStop);
+  sig.canvas.addEventListener('mouseleave', sigStop);
+  sig.canvas.addEventListener('touchstart', (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); sigStart(e); }, {passive:false});
+  sig.canvas.addEventListener('touchmove', (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); sigMove(e); }, {passive:false});
+  sig.canvas.addEventListener('touchend', (e) => { e.stopPropagation(); sigStop(); }, {passive:false});
+}
+
+// ═══════════════════════════════════════════════
+// 이벤트 위임 — data-go, data-back, data-action, data-sign
+// ═══════════════════════════════════════════════
+document.body.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab]');
+  if (!t) return;
+  if (t.dataset.go === 'manager') { initManagerLogin(); showView('view-manager-login'); return; }
+  if (t.dataset.go === 'boss')    { initBossLogin();    showView('view-boss-login'); return; }
+  if (t.dataset.back !== undefined) { showView('view-landing'); return; }
+  if (t.dataset.tab) { switchBossTab(t.dataset.tab); return; }
+  if (t.dataset.sign) { openSigModal(t.dataset.sign); return; }
+  const a = t.dataset.action;
+  if (!a) return;
+  try {
+    if (a === 'sig-clear')   { sigClear(); return; }
+    if (a === 'sig-cancel')  { closeSigModal(); return; }
+    if (a === 'sig-save')    { saveSigModal(); return; }
+    if (a === 'mgr-login')   { await mgrLogin(); return; }
+    if (a === 'mgr-logout')  { mgrLogout(); return; }
+    if (a === 'mgr-load')    { await mgrLoadForDate(); return; }
+    if (a === 'mgr-reload-menu') { await mgrLoadMenu(); return; }
+    if (a === 'mgr-submit')  { await mgrSubmit(); return; }
+    if (a === 'mgr-new')     { mgrResetForm(); return; }
+    if (a === 'mgr-sig-clear') { clearSigTarget('mgr-sig'); return; }
+    if (a === 'mgr-add-staff') { addStaffRow(); return; }
+    if (a === 'boss-login')  { await bossLogin(); return; }
+    if (a === 'boss-logout') { bossLogout(); return; }
+    if (a === 'boss-refresh') { await loadPendingList(); return; }
+    if (a === 'cal-reload')  { await loadCalendar(); return; }
+    if (a === 'cal-prev')    { shiftCalMonth(-1); return; }
+    if (a === 'cal-next')    { shiftCalMonth(1); return; }
+    if (a === 'batch-download')     { await batchDownload(true);  return; }
+    if (a === 'batch-download-all') { await batchDownload(false); return; }
+    if (a === 'menu-upload') { await menuUpload(); return; }
+    if (a === 'menu-list')   { await loadMenuList(); return; }
+    if (a === 'preview-close') { closePreview(); return; }
+    if (a === 'preview-approve') { await approveFromPreview(); return; }
+    if (a === 'preview-print') { printPreview(); return; }
+    if (a === 'preview-download') { downloadPreview(); return; }
+  } catch (err) {
+    hideLoading();
+    console.error(err);
+    alert('오류: ' + (err.message || err));
+  }
+});
+
+// ═══════════════════════════════════════════════
+// 담당자 로그인 / 가입
+// ═══════════════════════════════════════════════
+let currentUser = null; // {name, role}
+
+function initManagerLogin(prefill) {
+  $('mgr-name').value = prefill?.name || '';
+  $('mgr-pw').value = '';
+  $('mgr-pw2').value = '';
+  $('mgr-pw-wrap').classList.add('hidden');
+  $('mgr-pw2-wrap').classList.add('hidden');
+  $('mgr-err').classList.add('hidden');
+  $('mgr-mode-hint').innerText = '이름을 입력하고 다음';
+  $('mgr-login-btn').innerText = '다음 →';
+  // blur는 보조. 실제 분기는 mgrLogin 버튼 클릭 시 처리
+  $('mgr-name').onblur = () => resolveMgrLoginMode(false);
+}
+
+// 이름을 보고 신규/기존 사용자 여부를 Firestore에 조회해 UI를 전환
+// showErr=true면 이름 비었을 때 에러 표시
+async function resolveMgrLoginMode(showErrIfEmpty) {
+  const name = $('mgr-name').value.trim();
+  if (!name) {
+    if (showErrIfEmpty) showErr('mgr-err', '이름을 입력하세요.');
+    return null;
+  }
+  try {
+    await waitForBap();
+    const u = await fsGet('bap_users', name);
+    $('mgr-pw-wrap').classList.remove('hidden');
+    if (u) {
+      $('mgr-pw2-wrap').classList.add('hidden');
+      $('mgr-pw2').value = '';
+      $('mgr-mode-hint').innerText = '기존 사용자 — 비밀번호를 입력하세요';
+      $('mgr-login-btn').innerText = '로그인';
+    } else {
+      $('mgr-pw2-wrap').classList.remove('hidden');
+      $('mgr-mode-hint').innerText = '신규 가입 — 비밀번호를 설정하세요';
+      $('mgr-login-btn').innerText = '가입 & 로그인';
+    }
+    return u;
+  } catch(e) {
+    showErr('mgr-err', '접속 오류: ' + e.message);
+    return null;
+  }
+}
+
+async function mgrLogin() {
+  const name = $('mgr-name').value.trim();
+  $('mgr-err').classList.add('hidden');
+  if (!name) return showErr('mgr-err', '이름을 입력하세요.');
+  // pw-wrap이 아직 안 열렸으면 먼저 사용자 조회로 UI 전환만 수행
+  if ($('mgr-pw-wrap').classList.contains('hidden')) {
+    await resolveMgrLoginMode(true);
+    return;
+  }
+  const pw = $('mgr-pw').value;
+  const pw2 = $('mgr-pw2').value;
+  if (!pw || pw.length < 4) return showErr('mgr-err', '비밀번호는 4자 이상');
+  await waitForBap();
+  const u = await fsGet('bap_users', name);
+  const hash = await sha256('bap-salt::' + name + '::' + pw);
+  if (u) {
+    if (u.pwHash !== hash) return showErr('mgr-err', '비밀번호가 틀렸습니다.');
+  } else {
+    if (pw !== pw2) return showErr('mgr-err', '비밀번호 확인이 일치하지 않습니다.');
+    await fsSet('bap_users', name, { pwHash: hash, createdAt: new Date().toISOString() });
+  }
+  currentUser = { name, role: 'manager', pwHash: hash };
+  saveSession({ role: 'manager', name, pwHash: hash });
+  $('mgr-who').innerText = name;
+  showView('view-manager-main');
+  mgrResetForm();
+}
+
+function mgrLogout() { clearSession(); currentUser = null; showView('view-landing'); }
+
+// ═══════════════════════════════════════════════
+// 담당자 폼 렌더
+// ═══════════════════════════════════════════════
+function buildManagerForm() {
+  // 검식/급식량/인원 테이블 생성
+  const pBody = $('mgr-portion-tbody');
+  pBody.innerHTML = '';
+  PORTION_ROWS.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="font-bold bg-gray-50 text-xs">${row}</td>
+      <td>
+        <span class="radio-pill" data-group="p-check-${row}" data-val="양호">양호</span>
+        <span class="radio-pill" data-group="p-check-${row}" data-val="문제발견">문제</span>
+      </td>
+      <td>
+        <span class="radio-pill" data-group="p-amt-${row}" data-val="많음">많음</span>
+        <span class="radio-pill" data-group="p-amt-${row}" data-val="적당">적당</span>
+        <span class="radio-pill" data-group="p-amt-${row}" data-val="부족">부족</span>
+      </td>
+      <td><input type="number" min="0" data-count="${row}" placeholder="0"></td>
+    `;
+    pBody.appendChild(tr);
+  });
+
+  // 점검사항
+  const cWrap = $('mgr-check-items');
+  cWrap.innerHTML = '';
+  CHECK_ITEMS.forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 flex-wrap';
+    row.innerHTML = `
+      <span class="font-bold text-gray-700 text-xs flex-shrink-0 w-40">${it.label}</span>
+      ${it.opts.map(o => `<span class="radio-pill" data-group="${it.key}" data-val="${o}">${o}</span>`).join('')}
+    `;
+    cWrap.appendChild(row);
+  });
+
+  // 급식종사자: 기본 1행
+  $('mgr-staff-tbody').innerHTML = '';
+  addStaffRow();
+}
+
+function addStaffRow() {
+  const tbody = $('mgr-staff-tbody');
+  const idx = tbody.children.length;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" data-staff-name="${idx}" placeholder="성명"></td>
+    <td>
+      <span class="radio-pill" data-group="staff-health-${idx}" data-val="양호">양호</span>
+      <span class="radio-pill" data-group="staff-health-${idx}" data-val="미흡">미흡</span>
+      <span class="radio-pill" data-group="staff-health-${idx}" data-val="불량">불량</span>
+    </td>
+    <td>
+      <span class="radio-pill" data-group="staff-uniform-${idx}" data-val="양호">양호</span>
+      <span class="radio-pill" data-group="staff-uniform-${idx}" data-val="미흡">미흡</span>
+      <span class="radio-pill" data-group="staff-uniform-${idx}" data-val="불량">불량</span>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function mgrResetForm() {
+  $('mgr-date').value = todayISO();
+  $('mgr-count').value = '';
+  $('mgr-menu').value = '';
+  $('mgr-status-line').innerText = '';
+  buildManagerForm();
+  // 비우기: 모든 라디오 해제
+  document.querySelectorAll('#view-manager-main .radio-pill.active').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('#view-manager-main input[type="text"], #view-manager-main input[type="number"], #view-manager-main textarea').forEach(el => {
+    if (!['mgr-who'].includes(el.id)) el.value = '';
+  });
+  $('mgr-date').value = todayISO();
+  clearSigTarget('mgr-sig');
+  mgrLoadMenu();
+}
+
+// 메뉴 자동 로드
+async function mgrLoadMenu() {
+  const date = $('mgr-date').value;
+  if (!date) return;
+  try {
+    await waitForBap();
+    const m = await fsGet('bap_menus', date);
+    if (m && m.lunch) {
+      $('mgr-menu').value = m.lunch;
+      $('mgr-status-line').innerText = '식단표지에서 자동 불러옴: ' + formatDateKr(date);
+    } else {
+      $('mgr-status-line').innerText = formatDateKr(date) + ' — 등록된 식단 없음 (직접 입력)';
+    }
+  } catch(e) { console.warn(e); }
+}
+
+// 날짜 기반 기존 일지 로드
+async function mgrLoadForDate() {
+  const date = $('mgr-date').value;
+  if (!date) return alert('날짜를 선택하세요.');
+  await waitForBap();
+  await mgrLoadMenu();
+  const j = await fsGet('bap_journals', date);
+  setFormLocked(false);
+  if (!j) {
+    $('mgr-status-line').innerText = formatDateKr(date) + ' — 새 일지 작성';
+    return;
+  }
+  const dateKr = esc(formatDateKr(date));
+  if (j.status === 'approved') {
+    $('mgr-status-line').innerHTML = `<span class="tag tag-approved">결재완료</span> ${dateKr} — 수정 불가 (미리보기만)`;
+    restoreJournalToForm(j);
+    setFormLocked(true);
+  } else if (j.status === 'submitted') {
+    $('mgr-status-line').innerHTML = `<span class="tag tag-submitted">결재대기</span> ${dateKr} — 결재자 확인 대기 중`;
+    restoreJournalToForm(j);
+  } else {
+    $('mgr-status-line').innerHTML = `<span class="tag tag-draft">임시</span> ${dateKr}`;
+    restoreJournalToForm(j);
+  }
+  // 다른 담당자가 쓴 일지는 수정 불가
+  if (j.managerName && currentUser && j.managerName !== currentUser.name) {
+    $('mgr-status-line').innerHTML += ` · 작성자: ${esc(j.managerName)} <span class="text-red-600 font-bold">(다른 담당자 — 수정 불가)</span>`;
+    setFormLocked(true);
+  }
+}
+
+// 폼 잠금/해제 — approved나 타인 작성 건을 표시만 하고 수정 막음
+function setFormLocked(locked) {
+  const root = $('view-manager-main');
+  root.querySelectorAll('input, textarea, select, button[data-action="mgr-submit"], button[data-action="mgr-add-staff"], button[data-action="mgr-sig-clear"], button[data-sign="mgr-sig"]').forEach(el => {
+    if (el.dataset.action === 'mgr-new' || el.dataset.action === 'mgr-logout' || el.dataset.action === 'mgr-load' || el.dataset.action === 'mgr-reload-menu' || el.id === 'mgr-date') {
+      // 이 컨트롤들은 잠궈도 탐색은 가능해야 함 (mgr-date만 계속 활성)
+      return;
+    }
+    el.disabled = locked;
+  });
+  root.querySelectorAll('.radio-pill').forEach(el => {
+    el.style.pointerEvents = locked ? 'none' : '';
+    el.style.opacity = locked ? '0.6' : '';
+  });
+  const submitBtn = root.querySelector('[data-action="mgr-submit"]');
+  if (submitBtn) {
+    submitBtn.style.display = locked ? 'none' : '';
+  }
+}
+
+function restoreJournalToForm(j) {
+  const d = j.data || {};
+  $('mgr-menu').value = d.menu || '';
+  $('mgr-count').value = d.count || '';
+  document.querySelector('[data-f="arriveTime"]').value = d.arriveTime || '';
+  document.querySelector('[data-f="handoverTime"]').value = d.handoverTime || '';
+  document.querySelector('[data-f="education"]').value = d.education || '';
+  PORTION_ROWS.forEach(r => {
+    setRadioValue(`p-check-${r}`, (d.portions && d.portions[r]?.check) || '');
+    setRadioValue(`p-amt-${r}`, (d.portions && d.portions[r]?.amount) || '');
+    const cEl = document.querySelector(`[data-count="${r}"]`);
+    if (cEl) cEl.value = (d.portions && d.portions[r]?.count) || '';
+  });
+  CHECK_ITEMS.forEach(it => setRadioValue(it.key, (d.checks && d.checks[it.key]) || ''));
+  setRadioValue('preserve-do', d.preserveDo || '');
+  setRadioValue('preserve-state', d.preserveState || '');
+  // 종사자
+  $('mgr-staff-tbody').innerHTML = '';
+  const staff = d.staff || [];
+  if (staff.length === 0) { addStaffRow(); } else {
+    staff.forEach((s, i) => {
+      addStaffRow();
+      const row = $('mgr-staff-tbody').children[i];
+      row.querySelector(`[data-staff-name="${i}"]`).value = s.name || '';
+      setRadioValue(`staff-health-${i}`, s.health || '');
+      setRadioValue(`staff-uniform-${i}`, s.uniform || '');
+    });
+  }
+  // 서명
+  if (j.managerSig) {
+    sig.cache['mgr-sig'] = j.managerSig;
+    $('mgr-sig-img').src = j.managerSig;
+    $('mgr-sig-img').classList.remove('hidden');
+    $('mgr-sig-btn').style.display = 'none';
+  }
+}
+
+// 제출
+async function mgrSubmit() {
+  const date = $('mgr-date').value;
+  if (!date) return alert('날짜를 선택하세요.');
+  if (!sig.cache['mgr-sig']) return alert('담당자 서명을 해주세요.');
+  if (!currentUser || !currentUser.name) return alert('로그인이 필요합니다.');
+
+  await waitForBap();
+
+  // 1) 제출자 본인 인증 재검증 (세션 pwHash와 Firestore pwHash 일치 확인)
+  const u = await fsGet('bap_users', currentUser.name);
+  if (!u || u.pwHash !== currentUser.pwHash) {
+    alert('세션이 만료되었거나 비밀번호가 변경되었습니다. 다시 로그인하세요.');
+    mgrLogout();
+    return;
+  }
+
+  // 2) 기존 일지 상태 체크 (다른 사람이 쓴 일지 덮어쓰기 방지)
+  const existing = await fsGet('bap_journals', date);
+  if (existing) {
+    if (existing.status === 'approved') return alert('이미 결재 완료된 일지는 수정할 수 없습니다.');
+    if (existing.managerName && existing.managerName !== currentUser.name) {
+      return alert(`이 날짜는 "${existing.managerName}"님이 작성 중입니다. 본인이 아니므로 제출할 수 없습니다.`);
+    }
+    if (existing.status === 'submitted' && !confirm('이미 제출된 일지입니다. 다시 제출하시겠습니까?')) return;
+  }
+
+  const data = collectFormData();
+  const payload = {
+    date,
+    status: 'submitted',
+    data,
+    managerName: currentUser.name,
+    managerSig: sig.cache['mgr-sig'],
+    managerAt: new Date().toISOString(),
+    // 이전 결재자 서명이 남아있을 수 있으므로 재제출 시 초기화
+    bossSig: null, bossName: null, approvedAt: null
+  };
+  showLoading('제출 중...');
+  try {
+    // 트랜잭션으로 approved 상태 막기
+    const { db: firestore, runTransaction, doc: docFn } = db();
+    await runTransaction(firestore, async (tx) => {
+      const ref = docFn(firestore, 'bap_journals', date);
+      const snap = await tx.get(ref);
+      if (snap.exists()) {
+        const cur = snap.data();
+        if (cur.status === 'approved') throw new Error('APPROVED');
+        if (cur.managerName && cur.managerName !== currentUser.name) throw new Error('OTHER_MANAGER');
+      }
+      tx.set(ref, payload);
+    });
+    hideLoading();
+    alert('✅ 제출 완료!\n결재자가 확인 후 서명합니다.');
+    $('mgr-status-line').innerHTML = `<span class="tag tag-submitted">결재대기</span> ${esc(formatDateKr(date))} — 결재자 확인 대기 중`;
+  } catch(e) {
+    hideLoading();
+    if (e.message === 'APPROVED') alert('결재 완료된 일지는 수정할 수 없습니다.');
+    else if (e.message === 'OTHER_MANAGER') alert('다른 담당자가 작성 중인 일지입니다.');
+    else alert('제출 실패: ' + e.message);
+  }
+}
+
+function collectFormData() {
+  const portions = {};
+  PORTION_ROWS.forEach(r => {
+    portions[r] = {
+      check: getRadioValue(`p-check-${r}`),
+      amount: getRadioValue(`p-amt-${r}`),
+      count: document.querySelector(`[data-count="${r}"]`).value || ''
+    };
+  });
+  const checks = {};
+  CHECK_ITEMS.forEach(it => { checks[it.key] = getRadioValue(it.key); });
+  const staff = [];
+  $('mgr-staff-tbody').querySelectorAll('tr').forEach((tr, i) => {
+    const name = tr.querySelector(`[data-staff-name="${i}"]`)?.value || '';
+    const health = getRadioValue(`staff-health-${i}`);
+    const uniform = getRadioValue(`staff-uniform-${i}`);
+    if (name || health || uniform) staff.push({ name, health, uniform });
+  });
+  return {
+    menu: $('mgr-menu').value.trim(),
+    count: $('mgr-count').value,
+    arriveTime: document.querySelector('[data-f="arriveTime"]').value,
+    handoverTime: document.querySelector('[data-f="handoverTime"]').value,
+    education: document.querySelector('[data-f="education"]').value,
+    portions, checks, staff,
+    preserveDo: getRadioValue('preserve-do'),
+    preserveState: getRadioValue('preserve-state')
+  };
+}
+
+// ═══════════════════════════════════════════════
+// 부장 로그인
+// ═══════════════════════════════════════════════
+let currentBoss = null;
+
+async function initBossLogin() {
+  $('boss-pin').value = '';
+  $('boss-pin2').value = '';
+  $('boss-name').value = '';
+  $('boss-err').classList.add('hidden');
+  $('boss-name-wrap').classList.add('hidden');
+  $('boss-pin2-wrap').classList.add('hidden');
+  $('boss-mode-hint').innerText = '확인 중...';
+  try {
+    await waitForBap();
+    const cfg = await fsGet('bap_config', 'boss');
+    if (cfg && cfg.pinHash) {
+      $('boss-mode-hint').innerText = 'PIN을 입력하세요';
+      $('boss-login-btn').innerText = '입장';
+    } else {
+      $('boss-mode-hint').innerText = '최초 설정 — 이름과 PIN을 정하세요';
+      $('boss-name-wrap').classList.remove('hidden');
+      $('boss-pin2-wrap').classList.remove('hidden');
+      $('boss-login-btn').innerText = 'PIN 설정 & 입장';
+    }
+  } catch(e) { $('boss-mode-hint').innerText = '오류: ' + e.message; }
+}
+
+async function bossLogin() {
+  const pin = $('boss-pin').value.trim();
+  const pin2 = $('boss-pin2').value.trim();
+  const name = $('boss-name').value.trim();
+  $('boss-err').classList.add('hidden');
+  if (!pin || pin.length < 4) return showErr('boss-err', 'PIN은 4자리 이상');
+  await waitForBap();
+  const cfg = await fsGet('bap_config', 'boss');
+  const hash = await sha256('bap-boss-salt::' + pin);
+  if (cfg && cfg.pinHash) {
+    if (cfg.pinHash !== hash) return showErr('boss-err', 'PIN이 틀렸습니다.');
+    currentBoss = { name: cfg.bossName || '결재자' };
+  } else {
+    if (!name) return showErr('boss-err', '이름을 입력하세요.');
+    if (pin !== pin2) return showErr('boss-err', 'PIN 확인이 일치하지 않습니다.');
+    await fsSet('bap_config', 'boss', { pinHash: hash, bossName: name, setAt: new Date().toISOString() });
+    currentBoss = { name };
+  }
+  saveSession({ role: 'boss', name: currentBoss.name });
+  $('boss-who').innerText = currentBoss.name;
+  showView('view-boss-main');
+  switchBossTab('pending');
+  // 식단표지 기본값
+  const n = new Date();
+  $('menu-year').value = n.getFullYear();
+  $('menu-month').value = n.getMonth() + 1;
+  $('menu-view-month').value = currentYM();
+  $('cal-month').value = currentYM();
+}
+
+function bossLogout() { clearSession(); currentBoss = null; showView('view-landing'); }
+
+function switchBossTab(tab) {
+  document.querySelectorAll('.boss-tab').forEach(b => {
+    b.classList.toggle('border-blue-500', b.dataset.tab === tab);
+    b.classList.toggle('text-blue-600', b.dataset.tab === tab);
+    b.classList.toggle('text-gray-500', b.dataset.tab !== tab);
+  });
+  document.querySelectorAll('.boss-tab-content').forEach(el => el.classList.add('hidden'));
+  $('tab-' + tab).classList.remove('hidden');
+  if (tab === 'pending') loadPendingList();
+  if (tab === 'calendar') loadCalendar();
+}
+
+// ═══════════════════════════════════════════════
+// 부장 — 결재 대기 목록
+// ═══════════════════════════════════════════════
+async function loadPendingList() {
+  const wrap = $('pending-list');
+  wrap.innerHTML = '<div class="text-center text-gray-400 py-6 text-sm">불러오는 중...</div>';
+  try {
+    await waitForBap();
+    const items = await fsQuery('bap_journals', db().where('status', '==', 'submitted'));
+    items.sort((a,b) => (a.date || '').localeCompare(b.date || ''));
+    if (items.length === 0) {
+      wrap.innerHTML = '<div class="text-center text-gray-400 py-8"><div class="text-3xl mb-1">✅</div><p class="text-sm font-bold">결재 대기 문서가 없습니다</p></div>';
+      return;
+    }
+    wrap.innerHTML = '';
+    items.forEach(it => {
+      const card = document.createElement('div');
+      card.className = 'bg-white border border-amber-300 rounded-xl p-4 flex items-center justify-between shadow-sm cursor-pointer active:bg-amber-50';
+      const menuStr = (it.data?.menu || '');
+      const menuPreview = menuStr.slice(0, 40) + (menuStr.length > 40 ? '...' : '');
+      card.innerHTML = `
+        <div>
+          <p class="font-bold text-gray-800 text-sm">${esc(formatDateKr(it.date))}</p>
+          <p class="text-xs text-gray-500">담당: ${esc(it.managerName) || '-'} · 제출: ${esc(fmtTime(it.managerAt))}</p>
+          <p class="text-xs text-gray-500 mt-1">🍚 ${esc(menuPreview)}</p>
+        </div>
+        <span class="tag tag-submitted">대기</span>
+      `;
+      card.onclick = () => openPreview(it.date);
+      wrap.appendChild(card);
+    });
+  } catch(e) {
+    wrap.innerHTML = '<div class="text-center text-red-500 py-6 text-sm">오류: ' + e.message + '</div>';
+  }
+}
+
+function fmtTime(iso) { if (!iso) return '-'; try { return new Date(iso).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch(e) { return iso; } }
+
+// ═══════════════════════════════════════════════
+// 부장 — 캘린더
+// ═══════════════════════════════════════════════
+async function loadCalendar() {
+  const ym = $('cal-month').value || currentYM();
+  $('cal-month').value = ym;
+  const [y, m] = ym.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const firstDow = new Date(y, m-1, 1).getDay();
+  const todayStr = todayISO();
+
+  // 월별 일지 조회
+  let items = [];
+  try {
+    await waitForBap();
+    items = await fsQuery('bap_journals',
+      db().where('date', '>=', `${y}-${pad(m)}-01`),
+      db().where('date', '<=', `${y}-${pad(m)}-31`)
+    );
+  } catch(e) { console.warn(e); items = []; }
+  const statusMap = {};
+  items.forEach(it => { statusMap[it.date] = it.status; });
+
+  const grid = $('cal-grid');
+  grid.innerHTML = '';
+  for (let b = 0; b < firstDow; b++) grid.innerHTML += '<div></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${pad(m)}-${pad(d)}`;
+    const dow = new Date(y, m-1, d).getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const status = statusMap[dateStr];
+    const cell = document.createElement('div');
+    let cls = 'cal-cell';
+    if (status === 'approved')  cls += ' has-approved';
+    else if (status === 'submitted') cls += ' has-submitted';
+    else if (status === 'draft')     cls += ' has-draft';
+    else if (isWeekend)              cls += ' weekend';
+    if (dateStr === todayStr) cls += ' today';
+    cell.className = cls;
+    cell.innerHTML = `<span>${d}</span>${status ? `<span class="text-[10px] mt-0.5">${status === 'approved' ? '✓' : status === 'submitted' ? '대기' : '작성중'}</span>` : ''}`;
+    if (status) {
+      cell.onclick = () => openPreview(dateStr);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function shiftCalMonth(dir) {
+  const el = $('cal-month');
+  const d = el.value ? new Date(el.value + '-01') : new Date();
+  d.setMonth(d.getMonth() + dir);
+  el.value = d.getFullYear() + '-' + pad(d.getMonth()+1);
+  loadCalendar();
+}
+
+// ═══════════════════════════════════════════════
+// 일지 미리보기 (HTML 렌더)
+// ═══════════════════════════════════════════════
+let previewDate = null;
+
+async function openPreview(date) {
+  previewDate = date;
+  await waitForBap();
+  const j = await fsGet('bap_journals', date);
+  if (!j) { alert('해당 날짜의 일지가 없습니다.'); return; }
+  $('preview-title').innerText = `급식일지 · ${formatDateKr(date)}`;
+  $('preview-body').innerHTML = renderJournalHtml(j);
+  const approveArea = $('preview-approve-area');
+  if (currentBoss && j.status === 'submitted') {
+    approveArea.classList.remove('hidden');
+    clearSigTarget('boss-sig');
+  } else {
+    approveArea.classList.add('hidden');
+  }
+  $('preview-modal').classList.add('show');
+}
+function closePreview() { $('preview-modal').classList.remove('show'); previewDate = null; }
+
+function renderJournalHtml(j) {
+  const d = j.data || {};
+  const statusTag = j.status === 'approved'
+    ? '<span class="tag tag-approved">결재완료</span>'
+    : j.status === 'submitted'
+    ? '<span class="tag tag-submitted">결재대기</span>'
+    : '<span class="tag tag-draft">작성중</span>';
+  const portionRows = PORTION_ROWS.map(r => {
+    const p = (d.portions && d.portions[r]) || {};
+    return `<tr>
+      <td class="font-bold bg-gray-50">${esc(r)}</td>
+      <td>${esc(p.check) || '-'}</td>
+      <td>${esc(p.amount) || '-'}</td>
+      <td>${esc(p.count) || '-'}</td>
+    </tr>`;
+  }).join('');
+  const checkRows = CHECK_ITEMS.map(it => `<tr><td class="font-bold bg-gray-50">${esc(it.label)}</td><td>${esc(d.checks && d.checks[it.key]) || '-'}</td></tr>`).join('');
+  const staffRows = (d.staff || []).map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.health) || '-'}</td><td>${esc(s.uniform) || '-'}</td></tr>`).join('')
+    || '<tr><td colspan="3" class="text-gray-400 text-xs">없음</td></tr>';
+  const mgrSigUrl = safeDataUrl(j.managerSig);
+  const bossSigUrl = safeDataUrl(j.bossSig);
+  const mgrSig = mgrSigUrl ? `<img src="${mgrSigUrl}" class="h-12 object-contain">` : '<span class="text-gray-400 text-xs">미서명</span>';
+  const bossSig = bossSigUrl ? `<img src="${bossSigUrl}" class="h-12 object-contain">` : '<span class="text-gray-400 text-xs">-</span>';
+  const menuHtml = esc(d.menu || '-').replace(/\n/g, '<br>');
+  return `
+    <style>.pv-table{width:100%;border-collapse:collapse;font-size:13px;text-align:center}.pv-table th,.pv-table td{border:1px solid #6b7280;padding:6px 4px}.pv-table th{background:#f3f4f6}</style>
+    <div class="bg-white rounded-xl p-4 shadow-sm">
+      <div class="text-center border-b-2 border-gray-800 pb-2 mb-3">
+        <h1 class="text-lg font-bold">비조리교 학교급식 일지</h1>
+      </div>
+      <table class="pv-table mb-3">
+        <tr>
+          <th class="w-28">급식일자</th><td>${esc(formatDateKr(j.date))}</td>
+          <th class="w-24">연 급식회수</th><td>${esc(d.count) || '-'} 회</td>
+          <th class="w-16">상태</th><td>${statusTag}</td>
+        </tr>
+      </table>
+      <div class="mb-3">
+        <p class="font-bold text-sm mb-1">🍚 식단명</p>
+        <div class="border border-gray-400 rounded p-2 text-sm bg-gray-50">${menuHtml}</div>
+      </div>
+      <table class="pv-table mb-3">
+        <thead><tr><th>구분</th><th>검식내용</th><th>급식량</th><th>인원(명)</th></tr></thead>
+        <tbody>${portionRows}</tbody>
+      </table>
+      <table class="pv-table mb-3">
+        <tr><th class="w-40">급식운반차 도착시간</th><td>${esc(d.arriveTime) || '-'}</td><th class="w-40">인계시간</th><td>${esc(d.handoverTime) || '-'}</td></tr>
+      </table>
+      <table class="pv-table mb-3">
+        <thead><tr><th>점검 항목</th><th>결과</th></tr></thead>
+        <tbody>${checkRows}</tbody>
+      </table>
+      <p class="font-bold text-sm mb-1">👤 급식종사자 위생</p>
+      <table class="pv-table mb-3">
+        <thead><tr><th>성명</th><th>건강상태</th><th>복장 및 위생</th></tr></thead>
+        <tbody>${staffRows}</tbody>
+      </table>
+      <table class="pv-table mb-3">
+        <tr><th class="w-32">보존식 관리</th><td>${esc(d.preserveDo) || '-'} / ${esc(d.preserveState) || '-'}</td></tr>
+        <tr><th>교육내용 및 기타사항</th><td class="text-left whitespace-pre-wrap">${esc(d.education) || '-'}</td></tr>
+      </table>
+      <table class="pv-table">
+        <thead><tr><th>담당 (${esc(j.managerName) || '-'})</th><th>결재 (${esc(j.bossName) || '-'})</th></tr></thead>
+        <tbody><tr><td style="height:60px">${mgrSig}</td><td style="height:60px">${bossSig}</td></tr></tbody>
+      </table>
+      ${j.approvedAt ? `<p class="text-[11px] text-gray-500 mt-2 text-right">결재: ${esc(fmtTime(j.approvedAt))}</p>` : ''}
+    </div>
+  `;
+}
+
+async function approveFromPreview() {
+  if (!previewDate) return;
+  if (!sig.cache['boss-sig']) return alert('결재 서명을 해주세요.');
+  showLoading('결재 처리 중...');
+  try {
+    await waitForBap();
+    const { db: firestore, runTransaction, doc: docFn } = db();
+    await runTransaction(firestore, async (tx) => {
+      const ref = docFn(firestore, 'bap_journals', previewDate);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('NOT_FOUND');
+      const cur = snap.data();
+      if (cur.status !== 'submitted') {
+        // 이미 승인됐거나 담당자가 재제출 전 상태면 차단
+        throw new Error('NOT_SUBMITTED:' + cur.status);
+      }
+      tx.update(ref, {
+        status: 'approved',
+        bossName: currentBoss.name,
+        bossSig: sig.cache['boss-sig'],
+        approvedAt: new Date().toISOString()
+      });
+    });
+    hideLoading();
+    alert('✅ 결재 완료!');
+    closePreview();
+    loadPendingList();
+    if (!$('tab-calendar').classList.contains('hidden')) loadCalendar();
+  } catch(e) {
+    hideLoading();
+    if (e.message === 'NOT_FOUND') alert('일지가 삭제되었습니다. 목록을 새로고침하세요.');
+    else if (e.message.startsWith('NOT_SUBMITTED:')) alert('이미 다른 상태(' + e.message.split(':')[1] + ')로 변경되었습니다. 목록을 새로고침하세요.');
+    else alert('결재 실패: ' + e.message);
+  }
+}
+
+function printPreview() {
+  const html = buildStandaloneHtml(previewDate);
+  const w = window.open('', '_blank', 'width=900,height=1000');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { try { w.print(); } catch(e){} }, 600);
+}
+function downloadPreview() {
+  if (!previewDate) return;
+  buildStandaloneHtmlAsync(previewDate).then(html => {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `급식일지_${previewDate}.html`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  });
+}
+
+async function buildStandaloneHtmlAsync(date) {
+  const j = await fsGet('bap_journals', date);
+  if (!j) return '';
+  return wrapStandalone(renderJournalHtml(j), `급식일지_${date}`);
+}
+function buildStandaloneHtml(date) {
+  return wrapStandalone($('preview-body').innerHTML, `급식일지_${date}`);
+}
+function wrapStandalone(inner, title) {
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>${title}</title>
+<style>body{font-family:'Noto Sans KR',sans-serif;background:#f9fafb;padding:20px;max-width:900px;margin:0 auto}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.tag-submitted{background:#fef3c7;color:#92400e}.tag-approved{background:#d1fae5;color:#065f46}.tag-draft{background:#e5e7eb;color:#4b5563}
+@media print{@page{size:A4 portrait;margin:10mm}body{background:#fff;padding:0}}
+</style></head><body>${inner}</body></html>`;
+}
+
+// ═══════════════════════════════════════════════
+// 부장 — 월별 일괄 다운로드
+// ═══════════════════════════════════════════════
+async function batchDownload(approvedOnly) {
+  const ym = $('cal-month').value || currentYM();
+  const [y, m] = ym.split('-').map(Number);
+  showLoading('자료 수집 중...');
+  try {
+    await waitForBap();
+    let items = await fsQuery('bap_journals',
+      db().where('date', '>=', `${y}-${pad(m)}-01`),
+      db().where('date', '<=', `${y}-${pad(m)}-31`)
+    );
+    if (approvedOnly) items = items.filter(i => i.status === 'approved');
+    items.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    hideLoading();
+    if (items.length === 0) return alert('해당 월에 ' + (approvedOnly ? '결재완료된 ' : '') + '일지가 없습니다.');
+    let body = `<h1 style="text-align:center">${y}년 ${m}월 급식일지 ${approvedOnly ? '(결재완료)' : '(전체)'}</h1>
+<p style="text-align:center;color:#6b7280">총 ${items.length}건 · 생성: ${new Date().toLocaleString('ko-KR')}</p>`;
+    body += items.map(j => `<div style="page-break-after:always;margin:2rem 0">${renderJournalHtml(j)}</div>`).join('');
+    const html = wrapStandalone(body, `${y}년${m}월_급식일지_${approvedOnly?'결재완료':'전체'}`);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${y}년${pad(m)}월_급식일지_${approvedOnly?'결재완료':'전체'}.html`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  } catch(e) { hideLoading(); alert('다운로드 실패: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════
+// 부장 — 식단표지 업로드
+// ═══════════════════════════════════════════════
+async function menuUpload() {
+  const file = $('menu-file').files[0];
+  const year = parseInt($('menu-year').value, 10);
+  const month = parseInt($('menu-month').value, 10);
+  if (!file) return alert('HWPX 파일을 선택하세요.');
+  if (!year || !month) return alert('연도/월을 입력하세요.');
+  if (!/\.hwpx$/i.test(file.name)) return alert('HWPX 파일만 업로드 가능합니다.');
+  if (file.size > 30 * 1024 * 1024) return alert('파일이 너무 큽니다 (30MB 이하).');
+
+  showLoading('AI가 식단표지를 분석 중...');
+  try {
+    const buf = await file.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    const res = await fetch('/api/bap/parse-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hwpxBase64: b64, year, month })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'AI 파싱 실패');
+    // Firestore 저장
+    await waitForBap();
+    $('loading-text').innerText = '기존 데이터 정리 중...';
+    const entries = Object.entries(data.menus);
+    const newKeys = new Set(entries.map(([d]) => d));
+    // 같은 월 범위 기존 문서 조회 → 새 entries에 없는 날짜는 삭제 (고아 정리)
+    const rangeStart = `${year}-${String(month).padStart(2, '0')}-01`;
+    const rangeEnd   = `${year}-${String(month).padStart(2, '0')}-31`;
+    const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId, deleteDoc: delFn, doc: docFn } = db();
+    const existing = await gdFn(qy(coll(firestore, 'bap_menus'),
+      whereFn(docId(), '>=', rangeStart),
+      whereFn(docId(), '<=', rangeEnd)));
+    const orphanDates = [];
+    existing.forEach(snap => {
+      if (!newKeys.has(snap.id)) orphanDates.push(snap.id);
+    });
+    for (const od of orphanDates) {
+      await delFn(docFn(firestore, 'bap_menus', od));
+    }
+    $('loading-text').innerText = '저장 중...';
+    for (const [date, lunch] of entries) {
+      await fsSet('bap_menus', date, { lunch, parsedAt: new Date().toISOString(), uploadedBy: currentBoss?.name || '' });
+    }
+    hideLoading();
+    $('menu-result').innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+      <p class="font-bold text-green-800">✅ ${entries.length}개 날짜 메뉴 저장 완료${orphanDates.length ? ` · 이전 잔여 ${orphanDates.length}건 삭제` : ''}</p>
+      <ul class="text-xs text-gray-600 mt-2 space-y-1 max-h-40 overflow-y-auto">
+        ${entries.map(([d,m]) => `<li><b>${esc(d)}</b> · ${esc(m)}</li>`).join('')}
+      </ul>
+    </div>`;
+  } catch(e) {
+    hideLoading();
+    $('menu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${e.message}</div>`;
+  }
+}
+
+function arrayBufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function loadMenuList() {
+  const ym = $('menu-view-month').value || currentYM();
+  const [y, m] = ym.split('-').map(Number);
+  const wrap = $('menu-list');
+  wrap.innerHTML = '<div class="text-gray-400 text-xs">로딩...</div>';
+  try {
+    await waitForBap();
+    const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId } = db();
+    const rangeStart = `${y}-${pad(m)}-01`;
+    const rangeEnd   = `${y}-${pad(m)}-31`;
+    const snap = await gdFn(qy(coll(firestore, 'bap_menus'),
+      whereFn(docId(), '>=', rangeStart),
+      whereFn(docId(), '<=', rangeEnd)));
+    const rows = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data && data.lunch) {
+        rows.push(`<div class="flex items-center gap-2 py-1 border-b border-gray-100"><b class="text-xs text-blue-700 w-20">${esc(d.id)}</b><span class="text-xs">${esc(data.lunch)}</span></div>`);
+      }
+    });
+    rows.sort();
+    wrap.innerHTML = rows.length ? rows.join('') : '<div class="text-gray-400 text-xs">저장된 식단이 없습니다.</div>';
+  } catch(e) {
+    wrap.innerHTML = '<div class="text-red-500 text-xs">오류: ' + esc(e.message) + '</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// 유틸
+// ═══════════════════════════════════════════════
+function showErr(id, msg) { const el = $(id); el.innerText = msg; el.classList.remove('hidden'); }
+
+function waitForBap() {
+  return new Promise((resolve, reject) => {
+    if (window.__bap) return resolve();
+    let done = false;
+    const onReady = () => { if (done) return; done = true; resolve(); };
+    document.addEventListener('bap-ready', onReady, { once: true });
+    setTimeout(() => { if (!done) { done = true; reject(new Error('Firebase 초기화 대기 초과')); } }, 10000);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// 부트
+// ═══════════════════════════════════════════════
+window.addEventListener('load', () => {
+  initSignature();
+  // 세션 복구 (8시간 유효)
+  const s = getSession();
+  if (s && s.role === 'manager' && s.pwHash) {
+    currentUser = { name: s.name, role: 'manager', pwHash: s.pwHash };
+    $('mgr-who').innerText = s.name;
+    showView('view-manager-main');
+    buildManagerForm();
+    mgrResetForm();
+  } else if (s && s.role === 'boss') {
+    currentBoss = { name: s.name };
+    $('boss-who').innerText = s.name;
+    showView('view-boss-main');
+    // Firestore 초기화 대기 후 탭 로드
+    waitForBap().then(() => {
+      const n = new Date();
+      $('menu-year').value = n.getFullYear();
+      $('menu-month').value = n.getMonth() + 1;
+      $('menu-view-month').value = currentYM();
+      $('cal-month').value = currentYM();
+      switchBossTab('pending');
+    }).catch(() => {});
+  } else if (s) {
+    // 세션이 있었으나 스키마가 변경되어(pwHash 없음) 유효하지 않음 → 정리
+    clearSession();
+  }
+});
+</script>
+
+</body>
+</html>
