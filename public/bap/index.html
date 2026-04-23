@@ -47,6 +47,9 @@
   #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; align-items: center; justify-content: center; padding: 1rem; }
   .modal.show { display: flex; }
+  /* 서명 모달은 다른 모달 위에서 열릴 수 있으므로 최상단 */
+  #sig-modal { z-index: 10050; }
+  #sig-modal > div { margin: auto; }
   @media print {
     @page { size: A4 portrait; margin: 10mm; }
     body { background: #fff; }
