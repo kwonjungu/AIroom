@@ -553,6 +553,29 @@
 
     <!-- 탭: 서버 관리자 (일지 삭제) -->
     <div id="tab-admin" class="boss-tab-content hidden">
+      <details class="bg-white border border-gray-200 rounded-xl p-3 mb-3 text-xs text-gray-700" open>
+        <summary class="font-bold text-sm text-gray-800 cursor-pointer select-none">📖 이 화면은 뭔가요? (사용법)</summary>
+        <div class="mt-3 space-y-2 leading-relaxed">
+          <p><b>서버 관리자</b>는 Firestore에 저장된 <b>급식일지 데이터를 직접 정리</b>하기 위한 운영자용 화면입니다. 일반적인 결재 흐름에서는 사용할 일이 거의 없고, 아래와 같은 상황에서만 씁니다.</p>
+          <ul class="list-disc pl-5 space-y-1 text-gray-700">
+            <li>담당자가 <b>잘못 제출한 일지</b>를 다시 쓰게 하려고 기존 기록을 지워야 할 때</li>
+            <li>결재 완료됐지만 <b>내용이 잘못되어 재작성</b>이 필요한 경우</li>
+            <li>테스트·연습으로 쌓인 <b>연습 데이터를 한꺼번에 정리</b>할 때</li>
+            <li>월이 바뀌기 전 <b>한 달 치를 통째로 리셋</b>해야 할 때</li>
+          </ul>
+          <p class="mt-2"><b>뷰 전환</b></p>
+          <ul class="list-disc pl-5 space-y-1 text-gray-700">
+            <li><b>📅 달력</b> — 월별 작성 상태를 색으로 보고, 날짜 셀을 클릭하면 바로 그 날짜 일지를 삭제합니다.</li>
+            <li><b>📋 나열식</b> — 그 달의 모든 일지를 목록으로 보고, 담당자·결재자·타임스탬프를 확인한 뒤 <b>미리보기</b>로 내용을 확인하거나, 개별/여러 건을 체크해 일괄 삭제합니다.</li>
+          </ul>
+          <p class="mt-2"><b>주의</b></p>
+          <ul class="list-disc pl-5 space-y-1 text-red-700">
+            <li>삭제는 <b>즉시 Firestore에서 영구 제거</b>되며 복구할 수 없습니다.</li>
+            <li>결재 완료(approved)된 일지도 막히지 않고 그대로 삭제됩니다.</li>
+            <li>삭제 후에는 담당자가 해당 날짜에 다시 일지를 쓸 수 있습니다.</li>
+          </ul>
+        </div>
+      </details>
       <div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-xs text-red-800">
         ⚠️ 이 화면의 삭제는 <b>되돌릴 수 없습니다</b>. 결재 완료된 일지까지 영구 삭제됩니다. 신중히 사용하세요.
       </div>
