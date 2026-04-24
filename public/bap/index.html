@@ -235,6 +235,7 @@
   <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 print-hide">
     <div class="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
       <div class="flex items-center gap-2">
+        <button data-back class="text-xs text-gray-500 bg-white border border-gray-300 rounded-lg px-2 py-2">← 처음</button>
         <span class="text-lg">📝</span>
         <span class="font-bold text-gray-800 text-sm">급식일지 · <span id="mgr-who"></span></span>
       </div>
@@ -244,9 +245,17 @@
         <button data-action="mgr-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
       </div>
     </div>
+    <!-- 담당자 하위 탭: 일지 작성 / 월별 현황 (결재자 캘린더와 동일한 데이터) -->
+    <div class="max-w-4xl mx-auto flex gap-1 px-2 overflow-x-auto border-t border-gray-100">
+      <button class="mgr-main-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-mgr-main-tab="write">📝 일지 작성</button>
+      <button class="mgr-main-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-mgr-main-tab="status">📅 월별 현황</button>
+    </div>
   </nav>
 
   <div class="max-w-4xl mx-auto p-3 sm:p-6">
+
+    <!-- 탭: 일지 작성 (기본) -->
+    <div id="mgr-main-tab-write" class="mgr-main-tab-content">
 
     <!-- 날짜 선택 & 내 일지 목록 -->
     <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
@@ -363,6 +372,32 @@
     <div class="sticky bottom-0 bg-white border-t border-gray-200 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 print-hide">
       <button data-action="mgr-submit" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg">📤 결재자에게 제출하기</button>
     </div>
+
+    </div> <!-- /#mgr-main-tab-write -->
+
+    <!-- 탭: 월별 현황 (결재자 캘린더와 동일한 데이터/렌더) -->
+    <div id="mgr-main-tab-status" class="mgr-main-tab-content hidden">
+      <div class="flex items-center gap-2 mb-3">
+        <button data-action="mgr-cal-prev" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&lt;</button>
+        <input type="month" id="mgr-cal-month">
+        <button data-action="mgr-cal-next" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&gt;</button>
+        <button data-action="mgr-cal-reload" class="bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-sm">조회</button>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500">
+          <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+        </div>
+        <div id="mgr-cal-grid" class="cal"></div>
+        <div class="flex flex-wrap gap-3 mt-3 text-[11px] text-gray-600">
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#6ee7b7"></span> 결재완료</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fde68a"></span> 결재대기</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fef3c7"></span> 담당자 작성중</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#f3f4f6"></span> 미작성</span>
+          <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fee2e2"></span> 주말</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -419,6 +454,7 @@
   <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 print-hide">
     <div class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
       <div class="flex items-center gap-2">
+        <button data-back class="text-xs text-gray-500 bg-white border border-gray-300 rounded-lg px-2 py-2">← 처음</button>
         <span class="text-lg">✅</span>
         <span class="font-bold text-gray-800 text-sm">결재자 · <span id="boss-who"></span></span>
       </div>
@@ -1056,9 +1092,14 @@ function initSignature() {
 // 이벤트 위임 — data-go, data-back, data-action, data-sign
 // ═══════════════════════════════════════════════
 document.body.addEventListener('click', async (e) => {
-  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-boss-tab],[data-help-prev],[data-help-next],[data-help-skip],[data-help-dot]');
+  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-mgr-main-tab],[data-boss-tab],[data-help-prev],[data-help-next],[data-help-skip],[data-help-dot]');
   if (!t) return;
-  if (t.dataset.go === 'manager') { initManagerLogin(); showView('view-manager-login'); return; }
+  if (t.dataset.go === 'manager') {
+    // 세션이 이미 복구돼 있으면 로그인 생략
+    if (currentUser && currentUser.name) { enterManagerMain(); return; }
+    initManagerLogin(); showView('view-manager-login'); return;
+  }
+  // 결재자는 항상 재로그인 (관리자 특권 보호)
   if (t.dataset.go === 'boss')    { initBossLogin();    showView('view-boss-login'); return; }
   if (t.dataset.go === 'menu')    { initMenuUploadView(); showView('view-menu-upload'); return; }
   if (t.dataset.go === 'help')    { initHelpSlides(); showView('view-help'); return; }
@@ -1069,6 +1110,7 @@ document.body.addEventListener('click', async (e) => {
   if (t.dataset.back !== undefined) { showView('view-landing'); return; }
   if (t.dataset.tab) { switchBossTab(t.dataset.tab); return; }
   if (t.dataset.mgrTab)  { setMgrTab(t.dataset.mgrTab);  return; }
+  if (t.dataset.mgrMainTab) { setMgrMainTab(t.dataset.mgrMainTab); return; }
   if (t.dataset.bossTab) { setBossTab(t.dataset.bossTab); return; }
   if (t.dataset.sign) { openSigModal(t.dataset.sign); return; }
   const a = t.dataset.action;
@@ -1096,9 +1138,12 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'mp-change-pw') { await mpChangePassword(); return; }
     if (a === 'mp-delete-account') { await mpDeleteAccount(); return; }
     if (a === 'boss-refresh') { await loadPendingList(); return; }
-    if (a === 'cal-reload')  { await loadCalendar(); return; }
-    if (a === 'cal-prev')    { shiftCalMonth(-1); return; }
-    if (a === 'cal-next')    { shiftCalMonth(1); return; }
+    if (a === 'cal-reload')  { await loadCalendar('cal'); return; }
+    if (a === 'cal-prev')    { shiftCalMonth(-1, 'cal'); return; }
+    if (a === 'cal-next')    { shiftCalMonth(1, 'cal'); return; }
+    if (a === 'mgr-cal-reload') { await loadCalendar('mgr-cal'); return; }
+    if (a === 'mgr-cal-prev')   { shiftCalMonth(-1, 'mgr-cal'); return; }
+    if (a === 'mgr-cal-next')   { shiftCalMonth(1, 'mgr-cal'); return; }
     if (a === 'batch-download')     { await batchDownload(true);  return; }
     if (a === 'batch-download-all') { await batchDownload(false); return; }
     if (a === 'menu-upload') { await menuUpload(); return; }
@@ -1201,6 +1246,7 @@ function enterManagerMain() {
   showView('view-manager-main');
   buildManagerForm();
   mgrResetForm();
+  setMgrMainTab('write');
 }
 
 async function mgrLogout() {
@@ -1657,9 +1703,13 @@ function fmtTime(iso) { if (!iso) return '-'; try { return new Date(iso).toLocal
 // ═══════════════════════════════════════════════
 // 부장 — 캘린더
 // ═══════════════════════════════════════════════
-async function loadCalendar() {
-  const ym = $('cal-month').value || currentYM();
-  $('cal-month').value = ym;
+// 월별 제출 현황 캘린더.
+// prefix로 DOM 타깃을 분리해서 결재자(`cal`)와 담당자(`mgr-cal`) 양쪽에서 동일 로직 재사용.
+async function loadCalendar(prefix = 'cal') {
+  const monthId = `${prefix}-month`;
+  const gridId  = `${prefix}-grid`;
+  const ym = $(monthId).value || currentYM();
+  $(monthId).value = ym;
   const [y, m] = ym.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   const firstDow = new Date(y, m-1, 1).getDay();
@@ -1677,7 +1727,7 @@ async function loadCalendar() {
   const statusMap = {};
   items.forEach(it => { statusMap[it.date] = it.status; });
 
-  const grid = $('cal-grid');
+  const grid = $(gridId);
   grid.innerHTML = '';
   for (let b = 0; b < firstDow; b++) grid.innerHTML += '<div></div>';
   for (let d = 1; d <= daysInMonth; d++) {
@@ -1701,12 +1751,28 @@ async function loadCalendar() {
   }
 }
 
-function shiftCalMonth(dir) {
-  const el = $('cal-month');
+function shiftCalMonth(dir, prefix = 'cal') {
+  const el = $(`${prefix}-month`);
   const d = el.value ? new Date(el.value + '-01') : new Date();
   d.setMonth(d.getMonth() + dir);
   el.value = d.getFullYear() + '-' + pad(d.getMonth()+1);
-  loadCalendar();
+  loadCalendar(prefix);
+}
+
+// 담당자 메인의 하위 탭 전환 (일지 작성 / 월별 현황)
+function setMgrMainTab(which) {
+  document.querySelectorAll('.mgr-main-tab').forEach(b => {
+    const active = b.dataset.mgrMainTab === which;
+    b.classList.toggle('border-blue-500', active);
+    b.classList.toggle('text-blue-600', active);
+    b.classList.toggle('text-gray-500', !active);
+  });
+  document.querySelectorAll('.mgr-main-tab-content').forEach(el => el.classList.add('hidden'));
+  $(`mgr-main-tab-${which}`).classList.remove('hidden');
+  if (which === 'status') {
+    if (!$('mgr-cal-month').value) $('mgr-cal-month').value = currentYM();
+    loadCalendar('mgr-cal');
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -2347,17 +2413,18 @@ function waitForBap() {
 // ═══════════════════════════════════════════════
 window.addEventListener('load', async () => {
   initSignature();
-  // 토큰 있으면 서버에 me 조회로 세션 복구
+  // 토큰이 있으면 me 조회로 세션만 확인한다.
+  // - 자동으로 일지/결재자 메인으로 이동하지 않고 항상 랜딩 뷰를 유지한다.
+  // - 담당자는 세션을 메모리에 복구해 둬서 "담당자" 탭 클릭 시 로그인 생략.
+  // - 결재자(부장)는 특권 보호 차원에서 새로고침마다 로컬 토큰을 지워 재로그인을 강제한다.
   const t = getBapToken();
   if (!t) return;
   try {
     const me = await bapApi('GET', '/me');
     if (me.role === 'manager') {
       currentUser = { name: me.name, role: 'manager' };
-      enterManagerMain();
     } else if (me.role === 'boss') {
-      currentBoss = { name: me.name };
-      await enterBossMain();
+      clearBapToken();
     }
   } catch(e) {
     // 토큰 만료/무효
