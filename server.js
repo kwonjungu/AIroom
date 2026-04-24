@@ -780,9 +780,35 @@ app.post('/api/bap/parse-menu', express.json({ limit: '50mb' }), async (req, res
         if (count === 0) {
             return res.status(422).json({ error: 'AI가 메뉴를 추출하지 못했습니다. 파일을 확인하세요.', textPreview: text.slice(0, 500) });
         }
-        res.json({ menus, count });
+        // rawText는 교사 검토 단계의 재파싱(/api/bap/revise-menu)에서 파일 재업로드 없이 재시도하기 위해 같이 내려보낸다.
+        // 응답 크기 방어용으로 16KB까지만.
+        res.json({ menus, count, rawText: text.slice(0, 16000) });
     } catch (e) {
         console.error('[/api/bap/parse-menu]', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 교사 검토 의견을 반영해 LLM이 이전 결과 JSON을 수정한다.
+// body: { rawText, previousMenus, feedback, year, month }
+app.post('/api/bap/revise-menu', express.json({ limit: '20mb' }), async (req, res) => {
+    try {
+        const { rawText, previousMenus, feedback, year, month } = req.body || {};
+        const y = parseInt(year, 10);
+        const m = parseInt(month, 10);
+        if (!rawText || typeof rawText !== 'string') return res.status(400).json({ error: 'rawText가 필요합니다.' });
+        if (!previousMenus || typeof previousMenus !== 'object') return res.status(400).json({ error: 'previousMenus가 필요합니다.' });
+        if (!feedback || typeof feedback !== 'string' || !feedback.trim()) return res.status(400).json({ error: '검토 의견을 입력하세요.' });
+        if (!y || !m || m < 1 || m > 12) return res.status(400).json({ error: 'year, month가 유효하지 않습니다.' });
+        const { reviseMenuWithGroq } = require('./lib/bap-menu-parse');
+        const menus = await reviseMenuWithGroq(rawText, previousMenus, feedback, y, m, callGroqWithFallback);
+        const count = Object.keys(menus).length;
+        if (count === 0) {
+            return res.status(422).json({ error: 'AI가 수정된 메뉴를 만들지 못했습니다.' });
+        }
+        res.json({ menus, count });
+    } catch (e) {
+        console.error('[/api/bap/revise-menu]', e);
         res.status(500).json({ error: e.message });
     }
 });

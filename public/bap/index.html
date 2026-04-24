@@ -47,6 +47,17 @@
   #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; align-items: center; justify-content: center; padding: 1rem; }
   .modal.show { display: flex; }
+  .menu-dropzone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 18px 12px; background: #f9fafb; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+  .menu-dropzone:hover { background: #f3f4f6; border-color: #9ca3af; }
+  .menu-dropzone.is-dragover { background: #eff6ff; border-color: #2563eb; border-style: solid; }
+  .menu-dropzone.has-file { background: #ecfdf5; border-color: #10b981; }
+  .mr-row { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-bottom: 1px solid #f3f4f6; }
+  .mr-row b { color: #1d4ed8; font-size: 12px; min-width: 86px; font-family: ui-monospace, monospace; }
+  .mr-row input { flex: 1; font-size: 12px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .mr-row input:focus { border-color: #2563eb; }
+  .mr-row button { font-size: 11px; color: #ef4444; padding: 4px 8px; border-radius: 6px; }
+  .mr-add { display: flex; gap: 8px; padding: 10px 8px; border-top: 2px dashed #e5e7eb; margin-top: 6px; }
+  .mr-add input { font-size: 12px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; }
   /* 서명 모달은 다른 모달 위에서 열릴 수 있으므로 최상단 */
   #sig-modal { z-index: 10050; }
   #sig-modal > div { margin: auto; }
@@ -136,7 +147,7 @@
         <p class="text-xs mt-1">한글 식단표는 <b>다른 이름으로 저장 → HWPX(*.hwpx)</b>, 또는 <b>PDF로 인쇄/저장</b> 한 파일이어야 합니다. 구버전 HWP, DOCX, 이미지(jpg/png)는 지원하지 않습니다.</p>
       </div>
       <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+        <div class="grid grid-cols-2 gap-2 mb-3">
           <div>
             <label class="text-xs font-bold text-gray-600">연도</label>
             <input type="number" id="mu-year" min="2024" max="2030">
@@ -145,8 +156,13 @@
             <label class="text-xs font-bold text-gray-600">월</label>
             <input type="number" id="mu-month" min="1" max="12">
           </div>
-          <div class="flex items-end">
-            <input type="file" id="mu-file" accept=".hwpx,.pdf" class="text-xs">
+        </div>
+        <div class="menu-dropzone mb-3" data-dropzone="mu-file">
+          <input type="file" id="mu-file" accept=".hwpx,.pdf" hidden>
+          <div class="text-center">
+            <p class="text-sm font-bold text-gray-700">📂 파일을 여기로 <b>드래그</b>하거나 <u>클릭해서 선택</u></p>
+            <p class="text-xs text-gray-500 mt-1">HWPX 또는 PDF (30MB 이하)</p>
+            <p class="text-xs text-amber-700 font-bold mt-2" data-dropzone-name></p>
           </div>
         </div>
         <button data-action="mu-upload" class="w-full bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl">🤖 업로드 & AI 파싱</button>
@@ -465,7 +481,7 @@
       <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
         <h3 class="font-bold text-gray-800 text-sm mb-2">📤 식단표지 HWPX/PDF 업로드 (월 1회)</h3>
         <p class="text-xs text-gray-500 mb-3">HWPX 또는 PDF 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출하여 저장합니다. 담당자가 일지 작성 시 자동으로 식단명이 채워집니다.</p>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+        <div class="grid grid-cols-2 gap-2 mb-3">
           <div>
             <label class="text-xs font-bold text-gray-600">연도</label>
             <input type="number" id="menu-year" min="2024" max="2030">
@@ -474,8 +490,13 @@
             <label class="text-xs font-bold text-gray-600">월</label>
             <input type="number" id="menu-month" min="1" max="12">
           </div>
-          <div class="flex items-end">
-            <input type="file" id="menu-file" accept=".hwpx,.pdf" class="text-xs">
+        </div>
+        <div class="menu-dropzone mb-3" data-dropzone="menu-file">
+          <input type="file" id="menu-file" accept=".hwpx,.pdf" hidden>
+          <div class="text-center">
+            <p class="text-sm font-bold text-gray-700">📂 파일을 여기로 <b>드래그</b>하거나 <u>클릭해서 선택</u></p>
+            <p class="text-xs text-gray-500 mt-1">HWPX 또는 PDF (30MB 이하)</p>
+            <p class="text-xs text-blue-700 font-bold mt-2" data-dropzone-name></p>
           </div>
         </div>
         <button data-action="menu-upload" class="bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">🤖 업로드 & AI 파싱</button>
@@ -579,6 +600,29 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════
+     식단 검토 모달 (업로드 후 저장 전 수동 확인/수정)
+═══════════════════════════════════════════════ -->
+<div id="menu-review-modal" class="modal">
+  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div class="p-4 border-b border-gray-200">
+      <h3 class="font-bold text-gray-800">🧐 식단 검토 및 수정</h3>
+      <p class="text-xs text-gray-500 mt-1">AI가 추출한 결과입니다. <b>직접 확인·수정</b>한 뒤 저장하세요.<br>잘못된 부분이 있으면 <b>맨 아래 의견란</b>에 적고 "의견 반영해 다시 파싱"을 누르면 AI가 수정합니다.</p>
+      <p id="mr-summary" class="text-xs text-gray-700 font-bold mt-2"></p>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4 space-y-2" id="mr-list"></div>
+    <div class="p-4 border-t border-gray-200 space-y-2">
+      <label class="text-xs font-bold text-gray-700">✏️ 검토 의견 (선택)</label>
+      <textarea id="mr-feedback" rows="3" placeholder="예) 3월 19일, 20일 식단이 누락됐고 23일 자리에 20일 메뉴가 들어가 하루씩 밀렸어요." class="w-full text-xs"></textarea>
+      <div class="grid grid-cols-2 gap-2">
+        <button data-action="mr-revise" class="bg-amber-500 active:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm">🔄 의견 반영해 다시 파싱</button>
+        <button data-action="mr-save" class="bg-blue-600 active:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm">✅ 확인, 서버에 저장</button>
+      </div>
+      <button data-action="mr-cancel" class="w-full bg-gray-200 active:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl text-xs">취소 (저장하지 않음)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
      스크립트
 ═══════════════════════════════════════════════ -->
 <script type="module">
@@ -636,6 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (t) t.innerHTML = '🍱 ' + SCHOOL.name + ' 급식일지';
   const f = document.getElementById('landing-footer');
   if (f) f.textContent = SCHOOL.full + ' · 비조리교 급식';
+  try { initDropZones(); } catch (e) { console.warn('initDropZones 실패:', e); }
 });
 
 // ═══════════════════════════════════════════════
@@ -1060,6 +1105,11 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'menu-list')   { await loadMenuList(); return; }
     if (a === 'mu-upload')   { await muUpload(); return; }
     if (a === 'mu-list')     { await muList(); return; }
+    if (a === 'mr-revise')   { await mrRevise(); return; }
+    if (a === 'mr-save')     { await mrSave(); return; }
+    if (a === 'mr-cancel')   { mrCancel(); return; }
+    if (a === 'mr-add')      { mrAdd(); return; }
+    if (a === 'mr-del')      { mrDelete(t.closest('.mr-row').dataset.date); return; }
     if (a === 'preview-close') { closePreview(); return; }
     if (a === 'preview-approve') { await approveFromPreview(); return; }
     if (a === 'preview-print') { printPreview(); return; }
@@ -1877,39 +1927,18 @@ async function menuUpload() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'AI 파싱 실패');
-    // Firestore 저장
-    await waitForBap();
-    $('loading-text').innerText = '기존 데이터 정리 중...';
-    const entries = Object.entries(data.menus);
-    const newKeys = new Set(entries.map(([d]) => d));
-    // 같은 월 범위 기존 문서 조회 → 새 entries에 없는 날짜는 삭제 (고아 정리)
-    const rangeStart = `${year}-${String(month).padStart(2, '0')}-01`;
-    const rangeEnd   = `${year}-${String(month).padStart(2, '0')}-31`;
-    const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId, deleteDoc: delFn, doc: docFn } = db();
-    const existing = await gdFn(qy(coll(firestore, MENU_COLL),
-      whereFn(docId(), '>=', rangeStart),
-      whereFn(docId(), '<=', rangeEnd)));
-    const orphanDates = [];
-    existing.forEach(snap => {
-      if (!newKeys.has(snap.id)) orphanDates.push(snap.id);
-    });
-    for (const od of orphanDates) {
-      await delFn(docFn(firestore, MENU_COLL, od));
-    }
-    $('loading-text').innerText = '저장 중...';
-    for (const [date, lunch] of entries) {
-      await fsSet(MENU_COLL, date, { lunch, parsedAt: new Date().toISOString(), uploadedBy: currentBoss?.name || '' });
-    }
     hideLoading();
-    $('menu-result').innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-      <p class="font-bold text-green-800">✅ ${entries.length}개 날짜 메뉴 저장 완료${orphanDates.length ? ` · 이전 잔여 ${orphanDates.length}건 삭제` : ''}</p>
-      <ul class="text-xs text-gray-600 mt-2 space-y-1 max-h-40 overflow-y-auto">
-        ${entries.map(([d,m]) => `<li><b>${esc(d)}</b> · ${esc(m)}</li>`).join('')}
-      </ul>
-    </div>`;
+    openMenuReview({
+      source: 'boss',
+      resultElId: 'menu-result',
+      year, month,
+      menus: data.menus,
+      rawText: data.rawText || '',
+      uploadedBy: currentBoss?.name || ''
+    });
   } catch(e) {
     hideLoading();
-    $('menu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${e.message}</div>`;
+    $('menu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
   }
 }
 
@@ -2042,7 +2071,7 @@ async function muUpload() {
     if (!ok) return;
   }
 
-  // 2) 파싱 + 저장
+  // 2) 파싱 → 검토 모달
   showLoading('AI가 식단표지를 분석 중...');
   try {
     const buf = await file.arrayBuffer();
@@ -2054,12 +2083,139 @@ async function muUpload() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'AI 파싱 실패');
+    hideLoading();
+    openMenuReview({
+      source: 'mu',
+      resultElId: 'mu-result',
+      year, month,
+      menus: data.menus,
+      rawText: data.rawText || '',
+      uploadedBy: '',
+      onSaved: async () => {
+        $('mu-view-month').value = `${year}-${String(month).padStart(2, '0')}`;
+        await muList();
+      }
+    });
+  } catch(e) {
+    hideLoading();
+    $('mu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
+  }
+}
 
-    $('loading-text').innerText = '기존 데이터 정리 중...';
-    const entries = Object.entries(data.menus);
+// ═══════════════════════════════════════════════
+// 식단 검토 모달 — 업로드 결과를 교사가 확인/수정 후에만 Firestore에 저장
+// ═══════════════════════════════════════════════
+let _mrState = null;
+
+function openMenuReview(opts) {
+  _mrState = {
+    source: opts.source,                 // 'boss' | 'mu' — 에러/결과 렌더 대상 구분
+    resultElId: opts.resultElId,
+    year: opts.year, month: opts.month,
+    uploadedBy: opts.uploadedBy || '',
+    rawText: opts.rawText || '',
+    menus: { ...opts.menus },
+    onSaved: opts.onSaved || null
+  };
+  renderMenuReview();
+  $('mr-feedback').value = '';
+  $('menu-review-modal').classList.add('show');
+}
+
+function renderMenuReview() {
+  const s = _mrState;
+  const list = $('mr-list');
+  const entries = Object.entries(s.menus).sort((a, b) => a[0].localeCompare(b[0]));
+  $('mr-summary').innerText = `${s.year}년 ${s.month}월 · ${entries.length}개 날짜`;
+  list.innerHTML = entries.map(([date, menu]) => `
+    <div class="mr-row" data-date="${esc(date)}">
+      <b>${esc(date)}</b>
+      <input type="text" value="${esc(menu)}" data-mr-menu>
+      <button type="button" data-action="mr-del" title="이 날짜 삭제">삭제</button>
+    </div>
+  `).join('') + `
+    <div class="mr-add">
+      <input type="text" id="mr-add-date" placeholder="YYYY-MM-DD" maxlength="10" style="width:120px">
+      <input type="text" id="mr-add-menu" placeholder="메뉴 (쉼표로 구분)" style="flex:1">
+      <button type="button" data-action="mr-add" class="bg-gray-200 active:bg-gray-300 px-3 rounded-lg text-xs">추가</button>
+    </div>
+  `;
+}
+
+function collectReviewMenus() {
+  // 현재 DOM 상태에서 날짜→메뉴 맵을 다시 수집 (교사가 손으로 수정한 값 포함)
+  const rows = document.querySelectorAll('#mr-list .mr-row');
+  const out = {};
+  rows.forEach(r => {
+    const date = r.dataset.date;
+    const v = r.querySelector('[data-mr-menu]').value.trim();
+    if (date && v) out[date] = v;
+  });
+  return out;
+}
+
+function mrDelete(date) {
+  delete _mrState.menus[date];
+  // 내부 상태 업데이트 후, 현재 DOM에서 교사가 타이핑 중이던 다른 행은 보존하기 위해
+  // 다시 collect → state.menus 동기화 → re-render 순서로 한 번 돌린다.
+  _mrState.menus = { ...collectReviewMenus() };
+  delete _mrState.menus[date];
+  renderMenuReview();
+}
+
+function mrAdd() {
+  const dEl = $('mr-add-date'), mEl = $('mr-add-menu');
+  const date = (dEl.value || '').trim();
+  const menu = (mEl.value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('YYYY-MM-DD 형식으로 입력하세요.');
+  const ym = `${_mrState.year}-${String(_mrState.month).padStart(2,'0')}`;
+  if (!date.startsWith(ym)) return alert(`${ym}- 로 시작하는 날짜여야 합니다.`);
+  if (!menu) return alert('메뉴를 입력하세요.');
+  _mrState.menus = { ...collectReviewMenus(), [date]: menu };
+  renderMenuReview();
+}
+
+async function mrRevise() {
+  const s = _mrState;
+  const feedback = ($('mr-feedback').value || '').trim();
+  if (!feedback) return alert('검토 의견을 입력하세요.');
+  if (!s.rawText) return alert('이 파일은 원본 텍스트가 남아있지 않아 재파싱할 수 없습니다.\n대신 직접 수정한 뒤 저장하세요.');
+  showLoading('의견을 반영해 다시 파싱 중...');
+  try {
+    const res = await fetch('/api/bap/revise-menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rawText: s.rawText,
+        previousMenus: collectReviewMenus(),
+        feedback,
+        year: s.year, month: s.month
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '재파싱 실패');
+    _mrState.menus = data.menus || {};
+    renderMenuReview();
+    $('mr-feedback').value = '';
+    hideLoading();
+  } catch (e) {
+    hideLoading();
+    alert('재파싱 실패: ' + e.message);
+  }
+}
+
+async function mrSave() {
+  const s = _mrState;
+  const menus = collectReviewMenus();
+  const entries = Object.entries(menus).sort((a, b) => a[0].localeCompare(b[0]));
+  if (!entries.length) return alert('저장할 메뉴가 없습니다.');
+
+  showLoading('기존 데이터 정리 중...');
+  try {
+    await waitForBap();
     const newKeys = new Set(entries.map(([d]) => d));
-    const rangeStart = `${year}-${String(month).padStart(2, '0')}-01`;
-    const rangeEnd   = `${year}-${String(month).padStart(2, '0')}-31`;
+    const rangeStart = `${s.year}-${String(s.month).padStart(2, '0')}-01`;
+    const rangeEnd   = `${s.year}-${String(s.month).padStart(2, '0')}-31`;
     const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId, deleteDoc: delFn, doc: docFn } = db();
     const existing = await gdFn(qy(coll(firestore, MENU_COLL),
       whereFn(docId(), '>=', rangeStart),
@@ -2069,26 +2225,79 @@ async function muUpload() {
     for (const od of orphanDates) {
       await delFn(docFn(firestore, MENU_COLL, od));
     }
-
     $('loading-text').innerText = '저장 중...';
     for (const [date, lunch] of entries) {
-      await fsSet(MENU_COLL, date, { lunch, parsedAt: new Date().toISOString(), uploadedBy: '' });
+      await fsSet(MENU_COLL, date, { lunch, parsedAt: new Date().toISOString(), uploadedBy: s.uploadedBy || '' });
     }
-
     hideLoading();
-    $('mu-result').innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+    $('menu-review-modal').classList.remove('show');
+    $(s.resultElId).innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
       <p class="font-bold text-green-800">✅ ${entries.length}개 날짜 메뉴 저장 완료${orphanDates.length ? ` · 이전 잔여 ${orphanDates.length}건 삭제` : ''}</p>
       <ul class="text-xs text-gray-600 mt-2 space-y-1 max-h-40 overflow-y-auto">
         ${entries.map(([d,m]) => `<li><b>${esc(d)}</b> · ${esc(m)}</li>`).join('')}
       </ul>
     </div>`;
-    // 조회 패널도 자동 갱신
-    $('mu-view-month').value = `${year}-${String(month).padStart(2, '0')}`;
-    await muList();
-  } catch(e) {
+    if (s.onSaved) { try { await s.onSaved(); } catch (e) { /* noop */ } }
+    _mrState = null;
+  } catch (e) {
     hideLoading();
-    $('mu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
+    alert('저장 실패: ' + e.message);
   }
+}
+
+function mrCancel() {
+  $('menu-review-modal').classList.remove('show');
+  _mrState = null;
+}
+
+// 드래그 앤 드롭 업로드 영역 초기화: 파일 input을 숨기고 영역 전체를 드롭존/클릭타깃으로 사용
+function initDropZones() {
+  document.querySelectorAll('.menu-dropzone').forEach(zone => {
+    const inputId = zone.dataset.dropzone;
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const nameEl = zone.querySelector('[data-dropzone-name]');
+
+    const setFiles = (fileList) => {
+      if (!fileList || !fileList.length) return;
+      try {
+        const dt = new DataTransfer();
+        dt.items.add(fileList[0]);
+        input.files = dt.files;
+      } catch (e) { /* 구형 브라우저 — input.files 직접 설정 불가, 무시 */ }
+      if (nameEl) nameEl.innerText = `📄 ${fileList[0].name} (${Math.round(fileList[0].size/1024)} KB)`;
+      zone.classList.add('has-file');
+    };
+
+    zone.addEventListener('click', (e) => {
+      // 내부 input 클릭이 중복 발생하지 않도록
+      if (e.target === input) return;
+      input.click();
+    });
+    input.addEventListener('change', () => {
+      if (input.files && input.files[0]) setFiles(input.files);
+    });
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      zone.classList.add('is-dragover');
+    });
+    zone.addEventListener('dragleave', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      zone.classList.remove('is-dragover');
+    });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      zone.classList.remove('is-dragover');
+      const files = e.dataTransfer?.files;
+      if (!files || !files.length) return;
+      const f = files[0];
+      if (!/\.(hwpx|pdf)$/i.test(f.name)) {
+        alert('HWPX 또는 PDF 파일만 업로드 가능합니다.');
+        return;
+      }
+      setFiles(files);
+    });
+  });
 }
 
 async function muList() {
