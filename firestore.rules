@@ -79,8 +79,10 @@ service cloud.firestore {
            && request.resource.data.bossName is string)
         );
 
-      // 삭제 금지 (감사 목적)
-      allow delete: if false;
+      // 삭제 허용: 부장 "서버 관리자" 기능에서 운영자가 임의 일지를 삭제한다.
+      // 클라이언트 기반 인증이라 Firestore 규칙 레벨의 "부장만" 보장은 못 하지만,
+      // read가 이미 전면 허용된 내부 도구 모델이라 같은 결로 푼다.
+      allow delete: if true;
     }
     match /bap2_journals/{date} {
       allow read: if true;
@@ -98,7 +100,7 @@ service cloud.firestore {
            && request.resource.data.managerName == resource.data.managerName
            && request.resource.data.bossName is string)
         );
-      allow delete: if false;
+      allow delete: if true;
     }
     match /bap3_journals/{date} {
       allow read: if true;
@@ -116,7 +118,7 @@ service cloud.firestore {
            && request.resource.data.managerName == resource.data.managerName
            && request.resource.data.bossName is string)
         );
-      allow delete: if false;
+      allow delete: if true;
     }
   }
 }

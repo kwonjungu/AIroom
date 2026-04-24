@@ -467,6 +467,7 @@
       <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="pending">🟡 결재 대기</button>
       <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="calendar">📅 월별 현황</button>
       <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap" data-tab="menu">🍚 식단표지</button>
+      <button class="boss-tab px-4 py-2 text-sm font-bold border-b-2 border-transparent whitespace-nowrap text-red-600" data-tab="admin">🗑️ 서버 관리자</button>
     </div>
   </nav>
 
@@ -549,6 +550,51 @@
         <div id="menu-list" class="space-y-1 text-sm max-h-96 overflow-y-auto"></div>
       </div>
     </div>
+
+    <!-- 탭: 서버 관리자 (일지 삭제) -->
+    <div id="tab-admin" class="boss-tab-content hidden">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-xs text-red-800">
+        ⚠️ 이 화면의 삭제는 <b>되돌릴 수 없습니다</b>. 결재 완료된 일지까지 영구 삭제됩니다. 신중히 사용하세요.
+      </div>
+      <div class="flex items-center gap-2 mb-3 flex-wrap">
+        <button data-action="admin-cal-prev" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&lt;</button>
+        <input type="month" id="admin-cal-month">
+        <button data-action="admin-cal-next" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&gt;</button>
+        <button data-action="admin-reload" class="bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-sm">조회</button>
+        <div class="ml-auto flex gap-1 bg-gray-100 p-1 rounded-lg">
+          <button class="admin-view-btn px-3 py-1.5 rounded-md text-xs font-bold" data-admin-view="calendar">📅 달력</button>
+          <button class="admin-view-btn px-3 py-1.5 rounded-md text-xs font-bold" data-admin-view="list">📋 나열식</button>
+        </div>
+      </div>
+
+      <!-- 달력 뷰 -->
+      <div id="admin-view-calendar" class="admin-view">
+        <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+          <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500">
+            <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+          </div>
+          <div id="admin-cal-grid" class="cal"></div>
+          <div class="flex flex-wrap gap-3 mt-3 text-[11px] text-gray-600">
+            <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#6ee7b7"></span> 결재완료</span>
+            <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fde68a"></span> 결재대기</span>
+            <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fef3c7"></span> 담당자 작성중</span>
+            <span class="text-red-600">· 클릭해 삭제</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 나열식 뷰 -->
+      <div id="admin-view-list" class="admin-view hidden">
+        <div class="bg-white rounded-2xl shadow-sm p-3 mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-xs font-bold text-gray-700" id="admin-list-summary">—</div>
+            <button data-action="admin-bulk-delete" class="bg-red-600 active:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">선택 항목 삭제</button>
+          </div>
+          <div id="admin-list" class="divide-y divide-gray-100"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1092,7 +1138,7 @@ function initSignature() {
 // 이벤트 위임 — data-go, data-back, data-action, data-sign
 // ═══════════════════════════════════════════════
 document.body.addEventListener('click', async (e) => {
-  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-mgr-main-tab],[data-boss-tab],[data-help-prev],[data-help-next],[data-help-skip],[data-help-dot]');
+  const t = e.target.closest('[data-go],[data-back],[data-action],[data-sign],[data-tab],[data-mgr-tab],[data-mgr-main-tab],[data-boss-tab],[data-admin-view],[data-help-prev],[data-help-next],[data-help-skip],[data-help-dot]');
   if (!t) return;
   if (t.dataset.go === 'manager') {
     // 세션이 이미 복구돼 있으면 로그인 생략
@@ -1111,6 +1157,7 @@ document.body.addEventListener('click', async (e) => {
   if (t.dataset.tab) { switchBossTab(t.dataset.tab); return; }
   if (t.dataset.mgrTab)  { setMgrTab(t.dataset.mgrTab);  return; }
   if (t.dataset.mgrMainTab) { setMgrMainTab(t.dataset.mgrMainTab); return; }
+  if (t.dataset.adminView) { setAdminView(t.dataset.adminView); return; }
   if (t.dataset.bossTab) { setBossTab(t.dataset.bossTab); return; }
   if (t.dataset.sign) { openSigModal(t.dataset.sign); return; }
   const a = t.dataset.action;
@@ -1144,6 +1191,12 @@ document.body.addEventListener('click', async (e) => {
     if (a === 'mgr-cal-reload') { await loadCalendar('mgr-cal'); return; }
     if (a === 'mgr-cal-prev')   { shiftCalMonth(-1, 'mgr-cal'); return; }
     if (a === 'mgr-cal-next')   { shiftCalMonth(1, 'mgr-cal'); return; }
+    if (a === 'admin-reload')    { await loadAdminView(); return; }
+    if (a === 'admin-cal-prev')  { adminShiftMonth(-1); return; }
+    if (a === 'admin-cal-next')  { adminShiftMonth(1); return; }
+    if (a === 'admin-bulk-delete') { adminBulkDelete(); return; }
+    if (a === 'admin-row-delete')  { await adminConfirmDelete([t.dataset.date]); return; }
+    if (a === 'admin-row-preview') { openPreview(t.dataset.date); return; }
     if (a === 'batch-download')     { await batchDownload(true);  return; }
     if (a === 'batch-download-all') { await batchDownload(false); return; }
     if (a === 'menu-upload') { await menuUpload(); return; }
@@ -1652,14 +1705,129 @@ async function bossLogout() {
 
 function switchBossTab(tab) {
   document.querySelectorAll('.boss-tab').forEach(b => {
-    b.classList.toggle('border-blue-500', b.dataset.tab === tab);
-    b.classList.toggle('text-blue-600', b.dataset.tab === tab);
-    b.classList.toggle('text-gray-500', b.dataset.tab !== tab);
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('border-blue-500', active);
+    // admin 탭은 강조색 유지(빨강). 다른 활성 탭만 text-blue-600 적용.
+    if (b.dataset.tab !== 'admin') {
+      b.classList.toggle('text-blue-600', active);
+      b.classList.toggle('text-gray-500', !active);
+    }
   });
   document.querySelectorAll('.boss-tab-content').forEach(el => el.classList.add('hidden'));
   $('tab-' + tab).classList.remove('hidden');
   if (tab === 'pending') loadPendingList();
   if (tab === 'calendar') loadCalendar();
+  if (tab === 'admin') {
+    if (!$('admin-cal-month').value) $('admin-cal-month').value = currentYM();
+    setAdminView('calendar');
+    loadAdminView();
+  }
+}
+
+// 서버 관리자 뷰: 달력 / 나열식 토글
+function setAdminView(which) {
+  document.querySelectorAll('.admin-view-btn').forEach(b => {
+    const active = b.dataset.adminView === which;
+    b.classList.toggle('bg-white', active);
+    b.classList.toggle('text-gray-900', active);
+    b.classList.toggle('shadow', active);
+    b.classList.toggle('text-gray-500', !active);
+  });
+  document.querySelectorAll('.admin-view').forEach(el => el.classList.add('hidden'));
+  $(`admin-view-${which}`).classList.remove('hidden');
+}
+
+// 현재 선택 월의 일지를 달력 + 리스트 양쪽에 렌더
+async function loadAdminView() {
+  const ym = $('admin-cal-month').value || currentYM();
+  $('admin-cal-month').value = ym;
+  const [y, m] = ym.split('-').map(Number);
+
+  // 달력 — loadCalendar(prefix) 재사용하되, 클릭 시 프리뷰 대신 삭제 플로우.
+  await loadCalendar('admin-cal');
+  // 셀 클릭을 삭제로 재바인딩
+  document.querySelectorAll('#admin-cal-grid .cal-cell').forEach(cell => {
+    if (cell.onclick) {
+      // 상태가 있는 셀(작성/제출/승인)만 삭제 가능 — onclick이 원래 openPreview였음
+      const txt = cell.querySelector('span')?.innerText || '';
+      const day = parseInt(txt, 10);
+      if (!day) return;
+      const dateStr = `${y}-${pad(m)}-${pad(day)}`;
+      cell.onclick = () => adminConfirmDelete([dateStr]);
+      cell.title = '클릭해 이 날짜 일지 삭제';
+    }
+  });
+
+  // 나열식 — 월 범위의 journal 전부 조회
+  let items = [];
+  try {
+    await waitForBap();
+    items = await fsQuery(JOURNAL_COLL,
+      db().where('date', '>=', `${y}-${pad(m)}-01`),
+      db().where('date', '<=', `${y}-${pad(m)}-31`)
+    );
+  } catch(e) { console.warn(e); items = []; }
+  items.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  $('admin-list-summary').innerText = `${y}년 ${m}월 · ${items.length}건`;
+  const listEl = $('admin-list');
+  if (!items.length) {
+    listEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-6">이 달에 저장된 일지가 없습니다.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(it => {
+    const status = it.status || '';
+    const badge = status === 'approved'
+      ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">결재완료</span>'
+      : status === 'submitted'
+        ? '<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">결재대기</span>'
+        : '<span class="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">작성중</span>';
+    const submittedAt = it.submittedAt ? new Date(it.submittedAt).toLocaleString('ko-KR') : '-';
+    const approvedAt  = it.approvedAt  ? new Date(it.approvedAt).toLocaleString('ko-KR')  : '';
+    return `<div class="flex items-center gap-2 py-2 flex-wrap">
+      <input type="checkbox" class="admin-check" data-date="${esc(it.date)}">
+      <span class="font-mono text-xs text-gray-700 w-24">${esc(it.date || '')}</span>
+      ${badge}
+      <span class="text-xs text-gray-700">담당 ${esc(it.managerName || '-')}</span>
+      ${it.bossName ? `<span class="text-xs text-gray-500">· 결재 ${esc(it.bossName)}</span>` : ''}
+      <span class="text-[10px] text-gray-400 ml-auto">제출 ${submittedAt}${approvedAt ? ` · 승인 ${approvedAt}` : ''}</span>
+      <button type="button" class="text-xs bg-white border border-red-300 text-red-700 font-bold px-2 py-1 rounded-lg" data-action="admin-row-preview" data-date="${esc(it.date)}">미리보기</button>
+      <button type="button" class="text-xs bg-red-600 active:bg-red-700 text-white font-bold px-2 py-1 rounded-lg" data-action="admin-row-delete" data-date="${esc(it.date)}">삭제</button>
+    </div>`;
+  }).join('');
+}
+
+async function adminConfirmDelete(dates) {
+  if (!dates || !dates.length) return alert('삭제할 항목이 없습니다.');
+  const msg = dates.length === 1
+    ? `${dates[0]} 일지를 영구 삭제합니다. 되돌릴 수 없습니다. 계속할까요?`
+    : `선택한 ${dates.length}건의 일지를 영구 삭제합니다. 되돌릴 수 없습니다. 계속할까요?`;
+  if (!confirm(msg)) return;
+  showLoading('삭제 중...');
+  try {
+    await waitForBap();
+    const { db: firestore, deleteDoc: delFn, doc: docFn } = db();
+    for (const d of dates) {
+      await delFn(docFn(firestore, JOURNAL_COLL, d));
+    }
+    hideLoading();
+    await loadAdminView();
+  } catch (e) {
+    hideLoading();
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function adminBulkDelete() {
+  const dates = Array.from(document.querySelectorAll('.admin-check:checked')).map(el => el.dataset.date);
+  adminConfirmDelete(dates);
+}
+
+async function adminShiftMonth(dir) {
+  const el = $('admin-cal-month');
+  const d = el.value ? new Date(el.value + '-01') : new Date();
+  d.setMonth(d.getMonth() + dir);
+  el.value = d.getFullYear() + '-' + pad(d.getMonth()+1);
+  await loadAdminView();
 }
 
 // ═══════════════════════════════════════════════
