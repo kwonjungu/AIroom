@@ -3,8 +3,10 @@
 (function (global) {
     'use strict';
 
-    // 인트로 누수("Here is the translation:" 등) — 다국어
-    const INTRO_RE = /^\s*(here\s+is|here'?s|the\s+translation|translation|번역|译文|翻译|перевод|traduction|traducción|traduzione)\s*[:：\-—]?\s*/i;
+    // 인트로 누수("Here is the translation:", "Here's the translation -", "번역:" 등) — 다국어
+    // 두 부분으로 분리: (1) "Here is/Here's" 류 prefix (선택)
+    //                  (2) "the translation/translation/번역" 등 핵심
+    const INTRO_RE = /^\s*(?:(?:here\s+is|here'?s|here\s+are|below\s+is|below\s+are)\s+)?(?:the\s+translations?|translations?|번역(?:문)?|译文|翻译|перевод|traductions?|traducciones?|traduzioni?)\s*[:：\-—]?\s*/i;
 
     // 마크다운 코드블록/볼드/인라인코드/큐트
     const CODE_FENCE_RE = /^```[\s\S]*?```$/m;

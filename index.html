@@ -744,6 +744,11 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <!-- 번역기 헬퍼 (PDF/HWPX/HWP 공용) — JSZip 이후에 로드되어야 함 -->
+    <script src="/lib/translate-quality.js"></script>
+    <script src="/lib/translate-autofit.js"></script>
+    <script src="/lib/translate-hwpx.js"></script>
+    <script src="/lib/translate-hwp.js"></script>
     <style>
         /* ===== Auth Gate ===== */
         .auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#4A90D9 0%,#6C5CE7 100%);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s;}
@@ -1084,15 +1089,21 @@
     <div class="page" id="page-translator">
         <div style="text-align:center;margin-bottom:16px;">
             <h2 style="font-size:22px;font-weight:800;margin:0;">🌐 가정통신문 번역기</h2>
-            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">PDF 가정통신문을 업로드하면, 원본 양식을 유지한 채 다국어로 번역합니다.</p>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">PDF · HWPX · HWP 가정통신문을 업로드하면, 원본 양식을 유지한 채 다국어로 번역합니다.</p>
         </div>
 
         <!-- 업로드 영역 -->
         <div id="translatorUploadArea" class="translator-upload-area" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');handleTranslatorDrop(event)">
             <div class="translator-upload-icon">📄</div>
-            <div class="translator-upload-text">PDF 가정통신문을 여기에 드래그하거나 클릭하세요</div>
-            <div class="translator-upload-hint">PDF 파일만 지원 · 파일은 서버로 전송되지 않습니다 (번역 텍스트만 전송)</div>
-            <input type="file" accept=".pdf,application/pdf" onchange="handleTranslatorFile(this.files[0])">
+            <div class="translator-upload-text">PDF · HWPX · HWP 파일을 여기에 드래그하거나 클릭하세요</div>
+            <div class="translator-upload-hint">PDF/HWPX/HWP 지원 · 파일은 서버로 전송되지 않습니다 (번역 텍스트만 전송)</div>
+            <input type="file" accept=".pdf,.hwpx,.hwp,application/pdf" onchange="handleTranslatorFile(this.files[0])">
+        </div>
+
+        <!-- HWPX/HWP 미리보기 (텍스트 리스트) -->
+        <div id="translatorDocPreview" style="display:none;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px;max-height:380px;overflow-y:auto;">
+            <div id="translatorDocSummary" style="font-size:12px;color:var(--text-light);margin-bottom:10px;"></div>
+            <div id="translatorDocTexts" style="font-size:13px;line-height:1.6;"></div>
         </div>
 
         <!-- 파일 정보 (업로드 후) -->
@@ -1118,6 +1129,7 @@
             <button class="translator-btn translator-btn-primary" id="translatorStartBtn" onclick="startTranslation()" disabled>🔄 번역 시작</button>
             <button class="translator-btn translator-btn-secondary" id="translatorToggleBtn" onclick="toggleTranslation()" style="display:none;">👁️ 번역 숨기기</button>
             <button class="translator-btn translator-btn-secondary" id="translatorSaveBtn" onclick="saveTranslationAsPdf()" style="display:none;">💾 PDF로 저장</button>
+            <button class="translator-btn translator-btn-secondary" id="translatorSaveDocBtn" onclick="saveTranslatedDoc()" style="display:none;">💾 번역본 다운로드</button>
         </div>
 
         <!-- 진행률 -->
@@ -6454,14 +6466,23 @@ async function pdfScan(){
 }
 
 // ===== 가정통신문 번역기 =====
+// docMode: 'pdf' (오버레이 렌더링) | 'hwpx' | 'hwp' (텍스트 리스트 + 파일 저장)
 let transState = {
+    docMode: null,
     pdf: null,
     pages: [],       // {canvas, textItems, viewport}
     blocks: [],      // grouped text blocks per page
     translated: [],  // translated blocks per page
     targetLang: null,
     overlayVisible: true,
-    currentPage: 0
+    currentPage: 0,
+    // HWPX/HWP 전용
+    docFile: null,           // 원본 File
+    docArrayBuffer: null,    // 원본 ArrayBuffer
+    hwpxData: null,          // TranslateHwpx.extract 결과 (HWPX 모드)
+    hwpData: null,           // TranslateHwp.extract 결과 (HWP 모드)
+    uniqueTexts: [],         // dedup된 번역 대상
+    translationMap: null     // Map<원문, 번역문> (번역 후 채워짐)
 };
 
 function initTranslator() {
@@ -6474,7 +6495,12 @@ function handleTranslatorDrop(e) {
 }
 
 function resetTranslator() {
-    transState = { pdf: null, pages: [], blocks: [], translated: [], targetLang: null, overlayVisible: true, currentPage: 0 };
+    transState = {
+        docMode: null, pdf: null, pages: [], blocks: [], translated: [],
+        targetLang: null, overlayVisible: true, currentPage: 0,
+        docFile: null, docArrayBuffer: null, hwpxData: null, hwpData: null,
+        uniqueTexts: [], translationMap: null
+    };
     document.getElementById('translatorUploadArea').style.display = '';
     document.getElementById('translatorFileInfo').style.display = 'none';
     document.getElementById('translatorLangBar').style.display = 'none';
@@ -6485,14 +6511,34 @@ function resetTranslator() {
     document.getElementById('translatorViewer').innerHTML = '';
     document.getElementById('translatorToggleBtn').style.display = 'none';
     document.getElementById('translatorSaveBtn').style.display = 'none';
+    const saveDocBtn = document.getElementById('translatorSaveDocBtn');
+    if (saveDocBtn) saveDocBtn.style.display = 'none';
+    const docPrev = document.getElementById('translatorDocPreview');
+    if (docPrev) { docPrev.style.display = 'none'; docPrev.querySelector('#translatorDocTexts').innerHTML = ''; }
     document.getElementById('translatorStartBtn').disabled = true;
 }
 
+// 디스패처: 확장자/시그니처로 PDF/HWPX/HWP 분기
 async function handleTranslatorFile(file) {
-    if (!file || file.type !== 'application/pdf') { showToast('PDF 파일만 업로드 가능합니다', 'error'); return; }
+    if (!file) return;
+    const name = (file.name || '').toLowerCase();
+    if (name.endsWith('.pdf') || file.type === 'application/pdf') {
+        return handleTranslatorPdf(file);
+    }
+    if (name.endsWith('.hwpx')) {
+        return handleTranslatorHwpx(file);
+    }
+    if (name.endsWith('.hwp')) {
+        return handleTranslatorHwp(file);
+    }
+    showToast('지원하지 않는 파일 형식입니다 (PDF/HWPX/HWP만 가능)', 'error');
+}
+
+async function handleTranslatorPdf(file) {
     const arrayBuffer = await file.arrayBuffer();
     try {
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer), cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/', cMapPacked: true }).promise;
+        transState.docMode = 'pdf';
         transState.pdf = pdf;
         transState.pages = [];
         transState.blocks = [];
@@ -6656,8 +6702,17 @@ function selectTransLang(lang, btn) {
     document.getElementById('translatorStartBtn').disabled = false;
 }
 
+// 디스패처: docMode에 따라 분기
 async function startTranslation() {
-    if (!transState.targetLang || !transState.blocks.length) return;
+    if (!transState.targetLang) { showToast('언어를 선택하세요', 'error'); return; }
+    if (transState.docMode === 'hwpx' || transState.docMode === 'hwp') {
+        return startDocTranslation();
+    }
+    return startPdfTranslation();
+}
+
+async function startPdfTranslation() {
+    if (!transState.blocks.length) return;
     const startBtn = document.getElementById('translatorStartBtn');
     startBtn.disabled = true;
     startBtn.innerHTML = '⏳ 번역 중...';
@@ -6796,6 +6851,288 @@ function scrollToTransPage(idx) {
             b.classList.toggle('active', i === idx);
         });
     }
+}
+
+// ===== HWPX/HWP 핸들러 =====
+//
+// HWPX는 가벼운 경로(JSZip + 정규식). HWP 5.0은 rhwp WASM 경로.
+// 양쪽 모두 추출된 텍스트 리스트를 미리보기로 띄우고, transState.uniqueTexts에 저장.
+
+async function handleTranslatorHwpx(file) {
+    if (typeof JSZip === 'undefined' || !window.TranslateHwpx) {
+        showToast('번역 라이브러리 로드 실패. 새로고침 후 다시 시도하세요.', 'error');
+        return;
+    }
+    try {
+        showToast('HWPX 분석 중...', 'info');
+        const buf = await file.arrayBuffer();
+        const data = await window.TranslateHwpx.extract(buf);
+        if (!data.uniqueTexts.length) {
+            showToast('번역할 텍스트를 찾지 못했습니다', 'error');
+            return;
+        }
+        transState.docMode = 'hwpx';
+        transState.docFile = file;
+        transState.docArrayBuffer = buf;
+        transState.hwpxData = data;
+        transState.uniqueTexts = data.uniqueTexts;
+        showDocPreview(file, data.uniqueTexts, data.entries.length);
+        showToast(`HWPX 로드 완료 — 고유 텍스트 ${data.uniqueTexts.length}개`, 'success');
+    } catch (e) {
+        console.error('[handleTranslatorHwpx]', e);
+        showToast('HWPX 로드 실패: ' + e.message, 'error');
+    }
+}
+
+async function handleTranslatorHwp(file) {
+    if (!window.TranslateHwp) {
+        showToast('HWP 라이브러리 로드 실패. 새로고침 후 다시 시도하세요.', 'error');
+        return;
+    }
+    try {
+        showToast('HWP 엔진 로드 중... (최초 1회 약 4MB 다운로드)', 'info');
+        const buf = await file.arrayBuffer();
+        const data = await window.TranslateHwp.extract(buf);
+        if (!data.uniqueTexts.length) {
+            showToast('번역할 텍스트를 찾지 못했습니다', 'error');
+            return;
+        }
+        transState.docMode = 'hwp';
+        transState.docFile = file;
+        transState.docArrayBuffer = buf;
+        transState.hwpData = data;
+        transState.uniqueTexts = data.uniqueTexts;
+        showDocPreview(file, data.uniqueTexts, data.uniqueTexts.length);
+        showToast(`HWP 로드 완료 — 고유 텍스트 ${data.uniqueTexts.length}개`, 'success');
+    } catch (e) {
+        console.error('[handleTranslatorHwp]', e);
+        showToast('HWP 로드 실패: ' + e.message, 'error');
+    }
+}
+
+function showDocPreview(file, uniqueTexts, totalEntries) {
+    document.getElementById('translatorUploadArea').style.display = 'none';
+    document.getElementById('translatorFileInfo').style.display = 'flex';
+    document.getElementById('translatorFileName').textContent = file.name;
+    document.getElementById('translatorPageCount').textContent =
+        `텍스트 ${uniqueTexts.length}개 (총 ${totalEntries}건 중 중복 제외)`;
+    document.getElementById('translatorLangBar').style.display = 'flex';
+    document.getElementById('translatorControls').style.display = 'flex';
+
+    const prev = document.getElementById('translatorDocPreview');
+    const txts = document.getElementById('translatorDocTexts');
+    const summary = document.getElementById('translatorDocSummary');
+    summary.textContent = `📄 추출된 텍스트 미리보기 (최대 50건)`;
+    txts.innerHTML = uniqueTexts.slice(0, 50).map((t, i) =>
+        `<div style="padding:6px 8px;border-bottom:1px solid var(--border);"><span style="color:var(--text-light);font-size:11px;">[${i + 1}]</span> ${escapeHtml(t)}</div>`
+    ).join('') + (uniqueTexts.length > 50 ? `<div style="padding:6px 8px;color:var(--text-light);font-size:12px;">... 외 ${uniqueTexts.length - 50}개 더</div>` : '');
+    prev.style.display = 'block';
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// HWPX/HWP 통합 번역 흐름
+//
+// 1) uniqueTexts 중 번역 불필요 항목(숫자/URL 등) 제외
+// 2) BATCH=20 청크로 /api/translate 호출 (기존 라우트, Groq 폴백·다중키 그대로)
+// 3) 응답 텍스트 cleanTranslation으로 정리, validateTranslation으로 검사
+// 4) 검증 실패 항목은 원문 유지
+// 5) translationMap 완성 → docMode에 따라 치환·오토핏·저장 준비
+async function startDocTranslation() {
+    const startBtn = document.getElementById('translatorStartBtn');
+    const progress = document.getElementById('translatorProgress');
+    const fill = document.getElementById('translatorProgressFill');
+    const text = document.getElementById('translatorProgressText');
+
+    startBtn.disabled = true;
+    startBtn.innerHTML = '⏳ 번역 중...';
+    progress.style.display = 'block';
+
+    const TQ = window.TranslateQuality || {};
+    const allTexts = transState.uniqueTexts;
+
+    // (1) 번역 불필요 항목 분리
+    const toTranslate = [];
+    const toTranslateIdx = [];
+    const skipMap = new Map();
+    for (let i = 0; i < allTexts.length; i++) {
+        const t = allTexts[i];
+        if (TQ.isUntranslatable && TQ.isUntranslatable(t)) {
+            skipMap.set(t, t);
+        } else {
+            toTranslate.push(t);
+            toTranslateIdx.push(i);
+        }
+    }
+
+    if (!toTranslate.length) {
+        showToast('번역할 텍스트가 없습니다 (모두 숫자/URL 등)', 'info');
+        startBtn.disabled = false;
+        startBtn.innerHTML = '🔄 번역 시작';
+        return;
+    }
+
+    text.textContent = `${toTranslate.length}개 텍스트 번역 중...`;
+    fill.style.width = '5%';
+
+    // (2) 청크 호출
+    const BATCH = 20;
+    const translated = new Array(toTranslate.length);
+    try {
+        for (let start = 0; start < toTranslate.length; start += BATCH) {
+            const batch = toTranslate.slice(start, start + BATCH);
+            const pct = Math.round(5 + 85 * (start / toTranslate.length));
+            fill.style.width = pct + '%';
+            text.textContent = `번역 중... (${Math.min(start + BATCH, toTranslate.length)}/${toTranslate.length})`;
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['X-Auth-Token'] = authToken;
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    blocks: batch.map(t => ({ text: t })),
+                    targetLang: transState.targetLang
+                })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `번역 API ${res.status}`);
+            }
+            const data = await res.json();
+            for (let j = 0; j < batch.length; j++) {
+                let raw = data.translations[j]?.translated || batch[j];
+                // (3) 정리
+                if (TQ.cleanTranslation) raw = TQ.cleanTranslation(raw);
+                // (4) 검증 — 실패 시 원문 유지
+                let pass = true;
+                if (TQ.validateTranslation) {
+                    const v = TQ.validateTranslation(batch[j], raw);
+                    pass = v.ok;
+                    if (!pass) console.warn('[translate-validate] 실패:', v.reason, batch[j].slice(0, 30));
+                }
+                translated[start + j] = pass ? raw : batch[j];
+            }
+        }
+
+        // (5) translationMap 조립
+        const map = new Map();
+        for (let i = 0; i < toTranslate.length; i++) {
+            map.set(toTranslate[i], translated[i]);
+        }
+        for (const [k, v] of skipMap) map.set(k, v);
+        transState.translationMap = map;
+
+        fill.style.width = '100%';
+        text.textContent = '번역 완료! "번역본 다운로드" 버튼을 누르세요.';
+        startBtn.innerHTML = '🔄 번역 시작';
+        startBtn.disabled = false;
+
+        const saveDocBtn = document.getElementById('translatorSaveDocBtn');
+        if (saveDocBtn) saveDocBtn.style.display = '';
+
+        // 미리보기에 번역 결과 추가 표시
+        const txts = document.getElementById('translatorDocTexts');
+        if (txts) {
+            txts.innerHTML = transState.uniqueTexts.slice(0, 50).map((t, i) => {
+                const tr = map.get(t) || '';
+                const same = tr === t;
+                return `<div style="padding:6px 8px;border-bottom:1px solid var(--border);">
+                    <div><span style="color:var(--text-light);font-size:11px;">[${i + 1}]</span> ${escapeHtml(t)}</div>
+                    ${same ? '' : `<div style="color:var(--primary);margin-top:2px;font-size:12px;">→ ${escapeHtml(tr)}</div>`}
+                </div>`;
+            }).join('');
+        }
+
+        // 배치 합격률 표시
+        if (TQ.batchValidity) {
+            const validity = TQ.batchValidity(toTranslate, translated);
+            console.log(`[translate] 합격률 ${(validity * 100).toFixed(1)}%`);
+        }
+
+        showToast('번역 완료! 다운로드 버튼을 누르세요.', 'success');
+    } catch (e) {
+        console.error('[startDocTranslation]', e);
+        showToast('번역 오류: ' + e.message, 'error');
+        startBtn.innerHTML = '🔄 번역 시작';
+        startBtn.disabled = false;
+    }
+
+    setTimeout(() => { progress.style.display = 'none'; }, 2000);
+}
+
+// HWPX/HWP 번역본 다운로드
+async function saveTranslatedDoc() {
+    if (!transState.translationMap) { showToast('번역을 먼저 실행하세요', 'error'); return; }
+
+    const baseName = (transState.docFile.name || 'document').replace(/\.(hwpx?|HWPX?)$/i, '');
+    const lang = transState.targetLang;
+
+    try {
+        if (transState.docMode === 'hwpx') {
+            await saveHwpx(baseName, lang);
+        } else if (transState.docMode === 'hwp') {
+            await saveHwp(baseName, lang);
+        }
+    } catch (e) {
+        console.error('[saveTranslatedDoc]', e);
+        showToast('다운로드 실패: ' + e.message, 'error');
+    }
+}
+
+async function saveHwpx(baseName, lang) {
+    const TH = window.TranslateHwpx;
+    const TA = window.TranslateAutofit;
+
+    showToast('HWPX 재조립 중...', 'info');
+
+    // 오토필 — p90 ratio로 헤더 폰트/줄간격 일괄 스케일
+    const originals = transState.uniqueTexts;
+    const translations = originals.map(t => transState.translationMap.get(t) || t);
+    const p90 = TA.p90Ratio(originals, translations);
+    console.log(`[autofit] p90 ratio = ${p90.toFixed(3)}, fontScale = ${TA.fontScaleFromRatio(p90).toFixed(3)}`);
+
+    let headerXml = transState.hwpxData.headerXml || '';
+    if (headerXml) {
+        headerXml = TA.scaleHeaderXml(headerXml, p90);
+        // 다국어 폰트 깨짐 방지 — 비CJK 언어로 번역 시 함초롱바탕으로 통일
+        if (lang && lang !== 'ko') headerXml = TA.unifyFontsHwpx(headerXml, '함초롱바탕');
+    }
+
+    // 텍스트 노드 치환
+    TH.applyReplacements(transState.hwpxData, transState.translationMap, { headerXml });
+
+    // 직렬화 (STORE/DEFLATE 규칙 보존)
+    const blob = await TH.serialize(transState.hwpxData.zip);
+    triggerDownload(blob, `${baseName}_${lang}.hwpx`);
+    showToast('HWPX 다운로드 완료', 'success');
+}
+
+async function saveHwp(baseName, lang) {
+    const TH = window.TranslateHwp;
+    showToast('HWP 재조립 중...', 'info');
+
+    const replaced = await TH.applyReplacements(transState.hwpData.doc, transState.translationMap);
+    console.log(`[translate-hwp] ${replaced}건 치환`);
+
+    const u8 = TH.serialize(transState.hwpData.doc, transState.hwpData.format);
+    const ext = transState.hwpData.format === 'hwp' ? 'hwp' : 'hwpx';
+    const blob = new Blob([u8], { type: 'application/octet-stream' });
+    triggerDownload(blob, `${baseName}_${lang}.${ext}`);
+    showToast('HWP 다운로드 완료', 'success');
+}
+
+function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
 }
 
 async function saveTranslationAsPdf() {
