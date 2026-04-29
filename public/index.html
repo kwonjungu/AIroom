@@ -5534,7 +5534,7 @@ function openPdfTool(toolId){
     if(toolId==='img2pdf') optionsHtml=`<div class="pdf-options"><label>페이지 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">방향</label><select id="pdfPageOrientation"><option value="portrait">세로 (Portrait)</option><option value="landscape">가로 (Landscape)</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">여백</label><select id="pdfPageMargin"><option value="0">없음</option><option value="20" selected>작게</option><option value="40">보통</option></select></div></div></div>`;
     if(toolId==='pdf2img') optionsHtml=`<div class="pdf-options"><label>변환 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">형식</label><select id="pdfImgFormat"><option value="jpeg" selected>JPG</option><option value="png">PNG</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">해상도</label><select id="pdfImgScale"><option value="1">보통 (1x)</option><option value="2" selected>높음 (2x)</option><option value="3">매우 높음 (3x)</option></select></div></div></div>`;
     if(toolId==='rotate') optionsHtml=`<div class="pdf-options"><label>회전 방법</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 각 페이지를 클릭해 회전하세요.</p><div class="pdf-option-row"><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(90)" style="padding:8px 16px;font-size:12px;">전체 90° →</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(180)" style="padding:8px 16px;font-size:12px;">전체 180°</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(270)" style="padding:8px 16px;font-size:12px;">전체 270° ←</button></div></div>`;
-    if(toolId==='pagenumber') optionsHtml=`<div class="pdf-options"><label>번호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">위치</label><select id="pdfNumPosition"><option value="bottom-center" selected>하단 중앙</option><option value="bottom-left">하단 왼쪽</option><option value="bottom-right">하단 오른쪽</option><option value="top-center">상단 중앙</option><option value="top-left">상단 왼쪽</option><option value="top-right">상단 오른쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">시작 번호</label><input type="number" id="pdfNumStart" value="1" min="1" style="width:80px;"></div><div class="pdf-option-group"><label style="font-size:12px;">크기</label><select id="pdfNumSize"><option value="10">작게</option><option value="12" selected>보통</option><option value="14">크게</option></select></div></div></div>`;
+    if(toolId==='pagenumber') optionsHtml=`<div class="pdf-options"><label>번호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">위치</label><select id="pdfNumPosition"><option value="bottom-center" selected>하단 중앙</option><option value="bottom-left">하단 왼쪽</option><option value="bottom-right">하단 오른쪽</option><option value="top-center">상단 중앙</option><option value="top-left">상단 왼쪽</option><option value="top-right">상단 오른쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">형식</label><select id="pdfNumFormat"><option value="num" selected>1</option><option value="num-of-total">1 / N</option><option value="page-num">Page 1</option><option value="kr-page">페이지 1</option><option value="kr-zzok">1쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">시작 번호</label><input type="number" id="pdfNumStart" value="1" min="1" style="width:80px;"></div><div class="pdf-option-group"><label style="font-size:12px;">크기</label><select id="pdfNumSize"><option value="10">작게</option><option value="12" selected>보통</option><option value="14">크게</option></select></div></div><p style="font-size:11px;color:var(--text-light);margin:6px 0 0;">💡 한국어 형식("페이지 1", "1쪽")을 선택하면 한 번만 한글 폰트(~1MB)를 다운로드합니다.</p></div>`;
     if(toolId==='scan') optionsHtml=`
     <div id="scanEditorArea" style="display:none;margin-top:16px;">
         <!-- STEP 1: 영역 선택 -->
@@ -5719,38 +5719,88 @@ function movePdfFile(i,dir){
     renderPdfFiles();
 }
 
+// 미리보기 — 페이지 50개 이상이면 IntersectionObserver로 lazy 렌더
+// (모든 페이지 한 번에 렌더하면 모바일 OOM + 첫 진입 지연)
+let pdfPreviewObserver=null;
+let pdfPreviewPdfRef=null; // lazy 렌더에서 재사용
 async function renderPdfPreview(){
     const grid=document.getElementById('pdfPreviewGrid');
     if(!grid||pdfToolFiles.length===0)return;
+    if(pdfPreviewObserver){pdfPreviewObserver.disconnect();pdfPreviewObserver=null;}
     grid.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-light);">미리보기 생성 중...</div>';
     const f=pdfToolFiles[0];
     try{
         const pdf=await pdfjsLib.getDocument({data:new Uint8Array(f.data)}).promise;
-        let html='';
-        for(let p=1;p<=pdf.numPages;p++){
-            const page=await pdf.getPage(p);
-            const vp=page.getViewport({scale:0.5});
-            const canvas=document.createElement('canvas');
-            canvas.width=vp.width;canvas.height=vp.height;
-            await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
-            const img=canvas.toDataURL('image/jpeg',0.7);
+        pdfPreviewPdfRef=pdf;
+        const numPages=pdf.numPages;
+        const lazy=numPages>=50;
+
+        // 카드 골격을 한 번에 만든 뒤, lazy면 보이는 것만 렌더
+        const cards=[];
+        for(let p=1;p<=numPages;p++){
             const selected=pdfToolCurrent==='split'?pdfSelectedPages.has(p):false;
             const rotation=pdfPageRotations[p]||0;
+            const placeholder=`<div style="aspect-ratio:1/1.41;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;">로딩...</div>`;
             if(pdfToolCurrent==='split'){
-                html+=`<div class="pdf-preview-page ${selected?'selected':''}" onclick="togglePdfPage(${p},this)">
-                    <img src="${img}" style="width:100%;display:block;">
+                cards.push(`<div class="pdf-preview-page ${selected?'selected':''}" data-page="${p}" onclick="togglePdfPage(${p},this)">
+                    ${placeholder}
                     <div class="page-num">페이지 ${p}</div>
                     <div class="page-check">✓</div>
-                </div>`;
+                </div>`);
             } else if(pdfToolCurrent==='rotate'){
-                html+=`<div class="pdf-preview-page" onclick="rotatePdfPage(${p},this)" style="cursor:pointer;" title="클릭해서 90° 회전">
-                    <img src="${img}" style="width:100%;display:block;transform:rotate(${rotation}deg);transition:transform .3s;" id="pdfRotImg${p}">
+                cards.push(`<div class="pdf-preview-page" data-page="${p}" onclick="rotatePdfPage(${p},this)" style="cursor:pointer;" title="클릭해서 90° 회전">
+                    ${placeholder}
                     <div class="page-num">페이지 ${p} ${rotation?'('+rotation+'°)':''}</div>
-                </div>`;
+                </div>`);
             }
         }
-        grid.innerHTML=html;
+        grid.innerHTML=cards.join('');
+
+        if(lazy){
+            // 보이는 카드부터 페이지 렌더
+            pdfPreviewObserver=new IntersectionObserver(async (entries)=>{
+                for(const entry of entries){
+                    if(!entry.isIntersecting)continue;
+                    const el=entry.target;
+                    const p=parseInt(el.dataset.page);
+                    if(!p||el.dataset.rendered)continue;
+                    el.dataset.rendered='1';
+                    pdfPreviewObserver.unobserve(el);
+                    await renderPdfPreviewPage(p,el);
+                }
+            },{rootMargin:'200px'});
+            grid.querySelectorAll('.pdf-preview-page').forEach(el=>pdfPreviewObserver.observe(el));
+        } else {
+            // 50페이지 미만: 즉시 전부 렌더
+            for(const el of grid.querySelectorAll('.pdf-preview-page')){
+                const p=parseInt(el.dataset.page);
+                el.dataset.rendered='1';
+                await renderPdfPreviewPage(p,el);
+            }
+        }
     }catch(e){grid.innerHTML=`<div style="color:#e53935;padding:16px;">미리보기 생성 실패: ${e.message}</div>`;}
+}
+
+async function renderPdfPreviewPage(p,cardEl){
+    if(!pdfPreviewPdfRef)return;
+    try{
+        const page=await pdfPreviewPdfRef.getPage(p);
+        const vp=page.getViewport({scale:0.5});
+        const canvas=document.createElement('canvas');
+        canvas.width=vp.width;canvas.height=vp.height;
+        await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+        const img=canvas.toDataURL('image/jpeg',0.7);
+        const placeholder=cardEl.firstElementChild;
+        const rotation=pdfPageRotations[p]||0;
+        const imgHtml=pdfToolCurrent==='rotate'
+            ? `<img src="${img}" style="width:100%;display:block;transform:rotate(${rotation}deg);transition:transform .3s;" id="pdfRotImg${p}">`
+            : `<img src="${img}" style="width:100%;display:block;">`;
+        if(placeholder){
+            const tmp=document.createElement('div');
+            tmp.innerHTML=imgHtml;
+            placeholder.replaceWith(tmp.firstElementChild);
+        }
+    }catch(e){console.warn('[pdf-preview] page',p,'render fail:',e.message);}
 }
 
 function togglePdfPage(p,el){
@@ -6010,19 +6060,78 @@ async function pdfRotate(){
 }
 
 // ===== 페이지 번호 삽입 =====
+//
+// 한글 형식("페이지 N", "N쪽") 선택 시 fontkit + Pretendard OTF 동적 로드.
+// pdf-lib의 StandardFonts.Helvetica는 한글 글리프가 없어서 그냥 쓰면 깨짐.
+// 폰트 다운로드 실패 시 사용자에게 알리고 숫자만으로 폴백.
+
+let _cachedKoreanFontBytes=null;
+async function ensureKoreanFont(doc){
+    // 1) fontkit UMD 로드 (1회)
+    if(!window.fontkit){
+        await new Promise((res,rej)=>{
+            const s=document.createElement('script');
+            s.src='https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js';
+            s.onload=res;
+            s.onerror=()=>rej(new Error('fontkit 스크립트 로드 실패'));
+            document.head.appendChild(s);
+        });
+        if(!window.fontkit) throw new Error('fontkit 글로벌 미발견');
+    }
+    doc.registerFontkit(window.fontkit);
+
+    // 2) 폰트 바이트 캐시 (다시 다운로드 안 함)
+    if(!_cachedKoreanFontBytes){
+        // Pretendard OTF (OFL 라이선스, 한글 + 라틴 통합, 약 1MB)
+        const url='https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.otf';
+        const res=await fetch(url);
+        if(!res.ok) throw new Error('한글 폰트 다운로드 실패: HTTP '+res.status);
+        _cachedKoreanFontBytes=await res.arrayBuffer();
+    }
+    return await doc.embedFont(_cachedKoreanFontBytes);
+}
+
 async function pdfPageNumber(){
     pdfShowProgress(10,'페이지 번호 삽입 중...');
     const position=document.getElementById('pdfNumPosition')?.value||'bottom-center';
+    const format=document.getElementById('pdfNumFormat')?.value||'num';
     const startNum=parseInt(document.getElementById('pdfNumStart')?.value||'1');
     const fontSize=parseInt(document.getElementById('pdfNumSize')?.value||'12');
     const doc=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
-    const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    const isKorean=format==='kr-page'||format==='kr-zzok';
+    let font;
+    let fellbackToNumOnly=false;
+    if(isKorean){
+        try{
+            pdfShowProgress(15,'한글 폰트 로드 중...');
+            font=await ensureKoreanFont(doc);
+        }catch(e){
+            console.warn('[pdfPageNumber] 한글 폰트 실패:',e);
+            showToast('한글 폰트 로드 실패 — 숫자만 표시합니다 ('+e.message+')','error');
+            font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+            fellbackToNumOnly=true;
+        }
+    } else {
+        font=await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+    }
+
     const pages=doc.getPages();
+    const total=pages.length;
     for(let i=0;i<pages.length;i++){
-        pdfShowProgress(10+80*(i/pages.length),'페이지 '+(i+1)+' 처리 중...');
+        pdfShowProgress(20+70*(i/pages.length),'페이지 '+(i+1)+' 처리 중...');
         const page=pages[i];
         const {width,height}=page.getSize();
-        const numText=String(startNum+i);
+        const n=startNum+i;
+        let numText;
+        if(fellbackToNumOnly) numText=String(n);
+        else switch(format){
+            case 'num-of-total': numText=`${n} / ${total}`; break;
+            case 'page-num': numText=`Page ${n}`; break;
+            case 'kr-page': numText=`페이지 ${n}`; break;
+            case 'kr-zzok': numText=`${n}쪽`; break;
+            default: numText=String(n);
+        }
         const textWidth=font.widthOfTextAtSize(numText,fontSize);
         let x,y;
         const [posV,posH]=position.split('-');
