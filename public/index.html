@@ -1129,11 +1129,6 @@
                     <h3>PDF 회전</h3><p>페이지별로 90°, 180°, 270° 회전합니다.</p>
                     <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#00897b;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
                 </div>
-                <div class="pdf-tool-card" onclick="openPdfTool('protect')">
-                    <div class="pdf-tool-icon" style="background:#5c6bc0;">🔒</div>
-                    <h3>PDF 보호</h3><p>PDF에 암호를 설정해 무단 접근을 방지합니다.</p>
-                    <div class="card-top-bar" style="position:absolute;top:0;left:0;right:0;height:4px;background:#5c6bc0;border-radius:14px 14px 0 0;opacity:0;transition:opacity .25s;"></div>
-                </div>
                 <div class="pdf-tool-card" onclick="openPdfTool('pagenumber')">
                     <div class="pdf-tool-icon" style="background:#6d4c41;">🔢</div>
                     <h3>페이지 번호</h3><p>PDF 각 페이지에 번호를 자동으로 삽입합니다.</p>
@@ -5517,7 +5512,6 @@ const PDF_TOOLS={
     img2pdf:{title:'이미지 → PDF',icon:'🖼️',color:'#fb8c00',accept:'image/*',multi:true,desc:'변환할 이미지를 선택하세요 (JPG, PNG)'},
     pdf2img:{title:'PDF → 이미지',icon:'📷',color:'#8e24aa',accept:'.pdf',multi:false,desc:'이미지로 변환할 PDF를 선택하세요'},
     rotate:{title:'PDF 회전',icon:'🔄',color:'#00897b',accept:'.pdf',multi:false,desc:'회전할 PDF 파일을 선택하세요'},
-    protect:{title:'PDF 보호',icon:'🔒',color:'#5c6bc0',accept:'.pdf',multi:false,desc:'암호를 설정할 PDF를 선택하세요'},
     pagenumber:{title:'페이지 번호',icon:'🔢',color:'#6d4c41',accept:'.pdf',multi:false,desc:'번호를 삽입할 PDF를 선택하세요'},
     scan:{title:'사진 스캔',icon:'📸',color:'#00acc1',accept:'image/*',multi:false,desc:'카메라로 문서를 촬영하세요'}
 };
@@ -5536,11 +5530,10 @@ function openPdfTool(toolId){
     document.getElementById('pdfToolsMain').style.display='none';
     let optionsHtml='';
     if(toolId==='split') optionsHtml=`<div class="pdf-options"><label>페이지 선택</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 원하는 페이지를 클릭하세요.</p></div>`;
-    if(toolId==='compress') optionsHtml=`<div class="pdf-options"><label>압축 수준</label><div class="pdf-option-row"><select id="pdfCompressLevel"><option value="high">높은 압축 (작은 파일)</option><option value="medium" selected>보통 압축 (권장)</option><option value="low">낮은 압축 (고품질)</option></select></div></div>`;
+    if(toolId==='compress') optionsHtml=`<div class="pdf-options"><label>압축 수준</label><div class="pdf-option-row"><select id="pdfCompressLevel"><option value="high">높은 압축 (작은 파일)</option><option value="medium" selected>보통 압축 (권장)</option><option value="low">낮은 압축 (고품질)</option></select></div><p style="font-size:11px;color:var(--text-light);margin:6px 0 0;">💡 이미지가 많은 PDF에 효과적. 텍스트 위주의 PDF는 오히려 커질 수 있습니다.</p></div>`;
     if(toolId==='img2pdf') optionsHtml=`<div class="pdf-options"><label>페이지 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">방향</label><select id="pdfPageOrientation"><option value="portrait">세로 (Portrait)</option><option value="landscape">가로 (Landscape)</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">여백</label><select id="pdfPageMargin"><option value="0">없음</option><option value="20" selected>작게</option><option value="40">보통</option></select></div></div></div>`;
     if(toolId==='pdf2img') optionsHtml=`<div class="pdf-options"><label>변환 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">형식</label><select id="pdfImgFormat"><option value="jpeg" selected>JPG</option><option value="png">PNG</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">해상도</label><select id="pdfImgScale"><option value="1">보통 (1x)</option><option value="2" selected>높음 (2x)</option><option value="3">매우 높음 (3x)</option></select></div></div></div>`;
     if(toolId==='rotate') optionsHtml=`<div class="pdf-options"><label>회전 방법</label><p style="font-size:12px;color:var(--text-light);margin:0;">아래 미리보기에서 각 페이지를 클릭해 회전하세요.</p><div class="pdf-option-row"><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(90)" style="padding:8px 16px;font-size:12px;">전체 90° →</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(180)" style="padding:8px 16px;font-size:12px;">전체 180°</button><button class="pdf-btn pdf-btn-secondary" onclick="pdfRotateAll(270)" style="padding:8px 16px;font-size:12px;">전체 270° ←</button></div></div>`;
-    if(toolId==='protect') optionsHtml=`<div class="pdf-options"><label>암호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">비밀번호</label><input type="password" id="pdfPassword" placeholder="비밀번호 입력"></div><div class="pdf-option-group"><label style="font-size:12px;">비밀번호 확인</label><input type="password" id="pdfPasswordConfirm" placeholder="다시 입력"></div></div></div>`;
     if(toolId==='pagenumber') optionsHtml=`<div class="pdf-options"><label>번호 설정</label><div class="pdf-option-row"><div class="pdf-option-group"><label style="font-size:12px;">위치</label><select id="pdfNumPosition"><option value="bottom-center" selected>하단 중앙</option><option value="bottom-left">하단 왼쪽</option><option value="bottom-right">하단 오른쪽</option><option value="top-center">상단 중앙</option><option value="top-left">상단 왼쪽</option><option value="top-right">상단 오른쪽</option></select></div><div class="pdf-option-group"><label style="font-size:12px;">시작 번호</label><input type="number" id="pdfNumStart" value="1" min="1" style="width:80px;"></div><div class="pdf-option-group"><label style="font-size:12px;">크기</label><select id="pdfNumSize"><option value="10">작게</option><option value="12" selected>보통</option><option value="14">크게</option></select></div></div></div>`;
     if(toolId==='scan') optionsHtml=`
     <div id="scanEditorArea" style="display:none;margin-top:16px;">
@@ -5844,7 +5837,6 @@ async function processPdfTool(){
             case 'img2pdf': await pdfImg2Pdf(); break;
             case 'pdf2img': await pdfPdf2Img(); break;
             case 'rotate': await pdfRotate(); break;
-            case 'protect': await pdfProtect(); break;
             case 'pagenumber': await pdfPageNumber(); break;
             case 'scan': await pdfScan(); break;
         }
@@ -5967,13 +5959,21 @@ async function pdfImg2Pdf(){
 
 // ===== PDF → 이미지 =====
 async function pdfPdf2Img(){
-    pdfShowProgress(10,'이미지 변환 중...');
     const format=document.getElementById('pdfImgFormat')?.value||'jpeg';
     const scale=parseFloat(document.getElementById('pdfImgScale')?.value||'2');
     const pdf=await pdfjsLib.getDocument({data:new Uint8Array(pdfToolFiles[0].data)}).promise;
+    // 메모리 사전 경고: 모든 페이지 blob을 누적하므로 큰 PDF는 OOM 위험 (특히 모바일)
+    const numPages=pdf.numPages;
+    // 대략적 추정: A4 한 페이지가 scale=2일 때 ~2MB, scale=3일 때 ~4.5MB (JPEG)
+    const estMb=Math.round(numPages*scale*scale*0.5);
+    if(numPages>=30&&estMb>=80){
+        const ok=confirm(`총 ${numPages}페이지를 이미지로 변환합니다 (예상 메모리 약 ${estMb}MB).\n모바일 브라우저에서는 메모리가 부족해 페이지가 멈출 수 있습니다.\n계속하시겠습니까?`);
+        if(!ok){pdfShowProgress(0,'취소됨');return;}
+    }
+    pdfShowProgress(10,'이미지 변환 중...');
     const results=[];
-    for(let p=1;p<=pdf.numPages;p++){
-        pdfShowProgress(10+80*(p/pdf.numPages),'페이지 '+p+'/'+pdf.numPages+' 변환 중...');
+    for(let p=1;p<=numPages;p++){
+        pdfShowProgress(10+80*(p/numPages),'페이지 '+p+'/'+numPages+' 변환 중...');
         const page=await pdf.getPage(p);
         const vp=page.getViewport({scale});
         const canvas=document.createElement('canvas');
@@ -6006,32 +6006,6 @@ async function pdfRotate(){
     pdfShowProgress(90,'파일 생성 중...');
     const bytes=await doc.save();
     const name=pdfToolFiles[0].name.replace('.pdf','')+'_rotated.pdf';
-    pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
-}
-
-// ===== PDF 보호 =====
-async function pdfProtect(){
-    const pw=document.getElementById('pdfPassword')?.value;
-    const pw2=document.getElementById('pdfPasswordConfirm')?.value;
-    if(!pw){showToast('비밀번호를 입력하세요','error');return;}
-    if(pw!==pw2){showToast('비밀번호가 일치하지 않습니다','error');return;}
-    pdfShowProgress(10,'PDF 암호 설정 중...');
-    const doc=await PDFLib.PDFDocument.load(pdfToolFiles[0].data,{ignoreEncryption:true});
-    const bytes=await doc.save({
-        userPassword:pw,
-        ownerPassword:pw,
-        permissions:{
-            printing:PDFLib.PrintPermission.HighQuality,
-            modifying:false,
-            copying:false,
-            annotating:false,
-            fillingForms:true,
-            contentAccessibility:true,
-            documentAssembly:false
-        }
-    });
-    pdfShowProgress(100,'암호 설정 완료!');
-    const name=pdfToolFiles[0].name.replace('.pdf','')+'_protected.pdf';
     pdfShowResult(name,new Blob([bytes],{type:'application/pdf'}));
 }
 
