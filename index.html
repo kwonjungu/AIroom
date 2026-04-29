@@ -5376,10 +5376,12 @@ async function getFileBlob(f){
     }
     if(!url) throw new Error('다운로드 URL 없음');
     console.log('다운로드 시도 URL:',url);
-    // 서버 프록시 경유 (CORS 우회)
+    // 서버 프록시 경유 (CORS 우회) — requireAuth 보호 엔드포인트라 토큰 헤더 필수
     const proxyUrl='/api/proxy-download?url='+encodeURIComponent(url);
     console.log('프록시 요청:',proxyUrl);
-    const resp=await fetch(proxyUrl);
+    const headers={};
+    if(authToken)headers['X-Auth-Token']=authToken;
+    const resp=await fetch(proxyUrl,{headers});
     if(!resp.ok){
         const errText=await resp.text().catch(()=>'');
         console.error('프록시 실패:',resp.status,errText);
