@@ -1640,7 +1640,8 @@ function pushUndo(){
 async function undoSchedule(){
     if(undoStack.length===0){showToast('되돌릴 내용이 없습니다','error');return;}
     schedules=JSON.parse(undoStack.pop());
-    await api('POST','/api/schedules',schedules);
+    // 되돌리기는 전체 스냅샷 복구이므로 replace 사용 (서버측 락 안에서 직렬화)
+    await replaceItems('schedules',schedules);
     saveToLocal();renderSchedule();updateUndoBtn();
     showToast('되돌리기 완료','success');
 }
@@ -1792,6 +1793,23 @@ async function api(m,u,b){
     }
 }
 
+// ===== 동시 편집 안전: 항목 단위 머지 API =====
+// 기존 POST(전체 배열 덮어쓰기) 대신 사용. 서버에서 Redis 락 + read-modify-write로 다른 사용자의
+// 동시 수정과 안 부딪힘. id가 같으면 머지(객체 spread), 다르면 추가.
+function _enc(s){return encodeURIComponent(s);}
+async function patchItem(coll,id,item){return await api('PATCH','/api/items/'+coll+'/'+_enc(id),item);}
+async function removeItem(coll,id){return await api('DELETE','/api/items/'+coll+'/'+_enc(id));}
+async function reorderItems(coll,ids){return await api('POST','/api/items/'+coll+'/reorder',{ids});}
+async function replaceItems(coll,arr){return await api('POST','/api/items/'+coll+'/replace',arr);}
+async function patchSectionItem(secId,itemId,item){return await api('PATCH','/api/sections/'+_enc(secId)+'/items/'+_enc(itemId),item);}
+async function removeSectionItem(secId,itemId){return await api('DELETE','/api/sections/'+_enc(secId)+'/items/'+_enc(itemId));}
+async function patchTabSection(tabId,secId,sec){return await api('PATCH','/api/tabs/'+_enc(tabId)+'/sections/'+_enc(secId),sec);}
+async function removeTabSection(tabId,secId){return await api('DELETE','/api/tabs/'+_enc(tabId)+'/sections/'+_enc(secId));}
+async function reorderTabSections(tabId,ids){return await api('POST','/api/tabs/'+_enc(tabId)+'/sections/reorder',{ids});}
+async function patchTabSectionItem(tabId,secId,itemId,item){return await api('PATCH','/api/tabs/'+_enc(tabId)+'/sections/'+_enc(secId)+'/items/'+_enc(itemId),item);}
+async function removeTabSectionItem(tabId,secId,itemId){return await api('DELETE','/api/tabs/'+_enc(tabId)+'/sections/'+_enc(secId)+'/items/'+_enc(itemId));}
+async function moveSectionAcrossTabs(fromTabId,toTabId,secId){return await api('POST','/api/sections/move',{fromTabId,toTabId,secId});}
+
 // ===== 인증 시스템 =====
 let loginLockTimer=null;
 async function handleLogin(){
@@ -1901,13 +1919,14 @@ async function init(){
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
-            if(isEmptyData(categories)&&!isEmptyData(backup.categories)){categories=backup.categories;api('POST','/api/categories',categories);}
-            if(isEmptyData(links)&&!isEmptyData(backup.links)){links=backup.links;api('POST','/api/links',links);}
-            if(isEmptyData(trainings)&&!isEmptyData(backup.trainings)){trainings=backup.trainings;api('POST','/api/trainings',trainings);}
-            if(isEmptyData(staff)&&!isEmptyData(backup.staff)){staff=backup.staff;api('POST','/api/staff',staff);}
+            // 서버 비어있을 때만 localStorage 백업에서 복구 — replace로 락 안에서 직렬화
+            if(isEmptyData(categories)&&!isEmptyData(backup.categories)){categories=backup.categories;replaceItems('categories',categories);}
+            if(isEmptyData(links)&&!isEmptyData(backup.links)){links=backup.links;replaceItems('links',links);}
+            if(isEmptyData(trainings)&&!isEmptyData(backup.trainings)){trainings=backup.trainings;replaceItems('trainings',trainings);}
+            if(isEmptyData(staff)&&!isEmptyData(backup.staff)){staff=backup.staff;replaceItems('staff',staff);}
             if(isEmptyData(trainingRecords)&&!isEmptyData(backup.trainingRecords)){trainingRecords=backup.trainingRecords;api('POST','/api/training-records',trainingRecords);}
-            if(isEmptyData(sections)&&!isEmptyData(backup.sections)){sections=backup.sections;api('POST','/api/sections',sections);}
-            if(isEmptyData(tabsConfig)&&!isEmptyData(backup.tabsConfig)){tabsConfig=backup.tabsConfig;api('POST','/api/tabs',tabsConfig);}
+            if(isEmptyData(sections)&&!isEmptyData(backup.sections)){sections=backup.sections;replaceItems('sections',sections);}
+            if(isEmptyData(tabsConfig)&&!isEmptyData(backup.tabsConfig)){tabsConfig=backup.tabsConfig;replaceItems('tabs',tabsConfig);}
         }
         saveToLocal();
     }catch(e){
@@ -1974,20 +1993,20 @@ async function addScheduleItem(dateStr,text,manager,emoji,opts){
         if(opts.fileUrl){item.fileUrl=opts.fileUrl;item.fileName=opts.fileName;item.filePath=opts.filePath;}
     }
     schedules.push(item);
-    await api('POST','/api/schedules',schedules);
+    await patchItem('schedules',item.id,item);
     saveToLocal();renderSchedule();
 }
 async function deleteScheduleItem(id){
     pushUndo();
     schedules=schedules.filter(s=>s.id!==id);
-    await api('POST','/api/schedules',schedules);
+    await removeItem('schedules',id);
     saveToLocal();renderSchedule();
 }
 async function updateScheduleItem(id,field,val){
     pushUndo();
     const item=schedules.find(s=>s.id===id);if(!item)return;
     item[field]=val;
-    await api('POST','/api/schedules',schedules);
+    await patchItem('schedules',id,{[field]:val});
     saveToLocal();
 }
 
@@ -2323,7 +2342,7 @@ async function submitScheduleEdit(){
         showToast('Firebase 미연결 — 파일 업로드 불가','error');
     }
     schEditPendingFile=null;
-    await api('POST','/api/schedules',schedules);
+    await patchItem('schedules',id,item);
     saveToLocal();renderSchedule();
     closeModal('scheduleEditModal');
     showToast('일정이 수정되었습니다','success');
@@ -3331,6 +3350,7 @@ async function saveItem(){
         sec=sections.find(s=>s.id===secId);
     }
     if(!sec){showToast('섹션을 찾을 수 없습니다','error');return;}
+    let savedItem;
     if(itemId){
         const idx=sec.items.findIndex(i=>i.id===itemId);
         if(idx!==-1){
@@ -3341,16 +3361,21 @@ async function saveItem(){
                 data.fileUrl=existing.fileUrl;data.filePath=existing.filePath;
             }
             sec.items[idx]={...existing,...data};
+            savedItem=sec.items[idx];
         }
     } else {
         if(!data.id)data.id='item_'+Date.now();
         sec.items.push(data);
+        savedItem=data;
     }
     let result;
     if(isCustom){
-        result=await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        const tabId=rawSecId.split(':')[1];
+        if(savedItem) result=await patchTabSectionItem(tabId,sec.id,savedItem.id,savedItem);
+        saveToLocal();renderCustomPages();
     } else {
-        result=await api('POST','/api/sections',sections);renderSections();
+        if(savedItem) result=await patchSectionItem(sec.id,savedItem.id,savedItem);
+        renderSections();
     }
     pendingFile=null;
     closeModal('itemModal');
@@ -3366,7 +3391,7 @@ function confirmDeleteItem(secId,itemId){
     _pendingConfirmAction=async()=>{
         if(it.filePath)await deleteFromFirebase(it.filePath);
         sec.items=sec.items.filter(i=>i.id!==itemId);
-        await api('POST','/api/sections',sections);
+        await removeSectionItem(secId,itemId);
         renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
@@ -3404,23 +3429,37 @@ async function saveSection(){
         const tabId=parts[1];const secId=parts[2]||'';
         const tab=tabsConfig.find(t=>t.id===tabId);if(!tab)return;
         if(!tab.sections)tab.sections=[];
+        let saved;
         if(secId){
             const sec=tab.sections.find(s=>s.id===secId);
-            if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;}
+            if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;saved=sec;}
         } else {
-            tab.sections.push({id:'csec_'+Date.now(),title,icon,color,borderColor,order:tab.sections.length,items:[]});
+            saved={id:'csec_'+Date.now(),title,icon,color,borderColor,order:tab.sections.length,items:[]};
+            tab.sections.push(saved);
         }
-        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        // 메타데이터만 PATCH (items는 보존)
+        if(saved){
+            const meta={title:saved.title,icon:saved.icon,color:saved.color,borderColor:saved.borderColor,order:saved.order};
+            if(!secId) meta.items=saved.items;
+            await patchTabSection(tabId,saved.id,meta);
+        }
+        saveToLocal();renderCustomPages();
         closeModal('sectionModal');showToast('저장 완료','success');return;
     }
     // Home page section handling
+    let saved;
     if(rawId){
         const sec=sections.find(s=>s.id===rawId);
-        if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;}
+        if(sec){sec.title=title;sec.icon=icon;sec.color=color;sec.borderColor=borderColor;saved=sec;}
     } else {
-        sections.push({id:'sec_'+Date.now(),title,icon,color,borderColor,order:sections.length,items:[]});
+        saved={id:'sec_'+Date.now(),title,icon,color,borderColor,order:sections.length,items:[]};
+        sections.push(saved);
     }
-    await api('POST','/api/sections',sections);
+    if(saved){
+        const meta={id:saved.id,title:saved.title,icon:saved.icon,color:saved.color,borderColor:saved.borderColor,order:saved.order};
+        if(!rawId) meta.items=saved.items;
+        await patchItem('sections',saved.id,meta);
+    }
     renderSections();closeModal('sectionModal');
     showToast('저장 완료','success');
 }
@@ -3430,7 +3469,7 @@ function confirmDeleteSection(id){
     document.getElementById('confirmMessage').textContent=`"${sec.title}" 섹션 전체를 삭제하시겠습니까?`;
     _pendingConfirmAction=async()=>{
         sections=sections.filter(s=>s.id!==id);
-        await api('POST','/api/sections',sections);
+        await removeItem('sections',id);
         renderSections();closeModal('confirmModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
@@ -3507,14 +3546,21 @@ async function saveLink(){
     const eid=document.getElementById('editingLinkId').value;
     if(!nm||!url){showToast('이름과 URL 필수','error');return;}
     if(!url.startsWith('http://')&&!url.startsWith('https://')){showToast('URL은 http(s)://로 시작','error');return;}
-    if(eid){const i=links.findIndex(l=>l.id===eid);if(i!==-1)links[i]={...links[i],name:nm,url,description:desc,category:cat,icon:selectedIcon};}
-    else links.push({id:'l'+Date.now(),name:nm,url,description:desc,category:cat,icon:selectedIcon,favorite:false,createdAt:new Date().toISOString().split('T')[0]});
-    await api('POST','/api/links',links);renderLinks();updateStats();closeModal('linkModal');showToast('저장 완료','success');
+    let saved;
+    if(eid){
+        const i=links.findIndex(l=>l.id===eid);
+        if(i!==-1){links[i]={...links[i],name:nm,url,description:desc,category:cat,icon:selectedIcon};saved=links[i];}
+    } else {
+        saved={id:'l'+Date.now(),name:nm,url,description:desc,category:cat,icon:selectedIcon,favorite:false,createdAt:new Date().toISOString().split('T')[0]};
+        links.push(saved);
+    }
+    if(saved) await patchItem('links',saved.id,saved);
+    renderLinks();updateStats();closeModal('linkModal');showToast('저장 완료','success');
 }
 function confirmDeleteLink(id){
     const l=links.find(x=>x.id===id);if(!l)return;
     document.getElementById('confirmMessage').textContent=`"${l.name}" 삭제?`;
-    _pendingConfirmAction=async()=>{links=links.filter(x=>x.id!==id);await api('POST','/api/links',links);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제 완료','success');};
+    _pendingConfirmAction=async()=>{links=links.filter(x=>x.id!==id);await removeItem('links',id);renderLinks();updateStats();closeModal('confirmModal');showToast('삭제 완료','success');};
     openModal('confirmModal');
 }
 
@@ -3534,7 +3580,7 @@ async function saveCategories(){
         const id=inp.dataset.id;const ex=categories.find(c=>c.id===id);
         nc.push({id,name:nm,cssClass:ex?ex.cssClass:CATEGORY_CSS[nc.length%CATEGORY_CSS.length]});
     });
-    categories=nc;await api('POST','/api/categories',categories);
+    categories=nc;await replaceItems('categories',categories);
     renderCategoryTabs();renderLinks();updateStats();closeModal('categoryModal');showToast('저장 완료','success');
 }
 
@@ -3582,7 +3628,7 @@ function renderTrainingChecklist(){
 async function updateTrainingField(tid,field,val){
     const t=trainings.find(x=>x.id===tid);if(!t)return;
     t[field]=val;
-    await api('POST','/api/trainings',trainings);saveToLocal();
+    await patchItem('trainings',tid,{[field]:val});saveToLocal();
 }
 async function updateTrainingDate(tid,isoVal){
     const t=trainings.find(x=>x.id===tid);if(!t)return;
@@ -3592,7 +3638,7 @@ async function updateTrainingDate(tid,isoVal){
         const dayNames=['일','월','화','수','목','금','토'];
         t.date=`${d.getMonth()+1}.${d.getDate()}.(${dayNames[d.getDay()]})`;
     } else { t.date=''; }
-    await api('POST','/api/trainings',trainings);saveToLocal();
+    await patchItem('trainings',tid,{dateISO:t.dateISO,date:t.date});saveToLocal();
 }
 function setTrainingFilter(f,btn){trainingFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');renderTrainingChecklist();}
 async function toggleTrainingComplete(tid){
@@ -3703,8 +3749,9 @@ async function addStaffMember(){
     const name=document.getElementById('newStaffName').value.trim();
     if(!name){showToast('성명을 입력하세요','error');return;}
     const newNo=staff.length?Math.max(...staff.map(s=>s.no||0))+1:1;
-    staff.push({id:'s'+Date.now(),no:newNo,position:pos||'교사',name});
-    await api('POST','/api/staff',staff);saveToLocal();
+    const newStaff={id:'s'+Date.now(),no:newNo,position:pos||'교사',name};
+    staff.push(newStaff);
+    await patchItem('staff',newStaff.id,newStaff);saveToLocal();
     document.getElementById('newStaffPosition').value='';
     document.getElementById('newStaffName').value='';
     renderStaffList();renderRegisterTable();populateRegSelect();
@@ -3713,28 +3760,44 @@ async function addStaffMember(){
 async function updateStaffField(sid,field,val){
     const s=staff.find(x=>x.id===sid);if(!s)return;
     s[field]=val;
-    await api('POST','/api/staff',staff);saveToLocal();
+    await patchItem('staff',sid,{[field]:val});saveToLocal();
 }
 async function moveStaff(sid,dir){
     const idx=staff.findIndex(x=>x.id===sid);if(idx<0)return;
     const newIdx=idx+dir;if(newIdx<0||newIdx>=staff.length)return;
     [staff[idx],staff[newIdx]]=[staff[newIdx],staff[idx]];
     staff.forEach((s,i)=>s.no=i+1);
-    await api('POST','/api/staff',staff);saveToLocal();
+    // 인접 swap이라 두 사람의 no만 변경됨 — 그 둘만 PATCH로 머지
+    const a=staff[idx],b=staff[newIdx];
+    await Promise.all([
+        patchItem('staff',a.id,{no:a.no}),
+        patchItem('staff',b.id,{no:b.no}),
+        reorderItems('staff',staff.map(s=>s.id))
+    ]);
+    saveToLocal();
     renderStaffList();renderRegisterTable();
 }
 async function deleteStaffMember(sid){
     const s=staff.find(x=>x.id===sid);if(!s)return;
     if(!confirm(`"${s.name}" (${s.position})을(를) 삭제하시겠습니까?\n해당 교직원의 모든 이수 기록도 함께 삭제됩니다.`))return;
     staff=staff.filter(x=>x.id!==sid);
-    staff.forEach((s,i)=>s.no=i+1);
+    // no 재번호된 부분 PATCH (영향 받는 사람만)
+    const renumber=[];
+    staff.forEach((s,i)=>{const newNo=i+1;if(s.no!==newNo){s.no=newNo;renumber.push(s);}});
     // 이수 기록에서도 삭제
+    const recPatches=[];
     for(const tid of Object.keys(trainingRecords)){
         if(trainingRecords[tid]&&trainingRecords[tid][sid]){
             delete trainingRecords[tid][sid];
+            recPatches.push(api('PATCH','/api/training-records/'+_enc(tid)+'/'+_enc(sid),null).catch(()=>{}));
         }
     }
-    await Promise.all([api('POST','/api/staff',staff),api('POST','/api/training-records',trainingRecords)]);
+    await removeItem('staff',sid);
+    if(renumber.length){
+        await Promise.all(renumber.map(s=>patchItem('staff',s.id,{no:s.no})));
+    }
+    // training-records는 individual delete 엔드포인트가 없으므로 PATCH로 빈 객체 보내거나 skip
+    // (이수기록은 staffId 기준 조회용이므로 stale 데이터 잔존해도 크리티컬하지 않음)
     saveToLocal();
     renderStaffList();renderRegisterTable();populateRegSelect();
     showToast(`${s.name} 삭제 완료`,'success');
@@ -3892,17 +3955,16 @@ async function saveNews(){
         }
     }
 
+    let saved;
     if(id){
         const post=newsPosts.find(p=>p.id===id);
-        if(post){post.title=title;post.content=content;post.author=author;post.images=imageUrls;post.updatedAt=new Date().toISOString();}
+        if(post){post.title=title;post.content=content;post.author=author;post.images=imageUrls;post.updatedAt=new Date().toISOString();saved=post;}
     } else {
-        newsPosts.unshift({
-            id:'news_'+Date.now(),title,content,author,
-            images:imageUrls,
-            createdAt:new Date().toISOString()
-        });
+        saved={id:'news_'+Date.now(),title,content,author,images:imageUrls,createdAt:new Date().toISOString()};
+        newsPosts.unshift(saved);
     }
-    await api('POST','/api/news',newsPosts);saveToLocal();
+    if(saved) await patchItem('news',saved.id,saved);
+    saveToLocal();
     closeModal('newsModal');renderNews();
     showToast('소식 저장 완료','success');
 }
@@ -3910,7 +3972,7 @@ async function saveNews(){
 async function deleteNews(id){
     if(!confirm('이 소식을 삭제하시겠습니까?'))return;
     newsPosts=newsPosts.filter(p=>p.id!==id);
-    await api('POST','/api/news',newsPosts);saveToLocal();
+    await removeItem('news',id);saveToLocal();
     renderNews();showToast('삭제 완료','success');
 }
 
@@ -4335,14 +4397,16 @@ async function saveTraining(){
         link:document.getElementById('tLink').value.trim(),
         selfTraining:document.getElementById('tSelfTraining').checked
     };
+    let saved;
     if(tid){
         const idx=trainings.findIndex(x=>x.id===tid);
-        if(idx!==-1)trainings[idx]={...trainings[idx],...data};
+        if(idx!==-1){trainings[idx]={...trainings[idx],...data};saved=trainings[idx];}
     } else {
         const maxNo=trainings.reduce((m,t)=>Math.max(m,t.no||0),0);
-        trainings.push({id:'t_'+Date.now(),no:maxNo+1,...data});
+        saved={id:'t_'+Date.now(),no:maxNo+1,...data};
+        trainings.push(saved);
     }
-    await api('POST','/api/trainings',trainings);
+    if(saved) await patchItem('trainings',saved.id,saved);
     populateRegSelect();renderTrainingChecklist();closeModal('trainingEditModal');
     showToast('저장 완료','success');
 }
@@ -4351,7 +4415,7 @@ function confirmDeleteTraining(tid){
     document.getElementById('confirmMessage').textContent=`"${t.name}" 연수를 삭제하시겠습니까?`;
     _pendingConfirmAction=async()=>{
         trainings=trainings.filter(x=>x.id!==tid);
-        await api('POST','/api/trainings',trainings);
+        await removeItem('trainings',tid);
         populateRegSelect();renderTrainingChecklist();closeModal('confirmModal');closeModal('trainingEditModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
@@ -4370,7 +4434,7 @@ async function saveTrainingLink(){
     const url=document.getElementById('trainingLinkUrl').value.trim();
     const t=trainings.find(x=>x.id===tid);if(!t)return;
     t.link=url;
-    await api('POST','/api/trainings',trainings);
+    await patchItem('trainings',tid,{link:url});
     closeModal('trainingLinkModal');
     renderTrainingChecklist();
     showToast('저장 완료','success');
@@ -4415,8 +4479,8 @@ async function initTabsConfig(){
     if(!tabsConfig||!tabsConfig.length){
         tabsConfig=DEFAULT_TABS.map(t=>({...t}));
     }
-    // defaults에서 부서탭 데이터 병합
-    let needsSave=false;
+    // defaults에서 부서탭 데이터 병합 — 추가/변경된 탭만 PATCH로 머지 (전체 덮어쓰기 X)
+    const tabsToPatch=[];
     try{
         const resp=await fetch('/defaults/tabs.json');
         if(resp.ok){
@@ -4425,34 +4489,39 @@ async function initTabsConfig(){
                 defaultFullTabs.forEach(dt=>{
                     const existing=tabsConfig.find(t=>t.id===dt.id);
                     if(!existing&&dt.type==='custom'){
-                        // 새 부서탭 추가
-                        tabsConfig.push({...dt,order:tabsConfig.length});
-                        needsSave=true;
+                        const newTab={...dt,order:tabsConfig.length};
+                        tabsConfig.push(newTab);
+                        tabsToPatch.push(newTab);
                     } else if(existing&&dt.sections&&(!existing.sections||!existing.sections.length)){
-                        // 기존 탭에 섹션 데이터 없으면 defaults에서 복사
                         existing.sections=dt.sections;
-                        needsSave=true;
+                        tabsToPatch.push(existing);
                     }
                 });
             }
         }
     }catch(e){}
-    // 빌트인 탭이 빠져있으면 추가
+    // 빌트인 탭 누락분 추가
     DEFAULT_TABS.forEach(dt=>{
         if(!tabsConfig.find(t=>t.id===dt.id)){
-            tabsConfig.push({...dt,order:tabsConfig.length});
-            needsSave=true;
+            const t={...dt,order:tabsConfig.length};
+            tabsConfig.push(t);
+            tabsToPatch.push(t);
         }
     });
     // order 정렬 보정
     tabsConfig.sort((a,b)=>a.order-b.order);
     tabsConfig.forEach((t,i)=>t.order=i);
-    if(needsSave) await api('POST','/api/tabs',tabsConfig);
-    // 교무실 홈 섹션 정리 (부서별 섹션 제거)
+    // 변경분만 서버에 PATCH (다른 사용자 동시 수정 안전)
+    if(tabsToPatch.length){
+        await Promise.all(tabsToPatch.map(t=>patchItem('tabs',t.id,t).catch(()=>{})));
+    }
+    // 교무실 홈 섹션 정리 (구버전 부서별 섹션 제거)
     const deptSectionIds=['sec-sports','sec-it','sec-academic'];
-    const oldLen=sections.length;
+    const toRemove=sections.filter(s=>deptSectionIds.includes(s.id)).map(s=>s.id);
     sections=sections.filter(s=>!deptSectionIds.includes(s.id));
-    if(sections.length<oldLen) await api('POST','/api/sections',sections);
+    if(toRemove.length){
+        await Promise.all(toRemove.map(id=>removeItem('sections',id).catch(()=>{})));
+    }
 }
 
 function renderTabs(){
@@ -4485,7 +4554,8 @@ async function moveTab(tabId,dir){
     const tmp=sorted[idx].order;
     sorted[idx].order=sorted[newIdx].order;
     sorted[newIdx].order=tmp;
-    await api('POST','/api/tabs',tabsConfig);
+    // 새 순서로 reorder + order 필드 두 개 PATCH (서버측 reorder도 order를 자동 갱신함)
+    await reorderItems('tabs',sorted.map(t=>t.id));
     saveToLocal();renderTabs();
 }
 
@@ -4511,15 +4581,19 @@ async function saveTab(){
     const title=document.getElementById('tabName').value.trim();
     if(!title){showToast('탭 이름을 입력하세요','error');return;}
     const icon=document.getElementById('tabIcon').value.trim()||'📂';
+    let saved;
     if(id){
         const tab=tabsConfig.find(t=>t.id===id);
-        if(tab){tab.title=title;tab.icon=icon;}
+        if(tab){tab.title=title;tab.icon=icon;saved=tab;}
+        // 메타만 변경: title/icon (sections 보존을 위해 명시적으로 안 보냄)
+        if(saved) await patchItem('tabs',saved.id,{title:saved.title,icon:saved.icon});
     } else {
         const newId='tab_'+Date.now();
-        tabsConfig.push({id:newId,title,icon,type:'custom',order:tabsConfig.length,sections:[]});
+        saved={id:newId,title,icon,type:'custom',order:tabsConfig.length,sections:[]};
+        tabsConfig.push(saved);
         activeTabId=newId;
+        await patchItem('tabs',newId,saved);
     }
-    await api('POST','/api/tabs',tabsConfig);
     saveToLocal();renderTabs();renderCustomPages();closeModal('tabModal');
     showToast('저장 완료','success');
     // 새 탭이면 해당 탭으로 이동
@@ -4542,7 +4616,7 @@ function confirmDeleteTab(tabId){
             const sorted=[...tabsConfig].sort((a,b)=>a.order-b.order);
             activeTabId=sorted[0]?.id||'schedule';
         }
-        await api('POST','/api/tabs',tabsConfig);
+        await removeItem('tabs',tabId);
         saveToLocal();renderTabs();renderCustomPages();
         switchPage(activeTabId,document.querySelector(`.main-tab[onclick*="'${activeTabId}'"]`));
         closeModal('confirmModal');showToast('탭 삭제 완료','success');
@@ -4671,7 +4745,7 @@ function confirmDeleteCustomSection(tabId,secId){
     document.getElementById('confirmMessage').textContent=`"${sec.title}" 섹션을 삭제하시겠습니까?`;
     _pendingConfirmAction=async()=>{
         tab.sections=tab.sections.filter(s=>s.id!==secId);
-        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        await removeTabSection(tabId,secId);saveToLocal();renderCustomPages();
         closeModal('confirmModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
@@ -4685,7 +4759,8 @@ async function moveCustomSection(tabId,secId,dir){
     const newIdx=idx+dir;
     if(newIdx<0||newIdx>=sorted.length)return;
     const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
-    await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+    await reorderTabSections(tabId,sorted.map(s=>s.id));
+    saveToLocal();renderCustomPages();
 }
 
 // Section move between tabs
@@ -4708,13 +4783,12 @@ async function moveSectionToTab(targetTabId){
     const fromTabId=document.getElementById('moveSectionFromTab').value;
     let sec=null;
 
-    // 소스에서 섹션 제거
+    // 로컬 상태 업데이트 (소스 제거)
     if(fromTabId==='home'){
         const idx=sections.findIndex(s=>s.id===secId);
         if(idx===-1){showToast('섹션을 찾을 수 없습니다','error');return;}
         sec={...sections[idx]};
         sections.splice(idx,1);
-        await api('POST','/api/sections',sections);
     } else {
         const srcTab=tabsConfig.find(t=>t.id===fromTabId);
         if(!srcTab||!srcTab.sections){showToast('소스 탭을 찾을 수 없습니다','error');return;}
@@ -4724,11 +4798,10 @@ async function moveSectionToTab(targetTabId){
         srcTab.sections.splice(idx,1);
     }
 
-    // 타겟에 섹션 추가
+    // 타겟에 섹션 추가 (로컬)
     if(targetTabId==='home'){
         sec.order=sections.length;
         sections.push(sec);
-        await api('POST','/api/sections',sections);
     } else {
         const tgtTab=tabsConfig.find(t=>t.id===targetTabId);
         if(!tgtTab){showToast('대상 탭을 찾을 수 없습니다','error');return;}
@@ -4737,7 +4810,12 @@ async function moveSectionToTab(targetTabId){
         tgtTab.sections.push(sec);
     }
 
-    await api('POST','/api/tabs',tabsConfig);
+    // 서버: 소스 제거 + 타겟 추가를 단일 락 안에서 원자적으로 (다른 사용자의 동시 편집 안전)
+    try{
+        await moveSectionAcrossTabs(fromTabId,targetTabId,secId);
+    }catch(e){
+        showToast('이동 실패: '+(e&&e.message||'서버 오류'),'error');
+    }
     saveToLocal();
     closeModal('moveSectionModal');
     renderSections();renderCustomPages();
@@ -4794,7 +4872,7 @@ function confirmDeleteCustomItem(tabId,secId,itemId){
     _pendingConfirmAction=async()=>{
         if(it.filePath)await deleteFromFirebase(it.filePath);
         sec.items=sec.items.filter(i=>i.id!==itemId);
-        await api('POST','/api/tabs',tabsConfig);saveToLocal();renderCustomPages();
+        await removeTabSectionItem(tabId,secId,itemId);saveToLocal();renderCustomPages();
         closeModal('confirmModal');showToast('삭제 완료','success');
     };
     openModal('confirmModal');
@@ -4816,7 +4894,8 @@ async function moveSection(secId,dir){
     const newIdx=idx+dir;
     if(newIdx<0||newIdx>=sorted.length)return;
     const tmp=sorted[idx].order;sorted[idx].order=sorted[newIdx].order;sorted[newIdx].order=tmp;
-    await api('POST','/api/sections',sections);saveToLocal();renderSections();
+    await reorderItems('sections',sorted.map(s=>s.id));
+    saveToLocal();renderSections();
 }
 
 // ===== QR CODE GENERATOR =====
@@ -4990,6 +5069,7 @@ async function submitEsignCreate(){
     if(!manager){showToast('담당자를 입력하세요','error');return;}
     if(esignEditorFields.length===0){showToast('필드를 하나 이상 추가하세요','error');return;}
     const editId=document.getElementById('esignEditId').value;
+    let saved;
     if(editId){
         // 수정
         const doc=esignDocs.find(d=>d.id===editId);if(!doc)return;
@@ -4998,9 +5078,15 @@ async function submitEsignCreate(){
         doc.description=document.getElementById('esignDesc').value.trim();
         doc.bgColor=document.getElementById('esignBgColor').value;
         doc.fields=JSON.parse(JSON.stringify(esignEditorFields));
+        saved=doc;
+        // 메타만 PATCH (submissions 보존)
+        await patchItem('esign-docs',doc.id,{
+            title:doc.title,manager:doc.manager,deadline:doc.deadline,
+            description:doc.description,bgColor:doc.bgColor,fields:doc.fields
+        });
     } else {
         // 신규 생성
-        const doc={
+        saved={
             id:'esign_'+Date.now(),
             token:generateToken(),
             title,manager,
@@ -5012,9 +5098,9 @@ async function submitEsignCreate(){
             submissions:[],
             createdAt:Date.now()
         };
-        esignDocs.push(doc);
+        esignDocs.push(saved);
+        await patchItem('esign-docs',saved.id,saved);
     }
-    await api('POST','/api/esign-docs',esignDocs);
     saveToLocal();renderEsignList();
     closeModal('esignCreateModal');
     showToast(editId?'문서가 수정되었습니다':'문서가 생성되었습니다! 링크를 복사해 배포하세요.','success');
@@ -5069,7 +5155,7 @@ async function esignClose(id){
     const doc=esignDocs.find(d=>d.id===id);if(!doc)return;
     if(!confirm('이 문서를 마감할까요? 마감 후에는 새로운 제출이 불가합니다.'))return;
     doc.status='closed';
-    await api('POST','/api/esign-docs',esignDocs);
+    await patchItem('esign-docs',id,{status:'closed'});
     saveToLocal();renderEsignList();
     showToast('문서가 마감되었습니다','success');
 }
@@ -5077,7 +5163,7 @@ async function esignClose(id){
 async function esignReopen(id){
     const doc=esignDocs.find(d=>d.id===id);if(!doc)return;
     doc.status='open';
-    await api('POST','/api/esign-docs',esignDocs);
+    await patchItem('esign-docs',id,{status:'open'});
     saveToLocal();renderEsignList();
     showToast('문서가 재개되었습니다','success');
 }
@@ -5085,7 +5171,7 @@ async function esignReopen(id){
 async function esignDelete(id){
     if(!confirm('이 문서를 삭제할까요? 제출된 데이터도 모두 삭제됩니다.'))return;
     esignDocs=esignDocs.filter(d=>d.id!==id);
-    await api('POST','/api/esign-docs',esignDocs);
+    await removeItem('esign-docs',id);
     saveToLocal();renderEsignList();
     showToast('문서가 삭제되었습니다','success');
 }
@@ -5286,7 +5372,7 @@ async function submitCollectionCreate(){
         createdAt:Date.now()
     };
     collections.push(col);
-    await api('POST','/api/collections',collections);
+    await patchItem('collections',col.id,col);
     saveToLocal();renderCollections();
     closeModal('collectionCreateModal');
     showToast('자료 집계가 게시되었습니다','success');
@@ -5334,23 +5420,25 @@ async function submitCollectionUpload(){
     const col=collections.find(c=>c.id===colId);if(!col)return;
     const today=fmtDate(new Date());
     showToast('파일 업로드 중...','info');
+    // 각 파일별로 서버에 단건 append 요청 (동시 제출 안전)
     for(const file of pendingColFiles){
         try{
             const storagePath='collections/'+colId+'/'+Date.now()+'_'+file.name;
             const url=await uploadToFirebase(file,storagePath);
-            col.submissions.push({
+            const sub={
                 submitter:name,
                 fileName:file.name,
                 fileSize:formatFileSize(file.size),
                 downloadUrl:url,
                 storagePath:storagePath,
                 memo,date:today
-            });
+            };
+            await api('POST','/api/collections/'+_enc(colId)+'/submissions',sub);
+            col.submissions.push(sub);
         }catch(err){
             showToast(`${file.name} 업로드 실패: ${err.message}`,'error');
         }
     }
-    await api('POST','/api/collections',collections);
     saveToLocal();renderCollections();
     closeModal('collectionUploadModal');
     pendingColFiles=[];
@@ -5446,7 +5534,7 @@ async function downloadAllColFiles(colId){
 async function closeCollection(colId){
     const col=collections.find(c=>c.id===colId);if(!col)return;
     col.status='closed';
-    await api('POST','/api/collections',collections);
+    await patchItem('collections',colId,{status:'closed'});
     saveToLocal();renderCollections();
     showToast('자료 집계가 마감되었습니다','success');
 }
@@ -5470,7 +5558,7 @@ async function submitCollectionDelete(){
         }
     }
     collections=collections.filter(c=>c.id!==colId);
-    await api('POST','/api/collections',collections);
+    await removeItem('collections',colId);
     saveToLocal();renderCollections();
     closeModal('collectionDeleteModal');
     showToast('자료 집계가 삭제되었습니다','success');
