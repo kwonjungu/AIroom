@@ -2611,7 +2611,7 @@ function toggleAdmin(){
     b.textContent=isAdmin?'✅ 관리 ON':'🔧 관리';
     b.style.background=isAdmin?'rgba(81,207,102,0.3)':'rgba(255,255,255,0.2)';
     if(isAdmin)showToast('관리 모드 활성화','success');
-    renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();
+    renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();renderNews();
     if(typeof renderWinterSchedule==='function')renderWinterSchedule();
 }
 
@@ -4102,20 +4102,20 @@ function expandNewsPost(id){
     // 축약 게시물을 팝업 모달로 보기
     const date=new Date(post.createdAt).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
     const imgs=post.images||[];
-    const sliderId='modal_slider_'+post.id;
+    const modalKey='modal_'+post.id;
     const overlay=document.createElement('div');
     overlay.className='modal-overlay active';
-    overlay.onclick=e=>{if(e.target===overlay){Object.values(newsSliderIntervals).forEach(clearInterval);overlay.remove();}};
+    overlay.onclick=e=>{if(e.target===overlay){if(newsSliderIntervals[modalKey])clearInterval(newsSliderIntervals[modalKey]);overlay.remove();}};
     overlay.innerHTML=`<div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto;">
-        <div class="modal-header"><h2>${esc(post.title)}</h2><button class="btn-close" onclick="this.closest('.modal-overlay').remove()">✕</button></div>
+        <div class="modal-header"><h2>${esc(post.title)}</h2><button class="btn-close" onclick="if(window.newsSliderIntervals&&newsSliderIntervals['${modalKey}'])clearInterval(newsSliderIntervals['${modalKey}']);this.closest('.modal-overlay').remove()">✕</button></div>
         <div class="modal-body" style="padding:0;">
-            ${imgs.length?`<div class="news-slider" id="${sliderId}" style="border-radius:0;">
+            ${imgs.length?`<div class="news-slider" id="slider_${modalKey}" style="border-radius:0;">
                 ${imgs.map((img,i)=>`<img src="${esc(img)}" class="${i===0?'active':''}">`).join('')}
                 ${imgs.length>1?`
-                    <button class="news-slider-nav prev" onclick="slideNews('modal_slider_${post.id}',-1)">◀</button>
-                    <button class="news-slider-nav next" onclick="slideNews('modal_slider_${post.id}',1)">▶</button>
+                    <button class="news-slider-nav prev" onclick="slideNews('${modalKey}',-1)">◀</button>
+                    <button class="news-slider-nav next" onclick="slideNews('${modalKey}',1)">▶</button>
                     <div class="news-slider-dots">
-                        ${imgs.map((_,i)=>`<div class="news-slider-dot${i===0?' active':''}" onclick="goToSlide('modal_slider_${post.id}',${i})"></div>`).join('')}
+                        ${imgs.map((_,i)=>`<div class="news-slider-dot${i===0?' active':''}" onclick="goToSlide('${modalKey}',${i})"></div>`).join('')}
                     </div>
                 `:''}
             </div>`:''}
@@ -4130,7 +4130,7 @@ function expandNewsPost(id){
     </div>`;
     document.body.appendChild(overlay);
     if(imgs.length>1){
-        setTimeout(()=>startNewsSlider('modal_slider_'+post.id),100);
+        setTimeout(()=>startNewsSlider(modalKey),100);
     }
 }
 
