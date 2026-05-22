@@ -1,0 +1,15 @@
+[
+    { "id": "l1", "name": "나이스 교육정보시스템", "url": "https://www.neis.go.kr", "description": "학생 성적, 출결, 학교 행정 업무 통합 관리 시스템", "category": "admin", "icon": "💻", "favorite": true, "createdAt": "2026-03-01" },
+    { "id": "l2", "name": "경기도교육청", "url": "https://www.goe.go.kr", "description": "경기도교육청 공식 홈페이지", "category": "school", "icon": "🏫", "favorite": false, "createdAt": "2026-03-01" },
+    { "id": "l3", "name": "e학습터", "url": "https://cls.edunet.net", "description": "온라인 학습 콘텐츠 및 원격수업 플랫폼", "category": "class", "icon": "📚", "favorite": true, "createdAt": "2026-03-02" },
+    { "id": "l4", "name": "EBS 온라인클래스", "url": "https://www.ebsoc.co.kr", "description": "EBS 온라인 수업 및 학습 관리 시스템", "category": "class", "icon": "🎓", "favorite": false, "createdAt": "2026-03-02" },
+    { "id": "l5", "name": "업무관리시스템 (온나라)", "url": "https://www.on-nara.com", "description": "정부 공문서 및 업무 관리 시스템", "category": "admin", "icon": "📋", "favorite": true, "createdAt": "2026-03-03" },
+    { "id": "l6", "name": "에듀넷 티클리어", "url": "https://www.edunet.net", "description": "교수학습 자료 공유 및 교육 콘텐츠 플랫폼", "category": "resource", "icon": "📖", "favorite": false, "createdAt": "2026-03-04" },
+    { "id": "l7", "name": "학교알리미", "url": "https://www.schoolinfo.go.kr", "description": "학교 정보 공시 사이트", "category": "school", "icon": "🔔", "favorite": false, "createdAt": "2026-03-04" },
+    { "id": "l8", "name": "교육부 홈페이지", "url": "https://www.moe.go.kr", "description": "대한민국 교육부 공식 사이트", "category": "school", "icon": "🌐", "favorite": false, "createdAt": "2026-03-05" },
+    { "id": "l9", "name": "위두랑", "url": "https://rang.edunet.net", "description": "학급 커뮤니티 및 온라인 소통 플랫폼", "category": "community", "icon": "👨‍🎓", "favorite": true, "createdAt": "2026-03-05" },
+    { "id": "l10", "name": "디지털교과서", "url": "https://digital.edunet.net", "description": "디지털 교과서 뷰어 및 학습 자료", "category": "resource", "icon": "📚", "favorite": false, "createdAt": "2026-03-06" },
+    { "id": "l11", "name": "정부24", "url": "https://www.gov.kr", "description": "정부 민원 서비스 포털", "category": "admin", "icon": "🏆", "favorite": false, "createdAt": "2026-03-07" },
+    { "id": "l12", "name": "학교안전공제회", "url": "https://www.ssif.or.kr", "description": "학교 안전사고 관련 공제 및 보상 시스템", "category": "school", "icon": "🎯", "favorite": false, "createdAt": "2026-03-08" },
+    { "id": "l13", "name": "중앙교육연수원", "url": "https://www.neti.go.kr", "description": "법정의무교육과정 온라인 연수 플랫폼", "category": "resource", "icon": "🎓", "favorite": true, "createdAt": "2026-03-09" }
+]

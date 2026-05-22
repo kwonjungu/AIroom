@@ -1,0 +1,104 @@
+[
+    {
+        "id": "sec-notice",
+        "title": "공지사항",
+        "icon": "📌",
+        "color": "#FFF8E1",
+        "borderColor": "#FFD54F",
+        "order": 0,
+        "items": [
+            { "id": "n1", "text": "2026학년도 샘플초등학교 온라인 교무실(내부용)입니다.", "description": "교직원 전용 페이지로, 모든 업무 자료와 링크를 포함합니다.", "icon": "📢", "bold": true },
+            { "id": "n2", "text": "업무분장표", "description": "샘플초 교직원 DB 참조", "icon": "📋" },
+            { "id": "n3", "text": "시정표", "description": "배너 선택시 이동", "icon": "⏰" },
+            { "id": "n4", "text": "전담/특별실 시간표", "description": "시간표 페이지 링크 추가 필요", "icon": "🗓️" },
+            { "id": "n5", "text": "전결규정/복무/겸직", "description": "전결규정 페이지 링크 추가 필요", "icon": "📜" },
+            { "id": "n6", "text": "2026 학교평가 자료 모음", "icon": "📊" }
+        ]
+    },
+    {
+        "id": "sec-quicklinks",
+        "title": "빠른 링크",
+        "icon": "🔗",
+        "color": "#E3F2FD",
+        "borderColor": "#90CAF9",
+        "order": 1,
+        "items": [
+            { "id": "q1", "text": "우리학교 도서검색", "icon": "📚" },
+            { "id": "q2", "text": "JT스쿨메신저", "icon": "💬" },
+            { "id": "q3", "text": "e알리미", "icon": "📱" },
+            { "id": "q4", "text": "디지털원패스 포털", "icon": "🔑" }
+        ]
+    },
+    {
+        "id": "sec-info",
+        "title": "정보코너",
+        "icon": "💡",
+        "color": "#FFF0F0",
+        "borderColor": "#FFCDD2",
+        "order": 2,
+        "items": [
+            { "id": "i1", "text": "출결 자료", "description": "출석 서류 모으는 방법, 출결 양식, 나이스 활용 체험학습 신청", "icon": "📋" },
+            { "id": "i2", "text": "학교 비밀번호 안내", "description": "각종 시스템 접속 정보", "icon": "🔐" },
+            { "id": "i3", "text": "가정통신문 발송 방법", "description": "e알리미 활용 안내", "icon": "📮" },
+            { "id": "i4", "text": "각종 양식", "description": "상장, 공문서 양식 등", "icon": "📝" },
+            { "id": "i5", "text": "예산/행정", "description": "여비규정, 예산 관련 자료", "icon": "💰" }
+        ]
+    },
+    {
+        "id": "sec-apply",
+        "title": "신청페이지",
+        "icon": "📝",
+        "color": "#FFF0F0",
+        "borderColor": "#FFCDD2",
+        "order": 3,
+        "items": [
+            { "id": "a1", "text": "유지보수 신청", "icon": "🔧" },
+            { "id": "a2", "text": "컴퓨터실/음악실 사용 신청", "icon": "🖥️" },
+            { "id": "a3", "text": "과학준비물 사용 신청", "icon": "🧪" },
+            { "id": "a4", "text": "과제카드 신청", "icon": "📇" },
+            { "id": "a5", "text": "Wee클래스 상담", "icon": "💚" }
+        ]
+    },
+    {
+        "id": "sec-training",
+        "title": "연수 이수",
+        "icon": "🎓",
+        "color": "#E8F5E9",
+        "borderColor": "#A5D6A7",
+        "order": 4,
+        "items": [
+            { "id": "tr1", "text": "교직원 연수 자료", "icon": "📚" },
+            { "id": "tr2", "text": "연수별 이수표시 시트 링크", "description": "추가 필요", "icon": "✅" }
+        ]
+    },
+    {
+        "id": "sec-principal",
+        "title": "교장선생님 나눔터",
+        "icon": "👨‍🏫",
+        "color": "#E8F5E9",
+        "borderColor": "#A5D6A7",
+        "order": 5,
+        "items": [
+            { "id": "p1", "text": "학교소식지", "description": "교장선생님 소식 나눔", "icon": "📰" },
+            { "id": "p2", "text": "서논술형평가 도우미", "icon": "✏️" },
+            { "id": "p3", "text": "마이크로러닝 연수자료", "icon": "🎓" }
+        ]
+    },
+    {
+        "id": "sec-tips",
+        "title": "꿀팁모음",
+        "icon": "🍯",
+        "color": "#FFF8E1",
+        "borderColor": "#FFD54F",
+        "order": 6,
+        "items": [
+            { "id": "tp1", "text": "공문서 작성 가이드", "icon": "📝", "bold": true },
+            { "id": "tp2", "text": "생기부 작성", "icon": "📝" },
+            { "id": "tp3", "text": "생기부 작성(샘플초ver)", "icon": "💯" },
+            { "id": "tp4", "text": "에듀테크 자료모음", "icon": "💻" },
+            { "id": "tp5", "text": "수업도구 모음", "icon": "🔧" },
+            { "id": "tp6", "text": "업무도구 모음", "icon": "🛠️" },
+            { "id": "tp7", "text": "수업자료 모음", "icon": "📂" }
+        ]
+    }
+]

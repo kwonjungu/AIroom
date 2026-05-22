@@ -1578,6 +1578,41 @@
     </div></div>
 
 <script>
+// ===== 공유용 데모 모드 (/posting) =====
+// /posting 경로에서 접속 시 활성화. 모든 /api/* 호출을 /api/posting/* 로 리라이트.
+// 서버는 defaults-posting/ 의 익명화된 데이터만 노출하고, 쓰기 요청은 no-op.
+const IS_DEMO = /^\/posting(\/|$)/.test(location.pathname);
+if (IS_DEMO) {
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = function(input, init) {
+        let url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (typeof url === 'string') {
+            let newUrl = null;
+            if (url.startsWith('/api/') && !url.startsWith('/api/posting/')) {
+                newUrl = '/api/posting/' + url.slice(5);
+            } else if (url.startsWith('/defaults/')) {
+                newUrl = '/defaults-posting/' + url.slice('/defaults/'.length);
+            }
+            if (newUrl) {
+                if (typeof input === 'string') return _origFetch(newUrl, init);
+                return _origFetch(new Request(newUrl, input), init);
+            }
+        }
+        return _origFetch(input, init);
+    };
+    // 인증 오버레이를 처음부터 숨김 + 데모 안내 배너 삽입
+    document.addEventListener('DOMContentLoaded', () => {
+        const overlay = document.getElementById('authOverlay');
+        if (overlay) { overlay.classList.add('hidden'); overlay.style.display = 'none'; }
+        const b = document.createElement('div');
+        b.id = 'demoBanner';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#FFB300,#FF8F00);color:#fff;text-align:center;padding:8px 12px;font-weight:700;z-index:99999;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.25);letter-spacing:.2px;';
+        b.innerHTML = '🔒 공유용 데모 화면 · 이름·일정·기록은 모두 가상 데이터이며, 변경 사항은 저장되지 않습니다.';
+        document.body.appendChild(b);
+        // 본문 살짝 밀어주기
+        document.body.style.paddingTop = (parseFloat(getComputedStyle(document.body).paddingTop) || 0) + 36 + 'px';
+    });
+}
 const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
 const SCH_EMOJIS=['','📌','⭐','🔔','📢','🎯','📝','💡','🏫','👨‍🏫','📅','⏰','🎓','📋','💻','📞','🏆','🔗','✅','⚠️','❗','🎉','🤝','📊','🏃','🎵','🎨','📖','🧪','🌿'];
 let selectedSchEmoji='';
@@ -1630,6 +1665,8 @@ let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
 let scheduleView='month',scheduleDate=new Date();
 let authToken=localStorage.getItem('airoom_auth_token')||null;
 let authRole=localStorage.getItem('airoom_auth_role')||null;
+// 데모 모드: 인증 건너뛰기 — 가짜 토큰을 미리 세팅해서 checkAuth() 통과
+if (IS_DEMO) { authToken = 'posting-demo'; authRole = 'user'; }
 let undoStack=[];
 const MAX_UNDO=30;
 function pushUndo(){
@@ -1752,7 +1789,8 @@ async function saveBannerSettings(){
 }
 
 // localStorage 백업 (Vercel 콜드스타트 시 데이터 보존)
-const LS_KEY='airoom_backup';
+// 데모 모드는 별도 키로 분리 — 실제 앱의 백업과 섞이지 않도록.
+const LS_KEY = IS_DEMO ? 'airoom_backup_posting' : 'airoom_backup';
 function saveToLocal(){
     try{
         const d={categories,links,trainings,staff,trainingRecords,sections,schedules,tabsConfig,collections,esignDocs,ts:Date.now()};
@@ -1892,6 +1930,7 @@ async function checkAuth(){
 }
 
 function logout(){
+    if(IS_DEMO){showToast('데모 모드에서는 로그아웃이 비활성화됩니다','info');return;}
     if(!confirm('로그아웃 하시겠습니까?'))return;
     fetch('/api/auth/logout',{method:'POST',headers:{'X-Auth-Token':authToken}}).catch(()=>{});
     authToken=null;authRole=null;
@@ -2778,6 +2817,7 @@ function wsSetCell(iso,value){
     },800);
 }
 async function wsDownloadPermit(format){
+    if(IS_DEMO){showToast('데모 모드에서는 허가원 다운로드가 비활성화됩니다','info');return;}
     if(!wsMyStaffId){showToast('먼저 본인 이름을 입력해주세요','error');return;}
     const url=`/api/winter-schedule/permit/${wsMyStaffId}?format=${format||'docx'}`;
     try{
@@ -2805,6 +2845,7 @@ async function wsDownloadPermit(format){
     }catch(e){showToast(`다운로드 오류: ${e.message}`,'error');}
 }
 async function wsDownloadXlsx(){
+    if(IS_DEMO){showToast('데모 모드에서는 엑셀 다운로드가 비활성화됩니다','info');return;}
     if(!isAdmin){showToast('관리자만 가능합니다','error');return;}
     try{
         const r=await fetch('/api/winter-schedule/xlsx',{headers:authToken?{'X-Auth-Token':authToken}:{}});

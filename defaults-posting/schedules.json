@@ -1,0 +1,76 @@
+[
+  {
+    "id": "sch_demo1",
+    "date": "2026-05-03",
+    "text": "학부모 공개수업",
+    "manager": "이선생",
+    "emoji": "🏫",
+    "detail": "오전 10시 ~ 11시 30분"
+  },
+  {
+    "id": "sch_demo2",
+    "date": "2026-05-05",
+    "text": "안전점검의 날",
+    "manager": "김선생",
+    "emoji": "🛡️"
+  },
+  {
+    "id": "sch_demo3",
+    "date": "2026-05-08",
+    "text": "교직원 회의",
+    "manager": "이교감",
+    "emoji": "📋",
+    "detail": "오후 3시 30분 / 교무실"
+  },
+  {
+    "id": "sch_demo4",
+    "date": "2026-05-12",
+    "text": "현장체험학습 (3~4학년)",
+    "manager": "박선생",
+    "emoji": "🚌"
+  },
+  {
+    "id": "sch_demo5",
+    "date": "2026-05-15",
+    "text": "인성교육 학교자체연수",
+    "manager": "최선생",
+    "emoji": "🎓",
+    "detail": "90분 / 시청각실"
+  },
+  {
+    "id": "sch_demo6",
+    "date": "2026-05-19",
+    "text": "학교운영위원회",
+    "manager": "김교장",
+    "emoji": "🏛️"
+  },
+  {
+    "id": "sch_demo7",
+    "date": "2026-05-22",
+    "text": "심폐소생술 실습 연수",
+    "manager": "한보건",
+    "emoji": "❤️",
+    "detail": "120분 / 보건실"
+  },
+  {
+    "id": "sch_demo8",
+    "date": "2026-05-25",
+    "text": "독서의 날 행사",
+    "manager": "표사서",
+    "emoji": "📚"
+  },
+  {
+    "id": "sch_demo9",
+    "date": "2026-05-26",
+    "text": "학생자치회 정기회의",
+    "manager": "정선생",
+    "emoji": "👥"
+  },
+  {
+    "id": "sch_demo10",
+    "date": "2026-05-28",
+    "text": "월말 평가 자료 제출 마감",
+    "manager": "강선생",
+    "emoji": "📊"
+  }
+]

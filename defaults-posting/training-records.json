@@ -1,0 +1,58 @@
+{
+  "t1": {
+    "s3": {
+      "completed": true,
+      "date": "2026-05-04"
+    },
+    "s4": {
+      "completed": true,
+      "date": "2026-05-04"
+    },
+    "s6": {
+      "completed": true,
+      "date": "2026-05-05"
+    }
+  },
+  "t6": {
+    "s3": {
+      "completed": true,
+      "date": "2026-05-08"
+    },
+    "s4": {
+      "completed": true,
+      "date": "2026-05-08"
+    },
+    "s5": {
+      "completed": true,
+      "date": "2026-05-08"
+    },
+    "s8": {
+      "completed": true,
+      "date": "2026-05-08"
+    }
+  },
+  "t9": {
+    "s3": {
+      "completed": true,
+      "date": "2026-05-10"
+    },
+    "s4": {
+      "completed": true,
+      "date": "2026-05-10"
+    },
+    "s7": {
+      "completed": true,
+      "date": "2026-05-11"
+    }
+  },
+  "t17": {
+    "s3": {
+      "completed": true,
+      "date": "2026-05-12"
+    },
+    "s6": {
+      "completed": true,
+      "date": "2026-05-12"
+    }
+  }
+}

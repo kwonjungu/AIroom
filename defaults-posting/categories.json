@@ -1,0 +1,8 @@
+[
+    { "id": "school", "name": "학교 운영", "cssClass": "cat-school" },
+    { "id": "admin", "name": "업무 관리", "cssClass": "cat-admin" },
+    { "id": "class", "name": "수업/학습", "cssClass": "cat-class" },
+    { "id": "resource", "name": "교육 자료", "cssClass": "cat-resource" },
+    { "id": "community", "name": "소통/커뮤니티", "cssClass": "cat-community" },
+    { "id": "etc", "name": "기타", "cssClass": "cat-etc" }
+]

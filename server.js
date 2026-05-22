@@ -215,6 +215,7 @@ setInterval(() => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/defaults', express.static(path.join(__dirname, 'defaults')));
+app.use('/defaults-posting', express.static(path.join(__dirname, 'defaults-posting')));
 
 // 급식일지: /bap2/(백봉초), /bap3/(장평초)는 /bap/index.html을 공유하지만
 // 데이터는 SCHOOL 키로 완전 분리됨 (Firestore 컬렉션 / Redis 사용자 맵 / 세션)
@@ -1877,6 +1878,67 @@ app.get('/api/admin/audit-log', requireAdmin, async (req, res) => {
 // 관리자 페이지 서빙
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// ===== /posting — 공유용 데모 모드 (개인정보 제거, 읽기 전용) =====
+// 원리: defaults-posting/ 에 미리 익명화된 JSON을 두고, /api/posting/* 는 그것만 읽음.
+// 인증 불필요. 모든 쓰기 요청은 no-op (성공 응답만 반환, 실제 저장 없음).
+const POSTING_DIR = path.join(__dirname, 'defaults-posting');
+function postingRead(filename) {
+    try {
+        const p = path.join(POSTING_DIR, filename);
+        if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    } catch (e) { /* fall through */ }
+    return null;
+}
+const POSTING_DATA = {
+    'links': { file: 'links.json', fallback: [] },
+    'categories': { file: 'categories.json', fallback: [] },
+    'trainings': { file: 'trainings.json', fallback: [] },
+    'staff': { file: 'staff.json', fallback: [] },
+    'training-records': { file: 'training-records.json', fallback: {} },
+    'sections': { file: 'sections.json', fallback: [] },
+    'schedules': { file: 'schedules.json', fallback: [] },
+    'tabs': { file: 'tabs.json', fallback: [] },
+    'settings': { file: 'settings.json', fallback: {} },
+    'news': { file: 'news.json', fallback: [] },
+    'collections': { file: 'collections.json', fallback: [] },
+    'esign-docs': { file: 'esign-docs.json', fallback: [] },
+    'tdist-docs': { file: 'tdist-docs.json', fallback: [] },
+    'winter-schedule': { file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
+};
+Object.entries(POSTING_DATA).forEach(([p, { file, fallback }]) => {
+    app.get(`/api/posting/${p}`, (req, res) => {
+        const data = postingRead(file);
+        res.json(data !== null && data !== undefined ? data : fallback);
+    });
+});
+// 인증 우회 — 데모는 항상 로그인 된 상태로 보이게
+app.get('/api/posting/auth/verify', (req, res) => res.json({ valid: true, role: 'user', demo: true }));
+app.post('/api/posting/auth/login', (req, res) => res.json({ success: true, token: 'posting-demo', role: 'user', demo: true }));
+app.post('/api/posting/auth/logout', (req, res) => res.json({ success: true }));
+// 외부 서비스는 비활성화 응답
+app.get('/api/posting/firebase-config', (req, res) => res.json({}));
+app.get('/api/posting/health', (req, res) => res.json({ server: true, demo: true, timestamp: new Date().toISOString() }));
+app.get('/api/posting/ai/status', (req, res) => res.json({ enabled: false, demo: true }));
+// 공휴일 조회는 비공개 정보 아님 — 원본과 동일하게 프록시
+app.get('/api/posting/winter-schedule/holidays', async (req, res) => {
+    try {
+        const y = parseInt(req.query.year, 10);
+        if (!y) return res.status(400).json({ error: 'year 필요' });
+        const r = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/KR`);
+        const data = await r.json();
+        res.json(Array.isArray(data) ? data.map(d => ({ date: d.date, name: d.localName || d.name })) : []);
+    } catch (e) { res.json([]); }
+});
+// 그 외 /api/posting/* — GET은 빈 응답, 쓰기 (PATCH/POST/DELETE)는 성공만 반환 (no-op)
+app.use('/api/posting', (req, res) => {
+    if (req.method === 'GET') return res.json({ demo: true });
+    res.json({ success: true, demo: true, message: '데모 모드: 변경 사항은 저장되지 않습니다.' });
+});
+// /posting 및 모든 서브패스 → 메인 SPA (index.html) 서빙. 프론트가 경로 보고 데모 모드 활성화.
+app.get(/^\/posting(\/.*)?$/, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // 메인 페이지

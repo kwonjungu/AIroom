@@ -1,0 +1,250 @@
+[
+    {"id":"schedule","title":"학교 일정","icon":"📅","type":"builtin","order":0},
+    {"id":"home","title":"교무실 홈","icon":"🏠","type":"builtin","order":1},
+    {
+        "id":"tab_gyomu","title":"교무기획부","icon":"📋","type":"custom","order":2,
+        "sections":[
+            {
+                "id":"cs_gyomu1","title":"교무기획부장","icon":"👩‍🏫","color":"#E3F2FD","borderColor":"#90CAF9","order":0,
+                "items":[
+                    {"id":"g1","text":"교무기획부장 이선생","description":"2학년 담임 | 학부모상주실·시청각실 관리","icon":"👩‍🏫","bold":true,"person":"이선생","personExt":""},
+                    {"id":"g2","text":"교육기획, 생활기록부 관리, 기초학력 지원","icon":"📋"},
+                    {"id":"g3","text":"학사일정, 학교생활기록, 학교비재","icon":"📅"},
+                    {"id":"g4","text":"위원회 운영, 인적 및 종합, 학교평서, 학교평가","icon":"🏛️"},
+                    {"id":"g5","text":"게시판교, 보상(시상, 의제)","icon":"🏆"},
+                    {"id":"g6","text":"총괄, 학사지원, 교육과정위원회 운영","icon":"📊"}
+                ]
+            },
+            {
+                "id":"cs_gyomu2","title":"특수교육","icon":"💛","color":"#FFF8E1","borderColor":"#FFD54F","order":1,
+                "items":[
+                    {"id":"g7","text":"특수교육 담당 윤선생","description":"특수학급 | 햇살반 관리","icon":"💛","bold":true,"person":"윤선생","personExt":""},
+                    {"id":"g8","text":"특수교육(장애이해교육, 학맞춤특수지원 포함) 총괄","icon":"📋"},
+                    {"id":"g9","text":"특수학습 운영","icon":"📖"}
+                ]
+            },
+            {
+                "id":"cs_gyomu3","title":"늘봄/방과후학교","icon":"🌳","color":"#E8F5E9","borderColor":"#A5D6A7","order":2,
+                "items":[
+                    {"id":"g10","text":"늘봄실장 도늘봄","description":"늘봄학교/공유학교 총괄 및 운영 | 2-3층 방과후실","icon":"🌳","bold":true,"person":"도늘봄","personExt":""},
+                    {"id":"g11","text":"방과후돌봄학교(샘플놀이학교) 총괄(나눔분교 포함)","icon":"📋"},
+                    {"id":"g12","text":"늘봄유학교(경인이니), 아이 공유학교 경기공유학교 특허모델 R&D 운영","icon":"🔬"},
+                    {"id":"g13","text":"예산운용 계획 수립 및 성과, 소규모학교 거점형 모델 개발 연구","icon":"💰"},
+                    {"id":"g14","text":"※ 월·화·목 교육지원청 운영 프로그램 학교 내 업무협조자","description":"수·금 교육지원청 운영 프로그램 학교 내 업무협조자","icon":"⚠️"},
+                    {"id":"g15","text":"거점형 늘봄 학교 운영 및 교육지원청 업무 지원, 돌봄교실 운영 지원","icon":"🏫"},
+                    {"id":"g16","text":"늘봄실무사 모늘봄","description":"방과후실 관리 | 늘봄학교 운영","icon":"👨‍💼","bold":true,"person":"모늘봄","personExt":""},
+                    {"id":"g17","text":"방과후돌봄학교 업무 수당담(나눔분교 포함), 맞춤형 늘봄프로그램 운영","icon":"📝"},
+                    {"id":"g18","text":"1·2 학생 맟춤, 시간 맞춤, 지역 맞춤 운영 및 업무처리(강사 채용, 위탁 프로그램 계약 등)","icon":"📄"},
+                    {"id":"g19","text":"예산운용 업무, 구(舊) 방과후 학교 연계형(돌봄) 프로그램 운영 지원","icon":"💰"},
+                    {"id":"g20","text":"늘봄공유학교 및 거점형 늘봄학교 운영 총괄자(늘봄실장) 업무 협조","icon":"🤝"}
+                ]
+            },
+            {
+                "id":"cs_gyomu4","title":"돌봄교실","icon":"🏠","color":"#E0F7FA","borderColor":"#80DEEA","order":3,
+                "items":[
+                    {"id":"g21","text":"돌봄전담사 양돌봄","description":"1층 돌봄실 관리","icon":"🏠","bold":true,"person":"양돌봄","personExt":""},
+                    {"id":"g22","text":"돌봄교실 업무 및 운영, 학맞춤돌봄지원","icon":"📋"}
+                ]
+            },
+            {
+                "id":"cs_gyomu5","title":"유치원","icon":"🧒","color":"#FFF8E1","borderColor":"#FFD54F","order":4,
+                "items":[
+                    {"id":"g23","text":"유치원 담당 임유아","description":"유치원 전담사 | 유치원 관리","icon":"🧒","bold":true,"person":"임유아","personExt":""},
+                    {"id":"g24","text":"유치원교육, 유치원 방과후학교 관리","icon":"📋"},
+                    {"id":"g25","text":"유치원방과후 도방과","description":"유치원 방과후학교","icon":"👩‍🏫","bold":true,"person":"도방과","personExt":""}
+                ]
+            },
+            {
+                "id":"cs_gyomu6","title":"업무지원","icon":"🗂️","color":"#FFFFFF","borderColor":"#E0E0E0","order":5,
+                "items":[
+                    {"id":"g26","text":"교무업무지원 노행정","description":"교무실 근무","icon":"🗂️","bold":true,"person":"노행정","personExt":""},
+                    {"id":"g27","text":"학적(전입, 퇴학), 교무업무시스템 및 과제카드관리","icon":"📋"},
+                    {"id":"g28","text":"공문서 관리(접수, 발송, 이관), 학습준비물, 자료집계, 결보고장","icon":"📄"},
+                    {"id":"g29","text":"성장관리, 교직원(관리자)명부, 교원인사, 학교운동 관사","icon":"👥"},
+                    {"id":"g30","text":"불꽃이요들기, 배움터지킴이(학생보호인원), 교직원 비상연락망","icon":"🛡️"},
+                    {"id":"g31","text":"교육비지원, SMS 운영, 행정정보 공동이용 시스템","icon":"💻"}
+                ]
+            }
+        ]
+    },
+    {
+        "id":"tab_insung","title":"인성체육부","icon":"💪","type":"custom","order":3,
+        "sections":[
+            {
+                "id":"cs_in1","title":"인성체육부장","icon":"🌟","color":"#F3E5F5","borderColor":"#CE93D8","order":0,
+                "items":[
+                    {"id":"i1","text":"인성체육부장 최선생","description":"4학년 담임 | 예술체험실·방과후교실 관리","icon":"🌟","bold":true,"person":"최선생","personExt":""},
+                    {"id":"i2","text":"생활·인권(인성)교육, 학교폭력, 상담","icon":"🤝"},
+                    {"id":"i3","text":"환경교육, 경제교육","icon":"🌍"},
+                    {"id":"i4","text":"학맞춤심리검사·다문화지원","icon":"💚"}
+                ]
+            },
+            {
+                "id":"cs_in2","title":"기초학력/안전","icon":"📐","color":"#E3F2FD","borderColor":"#90CAF9","order":1,
+                "items":[
+                    {"id":"i5","text":"기초학력/안전 담당 김선생","description":"1학년 담임","icon":"📐","bold":true,"person":"김선생","personExt":""},
+                    {"id":"i6","text":"기초학력 및 평가, 체험학습, 학맞춤학업지원","icon":"📊"},
+                    {"id":"i7","text":"안전교육, 녹색어머니회, 어머니폴리스","icon":"🛡️"},
+                    {"id":"i8","text":"등하교스쿨존 지킴이","icon":"🚸"}
+                ]
+            },
+            {
+                "id":"cs_in3","title":"체육","icon":"⚽","color":"#E8F5E9","borderColor":"#A5D6A7","order":2,
+                "items":[
+                    {"id":"i9","text":"체육 담당 정선생","description":"5학년 담임 | 체육관·씨름장 관리","icon":"⚽","bold":true,"person":"정선생","personExt":""},
+                    {"id":"i10","text":"체육 총괄, 운동부 및 코치 관리","icon":"🏃"},
+                    {"id":"i11","text":"운동회, 학생 자치","icon":"🏆"}
+                ]
+            },
+            {
+                "id":"cs_in4","title":"영양","icon":"🍽️","color":"#FFF8E1","borderColor":"#FFD54F","order":3,
+                "items":[
+                    {"id":"i12","text":"영양교사 장영양","description":"급식실 관리","icon":"🍽️","bold":true,"person":"장영양","personExt":""},
+                    {"id":"i13","text":"영양 수업, 식단작성 및 위생관리","icon":"📋"},
+                    {"id":"i14","text":"식재료 선정 및 검수, 조리지도 및 검식","icon":"🔍"},
+                    {"id":"i15","text":"운영계획 수립, 영양상담 프로그램 운영","icon":"📊"},
+                    {"id":"i16","text":"우유 급식(무상대상자 선정)","icon":"🥛"}
+                ]
+            },
+            {
+                "id":"cs_in5","title":"보건","icon":"🏥","color":"#FFF0F0","borderColor":"#FFCDD2","order":4,
+                "items":[
+                    {"id":"i17","text":"보건교사 한보건","description":"보건실 관리","icon":"🏥","bold":true,"person":"한보건","personExt":""},
+                    {"id":"i18","text":"보건교육, 성교육, 약물오남용교육","icon":"📋"},
+                    {"id":"i19","text":"건강기록부, 학생건강검진, 안전공제회","icon":"📊"},
+                    {"id":"i20","text":"출결예방학교, 먹는물, 공기질","icon":"💧"},
+                    {"id":"i21","text":"학맞춤통각지원","icon":"💚"},
+                    {"id":"i22","text":"안전공제회 매뉴얼","description":"www.schoolsafe.or.kr","icon":"🛡️","url":"https://www.schoolsafe.or.kr"},
+                    {"id":"i23","text":"교육활동 보호","description":"교원의 학생생활지도 고시 해설서","icon":"📘"}
+                ]
+            }
+        ]
+    },
+    {
+        "id":"tab_curriculum","title":"교육과정부","icon":"📖","type":"custom","order":4,
+        "sections":[
+            {
+                "id":"cs_cur1","title":"교육과정부장","icon":"📖","color":"#E3F2FD","borderColor":"#90CAF9","order":0,
+                "items":[
+                    {"id":"c1","text":"교육과정부장 강선생","description":"6학년 담임 | 학년자치실 관리","icon":"📖","bold":true,"person":"강선생","personExt":""},
+                    {"id":"c2","text":"학년교육과정, 수업성찰, 전학공, 진로교육","icon":"📋"},
+                    {"id":"c3","text":"교원연수, 연구대회, 혁신교육지구","icon":"🎓"},
+                    {"id":"c4","text":"학업성적관리위원회, 교육과정위원회","icon":"🏛️"},
+                    {"id":"c5","text":"이미래교육","icon":"🔮"}
+                ]
+            },
+            {
+                "id":"cs_cur2","title":"NEIS/정보","icon":"💻","color":"#E0F7FA","borderColor":"#80DEEA","order":1,
+                "items":[
+                    {"id":"c6","text":"NEIS/정보 담당 박선생","description":"3학년 담임 | 컴퓨터실 관리","icon":"💻","bold":true,"person":"박선생","personExt":""},
+                    {"id":"c7","text":"NEIS, 정보교육, 컴퓨터실 관리","icon":"🖥️"},
+                    {"id":"c8","text":"방송, 홈페이지 관리","icon":"📡"},
+                    {"id":"c9","text":"학생 구글 계정 관리","icon":"👤"},
+                    {"id":"c10","text":"MS오피스/한글 설치 지원","icon":"💿"},
+                    {"id":"c11","text":"사이버보안진단","icon":"🔒"},
+                    {"id":"c12","text":"태블릿 펜 고장/분실접수","icon":"📱"},
+                    {"id":"c13","text":"와이파이 초기화 됐을 때","icon":"📶"}
+                ]
+            },
+            {
+                "id":"cs_cur3","title":"영어/문화예술","icon":"🌐","color":"#FFF8E1","borderColor":"#FFD54F","order":2,
+                "items":[
+                    {"id":"c14","text":"영어/문화예술 담당 조선생","description":"교과전담 | 영어실 관리","icon":"🌐","bold":true,"person":"조선생","personExt":""},
+                    {"id":"c15","text":"영어교육, 교과서, 문화예술교육(학예)","icon":"📚"},
+                    {"id":"c16","text":"교과서 출판사 / 저자 관리","icon":"📕"}
+                ]
+            },
+            {
+                "id":"cs_cur4","title":"과학","icon":"🧪","color":"#E8F5E9","borderColor":"#A5D6A7","order":3,
+                "items":[
+                    {"id":"c17","text":"과학 담당 조선생","description":"교과전담 | 과학실 관리","icon":"🧪","bold":true,"person":"조선생","personExt":""},
+                    {"id":"c18","text":"과학교육, 과학교육구 구입","icon":"🔬"},
+                    {"id":"c19","text":"플로터 출력 지원","icon":"🖨️"}
+                ]
+            },
+            {
+                "id":"cs_cur5","title":"도서","icon":"📚","color":"#F3E5F5","borderColor":"#CE93D8","order":4,
+                "items":[
+                    {"id":"c20","text":"사서 표사서","description":"도서실 관리","icon":"📚","bold":true,"person":"표사서","personExt":""},
+                    {"id":"c21","text":"독서교육, 학교도서실 관리","icon":"📖"},
+                    {"id":"c22","text":"도서·장학자료","icon":"📕"}
+                ]
+            },
+            {
+                "id":"cs_cur6","title":"연구학교 운영","icon":"🔬","color":"#E3F2FD","borderColor":"#90CAF9","order":5,
+                "items":[
+                    {"id":"c23","text":"샘플초 연구학교/혁신학교 운영 자료","icon":"✨","bold":true},
+                    {"id":"c24","text":"디지털 튜터 시간표","icon":"🤖"},
+                    {"id":"c25","text":"에듀테크 계정(교사용)","icon":"🆔"},
+                    {"id":"c26","text":"마이크로러닝","icon":"🔄"},
+                    {"id":"c27","text":"홍보분과","icon":"📰"},
+                    {"id":"c28","text":"수업사례 패들렛","icon":"💎"},
+                    {"id":"c29","text":"디지털 연수 자료","icon":"💻"},
+                    {"id":"c30","text":"디지털원패스/AIDT","icon":"🔑"},
+                    {"id":"c31","text":"하이러닝 안내 및 자료","icon":"📖"},
+                    {"id":"c32","text":"똑똑수학탐험대 안내","icon":"🧮"}
+                ]
+            }
+        ]
+    },
+    {
+        "id":"tab_sujeong","title":"나눔분교","icon":"🏫","type":"custom","order":5,
+        "sections":[
+            {
+                "id":"cs_sj1","title":"분교장","icon":"👨‍🏫","color":"#E3F2FD","borderColor":"#90CAF9","order":0,
+                "items":[
+                    {"id":"sj1","text":"분교장 홍선생","description":"6학년 담임 | 교무실·실습지 관리","icon":"👨‍🏫","bold":true,"person":"홍선생","personExt":""},
+                    {"id":"sj2","text":"분교장 업무 총괄, 교육과정 기획 및 운영","icon":"📋"},
+                    {"id":"sj3","text":"시설 및 실습지 관리, 학부모회","icon":"🏫"},
+                    {"id":"sj4","text":"교육봉사학업 운영, 동문회 지원, 채체학습장 운영","icon":"🤝"},
+                    {"id":"sj5","text":"학생자치, 교육봉사학업무 지원","icon":"👥"}
+                ]
+            },
+            {
+                "id":"cs_sj2","title":"진로/체험학습","icon":"🎯","color":"#FFF8E1","borderColor":"#FFD54F","order":1,
+                "items":[
+                    {"id":"sj6","text":"진로/체험학습 담당 송선생","description":"1, 3학년 담임 | 자료실 관리","icon":"🎯","bold":true,"person":"송선생","personExt":""},
+                    {"id":"sj7","text":"진로교육, 현장체험학습(정)","icon":"🗺️"},
+                    {"id":"sj8","text":"연구업무 지원, 복식학급 관리","icon":"📋"},
+                    {"id":"sj9","text":"정보업무(나이스, 학적, 홈페이지 등)","icon":"💻"},
+                    {"id":"sj10","text":"홍보 영상 제작, 학생맞춤종합지원(부)","icon":"📹"}
+                ]
+            },
+            {
+                "id":"cs_sj3","title":"인성/안전","icon":"🛡️","color":"#FFF0F0","borderColor":"#FFCDD2","order":2,
+                "items":[
+                    {"id":"sj11","text":"인성/안전 담당 안선생","description":"4~5학년 담임 | 음악실 관리","icon":"🛡️","bold":true,"person":"안선생","personExt":""},
+                    {"id":"sj12","text":"안전·생활(학교폭력)·인권(인성)교육 등","icon":"🤝"},
+                    {"id":"sj13","text":"안전공제회, 기초학력 및 평가","icon":"📊"},
+                    {"id":"sj14","text":"통학버스, 배움터지킴이, 노인일자리","icon":"🚌"},
+                    {"id":"sj15","text":"현장체험학습(부), 학생맞춤종합지원(정)","icon":"🗺️"}
+                ]
+            },
+            {
+                "id":"cs_sj4","title":"교육지원","icon":"📚","color":"#E8F5E9","borderColor":"#A5D6A7","order":3,
+                "items":[
+                    {"id":"sj16","text":"교육지원 담당 권선생","description":"교과전담 | 과학실·도서실 관리","icon":"📚","bold":true,"person":"권선생","personExt":""},
+                    {"id":"sj17","text":"독서교육 및 도서실 관리","icon":"📖"},
+                    {"id":"sj18","text":"과학 및 체육·보건업무","icon":"🧪"},
+                    {"id":"sj19","text":"학습준비물, 방과후업무","icon":"📋"}
+                ]
+            },
+            {
+                "id":"cs_sj5","title":"특수교육","icon":"💛","color":"#FFF8E1","borderColor":"#FFD54F","order":4,
+                "items":[
+                    {"id":"sj20","text":"특수교육 담당 류선생","description":"특수학급 | 햇살반·급식실 관리","icon":"💛","bold":true,"person":"류선생","personExt":""},
+                    {"id":"sj21","text":"특수교육(장애이해교육, 학맞춤특수지원 등) 총괄","icon":"📋"},
+                    {"id":"sj22","text":"급식(우유)업무","icon":"🥛"}
+                ]
+            },
+            {
+                "id":"cs_sj6","title":"급식","icon":"🍱","color":"#FFF3E0","borderColor":"#FFB74D","order":5,
+                "items":[
+                    {"id":"sj23","text":"샘플초등학교 디지털 급식일지","description":"메뉴 입력·결재·월별 HTML 내보내기","icon":"🍱","bold":true,"url":"/bap/"}
+                ]
+            }
+        ]
+    },
+    {"id":"training","title":"연수 관리","icon":"📋","type":"builtin","order":6},
+    {"id":"links","title":"링크 모음","icon":"🔗","type":"builtin","order":7}
+]
