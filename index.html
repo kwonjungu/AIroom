@@ -3072,16 +3072,15 @@ async function clSubmitCreate(){
     const color=clGetPickedColor();
     const editId=document.getElementById('clEditId').value;
     if(editId){
-        // 편집: 기존 entries 유지
         const post=checklistPosts.find(p=>p.id===editId); if(!post) return;
         post.title=title; post.description=desc; post.deadline=deadline;
         post.color=color.bg; post.borderColor=color.border;
         const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(editId),post);
         if(r&&r.success){ showToast('편집 저장됨','success'); }
+        else { showToast('편집 저장 실패 — '+(r&&r.error?r.error:'서버 응답 없음'),'error'); console.error('CL edit save fail:',r); return; }
         closeModal('clCreateModal');
         renderChecklist();
     } else {
-        // 신규: staff 명단으로 entries 시드
         const id='cl_'+Date.now();
         const entries=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0)).map(s=>({
             staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null
@@ -3091,14 +3090,24 @@ async function clSubmitCreate(){
             color:color.bg, borderColor:color.border,
             createdAt:Date.now(), entries
         };
+        console.log('CL create PATCH →', '/api/items/checklist-posts/'+id, post);
         const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(id),post);
+        console.log('CL create response:', r);
         if(r&&r.success){
             checklistPosts.unshift(post);
-            showToast('확인대장 생성됨','success');
+            showToast('확인대장 생성됨 (서버 저장 OK)','success');
             closeModal('clCreateModal');
             renderChecklist();
+            // 검증: GET으로 다시 받아서 진짜 저장됐는지 확인
+            setTimeout(async()=>{
+                const fresh=await api('GET','/api/checklist-posts');
+                const ok=Array.isArray(fresh)&&fresh.some(p=>p.id===id);
+                if(!ok){ showToast('⚠️ 서버에 저장 안 됨 — 새로고침 시 사라집니다. 로그 확인 필요','error'); console.error('CL: PATCH succeeded but GET does not include',id,fresh); }
+                else { console.log('CL: 서버 저장 확인 완료',id); }
+            }, 800);
         } else {
-            showToast('저장 실패','error');
+            showToast('저장 실패 — '+(r&&r.error?r.error:'서버 응답 없음'),'error');
+            console.error('CL create save fail:',r);
         }
     }
 }
@@ -3163,6 +3172,36 @@ async function clAddEntry(postId){
     renderChecklist();
     const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
     if(!r||!r.success){ showToast('저장 실패','error'); clLoad().then(renderChecklist); }
+}
+// 직접 입력 추가 (교직원 명부에 없는 사람도 가능). staffId는 manual_<timestamp>로 발급.
+async function clAddManualEntry(postId){
+    if(!isAdmin) return;
+    const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
+    const nameEl=document.getElementById('clManualName_'+postId);
+    const posEl=document.getElementById('clManualPos_'+postId);
+    const name=(nameEl.value||'').trim();
+    const position=(posEl.value||'').trim();
+    if(!name){ showToast('이름을 입력하세요','error'); nameEl.focus(); return; }
+    // 동명이인 체크 (기존 명단에서)
+    if((post.entries||[]).some(e=>e.name===name && (e.position||'')===position)){
+        showToast('이미 같은 이름·직책이 명단에 있습니다','error'); return;
+    }
+    // staff.json에 있는 사람이면 기존 staffId 재사용 (체크 권한 매칭을 위해)
+    const matched=(staff||[]).find(x=>x.name===name && (!position || x.position===position));
+    const staffId=matched?matched.id:('manual_'+Date.now());
+    post.entries.push({ staffId, name, position, checked:false, checkedAt:null });
+    // 명부 사람은 no 순, 직접입력은 뒤로
+    post.entries.sort((a,b)=>{
+        const sa=(staff||[]).find(x=>x.id===a.staffId);
+        const sb=(staff||[]).find(x=>x.id===b.staffId);
+        const na=sa?sa.no:9999, nb=sb?sb.no:9999;
+        return na-nb;
+    });
+    nameEl.value=''; posEl.value='';
+    renderChecklist();
+    const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
+    if(!r||!r.success){ showToast('저장 실패','error'); clLoad().then(renderChecklist); }
+    else { showToast(`"${name}" 추가됨`,'success'); }
 }
 function clFmtTime(ts){
     if(!ts) return '';
@@ -3251,10 +3290,11 @@ function renderChecklist(){
             });
             html+=`</div>`;
         }
-        // 관리자: 명단 추가
+        // 관리자: 명단 추가 (교직원 명부에서 선택 + 직접 입력)
         html+=`<div class="cl-add-bar">`;
-        html+=`<span style="font-size:12px;color:var(--text-light);">➕ 명단 추가:</span>`;
-        html+=`<select id="clAddSel_${post.id}">`;
+        html+=`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1;">`;
+        html+=`<span style="font-size:12px;color:var(--text-light);min-width:80px;">➕ 명부에서:</span>`;
+        html+=`<select id="clAddSel_${post.id}" style="flex:1;min-width:160px;">`;
         if(addable.length===0) html+=`<option value="">(추가 가능한 교직원 없음)</option>`;
         else {
             html+=`<option value="">교직원 선택...</option>`;
@@ -3262,6 +3302,13 @@ function renderChecklist(){
         }
         html+=`</select>`;
         html+=`<button class="btn btn-primary" style="font-size:12px;padding:6px 12px;" onclick="clAddEntry('${post.id}')">추가</button>`;
+        html+=`</div>`;
+        html+=`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex:1;border-top:1px dashed #ddd;padding-top:6px;margin-top:4px;">`;
+        html+=`<span style="font-size:12px;color:var(--text-light);min-width:80px;">✏️ 직접 입력:</span>`;
+        html+=`<input type="text" id="clManualName_${post.id}" placeholder="이름" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">`;
+        html+=`<input type="text" id="clManualPos_${post.id}" placeholder="직책 (선택)" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">`;
+        html+=`<button class="btn btn-primary" style="font-size:12px;padding:6px 12px;" onclick="clAddManualEntry('${post.id}')">추가</button>`;
+        html+=`</div>`;
         html+=`</div>`;
         html+=`</div>`; // cl-card-body
         html+=`</div>`; // cl-card
