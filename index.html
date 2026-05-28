@@ -736,6 +736,35 @@
             .translator-btn{padding:10px 20px;font-size:13px;}
             .translator-upload-area{padding:32px 16px;}
         }
+        /* ===== 확인대장 ===== */
+        .cl-card{background:var(--card-bg);border-radius:var(--radius);box-shadow:0 1px 6px rgba(0,0,0,0.05);margin-bottom:18px;overflow:hidden;border:1px solid var(--border);}
+        .cl-card-head{padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(0,0,0,0.05);}
+        .cl-card-head .cl-title{font-size:17px;font-weight:800;margin:0;}
+        .cl-card-head .cl-desc{font-size:13px;color:var(--text-light);margin:4px 0 0;}
+        .cl-card-head .cl-meta{font-size:12px;color:var(--text-light);margin-top:4px;}
+        .cl-card-head .cl-actions{display:flex;gap:6px;flex-wrap:wrap;}
+        .cl-progress{display:inline-block;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.7);color:var(--text);}
+        .cl-card-body{padding:10px 14px 14px;}
+        .cl-entry-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;}
+        .cl-entry{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#fafbfc;border:1.5px solid transparent;transition:all .15s;font-size:13px;}
+        .cl-entry:hover{background:#f1f3f5;}
+        .cl-entry.mine{border-color:var(--primary);background:#e7f3ff;}
+        .cl-entry.checked{background:#d3f9d8;border-color:#69db7c;}
+        .cl-entry.checked.mine{background:#b2f2bb;}
+        .cl-entry-no{font-size:11px;color:var(--text-light);min-width:18px;}
+        .cl-entry-pos{font-size:11px;color:var(--text-light);min-width:60px;}
+        .cl-entry-name{flex:1;font-weight:600;}
+        .cl-entry-time{font-size:11px;color:var(--text-light);}
+        .cl-entry input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--primary);}
+        .cl-entry input[type=checkbox]:disabled{cursor:not-allowed;}
+        .cl-entry .cl-remove-btn{display:none;background:transparent;border:none;color:#e03131;font-size:14px;cursor:pointer;padding:0 4px;}
+        .admin-mode .cl-entry .cl-remove-btn{display:inline-block;}
+        .cl-add-bar{display:none;margin-top:10px;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#fff9db;border-radius:8px;}
+        .admin-mode .cl-add-bar{display:flex;}
+        .cl-add-bar select{flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;}
+        .cl-color-swatch{width:30px;height:30px;border-radius:8px;border:2px solid transparent;cursor:pointer;}
+        .cl-color-swatch.active{border-color:var(--text);box-shadow:0 0 0 2px white inset;}
+        @media print{.cl-actions,.cl-add-bar,.cl-remove-btn,.admin-only{display:none!important;}}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -1295,6 +1324,52 @@
         </div>
     </div>
 
+    <!-- ===== 확인대장 PAGE ===== -->
+    <div class="page" id="page-checklist">
+        <div style="text-align:center;margin-bottom:12px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">✅ 확인대장</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">관리자가 확인 항목을 올리면, 본인 칸에 체크하세요.</p>
+        </div>
+        <!-- 본인 식별 바 (winter-schedule와 동일한 localStorage 키 공유) -->
+        <div id="clIdentityBar" style="display:none;padding:14px;background:#fff9db;border-radius:10px;margin-bottom:14px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">먼저 본인 이름을 입력해주세요</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="clNameInput" placeholder="예: 권준구" list="clStaffList"
+                    style="flex:1;min-width:200px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
+                <datalist id="clStaffList"></datalist>
+                <button class="btn btn-primary" onclick="clSaveIdentity()" style="padding:10px 16px;">확인</button>
+            </div>
+        </div>
+        <div id="clWhoamiBar" style="display:none;align-items:center;gap:8px;margin-bottom:14px;">
+            <span id="clWhoami" style="padding:6px 10px;border-radius:8px;background:var(--border);font-size:13px;"></span>
+            <button class="btn btn-secondary" onclick="clChangeName()" style="font-size:12px;padding:6px 10px;">이름 변경</button>
+        </div>
+        <button class="admin-only btn btn-primary" onclick="clOpenCreate()" style="margin-bottom:18px;">➕ 새 확인대장 만들기</button>
+        <div id="checklistList"></div>
+    </div>
+
+    <!-- 확인대장 생성/편집 모달 -->
+    <div class="modal-overlay" id="clCreateModal"><div class="modal" style="max-width:520px;">
+        <div class="modal-header"><h2 id="clModalTitle">✅ 새 확인대장 만들기</h2><button class="btn-close" onclick="closeModal('clCreateModal')">✕</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="clEditId">
+            <div class="form-group"><label>제목 *</label><input type="text" id="clTitle" placeholder="예: 5월 안전교육 이수 확인"></div>
+            <div class="form-group"><label>안내 문구</label><textarea id="clDesc" rows="2" placeholder="안내 문구 (선택)" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;"></textarea></div>
+            <div class="form-group"><label>마감일 (선택)</label><input type="date" id="clDeadline"></div>
+            <div class="form-group">
+                <label>카드 색상</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;" id="clColorPicker"></div>
+            </div>
+            <div id="clEditOnlyHint" style="display:none;font-size:12px;color:var(--text-light);padding:10px;background:#f7f8fa;border-radius:8px;">
+                ℹ️ 이미 체크한 데이터는 그대로 유지됩니다. 명단 추가/제거는 카드 본문에서 하세요.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('clCreateModal')">취소</button>
+            <button class="btn btn-primary" onclick="clSubmitCreate()">저장</button>
+        </div>
+    </div></div>
+
     <!-- Custom Tab Pages Container -->
     <div id="customPagesContainer"></div>
 
@@ -1642,7 +1717,7 @@ function toggleSectionEmojiPicker(){
     else p.style.display='none';
 }
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[],checklistPosts=[];
 let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
@@ -1658,7 +1733,8 @@ const DEFAULT_TABS=[
     {id:'pdftools',title:'PDF 도구',icon:'🛠️',type:'builtin',order:10},
     {id:'tdist',title:'교사 배포',icon:'📤',type:'builtin',order:11},
     {id:'ailab',title:'AI 실험실',icon:'🤖',type:'builtin',order:12},
-    {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13}
+    {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13},
+    {id:'checklist',title:'확인대장',icon:'✅',type:'builtin',order:14}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -1950,11 +2026,12 @@ async function init(){
             api('GET','/api/categories'),api('GET','/api/links'),api('GET','/api/trainings'),
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
             api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news'),
-            api('GET','/api/collections'),api('GET','/api/esign-docs')
+            api('GET','/api/collections'),api('GET','/api/esign-docs'),api('GET','/api/checklist-posts')
         ]);
         categories=results[0]||[];links=results[1]||[];trainings=results[2]||[];
         staff=results[3]||[];trainingRecords=results[4]||{};sections=results[5]||[];schedules=results[6]||[];
         tabsConfig=results[7]||[];newsPosts=results[8]||[];collections=results[9]||[];esignDocs=results[10]||[];
+        checklistPosts=results[11]||[];
         // 서버 데이터가 비었으면 localStorage 백업에서 복원
         const backup=loadFromLocal();
         if(backup){
@@ -2002,6 +2079,7 @@ function switchPage(p,btn){
     if(p==='esign')renderEsignList();
     if(p==='translator')initTranslator();
     if(p==='winter-schedule'){wsLoad().then(()=>renderWinterSchedule()).catch(()=>{});}
+    if(p==='checklist'){clLoad().then(()=>renderChecklist()).catch(()=>renderChecklist());}
 }
 
 // ===== SCHEDULE =====
@@ -2652,6 +2730,7 @@ function toggleAdmin(){
     if(isAdmin)showToast('관리 모드 활성화','success');
     renderTabs();renderSections();renderLinks();renderCustomPages();renderTrainingChecklist();renderNews();
     if(typeof renderWinterSchedule==='function')renderWinterSchedule();
+    if(typeof renderChecklist==='function')renderChecklist();
 }
 
 // ========== 겨울방학 근무 현황 ==========
@@ -2899,6 +2978,295 @@ async function wsSetupVacation(){
     } else {
         showToast('세팅 실패','error');
     }
+}
+
+// ========== 확인대장 (Checklist) ==========
+// 본인 식별: winter-schedule와 동일한 localStorage 키 공유 (한 번 입력하면 두 탭 모두에 적용)
+const CL_COLORS = [
+    { bg:'#FFF8E1', border:'#FFD54F' }, // 노랑
+    { bg:'#E3F2FD', border:'#90CAF9' }, // 파랑
+    { bg:'#E8F5E9', border:'#A5D6A7' }, // 초록
+    { bg:'#FFF0F0', border:'#FFCDD2' }, // 분홍
+    { bg:'#F3E5F5', border:'#CE93D8' }, // 보라
+    { bg:'#E0F7FA', border:'#80DEEA' }, // 청록
+    { bg:'#FFF3E0', border:'#FFB74D' }, // 주황
+    { bg:'#FFFFFF', border:'#E0E0E0' }, // 회색/흰색
+];
+async function clLoad(){
+    const data = await api('GET','/api/checklist-posts');
+    checklistPosts = Array.isArray(data) ? data : [];
+}
+function clMyStaffId(){ return wsMyStaffId; }
+function clMyName(){ return wsMyName; }
+function clSaveIdentity(){
+    const input=document.getElementById('clNameInput');
+    const n=(input.value||'').trim();
+    const match=(staff||[]).find(s=>s.name===n);
+    if(!match){ showToast(`"${n}" 은 교직원 명부에 없습니다`,'error'); return; }
+    wsMyStaffId=match.id; wsMyName=match.name;
+    localStorage.setItem('airoom_ws_staffId',match.id);
+    localStorage.setItem('airoom_ws_name',match.name);
+    showToast(`${match.name} 선생님으로 식별됨`,'success');
+    renderChecklist();
+}
+function clChangeName(){
+    wsMyStaffId=null; wsMyName=null;
+    localStorage.removeItem('airoom_ws_staffId');
+    localStorage.removeItem('airoom_ws_name');
+    renderChecklist();
+}
+function clOpenCreate(){
+    if(!isAdmin){ showToast('관리 모드에서만 만들 수 있습니다','error'); return; }
+    document.getElementById('clModalTitle').textContent='✅ 새 확인대장 만들기';
+    document.getElementById('clEditId').value='';
+    document.getElementById('clTitle').value='';
+    document.getElementById('clDesc').value='';
+    document.getElementById('clDeadline').value='';
+    document.getElementById('clEditOnlyHint').style.display='none';
+    clRenderColorPicker(CL_COLORS[0].bg);
+    document.getElementById('clCreateModal').classList.add('active');
+    setTimeout(()=>document.getElementById('clTitle').focus(),50);
+}
+function clOpenEdit(id){
+    if(!isAdmin) return;
+    const post=checklistPosts.find(p=>p.id===id); if(!post) return;
+    document.getElementById('clModalTitle').textContent='✏️ 확인대장 편집';
+    document.getElementById('clEditId').value=id;
+    document.getElementById('clTitle').value=post.title||'';
+    document.getElementById('clDesc').value=post.description||'';
+    document.getElementById('clDeadline').value=post.deadline||'';
+    document.getElementById('clEditOnlyHint').style.display='block';
+    clRenderColorPicker(post.color||CL_COLORS[0].bg);
+    document.getElementById('clCreateModal').classList.add('active');
+}
+function clRenderColorPicker(activeBg){
+    const wrap=document.getElementById('clColorPicker');
+    wrap.innerHTML='';
+    CL_COLORS.forEach(c=>{
+        const sw=document.createElement('div');
+        sw.className='cl-color-swatch'+(c.bg===activeBg?' active':'');
+        sw.style.background=c.bg;
+        sw.style.borderColor=c.bg===activeBg?'var(--text)':c.border;
+        sw.dataset.bg=c.bg; sw.dataset.border=c.border;
+        sw.onclick=()=>{
+            document.querySelectorAll('#clColorPicker .cl-color-swatch').forEach(s=>{
+                s.classList.remove('active');
+                s.style.borderColor=s.dataset.border;
+            });
+            sw.classList.add('active');
+            sw.style.borderColor='var(--text)';
+        };
+        wrap.appendChild(sw);
+    });
+}
+function clGetPickedColor(){
+    const active=document.querySelector('#clColorPicker .cl-color-swatch.active');
+    if(!active) return CL_COLORS[0];
+    return { bg:active.dataset.bg, border:active.dataset.border };
+}
+async function clSubmitCreate(){
+    const title=document.getElementById('clTitle').value.trim();
+    if(!title){ showToast('제목을 입력하세요','error'); return; }
+    const desc=document.getElementById('clDesc').value.trim();
+    const deadline=document.getElementById('clDeadline').value;
+    const color=clGetPickedColor();
+    const editId=document.getElementById('clEditId').value;
+    if(editId){
+        // 편집: 기존 entries 유지
+        const post=checklistPosts.find(p=>p.id===editId); if(!post) return;
+        post.title=title; post.description=desc; post.deadline=deadline;
+        post.color=color.bg; post.borderColor=color.border;
+        const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(editId),post);
+        if(r&&r.success){ showToast('편집 저장됨','success'); }
+        closeModal('clCreateModal');
+        renderChecklist();
+    } else {
+        // 신규: staff 명단으로 entries 시드
+        const id='cl_'+Date.now();
+        const entries=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0)).map(s=>({
+            staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null
+        }));
+        const post={
+            id, title, description:desc, deadline,
+            color:color.bg, borderColor:color.border,
+            createdAt:Date.now(), entries
+        };
+        const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(id),post);
+        if(r&&r.success){
+            checklistPosts.unshift(post);
+            showToast('확인대장 생성됨','success');
+            closeModal('clCreateModal');
+            renderChecklist();
+        } else {
+            showToast('저장 실패','error');
+        }
+    }
+}
+async function clDeletePost(id){
+    if(!isAdmin) return;
+    const post=checklistPosts.find(p=>p.id===id); if(!post) return;
+    if(!confirm(`"${post.title}" 확인대장을 삭제할까요? 모든 체크 기록도 사라집니다.`)) return;
+    const r=await api('DELETE','/api/items/checklist-posts/'+encodeURIComponent(id));
+    if(r&&r.success){
+        checklistPosts=checklistPosts.filter(p=>p.id!==id);
+        showToast('삭제됨','success');
+        renderChecklist();
+    } else {
+        showToast('삭제 실패','error');
+    }
+}
+async function clToggleCheck(postId, staffId){
+    const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
+    const entry=(post.entries||[]).find(e=>e.staffId===staffId); if(!entry) return;
+    // 권한: 관리자는 누구든 토글 가능, 일반 사용자는 본인만
+    if(!isAdmin && staffId!==clMyStaffId()){
+        showToast('본인 칸만 체크할 수 있습니다','error'); return;
+    }
+    entry.checked=!entry.checked;
+    entry.checkedAt=entry.checked?Date.now():null;
+    // 낙관적 업데이트 후 서버 저장
+    renderChecklist();
+    const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
+    if(!r||!r.success){
+        // 롤백
+        entry.checked=!entry.checked;
+        entry.checkedAt=entry.checked?Date.now():null;
+        renderChecklist();
+        showToast('저장 실패','error');
+    }
+}
+async function clRemoveEntry(postId, staffId){
+    if(!isAdmin) return;
+    const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
+    const idx=(post.entries||[]).findIndex(e=>e.staffId===staffId);
+    if(idx===-1) return;
+    const name=post.entries[idx].name;
+    if(!confirm(`"${name}" 님을 명단에서 제거할까요?`)) return;
+    post.entries.splice(idx,1);
+    renderChecklist();
+    const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
+    if(!r||!r.success){ showToast('저장 실패','error'); clLoad().then(renderChecklist); }
+}
+async function clAddEntry(postId){
+    if(!isAdmin) return;
+    const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
+    const sel=document.getElementById('clAddSel_'+postId);
+    if(!sel||!sel.value) return;
+    const s=(staff||[]).find(x=>x.id===sel.value); if(!s) return;
+    if((post.entries||[]).some(e=>e.staffId===s.id)){ showToast('이미 명단에 있습니다','error'); return; }
+    post.entries.push({ staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null });
+    post.entries.sort((a,b)=>{
+        const sa=(staff||[]).find(x=>x.id===a.staffId);
+        const sb=(staff||[]).find(x=>x.id===b.staffId);
+        return ((sa&&sa.no)||999)-((sb&&sb.no)||999);
+    });
+    renderChecklist();
+    const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
+    if(!r||!r.success){ showToast('저장 실패','error'); clLoad().then(renderChecklist); }
+}
+function clFmtTime(ts){
+    if(!ts) return '';
+    const d=new Date(ts);
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    const hh=String(d.getHours()).padStart(2,'0');
+    const mm=String(d.getMinutes()).padStart(2,'0');
+    return `${m}/${day} ${hh}:${mm}`;
+}
+function renderChecklist(){
+    const list=document.getElementById('checklistList');
+    if(!list) return;
+    // datalist 갱신
+    const dl=document.getElementById('clStaffList');
+    if(dl){ dl.innerHTML=(staff||[]).map(s=>`<option value="${s.name}">`).join(''); }
+    // 본인 식별 영역
+    const idBar=document.getElementById('clIdentityBar');
+    const whoBar=document.getElementById('clWhoamiBar');
+    const who=document.getElementById('clWhoami');
+    if(!clMyStaffId()||!clMyName()){
+        idBar.style.display='block';
+        whoBar.style.display='none';
+    } else {
+        idBar.style.display='none';
+        whoBar.style.display='inline-flex';
+        who.textContent=`👤 ${clMyName()} 선생님`;
+    }
+    // 포스트 없음
+    if(!Array.isArray(checklistPosts)||checklistPosts.length===0){
+        list.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--text-light);background:#fafbfc;border-radius:12px;">📭 아직 등록된 확인대장이 없습니다.'+
+            (isAdmin?'<br><span style="font-size:13px;">위의 ➕ 버튼을 눌러 만들어보세요.</span>':'<br><span style="font-size:13px;">관리자에게 문의하세요.</span>')+
+            '</div>';
+        return;
+    }
+    // 최신순 정렬
+    const sorted=[...checklistPosts].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const usedStaffIds=new Set();
+    let html='';
+    sorted.forEach(post=>{
+        const entries=Array.isArray(post.entries)?post.entries:[];
+        const checkedCount=entries.filter(e=>e.checked).length;
+        const totalCount=entries.length;
+        const bg=post.color||'#FFF8E1';
+        const bd=post.borderColor||'#FFD54F';
+        // 명단에 없는 staff (관리자 추가용 셀렉트)
+        const presentIds=new Set(entries.map(e=>e.staffId));
+        const addable=(staff||[]).filter(s=>!presentIds.has(s.id)).sort((a,b)=>(a.no||0)-(b.no||0));
+        html+=`<div class="cl-card" style="border-color:${bd};">`;
+        html+=`<div class="cl-card-head" style="background:${bg};">`;
+        html+=`<div style="flex:1;min-width:200px;">`;
+        html+=`<h3 class="cl-title">${esc(post.title||'(제목 없음)')}</h3>`;
+        if(post.description) html+=`<p class="cl-desc">${esc(post.description)}</p>`;
+        const metaParts=[];
+        if(post.deadline) metaParts.push('마감: '+esc(post.deadline));
+        if(post.createdAt) metaParts.push('등록: '+new Date(post.createdAt).toLocaleDateString('ko-KR'));
+        if(metaParts.length) html+=`<div class="cl-meta">${metaParts.join(' · ')}</div>`;
+        html+=`</div>`;
+        html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">`;
+        html+=`<span class="cl-progress">${checkedCount}/${totalCount} 완료</span>`;
+        html+=`<div class="cl-actions admin-only">`;
+        html+=`<button class="btn btn-secondary" style="font-size:12px;padding:5px 10px;" onclick="clOpenEdit('${post.id}')">✏️ 편집</button>`;
+        html+=`<button class="btn btn-secondary" style="font-size:12px;padding:5px 10px;background:#ffe5e5;color:#c92a2a;" onclick="clDeletePost('${post.id}')">🗑️ 삭제</button>`;
+        html+=`</div>`;
+        html+=`</div>`;
+        html+=`</div>`;
+        // 본문 — 명단
+        html+=`<div class="cl-card-body">`;
+        if(entries.length===0){
+            html+=`<div style="text-align:center;padding:20px;color:var(--text-light);font-size:13px;">명단이 비어있습니다. ${isAdmin?'아래에서 추가하세요.':''}</div>`;
+        } else {
+            html+=`<div class="cl-entry-grid">`;
+            entries.forEach(e=>{
+                const isMine = clMyStaffId() && e.staffId===clMyStaffId();
+                const canCheck = isAdmin || isMine;
+                const cls = 'cl-entry'+(isMine?' mine':'')+(e.checked?' checked':'');
+                const no = ((staff||[]).find(s=>s.id===e.staffId)||{}).no || '';
+                html+=`<label class="${cls}" title="${esc(e.name)}${isMine?' (본인)':''}">`;
+                html+=`<input type="checkbox" ${e.checked?'checked':''} ${canCheck?'':'disabled'} onchange="clToggleCheck('${post.id}','${e.staffId}')">`;
+                html+=`<span class="cl-entry-no">${no}</span>`;
+                html+=`<span class="cl-entry-pos">${esc(e.position||'')}</span>`;
+                html+=`<span class="cl-entry-name">${esc(e.name)}</span>`;
+                if(e.checkedAt) html+=`<span class="cl-entry-time">${clFmtTime(e.checkedAt)}</span>`;
+                html+=`<button class="cl-remove-btn admin-only" type="button" title="명단에서 제거" onclick="event.preventDefault();clRemoveEntry('${post.id}','${e.staffId}')">✕</button>`;
+                html+=`</label>`;
+            });
+            html+=`</div>`;
+        }
+        // 관리자: 명단 추가
+        html+=`<div class="cl-add-bar">`;
+        html+=`<span style="font-size:12px;color:var(--text-light);">➕ 명단 추가:</span>`;
+        html+=`<select id="clAddSel_${post.id}">`;
+        if(addable.length===0) html+=`<option value="">(추가 가능한 교직원 없음)</option>`;
+        else {
+            html+=`<option value="">교직원 선택...</option>`;
+            addable.forEach(s=>{ html+=`<option value="${s.id}">${esc(s.no?s.no+'. ':'')}${esc(s.position?'['+s.position+'] ':'')}${esc(s.name)}</option>`; });
+        }
+        html+=`</select>`;
+        html+=`<button class="btn btn-primary" style="font-size:12px;padding:6px 12px;" onclick="clAddEntry('${post.id}')">추가</button>`;
+        html+=`</div>`;
+        html+=`</div>`; // cl-card-body
+        html+=`</div>`; // cl-card
+    });
+    list.innerHTML=html;
 }
 
 // ===== 글씨 크기 =====

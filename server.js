@@ -436,6 +436,7 @@ const DATA_ROUTES = [
     { path: 'collections', file: 'collections.json', fallback: [] },
     { path: 'esign-docs', file: 'esign-docs.json', fallback: [] },
     { path: 'tdist-docs', file: 'tdist-docs.json', fallback: [] },
+    { path: 'checklist-posts', file: 'checklist-posts.json', fallback: [] },
     { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } }
 ];
 
@@ -515,7 +516,8 @@ const ARRAY_COLLECTIONS = {
     'news': 'news.json',
     'collections': 'collections.json',
     'esign-docs': 'esign-docs.json',
-    'tdist-docs': 'tdist-docs.json'
+    'tdist-docs': 'tdist-docs.json',
+    'checklist-posts': 'checklist-posts.json'
 };
 
 function reorderArrayByIds(arr, ids) {
@@ -1905,6 +1907,7 @@ const POSTING_DATA = {
     'collections': { file: 'collections.json', fallback: [] },
     'esign-docs': { file: 'esign-docs.json', fallback: [] },
     'tdist-docs': { file: 'tdist-docs.json', fallback: [] },
+    'checklist-posts': { file: 'checklist-posts.json', fallback: [] },
     'winter-schedule': { file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
 };
 Object.entries(POSTING_DATA).forEach(([p, { file, fallback }]) => {
