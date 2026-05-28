@@ -3173,6 +3173,36 @@ async function clAddEntry(postId){
     const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
     if(!r||!r.success){ showToast('저장 실패','error'); clLoad().then(renderChecklist); }
 }
+// 현재 staff 명부에서 빠진 사람만 자동 추가 (기존 entries의 checked 기록은 유지)
+async function clReseedStaff(postId){
+    if(!isAdmin) return;
+    const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
+    if(!Array.isArray(staff)||staff.length===0){
+        showToast('교직원 명부가 비어있습니다. 방학근무 탭에서 먼저 명단을 등록하세요.','error');
+        return;
+    }
+    const existingIds=new Set((post.entries||[]).map(e=>e.staffId));
+    const added=[];
+    staff.forEach(s=>{
+        if(!existingIds.has(s.id)){
+            post.entries.push({ staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null });
+            added.push(s.name);
+        }
+    });
+    if(added.length===0){
+        showToast(`이미 모두 명단에 있습니다 (총 ${post.entries.length}명, staff ${staff.length}명)`,'info');
+        return;
+    }
+    post.entries.sort((a,b)=>{
+        const sa=(staff||[]).find(x=>x.id===a.staffId);
+        const sb=(staff||[]).find(x=>x.id===b.staffId);
+        return ((sa&&sa.no)||9999)-((sb&&sb.no)||9999);
+    });
+    renderChecklist();
+    const r=await api('PATCH','/api/items/checklist-posts/'+encodeURIComponent(postId),post);
+    if(r&&r.success) showToast(`${added.length}명 추가됨: ${added.join(', ')}`,'success');
+    else { showToast('저장 실패','error'); clLoad().then(renderChecklist); }
+}
 // 직접 입력 추가 (교직원 명부에 없는 사람도 가능). staffId는 manual_<timestamp>로 발급.
 async function clAddManualEntry(postId){
     if(!isAdmin) return;
@@ -3263,6 +3293,7 @@ function renderChecklist(){
         html+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">`;
         html+=`<span class="cl-progress">${checkedCount}/${totalCount} 완료</span>`;
         html+=`<div class="cl-actions admin-only">`;
+        html+=`<button class="btn btn-secondary" style="font-size:12px;padding:5px 10px;" onclick="clReseedStaff('${post.id}')" title="현재 교직원 명부에서 빠진 사람 자동 추가 (체크 기록은 유지)">📋 명단 새로고침</button>`;
         html+=`<button class="btn btn-secondary" style="font-size:12px;padding:5px 10px;" onclick="clOpenEdit('${post.id}')">✏️ 편집</button>`;
         html+=`<button class="btn btn-secondary" style="font-size:12px;padding:5px 10px;background:#ffe5e5;color:#c92a2a;" onclick="clDeletePost('${post.id}')">🗑️ 삭제</button>`;
         html+=`</div>`;
