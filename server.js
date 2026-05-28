@@ -346,6 +346,7 @@ const KV_KEYS = {
     'esign-docs.json': 'esign-docs',
     'tdist-docs.json': 'tdist-docs',
     'checklist-posts.json': 'checklist-posts',
+    'checklist-extra-staff.json': 'checklist-extra-staff',
     'winter-schedule.json': 'winter-schedule',
     'bap-managers.json': 'bap-managers',
     'bap-bosses.json': 'bap-bosses',
@@ -438,6 +439,7 @@ const DATA_ROUTES = [
     { path: 'esign-docs', file: 'esign-docs.json', fallback: [] },
     { path: 'tdist-docs', file: 'tdist-docs.json', fallback: [] },
     { path: 'checklist-posts', file: 'checklist-posts.json', fallback: [] },
+    { path: 'checklist-extra-staff', file: 'checklist-extra-staff.json', fallback: [] },
     { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } }
 ];
 
@@ -518,7 +520,8 @@ const ARRAY_COLLECTIONS = {
     'collections': 'collections.json',
     'esign-docs': 'esign-docs.json',
     'tdist-docs': 'tdist-docs.json',
-    'checklist-posts': 'checklist-posts.json'
+    'checklist-posts': 'checklist-posts.json',
+    'checklist-extra-staff': 'checklist-extra-staff.json'
 };
 
 function reorderArrayByIds(arr, ids) {
@@ -1909,6 +1912,7 @@ const POSTING_DATA = {
     'esign-docs': { file: 'esign-docs.json', fallback: [] },
     'tdist-docs': { file: 'tdist-docs.json', fallback: [] },
     'checklist-posts': { file: 'checklist-posts.json', fallback: [] },
+    'checklist-extra-staff': { file: 'checklist-extra-staff.json', fallback: [] },
     'winter-schedule': { file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
 };
 Object.entries(POSTING_DATA).forEach(([p, { file, fallback }]) => {

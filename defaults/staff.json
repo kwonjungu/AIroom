@@ -16,20 +16,5 @@
     { "id": "s15", "no": 15, "position": "3,4-수정", "name": "이현정" },
     { "id": "s16", "no": 16, "position": "6-수정", "name": "황의순" },
     { "id": "s17", "no": 17, "position": "교과전담", "name": "정승자" },
-    { "id": "s18", "no": 18, "position": "특수교사", "name": "이선미" },
-    { "id": "s19", "no": 19, "position": "행정실장", "name": "김종기" },
-    { "id": "s20", "no": 20, "position": "주무관", "name": "박혜선" },
-    { "id": "s21", "no": 21, "position": "주무관", "name": "장주선" },
-    { "id": "s22", "no": 22, "position": "주무관", "name": "윤광호" },
-    { "id": "s23", "no": 23, "position": "행정실무사", "name": "이미희" },
-    { "id": "s24", "no": 24, "position": "행정실무사", "name": "남희정" },
-    { "id": "s25", "no": 25, "position": "사서", "name": "강은주" },
-    { "id": "s26", "no": 26, "position": "유치원방과후", "name": "오현숙" },
-    { "id": "s27", "no": 27, "position": "돌봄전담사", "name": "윤진성" },
-    { "id": "s28", "no": 28, "position": "조리사", "name": "김희경" },
-    { "id": "s29", "no": 29, "position": "조리실무사", "name": "양지인" },
-    { "id": "s30", "no": 30, "position": "조리실무사", "name": "박현주" },
-    { "id": "s31", "no": 31, "position": "씨름감독", "name": "김흥석" },
-    { "id": "s32", "no": 32, "position": "늘봄실장", "name": "지지영" },
-    { "id": "s33", "no": 33, "position": "늘봄실무사", "name": "장동훈" }
+    { "id": "s18", "no": 18, "position": "특수교사", "name": "이선미" }
 ]

@@ -1911,7 +1911,7 @@ function toggleSectionEmojiPicker(){
     else p.style.display='none';
 }
 
-let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[],tdistDocs=[],checklistPosts=[];
+let categories=[],links=[],trainings=[],staff=[],trainingRecords={},sections=[],schedules=[],newsPosts=[],collections=[],esignDocs=[],tdistDocs=[],checklistPosts=[],checklistExtraStaff=[];
 let tabsConfig=[];
 const DEFAULT_TABS=[
     {id:'schedule',title:'학교 일정',icon:'📅',type:'builtin',order:0},
@@ -2208,7 +2208,7 @@ async function init(){
             api('GET','/api/staff'),api('GET','/api/training-records'),api('GET','/api/sections'),
             api('GET','/api/schedules'),api('GET','/api/tabs'),api('GET','/api/news'),
             api('GET','/api/collections'),api('GET','/api/esign-docs'),api('GET','/api/tdist-docs'),
-            api('GET','/api/checklist-posts')
+            api('GET','/api/checklist-posts'),api('GET','/api/checklist-extra-staff')
         ]);
         const backup=loadFromLocal();
         let serverFail=0,restored=0;
@@ -2240,6 +2240,7 @@ async function init(){
         esignDocs=pick(results[10],'esignDocs',[],'/api/esign-docs');
         tdistDocs=pick(results[11],'tdistDocs',[],'/api/tdist-docs');
         checklistPosts=pick(results[12],'checklistPosts',[],'/api/checklist-posts');
+        checklistExtraStaff=pick(results[13],'checklistExtraStaff',[],'/api/checklist-extra-staff');
         if(serverFail>0)showToast('서버 연결 일부 실패 ('+serverFail+'건) - 백업에서 복원','error');
         else if(restored>0)showToast('서버 데이터가 비어 백업에서 복원했습니다','success');
         saveToLocal();
@@ -3012,16 +3013,27 @@ const CL_COLORS = [
     { bg:'#FFFFFF', border:'#E0E0E0' },
 ];
 async function clLoad(){
-    const data = await api('GET','/api/checklist-posts');
-    checklistPosts = Array.isArray(data) ? data : [];
+    const [posts, extra] = await Promise.all([
+        api('GET','/api/checklist-posts'),
+        api('GET','/api/checklist-extra-staff')
+    ]);
+    checklistPosts = Array.isArray(posts) ? posts : [];
+    checklistExtraStaff = Array.isArray(extra) ? extra : [];
+}
+// 확인대장에서 사용하는 전체 명단 = staff(방학근무용 18명) + 확장 명단(행정실/급식/늘봄 등)
+function clAllStaff(){
+    const merged = [...(staff||[])];
+    const ids = new Set(merged.map(s=>s.id));
+    (checklistExtraStaff||[]).forEach(s=>{ if(!ids.has(s.id)){ merged.push(s); ids.add(s.id); }});
+    return merged.sort((a,b)=>(a.no||0)-(b.no||0));
 }
 function clMyStaffId(){ return (typeof wsMyStaffId!=='undefined') ? wsMyStaffId : (localStorage.getItem('airoom_ws_staffId')||null); }
 function clMyName(){ return (typeof wsMyName!=='undefined') ? wsMyName : (localStorage.getItem('airoom_ws_name')||null); }
 function clSaveIdentity(){
     const input=document.getElementById('clNameInput');
     const n=(input.value||'').trim();
-    const match=(staff||[]).find(s=>s.name===n);
-    if(!match){ showToast(`"${n}" 은 교직원 명부에 없습니다`,'error'); return; }
+    const match=clAllStaff().find(s=>s.name===n);
+    if(!match){ showToast(`"${n}" 은 명부에 없습니다`,'error'); return; }
     if(typeof wsMyStaffId!=='undefined'){ wsMyStaffId=match.id; wsMyName=match.name; }
     localStorage.setItem('airoom_ws_staffId',match.id);
     localStorage.setItem('airoom_ws_name',match.name);
@@ -3101,7 +3113,7 @@ async function clSubmitCreate(){
         renderChecklist();
     } else {
         const id='cl_'+Date.now();
-        const entries=(staff||[]).slice().sort((a,b)=>(a.no||0)-(b.no||0)).map(s=>({
+        const entries=clAllStaff().map(s=>({
             staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null
         }));
         const post={
@@ -3176,12 +3188,13 @@ async function clAddEntry(postId){
     const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
     const sel=document.getElementById('clAddSel_'+postId);
     if(!sel||!sel.value) return;
-    const s=(staff||[]).find(x=>x.id===sel.value); if(!s) return;
+    const all=clAllStaff();
+    const s=all.find(x=>x.id===sel.value); if(!s) return;
     if((post.entries||[]).some(e=>e.staffId===s.id)){ showToast('이미 명단에 있습니다','error'); return; }
     post.entries.push({ staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null });
     post.entries.sort((a,b)=>{
-        const sa=(staff||[]).find(x=>x.id===a.staffId);
-        const sb=(staff||[]).find(x=>x.id===b.staffId);
+        const sa=all.find(x=>x.id===a.staffId);
+        const sb=all.find(x=>x.id===b.staffId);
         return ((sa&&sa.no)||999)-((sb&&sb.no)||999);
     });
     renderChecklist();
@@ -3192,25 +3205,26 @@ async function clAddEntry(postId){
 async function clReseedStaff(postId){
     if(!isAdmin) return;
     const post=checklistPosts.find(p=>p.id===postId); if(!post) return;
-    if(!Array.isArray(staff)||staff.length===0){
-        showToast('교직원 명부가 비어있습니다. 방학근무 탭에서 먼저 명단을 등록하세요.','error');
+    const all=clAllStaff();
+    if(all.length===0){
+        showToast('명부가 비어있습니다','error');
         return;
     }
     const existingIds=new Set((post.entries||[]).map(e=>e.staffId));
     const added=[];
-    staff.forEach(s=>{
+    all.forEach(s=>{
         if(!existingIds.has(s.id)){
             post.entries.push({ staffId:s.id, name:s.name, position:s.position||'', checked:false, checkedAt:null });
             added.push(s.name);
         }
     });
     if(added.length===0){
-        showToast(`이미 모두 명단에 있습니다 (총 ${post.entries.length}명, staff ${staff.length}명)`,'info');
+        showToast(`이미 모두 명단에 있습니다 (총 ${post.entries.length}명 / 전체 ${all.length}명)`,'info');
         return;
     }
     post.entries.sort((a,b)=>{
-        const sa=(staff||[]).find(x=>x.id===a.staffId);
-        const sb=(staff||[]).find(x=>x.id===b.staffId);
+        const sa=all.find(x=>x.id===a.staffId);
+        const sb=all.find(x=>x.id===b.staffId);
         return ((sa&&sa.no)||9999)-((sb&&sb.no)||9999);
     });
     renderChecklist();
@@ -3230,12 +3244,13 @@ async function clAddManualEntry(postId){
     if((post.entries||[]).some(e=>e.name===name && (e.position||'')===position)){
         showToast('이미 같은 이름·직책이 명단에 있습니다','error'); return;
     }
-    const matched=(staff||[]).find(x=>x.name===name && (!position || x.position===position));
+    const all=clAllStaff();
+    const matched=all.find(x=>x.name===name && (!position || x.position===position));
     const staffId=matched?matched.id:('manual_'+Date.now());
     post.entries.push({ staffId, name, position, checked:false, checkedAt:null });
     post.entries.sort((a,b)=>{
-        const sa=(staff||[]).find(x=>x.id===a.staffId);
-        const sb=(staff||[]).find(x=>x.id===b.staffId);
+        const sa=all.find(x=>x.id===a.staffId);
+        const sb=all.find(x=>x.id===b.staffId);
         const na=sa?sa.no:9999, nb=sb?sb.no:9999;
         return na-nb;
     });
@@ -3258,7 +3273,7 @@ function renderChecklist(){
     const list=document.getElementById('checklistList');
     if(!list) return;
     const dl=document.getElementById('clStaffList');
-    if(dl){ dl.innerHTML=(staff||[]).map(s=>`<option value="${s.name}">`).join(''); }
+    if(dl){ dl.innerHTML=clAllStaff().map(s=>`<option value="${s.name}">`).join(''); }
     const idBar=document.getElementById('clIdentityBar');
     const whoBar=document.getElementById('clWhoamiBar');
     const who=document.getElementById('clWhoami');
@@ -3278,6 +3293,7 @@ function renderChecklist(){
     }
     const sorted=[...checklistPosts].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     let html='';
+    const allStaff=clAllStaff();
     sorted.forEach(post=>{
         const entries=Array.isArray(post.entries)?post.entries:[];
         const checkedCount=entries.filter(e=>e.checked).length;
@@ -3285,7 +3301,7 @@ function renderChecklist(){
         const bg=post.color||'#FFF8E1';
         const bd=post.borderColor||'#FFD54F';
         const presentIds=new Set(entries.map(e=>e.staffId));
-        const addable=(staff||[]).filter(s=>!presentIds.has(s.id)).sort((a,b)=>(a.no||0)-(b.no||0));
+        const addable=allStaff.filter(s=>!presentIds.has(s.id));
         html+=`<div class="cl-card" style="border-color:${bd};">`;
         html+=`<div class="cl-card-head" style="background:${bg};">`;
         html+=`<div style="flex:1;min-width:200px;">`;
@@ -3314,7 +3330,7 @@ function renderChecklist(){
                 const isMine = clMyStaffId() && e.staffId===clMyStaffId();
                 const canCheck = isAdmin || isMine;
                 const cls = 'cl-entry'+(isMine?' mine':'')+(e.checked?' checked':'');
-                const no = ((staff||[]).find(s=>s.id===e.staffId)||{}).no || '';
+                const no = (allStaff.find(s=>s.id===e.staffId)||{}).no || '';
                 html+=`<label class="${cls}" title="${esc(e.name)}${isMine?' (본인)':''}">`;
                 html+=`<input type="checkbox" ${e.checked?'checked':''} ${canCheck?'':'disabled'} onchange="clToggleCheck('${post.id}','${e.staffId}')">`;
                 html+=`<span class="cl-entry-no">${no}</span>`;
