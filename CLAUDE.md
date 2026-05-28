@@ -43,7 +43,11 @@ AIroom/
 ### 새 데이터 컬렉션 추가할 때 (체크리스트)
 1. `defaults/<name>.json` 생성
 2. `defaults-posting/<name>.json` 생성 (익명/빈 데이터)
-3. `server.js` 세 곳에 등록: `DATA_ROUTES`, `ARRAY_COLLECTIONS`, `POSTING_DATA`
+3. `server.js` **네 곳** 모두에 등록 — 하나라도 빠지면 production에서 묵묵히 실패:
+   - `KV_KEYS` (line ~334) — **누락 시 PATCH가 success 반환하지만 Redis에 안 쓰여 데이터 사라짐** (Vercel은 파일도 안 씀). 이 버그를 한 번 겪었음, 절대 빠뜨리지 말 것.
+   - `DATA_ROUTES` (line ~425) — GET/POST 자동 등록
+   - `ARRAY_COLLECTIONS` (line ~507) — PATCH/DELETE per-item 라우트
+   - `POSTING_DATA` (line ~1896) — /posting 데모 모드
 4. 프런트는 두 SPA 파일(`index.html` + `public/index.html`) 모두에 동일 적용
 
 ---

@@ -345,6 +345,7 @@ const KV_KEYS = {
     'collections.json': 'collections',
     'esign-docs.json': 'esign-docs',
     'tdist-docs.json': 'tdist-docs',
+    'checklist-posts.json': 'checklist-posts',
     'winter-schedule.json': 'winter-schedule',
     'bap-managers.json': 'bap-managers',
     'bap-bosses.json': 'bap-bosses',
