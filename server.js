@@ -1043,7 +1043,10 @@ async function fetchJsonTimeout(url, ms = 7000) {
 }
 
 function itemsOf(json) {
-    const it = json && json.response && json.response.body && json.response.body.items && json.response.body.items.item;
+    const items = json && json.response && json.response.body && json.response.body.items;
+    if (!items) return [];
+    // 기상청은 items.item 형태, 에어코리아(미세먼지)는 items 자체가 배열
+    const it = (items.item !== undefined) ? items.item : items;
     return Array.isArray(it) ? it : (it ? [it] : []);
 }
 
@@ -1054,10 +1057,11 @@ async function fetchWeatherNow() {
     const url = `http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${encodeURIComponent(WEATHER_KEY)}&dataType=JSON&numOfRows=20&pageNo=1&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
     const items = itemsOf(await fetchJsonTimeout(url));
     const get = (c) => { const f = items.find(i => i.category === c); return f ? f.obsrValue : null; };
-    const t1h = get('T1H'), pty = get('PTY');
+    const t1h = get('T1H'), pty = get('PTY'), reh = get('REH');
     const temp = t1h != null ? Math.round(parseFloat(t1h)) : null;
+    const humidity = reh != null ? Math.round(parseFloat(reh)) : null;
     const rain = PTY_LABEL[pty] || '없음';
-    return { temp, pty, rain };
+    return { temp, humidity, pty, rain };
 }
 
 // 미세먼지 측정소 실시간 → { pm10, pm10Grade, pm25, pm25Grade, label, level }
@@ -1121,6 +1125,7 @@ app.get('/api/weather', requireAuth, async (req, res) => {
 
         const result = {
             temp: now ? now.temp : null,
+            humidity: now ? now.humidity : null,
             rain: now ? now.rain : null,
             pty: now ? now.pty : null,
             dust,

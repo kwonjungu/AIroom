@@ -60,19 +60,18 @@
         .btn-admin:hover{background:rgba(255,255,255,0.3);}
         .header-contact{font-size:11px;opacity:0.75;margin-top:4px;}
 
-        /* 오늘의 날씨·경보 알리미 위젯 */
-        .weather-alert{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.15);color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s;line-height:1.2;}
-        .weather-alert:hover{background:rgba(255,255,255,0.28);}
-        .weather-alert.is-warn{background:#f59e0b;border-color:#f59e0b;color:#1a1a1a;animation:waPulse 1.6s ease-in-out infinite;}
-        .weather-alert.is-danger{background:#ef4444;border-color:#ef4444;color:#fff;animation:waPulse 1s ease-in-out infinite;}
-        @keyframes waPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.0);}50%{box-shadow:0 0 0 5px rgba(255,255,255,0.35);}}
-        .weather-detail{position:absolute;top:calc(100% + 8px);right:0;min-width:240px;max-width:300px;background:#fff;color:var(--text);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.18);padding:14px 16px;z-index:200;font-size:13px;text-align:left;}
-        .weather-detail h4{margin:0 0 8px;font-size:14px;color:var(--text);}
-        .weather-detail .wd-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--border);}
-        .weather-detail .wd-row:first-of-type{border-top:none;}
-        .weather-detail .wd-warn{background:#fef2f2;color:#b91c1c;border-radius:8px;padding:6px 8px;margin:4px 0;font-weight:700;}
-        .weather-detail .wd-foot{margin-top:8px;font-size:11px;color:var(--text-light);}
-        @media (max-width:640px){.weather-alert{font-size:11px;padding:5px 9px;}.weather-detail{right:auto;left:50%;transform:translateX(-50%);}}
+        /* 오늘의 날씨·미세먼지 스트립 (연락처 바) */
+        .wx-strip{display:inline-flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:auto;font-weight:600;color:var(--text);}
+        .wx-strip .wx-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+        .wx-strip .wx-item b{font-weight:800;}
+        .wx-strip .wx-dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;display:inline-block;flex-shrink:0;}
+        .wx-strip .wx-dot.is-good{background:#16a34a;}
+        .wx-strip .wx-dot.is-normal{background:#f59e0b;}
+        .wx-strip .wx-dot.is-bad{background:#ef4444;}
+        .wx-strip .wx-warn{display:inline-flex;align-items:center;gap:4px;background:#ef4444;color:#fff;border-radius:999px;padding:3px 10px;font-weight:800;animation:waPulse 1s ease-in-out infinite;}
+        .wx-strip .wx-warn[hidden]{display:none;}
+        @keyframes waPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}50%{box-shadow:0 0 0 5px rgba(239,68,68,0.35);}}
+        @media (max-width:640px){.wx-strip{margin-left:0;gap:10px;font-size:12px;}}
 
         /* School info bar */
         .school-info{max-width:960px;margin:0 auto;padding:12px 24px;}
@@ -830,10 +829,6 @@
                 </div>
             </div>
             <div class="header-right">
-                <button class="weather-alert" id="weatherAlert" onclick="toggleWeatherDetail(event)" title="오늘의 날씨·경보 (백암면)">
-                    <span id="waSummary">날씨 불러오는 중…</span>
-                </button>
-                <div class="weather-detail" id="weatherDetail" hidden></div>
                 <span class="header-date" id="currentDate"></span>
                 <button class="btn-admin" id="btnAdmin" onclick="toggleAdmin()">🔧 관리</button>
                 <button class="btn-server-status" onclick="showServerStatus()">📊 서버현황</button>
@@ -848,6 +843,12 @@
             <span>📞 031-332-4612</span>
             <span>📍 경기 용인시 처인구 백암면 백원로 501</span>
             <span>🌐 <a href="https://packam-e.goeyi.kr/" target="_blank" style="color:var(--primary);">https://packam-e.goeyi.kr/</a></span>
+            <div class="wx-strip" id="wxStrip" title="백암면 오늘의 날씨 · 10분마다 갱신">
+                <span class="wx-warn" id="wxWarn" hidden></span>
+                <span class="wx-item">🌡️ 온도 <b id="wxTemp">-</b><span class="wx-dot" id="wxTempDot"></span></span>
+                <span class="wx-item">💧 습도 <b id="wxHum">-</b><span class="wx-dot" id="wxHumDot"></span></span>
+                <span class="wx-item" id="wxDustItem">😷 미세먼지 <b id="wxDust">-</b><span class="wx-dot" id="wxDustDot"></span></span>
+            </div>
         </div>
     </div>
 
@@ -2288,26 +2289,26 @@ function updateDate(){
         new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
 }
 
-// ===== 오늘의 날씨·경보 알리미 (백암면) =====
+// ===== 오늘의 날씨·미세먼지 스트립 (백암면) =====
 let weatherData=null;
 function initWeatherAlert(){
     loadWeatherAlert();
     setInterval(loadWeatherAlert,10*60*1000); // 10분마다 갱신
-    document.addEventListener('click',(e)=>{
-        const w=document.getElementById('weatherDetail');
-        if(w&&!w.hidden&&!e.target.closest('#weatherDetail')&&!e.target.closest('#weatherAlert')) w.hidden=true;
-    });
 }
-const PTY_EMOJI={'비':'🌧️','비/눈':'🌨️','눈':'❄️','빗방울':'🌦️','진눈깨비':'🌨️','눈날림':'🌨️'};
-function weatherEmoji(d){
-    if(!d) return '🌤️';
-    if(d.rain&&d.rain!=='없음') return PTY_EMOJI[d.rain]||'🌧️';
-    return '☀️';
+// 신호등 등급 판정: 'good' | 'normal' | 'bad'
+function wxTempLevel(t){ if(t==null) return null; if(t>=18&&t<=26) return 'good'; if((t>=10&&t<18)||(t>26&&t<=31)) return 'normal'; return 'bad'; }
+function wxHumLevel(h){ if(h==null) return null; if(h>=40&&h<=60) return 'good'; if((h>=30&&h<40)||(h>60&&h<=70)) return 'normal'; return 'bad'; }
+function wxDustLevel(dust){ if(!dust) return null; return dust.level==='danger'?'bad':dust.level==='warn'?'normal':'good'; }
+function wxSetDot(id,level){
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('is-good','is-normal','is-bad');
+    if(level) el.classList.add('is-'+level);
 }
 async function loadWeatherAlert(){
-    const chip=document.getElementById('weatherAlert');
-    const sum=document.getElementById('waSummary');
-    if(!chip||!sum) return;
+    const strip=document.getElementById('wxStrip');
+    if(!strip) return;
+    const $=(id)=>document.getElementById(id);
     try{
         const headers={};if(authToken) headers['X-Auth-Token']=authToken;
         const r=await fetch('/api/weather',{headers});
@@ -2315,50 +2316,27 @@ async function loadWeatherAlert(){
         const d=await r.json();
         if(d.error) throw new Error(d.error);
         weatherData=d;
-        chip.classList.remove('is-warn','is-danger');
-        if(d.alertLevel==='danger') chip.classList.add('is-danger');
-        else if(d.alertLevel==='warn') chip.classList.add('is-warn');
-        // 칩 텍스트: 경보가 있으면 경보 우선, 없으면 날씨+미세먼지
-        let txt;
-        if(d.warnings&&d.warnings.length){
-            const w=d.warnings[0];
-            txt=`${w.kind==='폭염'?'🔥':w.kind==='한파'?'🥶':w.kind==='호우'?'🌧️':w.kind==='대설'?'❄️':'⚠️'} ${w.type}`;
-            if(d.temp!=null) txt+=` · ${d.temp}°`;
-        }else if(d.dust&&(d.dust.level==='warn'||d.dust.level==='danger')){
-            txt=`😷 미세먼지 ${d.dust.label}`;
-            if(d.temp!=null) txt=`${weatherEmoji(d)} ${d.temp}° · `+txt;
-        }else{
-            txt=`${weatherEmoji(d)} ${d.temp!=null?d.temp+'° · ':''}미세먼지 ${d.dust?d.dust.label:'-'}`;
+        $('wxTemp').textContent=d.temp!=null?d.temp+'°':'-';
+        wxSetDot('wxTempDot',wxTempLevel(d.temp));
+        $('wxHum').textContent=d.humidity!=null?d.humidity+'%':'-';
+        wxSetDot('wxHumDot',wxHumLevel(d.humidity));
+        $('wxDust').textContent=d.dust?d.dust.label:'-';
+        wxSetDot('wxDustDot',wxDustLevel(d.dust));
+        const di=$('wxDustItem');
+        if(di) di.title=d.dust?`PM10 ${d.dust.pm10!=null?d.dust.pm10:'-'}㎍/㎥ · PM2.5 ${d.dust.pm25!=null?d.dust.pm25:'-'}㎍/㎥`:'미세먼지 정보 없음';
+        const warn=$('wxWarn');
+        if(warn){
+            if(d.warnings&&d.warnings.length){ warn.textContent='⚠️ '+d.warnings.map(w=>w.type).join(' · ')+' 발효'; warn.hidden=false; }
+            else { warn.hidden=true; warn.textContent=''; }
         }
-        sum.textContent=txt;
-        chip.title=d.stale?'오늘의 날씨·경보 (이전 정보)':'오늘의 날씨·경보 (백암면)';
+        strip.title=(d.stale?'백암면 날씨 (이전 정보)':'백암면 오늘의 날씨')+' · 기상청·에어코리아 · 10분마다 갱신';
     }catch(e){
-        sum.textContent='날씨 정보 없음';
-        chip.classList.remove('is-warn','is-danger');
+        if($('wxTemp')) $('wxTemp').textContent='-';
+        if($('wxHum')) $('wxHum').textContent='-';
+        if($('wxDust')) $('wxDust').textContent='정보 없음';
+        ['wxTempDot','wxHumDot','wxDustDot'].forEach(id=>wxSetDot(id,null));
+        const warn=$('wxWarn'); if(warn) warn.hidden=true;
     }
-}
-function toggleWeatherDetail(e){
-    if(e) e.stopPropagation();
-    const box=document.getElementById('weatherDetail');
-    if(!box) return;
-    if(!box.hidden){box.hidden=true;return;}
-    const d=weatherData;
-    if(!d){box.innerHTML='<h4>날씨 정보</h4><div class="wd-row">정보를 불러오지 못했어요.</div>';box.hidden=false;return;}
-    let html='<h4>🏫 백암면 오늘의 날씨·경보</h4>';
-    if(d.warnings&&d.warnings.length){
-        d.warnings.forEach(w=>{html+=`<div class="wd-warn">⚠️ ${w.type} 발효 중</div>`;});
-    }
-    html+=`<div class="wd-row">${weatherEmoji(d)} 기온 <b>${d.temp!=null?d.temp+'°C':'-'}</b>${d.rain&&d.rain!=='없음'?' · '+d.rain:''}</div>`;
-    if(d.dust){
-        html+=`<div class="wd-row">😷 미세먼지(PM10) <b>${d.dust.pm10!=null?d.dust.pm10:'-'}</b> · ${d.dust.pm10Grade?(['','좋음','보통','나쁨','매우나쁨'][d.dust.pm10Grade]):'-'}</div>`;
-        html+=`<div class="wd-row">🌫️ 초미세(PM2.5) <b>${d.dust.pm25!=null?d.dust.pm25:'-'}</b> · ${d.dust.pm25Grade?(['','좋음','보통','나쁨','매우나쁨'][d.dust.pm25Grade]):'-'}</div>`;
-    }else{
-        html+='<div class="wd-row">😷 미세먼지 정보 없음</div>';
-    }
-    const t=d.updatedAt?new Date(d.updatedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
-    html+=`<div class="wd-foot">기상청·에어코리아 기준${t?' · '+t+' 갱신':''}${d.stale?' (이전 정보)':''}</div>`;
-    box.innerHTML=html;
-    box.hidden=false;
 }
 
 function switchPage(p,btn){
