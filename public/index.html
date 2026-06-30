@@ -71,7 +71,20 @@
         .wx-strip .wx-warn{display:inline-flex;align-items:center;gap:4px;background:#ef4444;color:#fff;border-radius:999px;padding:3px 10px;font-weight:800;animation:waPulse 1s ease-in-out infinite;}
         .wx-strip .wx-warn[hidden]{display:none;}
         @keyframes waPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0);}50%{box-shadow:0 0 0 5px rgba(239,68,68,0.35);}}
+        .wx-poster-btn{border:none;cursor:pointer;background:#2563eb;color:#fff;font-weight:800;border-radius:999px;padding:5px 13px;font-size:13px;display:inline-flex;align-items:center;gap:5px;animation:waPulse 1.6s ease-in-out infinite;}
+        .wx-poster-btn:hover{background:#1d4ed8;}
+        .wx-poster-btn[hidden]{display:none;}
         @media (max-width:640px){.wx-strip{margin-left:0;gap:10px;font-size:12px;}}
+        /* 안전수칙 포스터 모달 */
+        .wx-modal{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;}
+        .wx-modal[hidden]{display:none;}
+        .wx-modal-inner{position:relative;max-width:96vw;max-height:94vh;display:flex;flex-direction:column;align-items:center;gap:14px;}
+        .wx-modal-img{max-width:96vw;max-height:80vh;border-radius:16px;box-shadow:0 12px 50px rgba(0,0,0,0.5);background:#fff;}
+        .wx-modal-close{position:absolute;top:-12px;right:-12px;width:44px;height:44px;border-radius:50%;border:none;background:#fff;color:#111;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.3);}
+        .wx-modal-nav{display:flex;align-items:center;gap:18px;color:#fff;font-weight:700;font-size:16px;}
+        .wx-modal-nav button{width:54px;height:54px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;}
+        .wx-modal-nav button:hover{background:rgba(255,255,255,0.35);}
+        @media (max-width:640px){.wx-modal-img{max-height:70vh;}.wx-modal-nav button{width:46px;height:46px;}}
 
         /* School info bar */
         .school-info{max-width:960px;margin:0 auto;padding:12px 24px;}
@@ -848,6 +861,19 @@
                 <span class="wx-item">🌡️ 온도 <b id="wxTemp">-</b><span class="wx-dot" id="wxTempDot"></span></span>
                 <span class="wx-item">💧 습도 <b id="wxHum">-</b><span class="wx-dot" id="wxHumDot"></span></span>
                 <span class="wx-item" id="wxDustItem">😷 미세먼지 <b id="wxDust">-</b><span class="wx-dot" id="wxDustDot"></span></span>
+                <button class="wx-poster-btn" id="wxPosterBtn" onclick="openSafetyModal()" hidden>📢 안전수칙</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="wx-modal" id="wxModal" hidden onclick="if(event.target===this)closeSafetyModal()">
+        <div class="wx-modal-inner">
+            <button class="wx-modal-close" onclick="closeSafetyModal()" title="닫기">✕</button>
+            <img class="wx-modal-img" id="wxModalImg" src="" alt="안전수칙 포스터">
+            <div class="wx-modal-nav" id="wxModalNav" style="display:none;">
+                <button onclick="safetyPrev()" title="이전">◀</button>
+                <span id="wxModalCount"></span>
+                <button onclick="safetyNext()" title="다음">▶</button>
             </div>
         </div>
     </div>
@@ -2294,7 +2320,50 @@ let weatherData=null;
 function initWeatherAlert(){
     loadWeatherAlert();
     setInterval(loadWeatherAlert,10*60*1000); // 10분마다 갱신
+    document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeSafetyModal(); });
 }
+// 안전수칙 포스터 (public/safety/*.png)
+const SAFETY_POSTERS={
+    heat:{img:'/safety/heat.png',label:'더위(폭염)'},
+    cold:{img:'/safety/cold.png',label:'추위(한파)'},
+    flood:{img:'/safety/flood.png',label:'비·호우'},
+    wetroad:{img:'/safety/wetroad.png',label:'빗길'},
+    snow:{img:'/safety/snow.png',label:'대설·눈'},
+    wind:{img:'/safety/wind.png',label:'강풍·태풍'},
+    dust:{img:'/safety/dust.png',label:'미세먼지'},
+};
+let safetyList=[], safetyIdx=0;
+function computeSafetyPosters(d){
+    const set=[];
+    (d.warnings||[]).forEach(w=>{
+        const k=w.kind;
+        if(k==='폭염') set.push('heat');
+        else if(k==='한파') set.push('cold');
+        else if(k==='호우') set.push('flood');
+        else if(k==='대설') set.push('snow');
+        else if(k==='강풍'||k==='태풍'||k==='풍랑') set.push('wind');
+    });
+    if(d.dust&&(d.dust.level==='warn'||d.dust.level==='danger')) set.push('dust');
+    if(d.temp!=null&&d.temp>31) set.push('heat');
+    if(d.temp!=null&&d.temp<0) set.push('cold');
+    if(d.rain&&d.rain!=='없음'){ if(d.rain==='눈'||d.rain==='눈날림') set.push('snow'); else set.push('wetroad'); }
+    return [...new Set(set)];
+}
+function openSafetyModal(){
+    if(!safetyList.length) return;
+    safetyIdx=0; renderSafetyPoster();
+    document.getElementById('wxModal').hidden=false;
+}
+function closeSafetyModal(){ const m=document.getElementById('wxModal'); if(m) m.hidden=true; }
+function renderSafetyPoster(){
+    const key=safetyList[safetyIdx]; const p=SAFETY_POSTERS[key]; if(!p) return;
+    document.getElementById('wxModalImg').src=p.img;
+    document.getElementById('wxModalImg').alt=p.label+' 안전수칙';
+    document.getElementById('wxModalCount').textContent=`${safetyIdx+1} / ${safetyList.length} · ${p.label}`;
+    document.getElementById('wxModalNav').style.display=safetyList.length>1?'':'none';
+}
+function safetyNext(){ if(safetyList.length){ safetyIdx=(safetyIdx+1)%safetyList.length; renderSafetyPoster(); } }
+function safetyPrev(){ if(safetyList.length){ safetyIdx=(safetyIdx-1+safetyList.length)%safetyList.length; renderSafetyPoster(); } }
 // 신호등 등급 판정: 'good' | 'normal' | 'bad'
 function wxTempLevel(t){ if(t==null) return null; if(t>=18&&t<=26) return 'good'; if((t>=10&&t<18)||(t>26&&t<=31)) return 'normal'; return 'bad'; }
 function wxHumLevel(h){ if(h==null) return null; if(h>=40&&h<=60) return 'good'; if((h>=30&&h<40)||(h>60&&h<=70)) return 'normal'; return 'bad'; }
@@ -2329,6 +2398,8 @@ async function loadWeatherAlert(){
             if(d.warnings&&d.warnings.length){ warn.textContent='⚠️ '+d.warnings.map(w=>w.type).join(' · ')+' 발효'; warn.hidden=false; }
             else { warn.hidden=true; warn.textContent=''; }
         }
+        safetyList=computeSafetyPosters(d);
+        const pb=$('wxPosterBtn'); if(pb) pb.hidden=safetyList.length===0;
         strip.title=(d.stale?'백암면 날씨 (이전 정보)':'백암면 오늘의 날씨')+' · 기상청·에어코리아 · 10분마다 갱신';
     }catch(e){
         if($('wxTemp')) $('wxTemp').textContent='-';
@@ -2336,6 +2407,7 @@ async function loadWeatherAlert(){
         if($('wxDust')) $('wxDust').textContent='정보 없음';
         ['wxTempDot','wxHumDot','wxDustDot'].forEach(id=>wxSetDot(id,null));
         const warn=$('wxWarn'); if(warn) warn.hidden=true;
+        safetyList=[]; const pb=$('wxPosterBtn'); if(pb) pb.hidden=true;
     }
 }
 
