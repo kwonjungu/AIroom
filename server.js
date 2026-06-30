@@ -978,6 +978,178 @@ app.get('/api/winter-schedule/holidays', requireAuth, async (req, res) => {
     }
 });
 
+// ===== 오늘의 날씨·경보 알리미 (백암면 / 경기 용인 처인구) =====
+// data.go.kr 공식 API를 서버에서 프록시 + Redis 캐시 (키 노출 방지·호출량 절감).
+// 환경변수: DATA_GO_KR_KEY (data.go.kr 일반 인증키, URL-decoded 원본). 측정소는 WEATHER_DUST_STATION로 조정 가능.
+const WEATHER_KEY = process.env.DATA_GO_KR_KEY || '';
+const WEATHER_CACHE_KEY = 'cache:weather:baegam';        // 정상 응답 캐시 (10분)
+const WEATHER_STALE_KEY = 'cache:weather:baegam:stale';  // 마지막 성공값 (폴백, 만료 없음)
+const WEATHER_CACHE_TTL = 600;                            // 10분
+const BAEGAM_LAT = 37.1607, BAEGAM_LON = 127.3766;       // 경기 용인 처인구 백암면
+const DUST_STATION = process.env.WEATHER_DUST_STATION || '김량장동'; // 백암면 최근접 측정소(처인구). 실측 후 조정.
+const WARN_STN_ID = 109;                                  // 기상특보 발표관서: 서울·인천·경기
+const WARN_AREA_KEYWORDS = ['용인', '경기남부내륙', '경기도남부내륙', '경기남부', '경기도남부', '처인'];
+const WARN_TYPES = ['폭염', '호우', '대설', '강풍', '한파', '태풍', '풍랑', '건조', '황사', '안개', '폭풍해일', '지진해일'];
+const DUST_GRADE_LABEL = { '1': '좋음', '2': '보통', '3': '나쁨', '4': '매우나쁨' };
+const PTY_LABEL = { '0': '없음', '1': '비', '2': '비/눈', '3': '눈', '5': '빗방울', '6': '진눈깨비', '7': '눈날림' };
+
+// 기상청 동네예보 격자(DFS) 변환 — 위경도 → nx,ny
+function dfsXyConv(lat, lon) {
+    const RE = 6371.00877, GRID = 5.0, SLAT1 = 30.0, SLAT2 = 60.0;
+    const OLON = 126.0, OLAT = 38.0, XO = 43, YO = 136, DEGRAD = Math.PI / 180.0;
+    const re = RE / GRID, slat1 = SLAT1 * DEGRAD, slat2 = SLAT2 * DEGRAD;
+    const olon = OLON * DEGRAD, olat = OLAT * DEGRAD;
+    let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+    sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
+    let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+    sf = Math.pow(sf, sn) * Math.cos(slat1) / sn;
+    let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
+    ro = re * sf / Math.pow(ro, sn);
+    let ra = Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5);
+    ra = re * sf / Math.pow(ra, sn);
+    let theta = lon * DEGRAD - olon;
+    if (theta > Math.PI) theta -= 2.0 * Math.PI;
+    if (theta < -Math.PI) theta += 2.0 * Math.PI;
+    theta *= sn;
+    return {
+        nx: Math.floor(ra * Math.sin(theta) + XO + 0.5),
+        ny: Math.floor(ro - ra * Math.cos(theta) + YO + 0.5)
+    };
+}
+
+// 현재 KST 시각
+function kstNow() {
+    return new Date(Date.now() + 9 * 3600 * 1000);
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+// 초단기실황 base_date/base_time (매시 40분 이후 해당 시각 제공)
+function ncstBase() {
+    const d = kstNow();
+    if (d.getUTCMinutes() < 40) d.setUTCHours(d.getUTCHours() - 1);
+    const yyyymmdd = `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}`;
+    return { base_date: yyyymmdd, base_time: pad2(d.getUTCHours()) + '00' };
+}
+
+// timeout 포함 JSON fetch
+async function fetchJsonTimeout(url, ms = 7000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    try {
+        const r = await fetch(url, { signal: ctrl.signal });
+        if (!r.ok) throw new Error(`upstream ${r.status}`);
+        return await r.json();
+    } finally { clearTimeout(t); }
+}
+
+function itemsOf(json) {
+    const it = json && json.response && json.response.body && json.response.body.items && json.response.body.items.item;
+    return Array.isArray(it) ? it : (it ? [it] : []);
+}
+
+// 초단기실황 → { temp, pty, rain, sky }
+async function fetchWeatherNow() {
+    const { nx, ny } = dfsXyConv(BAEGAM_LAT, BAEGAM_LON);
+    const { base_date, base_time } = ncstBase();
+    const url = `http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${encodeURIComponent(WEATHER_KEY)}&dataType=JSON&numOfRows=20&pageNo=1&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+    const items = itemsOf(await fetchJsonTimeout(url));
+    const get = (c) => { const f = items.find(i => i.category === c); return f ? f.obsrValue : null; };
+    const t1h = get('T1H'), pty = get('PTY');
+    const temp = t1h != null ? Math.round(parseFloat(t1h)) : null;
+    const rain = PTY_LABEL[pty] || '없음';
+    return { temp, pty, rain };
+}
+
+// 미세먼지 측정소 실시간 → { pm10, pm10Grade, pm25, pm25Grade, label, level }
+async function fetchDust() {
+    const url = `http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?serviceKey=${encodeURIComponent(WEATHER_KEY)}&returnType=json&numOfRows=1&pageNo=1&dataTerm=DAILY&ver=1.3&stationName=${encodeURIComponent(DUST_STATION)}`;
+    const items = itemsOf(await fetchJsonTimeout(url));
+    if (!items.length) return null;
+    const d = items[0];
+    const num = (v) => (v == null || v === '-' || v === '') ? null : parseInt(v, 10);
+    const pm10 = num(d.pm10Value), pm25 = num(d.pm25Value);
+    const pm10Grade = num(d.pm10Grade), pm25Grade = num(d.pm25Grade);
+    const worst = Math.max(pm10Grade || 0, pm25Grade || 0) || null;
+    const level = worst >= 4 ? 'danger' : worst === 3 ? 'warn' : 'ok';
+    return { pm10, pm25, pm10Grade, pm25Grade, label: DUST_GRADE_LABEL[String(worst)] || '정보없음', level, station: DUST_STATION };
+}
+
+// 기상특보 통보문 → 백암면 해당 특보 배열
+async function fetchWarnings() {
+    const url = `http://apis.data.go.kr/1360000/WthrWrnInfoService/getWthrWrnMsg?serviceKey=${encodeURIComponent(WEATHER_KEY)}&dataType=JSON&numOfRows=5&pageNo=1&stnId=${WARN_STN_ID}`;
+    const items = itemsOf(await fetchJsonTimeout(url));
+    if (!items.length) return [];
+    // 가장 최근 통보문(tmFc 기준) 선택
+    items.sort((a, b) => String(b.tmFc).localeCompare(String(a.tmFc)));
+    const text = String(items[0].t1 || items[0].t2 || '');
+    return parseWarnings(text);
+}
+
+// 통보문 텍스트에서 (특보종류+주의보/경보) 추출, 백암면 지역 키워드가 인근에 있을 때만 채택
+function parseWarnings(text) {
+    if (!text) return [];
+    const found = [];
+    const re = new RegExp(`(${WARN_TYPES.join('|')})\\s*(주의보|경보)`, 'g');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+        const window = text.slice(m.index, m.index + 250); // 종류 뒤 지역 목록이 따라옴
+        const hit = WARN_AREA_KEYWORDS.some(k => window.includes(k));
+        if (!hit) continue;
+        const type = m[1] + m[2];
+        if (found.some(f => f.type === type)) continue;
+        const level = (m[2] === '경보' || m[1] === '폭염' || m[1] === '한파' || m[1] === '태풍') && m[2] === '경보' ? 'danger' : 'warn';
+        found.push({ type, kind: m[1], level });
+    }
+    return found;
+}
+
+app.get('/api/weather', requireAuth, async (req, res) => {
+    if (!WEATHER_KEY) return res.status(503).json({ error: 'DATA_GO_KR_KEY 미설정' });
+    try {
+        if (redis && !req.query.nocache) {
+            const cached = await redis.get(WEATHER_CACHE_KEY);
+            if (cached) return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+        }
+        const [nowR, dustR, warnR] = await Promise.allSettled([fetchWeatherNow(), fetchDust(), fetchWarnings()]);
+        const now = nowR.status === 'fulfilled' ? nowR.value : null;
+        const dust = dustR.status === 'fulfilled' ? dustR.value : null;
+        const warnings = warnR.status === 'fulfilled' ? warnR.value : [];
+
+        let alertLevel = 'none';
+        if (warnings.some(w => w.level === 'danger') || (dust && dust.level === 'danger')) alertLevel = 'danger';
+        else if (warnings.length || (dust && dust.level === 'warn')) alertLevel = 'warn';
+
+        const result = {
+            temp: now ? now.temp : null,
+            rain: now ? now.rain : null,
+            pty: now ? now.pty : null,
+            dust,
+            warnings,
+            alertLevel,
+            updatedAt: new Date().toISOString(),
+            partial: !now || !dust || warnR.status !== 'fulfilled'
+        };
+
+        if (req.query.debug) return res.json({ result, nx: dfsXyConv(BAEGAM_LAT, BAEGAM_LON), errors: { now: nowR.reason && String(nowR.reason), dust: dustR.reason && String(dustR.reason), warn: warnR.reason && String(warnR.reason) } });
+
+        if (redis && now) { // 성공적인 핵심값이 있을 때만 캐시 + 폴백 저장
+            const s = JSON.stringify(result);
+            redis.set(WEATHER_CACHE_KEY, s, { ex: WEATHER_CACHE_TTL }).catch(() => {});
+            redis.set(WEATHER_STALE_KEY, s).catch(() => {});
+        }
+        res.json(result);
+    } catch (e) {
+        // 완전 실패 시 마지막 성공값(stale) 폴백
+        if (redis) {
+            try {
+                const stale = await redis.get(WEATHER_STALE_KEY);
+                if (stale) { const o = typeof stale === 'string' ? JSON.parse(stale) : stale; o.stale = true; return res.json(o); }
+            } catch (_) {}
+        }
+        res.status(502).json({ error: '날씨 조회 실패: ' + e.message });
+    }
+});
+
 // 허가원 다운로드 — 기본 DOCX (Word). HWPX는 ?format=hwpx 쿼리.
 // 허가원 HWPX 다운로드. DOCX/HTML은 더 이상 서비스에서 노출하지 않지만,
 // ?format=docx/html 쿼리로 호출하면 여전히 폴백을 생성해준다 (레거시 호출 보호용).

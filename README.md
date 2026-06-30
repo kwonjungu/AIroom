@@ -115,6 +115,10 @@ npm start           # node server.js
 | `FIREBASE_API_KEY` 외 `FIREBASE_*` | 급식일지 Firestore 클라이언트 config |
 | `GROQ_API_KEYS` (콤마 구분 가능) | Groq LLM 키 (폴백 체인) |
 | `DEFAULT_ACCESS_CODE`, `DEFAULT_ADMIN_CODE` | AIroom 메인 초기 비밀번호 |
+| `DATA_GO_KR_KEY` | **오늘의 날씨·경보 알리미** — data.go.kr 일반 인증키(URL-decoded 원본). 기상특보+미세먼지+초단기실황 프록시(`GET /api/weather`)에서 사용. 미설정 시 위젯은 "날씨 정보 없음" 표시 |
+| `WEATHER_DUST_STATION` (선택) | 미세먼지 측정소명. 기본 `김량장동`(용인 처인구, 백암면 최근접). 실측 후 조정 |
+
+> **날씨 알리미 사전 준비:** data.go.kr 에서 ① 기상청\_기상특보 조회서비스 ② 한국환경공단\_에어코리아\_대기오염정보 (선택 ③ 기상청\_단기예보 조회서비스) 활용신청 → 일반 인증키 발급 → `DATA_GO_KR_KEY`로 등록. 같은 계정이면 키 하나로 공용. 위젯은 백암면(경기 용인 처인구) 기준이며 서버에서 10분 캐시.
 
 ### Firebase 설정
 `FIREBASE_SETUP.md` 참고. 요지:
