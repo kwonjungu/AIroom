@@ -861,6 +861,7 @@
                 <span class="wx-item">🌡️ 온도 <b id="wxTemp">-</b><span class="wx-dot" id="wxTempDot"></span></span>
                 <span class="wx-item">💧 습도 <b id="wxHum">-</b><span class="wx-dot" id="wxHumDot"></span></span>
                 <span class="wx-item" id="wxDustItem">😷 미세먼지 <b id="wxDust">-</b><span class="wx-dot" id="wxDustDot"></span></span>
+                <span class="wx-item" id="wxPm25Item">🌫️ 초미세먼지 <b id="wxPm25">-</b><span class="wx-dot" id="wxPm25Dot"></span></span>
                 <button class="wx-poster-btn" id="wxPosterBtn" onclick="openSafetyModal()" hidden>📢 안전수칙</button>
             </div>
         </div>
@@ -870,6 +871,7 @@
         <div class="wx-modal-inner">
             <button class="wx-modal-close" onclick="closeSafetyModal()" title="닫기">✕</button>
             <img class="wx-modal-img" id="wxModalImg" src="" alt="안전수칙 포스터">
+            <div id="wxModalVideo" style="margin-top:10px;"></div>
             <div class="wx-modal-nav" id="wxModalNav" style="display:none;">
                 <button onclick="safetyPrev()" title="이전">◀</button>
                 <span id="wxModalCount"></span>
@@ -2324,13 +2326,13 @@ function initWeatherAlert(){
 }
 // 안전수칙 포스터 (public/safety/*.png)
 const SAFETY_POSTERS={
-    heat:{img:'/safety/heat.png',label:'더위(폭염)'},
-    cold:{img:'/safety/cold.png',label:'추위(한파)'},
-    flood:{img:'/safety/flood.png',label:'비·호우'},
-    wetroad:{img:'/safety/wetroad.png',label:'빗길'},
-    snow:{img:'/safety/snow.png',label:'대설·눈'},
-    wind:{img:'/safety/wind.png',label:'강풍·태풍'},
-    dust:{img:'/safety/dust.png',label:'미세먼지'},
+    heat:{img:'/safety/heat.png',label:'더위(폭염)',video:'https://www.youtube.com/embed/0gu2fw06qdY'},
+    cold:{img:'/safety/cold.png',label:'추위(한파)',video:'https://www.youtube.com/embed/OiyNVui56j0'},
+    flood:{img:'/safety/flood.png',label:'비·호우',video:'https://www.youtube.com/embed/3ZXF4TAB9lc'},
+    wetroad:{img:'/safety/wetroad.png',label:'빗길',video:'https://www.youtube.com/embed/6URfl_P8Nd4'},
+    snow:{img:'/safety/snow.png',label:'대설·눈',video:'https://www.youtube.com/embed/Yg53kvZFuiU'},
+    wind:{img:'/safety/wind.png',label:'강풍·태풍',video:'https://www.youtube.com/embed/ogTdyPRvGpc'},
+    dust:{img:'/safety/dust.png',label:'미세먼지',video:'https://www.youtube.com/embed/L6i-xAc_YVQ'},
 };
 let safetyList=[], safetyIdx=0;
 function computeSafetyPosters(d){
@@ -2361,6 +2363,10 @@ function renderSafetyPoster(){
     document.getElementById('wxModalImg').alt=p.label+' 안전수칙';
     document.getElementById('wxModalCount').textContent=`${safetyIdx+1} / ${safetyList.length} · ${p.label}`;
     document.getElementById('wxModalNav').style.display=safetyList.length>1?'':'none';
+    const vWrap=document.getElementById('wxModalVideo');
+    if(vWrap){
+        vWrap.innerHTML=p.video?`<iframe width="100%" height="220" src="${p.video}" title="${p.label} 안전교육" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`:'';
+    }
 }
 function safetyNext(){ if(safetyList.length){ safetyIdx=(safetyIdx+1)%safetyList.length; renderSafetyPoster(); } }
 function safetyPrev(){ if(safetyList.length){ safetyIdx=(safetyIdx-1+safetyList.length)%safetyList.length; renderSafetyPoster(); } }
@@ -2368,6 +2374,8 @@ function safetyPrev(){ if(safetyList.length){ safetyIdx=(safetyIdx-1+safetyList.
 function wxTempLevel(t){ if(t==null) return null; if(t>=18&&t<=26) return 'good'; if((t>=10&&t<18)||(t>26&&t<=31)) return 'normal'; return 'bad'; }
 function wxHumLevel(h){ if(h==null) return null; if(h>=40&&h<=60) return 'good'; if((h>=30&&h<40)||(h>60&&h<=70)) return 'normal'; return 'bad'; }
 function wxDustLevel(dust){ if(!dust) return null; return dust.level==='danger'?'bad':dust.level==='warn'?'normal':'good'; }
+function wxPm25Level(v){ if(v==null) return null; if(v<=15) return 'good'; if(v<=35) return 'normal'; return 'bad'; }
+function wxPm25Label(v){ if(v==null) return '-'; if(v<=15) return '좋음'; if(v<=35) return '보통'; if(v<=75) return '나쁨'; return '매우나쁨'; }
 function wxSetDot(id,level){
     const el=document.getElementById(id);
     if(!el) return;
@@ -2391,6 +2399,9 @@ async function loadWeatherAlert(){
         wxSetDot('wxHumDot',wxHumLevel(d.humidity));
         $('wxDust').textContent=d.dust?d.dust.label:'-';
         wxSetDot('wxDustDot',wxDustLevel(d.dust));
+        const pm25=d.dust?d.dust.pm25:null;
+        if($('wxPm25')) $('wxPm25').textContent=wxPm25Label(pm25);
+        wxSetDot('wxPm25Dot',wxPm25Level(pm25));
         const di=$('wxDustItem');
         if(di) di.title=d.dust?`PM10 ${d.dust.pm10!=null?d.dust.pm10:'-'}㎍/㎥ · PM2.5 ${d.dust.pm25!=null?d.dust.pm25:'-'}㎍/㎥`:'미세먼지 정보 없음';
         const warn=$('wxWarn');
@@ -2405,7 +2416,8 @@ async function loadWeatherAlert(){
         if($('wxTemp')) $('wxTemp').textContent='-';
         if($('wxHum')) $('wxHum').textContent='-';
         if($('wxDust')) $('wxDust').textContent='정보 없음';
-        ['wxTempDot','wxHumDot','wxDustDot'].forEach(id=>wxSetDot(id,null));
+        if($('wxPm25')) $('wxPm25').textContent='-';
+        ['wxTempDot','wxHumDot','wxDustDot','wxPm25Dot'].forEach(id=>wxSetDot(id,null));
         const warn=$('wxWarn'); if(warn) warn.hidden=true;
         safetyList=[]; const pb=$('wxPosterBtn'); if(pb) pb.hidden=true;
     }
