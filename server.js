@@ -1115,9 +1115,19 @@ app.get('/api/weather', requireAuth, async (req, res) => {
             if (cached) return res.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
         }
         const [nowR, dustR, warnR] = await Promise.allSettled([fetchWeatherNow(), fetchDust(), fetchWarnings()]);
-        const now = nowR.status === 'fulfilled' ? nowR.value : null;
-        const dust = dustR.status === 'fulfilled' ? dustR.value : null;
+        const freshNow = nowR.status === 'fulfilled' ? nowR.value : null;
+        const freshDust = dustR.status === 'fulfilled' ? dustR.value : null;
         const warnings = warnR.status === 'fulfilled' ? warnR.value : [];
+
+        // 일부 항목(기온/미세먼지)이 일시 실패(예: data.go.kr throttle)하면
+        // 마지막 정상값(stale)을 재사용해 화면이 '-'로 깜빡이지 않게 한다.
+        let staleObj = null;
+        if ((!freshNow || !freshDust) && redis) {
+            try { const s = await redis.get(WEATHER_STALE_KEY); if (s) staleObj = typeof s === 'string' ? JSON.parse(s) : s; } catch (_) {}
+        }
+        const now = freshNow || (staleObj ? { temp: staleObj.temp, humidity: staleObj.humidity, rain: staleObj.rain, pty: staleObj.pty } : null);
+        const dust = freshDust || (staleObj ? staleObj.dust : null);
+        const usedStale = (!freshNow && now) || (!freshDust && dust);
 
         let alertLevel = 'none';
         if (warnings.some(w => w.level === 'danger') || (dust && dust.level === 'danger')) alertLevel = 'danger';
@@ -1132,12 +1142,15 @@ app.get('/api/weather', requireAuth, async (req, res) => {
             warnings,
             alertLevel,
             updatedAt: new Date().toISOString(),
-            partial: !now || !dust || warnR.status !== 'fulfilled'
+            partial: !freshNow || !freshDust || warnR.status !== 'fulfilled',
+            stale: !!usedStale
         };
 
         if (req.query.debug) return res.json({ result, nx: dfsXyConv(BAEGAM_LAT, BAEGAM_LON), errors: { now: nowR.reason && String(nowR.reason), dust: dustR.reason && String(dustR.reason), warn: warnR.reason && String(warnR.reason) } });
 
-        if (redis && now) { // 성공적인 핵심값이 있을 때만 캐시 + 폴백 저장
+        // 신선하게 받아온 경우에만 10분 캐시 + stale 갱신.
+        // stale을 재사용 중이면 캐시하지 않아, throttle 해제 후 다음 요청이 바로 복구된다.
+        if (redis && freshNow) {
             const s = JSON.stringify(result);
             redis.set(WEATHER_CACHE_KEY, s, { ex: WEATHER_CACHE_TTL }).catch(() => {});
             redis.set(WEATHER_STALE_KEY, s).catch(() => {});
