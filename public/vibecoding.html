@@ -47,7 +47,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .ctrl-btn.demo{background:#FF9800;color:#fff;border-color:#FF9800;}
 
 /* --- Turtle Canvas --- */
-.turtle-view{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;}
+.turtle-view{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;position:relative;}
 #turtleCanvas{display:block;}
 .tab-switch{display:flex;gap:3px;}
 .tab-btn{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:10px;font-weight:600;}
@@ -121,6 +121,74 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .feedback-btn.next{background:var(--primary);color:#fff;}
 .feedback-btn.retry{background:#f0f0f0;color:var(--text);margin-right:6px;}
 
+/* ===== STORY MAP ===== */
+.chapter-block{margin-bottom:20px;}
+.chapter-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,#f5f9ff,#eef3fa);}
+.chapter-emoji{font-size:28px;}
+.chapter-name{font-size:15px;font-weight:800;}
+.chapter-sub{font-size:11px;color:var(--text-light);margin-top:2px;}
+.chapter-prog{margin-left:auto;font-size:11px;font-weight:700;color:var(--primary);white-space:nowrap;}
+.node-path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 4px;}
+.mission-node{width:76px;padding:9px 4px 7px;border-radius:14px;border:2px solid var(--border);background:#fff;cursor:pointer;text-align:center;transition:all .15s;position:relative;}
+.mission-node:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.12);border-color:var(--primary);}
+.mission-node.locked{opacity:.45;cursor:not-allowed;filter:grayscale(.9);}
+.mission-node.locked:hover{transform:none;box-shadow:none;border-color:var(--border);}
+.mission-node.done{border-color:var(--success);background:#f0fff4;}
+.mission-node .n-icon{font-size:22px;line-height:1;}
+.mission-node .n-title{font-size:10px;font-weight:700;margin-top:3px;line-height:1.25;word-break:keep-all;}
+.mission-node .n-stars{font-size:10px;margin-top:2px;height:13px;letter-spacing:-1px;}
+.node-link{color:#cbd5e0;font-size:13px;font-weight:800;}
+
+/* ===== STORY INTRO MODAL ===== */
+.story-modal .modal{max-width:460px;overflow:hidden;}
+.story-scene{background:linear-gradient(160deg,#1a1a2e,#2d2b55);padding:26px 24px 20px;text-align:center;color:#fff;position:relative;}
+.story-stars{position:absolute;inset:0;pointer-events:none;opacity:.6;font-size:11px;}
+.story-char{font-size:64px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));animation:floaty 2.6s ease-in-out infinite;}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.story-chapter{margin-top:10px;font-size:11px;font-weight:700;letter-spacing:1px;color:#ffd166;}
+.story-title{font-size:20px;font-weight:800;margin-top:4px;}
+.story-bubble{margin:16px 22px;background:#fff;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.7;color:var(--text);position:relative;}
+.story-bubble::before{content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-bottom-color:#fff;border-top:none;}
+.story-actions{padding:0 22px 20px;text-align:center;}
+.story-go{padding:12px 32px;border-radius:12px;border:none;cursor:pointer;font-size:15px;font-weight:800;background:linear-gradient(135deg,#FF9800,#FF6B6B);color:#fff;box-shadow:0 4px 14px rgba(255,107,107,.4);transition:transform .15s;}
+.story-go:hover{transform:scale(1.05);}
+
+/* ===== MATH / CODE CHAT CARDS ===== */
+.chat-msg.math{align-self:stretch;max-width:100%;background:#EDE7F6;color:#4527A0;border:1px solid #D1C4E9;border-radius:10px;font-size:12px;}
+.chat-msg.math b{display:block;margin-bottom:3px;}
+.chat-msg.code{align-self:stretch;max-width:100%;background:#263238;color:#ECEFF1;border-radius:10px;font-family:'Consolas','Courier New',monospace;font-size:11px;padding:10px 12px;}
+.code-line{display:flex;gap:8px;white-space:pre;line-height:1.8;}
+.code-line .dsl{color:#80CBC4;min-width:110px;}
+.code-line .gloss{color:#FFCC80;font-family:'Segoe UI','Malgun Gothic',sans-serif;}
+
+/* ===== PROMPT CHIPS ===== */
+.chip-row{display:flex;gap:5px;padding:6px 10px 0;flex-wrap:wrap;background:#fafafa;flex-shrink:0;}
+.chip-label{font-size:10px;color:var(--text-light);font-weight:700;align-self:center;}
+.chip{padding:4px 10px;border-radius:20px;border:1px solid #B3D4F5;background:#EBF4FD;color:#1565C0;cursor:pointer;font-size:11px;font-weight:600;transition:all .12s;}
+.chip:hover{background:#1565C0;color:#fff;}
+
+/* ===== PIXEL COORDS / TARGET / METER ===== */
+.led-coord{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#7C4DFF;user-select:none;}
+.target-mini{background:#252540;border-radius:12px;padding:8px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.target-mini .tm-title{font-size:10px;font-weight:800;color:#FFD166;letter-spacing:1px;}
+.target-mini-grid{display:grid;gap:1px;}
+.target-mini-grid div{border-radius:2px;}
+.match-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:12px;background:#f0f0f0;}
+.pixel-stage{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;}
+
+/* ===== TURTLE STATUS ===== */
+.turtle-status{position:absolute;top:8px;left:10px;background:rgba(0,0,0,.55);color:#9AE6B4;font-family:'Consolas',monospace;font-size:11px;padding:4px 10px;border-radius:8px;pointer-events:none;}
+
+/* ===== STARS / CONFETTI ===== */
+.star-total{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:14px;font-size:12px;font-weight:800;}
+.fb-stars{font-size:34px;letter-spacing:4px;margin-bottom:8px;min-height:40px;}
+.fb-stars .lit{animation:starpop .5s ease both;}
+.fb-stars .dim{opacity:.25;filter:grayscale(1);}
+@keyframes starpop{0%{transform:scale(0) rotate(-90deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;}
+.confetti span{position:absolute;top:-40px;animation:cfall 2.2s ease-in forwards;}
+@keyframes cfall{to{transform:translateY(110vh) rotate(560deg);opacity:.7;}}
+
 .loading{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.1);border-left-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px) rotate(-2deg)}40%{transform:translateX(8px) rotate(2deg)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
@@ -144,9 +212,10 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         <div class="header-center">
             <span class="level-badge" id="levelBadge">기초</span>
             <span class="mission-badge" id="missionBadge">미션을 선택하세요</span>
+            <span class="star-total" id="starTotal">⭐ 0</span>
         </div>
         <div class="header-actions">
-            <button class="hdr-btn" onclick="openMissionSelector()">📋 미션</button>
+            <button class="hdr-btn" onclick="openMissionSelector()">🗺️ 모험 지도</button>
             <button class="hdr-btn" onclick="location.href='/'">← 돌아가기</button>
         </div>
     </div>
@@ -174,6 +243,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                     <div class="tab-switch">
                         <button class="tab-btn active" onclick="switchCanvasTab('run',this)">실행</button>
                         <button class="tab-btn" onclick="switchCanvasTab('target',this)">목표</button>
+                        <button class="tab-btn active" id="ghostBtn" onclick="toggleGhost(this)" title="목표 모양을 흐리게 겹쳐 보여줘요">👻 겹쳐보기</button>
                     </div>
                     <button class="ctrl-btn demo" onclick="showTurtleDemo()">👀 시연</button>
                 </div>
@@ -185,6 +255,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                         <button class="grid-opt" onclick="setGridSize(16,this)">16×16</button>
                     </div>
                     <button class="ctrl-btn demo" onclick="showPixelDemo()">👀 시연</button>
+                    <button class="ctrl-btn" onclick="targetMiniOn=!targetMiniOn;renderTargetMini();" title="목표 그림 보이기/숨기기">🎯 목표</button>
+                    <span class="match-badge" id="matchMeter" hidden>🎯 0%</span>
                 </div>
                 <!-- Common -->
                 <button class="ctrl-btn run" onclick="runCode()">▶ 실행</button>
@@ -195,18 +267,25 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
             <!-- Turtle view -->
             <div class="turtle-view" id="turtleView">
                 <canvas id="turtleCanvas" width="500" height="400"></canvas>
+                <div class="turtle-status" id="turtleStatus">📍 x:0 y:0 · 방향 0°</div>
             </div>
             <!-- Pixel view -->
             <div class="pixel-view hidden" id="pixelView">
-                <div class="microbit-frame" id="microbitFrame">
-                    <div class="microbit-label">micro:bit</div>
-                    <div class="led-grid" id="ledGrid"></div>
-                    <div class="microbit-buttons">
-                        <div class="btn-group"><button class="vbtn" onmousedown="pressButton('A')" onmouseup="releaseButton('A')">A</button><span class="vbtn-label">버튼 A</span></div>
-                        <div class="spacer"></div>
-                        <button class="shake-btn" onclick="triggerShake()">📳 흔들기</button>
-                        <div class="spacer"></div>
-                        <div class="btn-group"><button class="vbtn" onmousedown="pressButton('B')" onmouseup="releaseButton('B')">B</button><span class="vbtn-label">버튼 B</span></div>
+                <div class="pixel-stage">
+                    <div class="microbit-frame" id="microbitFrame">
+                        <div class="microbit-label">micro:bit</div>
+                        <div class="led-grid" id="ledGrid"></div>
+                        <div class="microbit-buttons">
+                            <div class="btn-group"><button class="vbtn" onmousedown="pressButton('A')" onmouseup="releaseButton('A')">A</button><span class="vbtn-label">버튼 A</span></div>
+                            <div class="spacer"></div>
+                            <button class="shake-btn" onclick="triggerShake()">📳 흔들기</button>
+                            <div class="spacer"></div>
+                            <div class="btn-group"><button class="vbtn" onmousedown="pressButton('B')" onmouseup="releaseButton('B')">B</button><span class="vbtn-label">버튼 B</span></div>
+                        </div>
+                    </div>
+                    <div class="target-mini hidden" id="targetMini">
+                        <span class="tm-title">🎯 목표</span>
+                        <div class="target-mini-grid" id="targetMiniGrid"></div>
                     </div>
                 </div>
                 <div class="color-palette" id="colorPalette"></div>
@@ -233,8 +312,9 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         <div class="chat-history" id="chatHistory">
             <div class="chat-msg system">🐢 안녕! 나는 바이브 코딩 도우미야.<br>위에서 모드를 선택하고 미션을 시작해봐!</div>
         </div>
+        <div class="chip-row" id="chipRow"></div>
         <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="자연어로 설명해 보세요" onkeydown="if(event.key==='Enter')sendChat()">
+            <input type="text" id="chatInput" placeholder="어떻게 움직이면 좋을지 말로 설명해 보세요" onkeydown="if(event.key==='Enter')sendChat()">
             <button class="send-btn" id="sendBtn" onclick="sendChat()">전송</button>
         </div>
     </div>
@@ -243,8 +323,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 <!-- Mission Modal -->
 <div class="modal-overlay" id="missionModal">
     <div class="modal">
-        <div class="modal-header"><h2 id="missionModalTitle">📋 미션 선택</h2><button class="modal-close" onclick="closeMissionSelector()">✕</button></div>
-        <div class="modal-body"><div class="mission-grid" id="missionGrid"></div></div>
+        <div class="modal-header"><h2 id="missionModalTitle">🗺️ 모험 지도</h2><button class="modal-close" onclick="closeMissionSelector()">✕</button></div>
+        <div class="modal-body"><div id="missionGrid"></div></div>
     </div>
 </div>
 
@@ -252,10 +332,27 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 <div class="modal-overlay feedback-modal" id="feedbackModal">
     <div class="modal" style="max-width:420px;"><div style="padding:28px;text-align:center;">
         <div class="feedback-icon" id="fbIcon"></div>
+        <div class="fb-stars" id="fbStars"></div>
         <div class="feedback-title" id="fbTitle"></div>
         <div class="feedback-text" id="fbText"></div>
         <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">다음 미션 →</button></div>
     </div></div>
+</div>
+
+<!-- Story Intro Modal -->
+<div class="modal-overlay story-modal" id="storyModal">
+    <div class="modal">
+        <div class="story-scene">
+            <div class="story-stars">✦ &nbsp; &nbsp; ✧ &nbsp; ✦<br>&nbsp; ✧ &nbsp; &nbsp; &nbsp; ✦</div>
+            <div class="story-char" id="storyChar">🐢</div>
+            <div class="story-chapter" id="storyChapter"></div>
+            <div class="story-title" id="storyTitle"></div>
+        </div>
+        <div class="story-bubble" id="storyText"></div>
+        <div class="story-actions">
+            <button class="story-go" onclick="startMissionPlay()">모험 시작! 🚀</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -299,12 +396,14 @@ function switchMode(mode, btn) {
     document.getElementById('levelBadge').textContent = '기초';
     document.getElementById('missionBadge').textContent = '미션을 선택하세요';
     document.getElementById('chatHistory').innerHTML = '';
+    document.getElementById('chipRow').innerHTML = '';
     addChatMsg('system', isTurtle
-        ? '🐢 터틀 모드! 거북이가 어떻게 움직이면 좋을지 말해줘!'
-        : '🎨 픽셀 아트 모드! LED에 어떤 그림을 그리고 싶은지 말해줘!');
+        ? '🐢 안녕! 나는 거북이 탐험가 토토야. 도형 행성을 함께 되살려 줘!'
+        : '🤖 안녕! 나는 로봇 픽셀이야. 꺼져버린 LED 도시를 함께 밝혀 줘!');
 
     if (isTurtle) resetTurtle();
     else { initPixelGrid(); }
+    renderTargetMini(); updateMatchMeter();
 
     Blockly.svgResize(workspace);
     setTimeout(() => openMissionSelector(), 300);
@@ -354,12 +453,53 @@ function clearTurtleCanvas() {
     tCtx.strokeStyle='rgba(255,255,255,0.15)';
     tCtx.beginPath();tCtx.moveTo(cx,0);tCtx.lineTo(cx,tCanvas.height);tCtx.stroke();
     tCtx.beginPath();tCtx.moveTo(0,cy);tCtx.lineTo(tCanvas.width,cy);tCtx.stroke();
+    drawGhost();
+}
+
+// 목표 모양을 흐린 점선으로 겹쳐 보여주기 (수학적 비교·관찰용)
+let ghostOn=true;
+function toggleGhost(btn){
+    ghostOn=!ghostOn;
+    if(btn)btn.classList.toggle('active',ghostOn);
+    if(canvasTab==='run'){const dsl=workspaceToDSL();if(dsl)drawTurtlePath(parseTurtleDSL(dsl));else resetTurtle();}
+}
+function drawGhost(){
+    if(!ghostOn||currentMode!=='turtle'||!currentMission?.targetDSL)return;
+    const segs=ghostSegments(parseTurtleDSL(currentMission.targetDSL));
+    tCtx.save();
+    tCtx.setLineDash([6,5]);tCtx.strokeStyle='rgba(255,209,102,0.35)';tCtx.lineWidth=2;tCtx.lineCap='round';
+    for(const[sx,sy,ex,ey]of segs){
+        const f=toScreen(sx,-sy),t=toScreen(ex,-ey);
+        tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(t.x,t.y);tCtx.stroke();
+    }
+    tCtx.restore();
+}
+function ghostSegments(cmds){
+    let x=0,y=0,a=0,pd=true;const segs=[];
+    function ex(cs){for(const c of cs){
+        if(c.type==='FORWARD'||c.type==='BACKWARD'){
+            const d=c.type==='FORWARD'?1:-1,r=(a-90)*Math.PI/180;
+            const nx=x+d*c.value*Math.cos(r),ny=y+d*c.value*Math.sin(r);
+            if(pd)segs.push([x,y,nx,ny]);x=nx;y=ny;
+        }else if(c.type==='RIGHT')a+=c.value;else if(c.type==='LEFT')a-=c.value;
+        else if(c.type==='PEN_UP')pd=false;else if(c.type==='PEN_DOWN')pd=true;
+        else if(c.type==='HOME'){x=0;y=0;a=0;}
+        else if(c.type==='REPEAT'){for(let i=0;i<c.count;i++)ex(c.body);}
+    }}
+    ex(cmds);return segs;
+}
+
+function updateTurtleStatus(x,y,a){
+    const el=document.getElementById('turtleStatus');if(!el)return;
+    const deg=((Math.round(a)%360)+360)%360;
+    el.textContent=`📍 x:${Math.round(x)} y:${Math.round(-y)} · 방향 ${deg}°`;
 }
 
 function resetTurtle() {
     if(tAnimId) cancelAnimationFrame(tAnimId);
     resizeTurtleCanvas(); clearTurtleCanvas();
     const sp=toScreen(0,0); drawTurtleSprite(sp.x,sp.y,0);
+    updateTurtleStatus(0,0,0);
 }
 
 function drawTurtlePath(commands, color, size) {
@@ -405,6 +545,7 @@ function drawTurtlePath(commands, color, size) {
         else{tCtx.fillStyle='#FFD700';tCtx.fillText(lb.text,lb.x+5,lb.y-5);}
     }
     const sp=toScreen(x,-y); drawTurtleSprite(sp.x,sp.y,angle);
+    updateTurtleStatus(x,y,angle);
 }
 
 function animateTurtle(commands, onDone) {
@@ -441,6 +582,7 @@ function animateTurtle(commands, onDone) {
         // Draw turtle sprite (no ghosting)
         const sp=toScreen(turtleX,-turtleY);
         drawTurtleSprite(sp.x,sp.y,turtleAngle);
+        updateTurtleStatus(turtleX,turtleY,turtleAngle);
     }
 
     function frame(){
@@ -560,18 +702,56 @@ function initPixelGrid(){
 
 function renderPixelGrid(){
     const el=document.getElementById('ledGrid');
-    const cs=pixelGridSize<=5?46:pixelGridSize<=8?30:18;
-    el.style.gridTemplateColumns=`repeat(${pixelGridSize},${cs}px)`;
+    const cs=pixelGridSize<=5?42:pixelGridSize<=8?27:16;
+    // 좌표 라벨(수학적 사고): 첫 열은 y 라벨, 첫 행은 x 라벨
+    el.style.gridTemplateColumns=`16px repeat(${pixelGridSize},${cs}px)`;
     el.innerHTML='';
-    for(let y=0;y<pixelGridSize;y++) for(let x=0;x<pixelGridSize;x++){
-        const c=document.createElement('div');
-        c.className='led-cell'+(pixelGrid[y][x]?' on':'');
-        c.style.width=cs+'px'; c.style.height=cs+'px';
-        c.style.color=pixelGrid[y][x]||'#1a1a1a';
-        c.style.backgroundColor=pixelGrid[y][x]||'#1a1a1a';
-        c.onmousedown=()=>{if(pixelGrid[y][x])pixelGrid[y][x]=null;else pixelGrid[y][x]=pixelColor;renderPixelGrid();};
-        c.onmouseenter=(e)=>{if(e.buttons===1){pixelGrid[y][x]=pixelColor;renderPixelGrid();}};
-        el.appendChild(c);
+    const corner=document.createElement('div');corner.className='led-coord';corner.textContent='';el.appendChild(corner);
+    for(let x=0;x<pixelGridSize;x++){const l=document.createElement('div');l.className='led-coord';l.textContent=x;el.appendChild(l);}
+    for(let y=0;y<pixelGridSize;y++){
+        const yl=document.createElement('div');yl.className='led-coord';yl.textContent=y;el.appendChild(yl);
+        for(let x=0;x<pixelGridSize;x++){
+            const c=document.createElement('div');
+            c.className='led-cell'+(pixelGrid[y][x]?' on':'');
+            c.style.width=cs+'px'; c.style.height=cs+'px';
+            c.style.color=pixelGrid[y][x]||'#1a1a1a';
+            c.style.backgroundColor=pixelGrid[y][x]||'#1a1a1a';
+            c.title=`(x:${x}, y:${y})`;
+            c.onmousedown=()=>{if(pixelGrid[y][x])pixelGrid[y][x]=null;else pixelGrid[y][x]=pixelColor;renderPixelGrid();};
+            c.onmouseenter=(e)=>{if(e.buttons===1){pixelGrid[y][x]=pixelColor;renderPixelGrid();}};
+            el.appendChild(c);
+        }
+    }
+    updateMatchMeter();
+}
+
+function updateMatchMeter(){
+    const el=document.getElementById('matchMeter');if(!el)return;
+    if(currentMode!=='pixel'||!currentMission?.targetGrid){el.hidden=true;return;}
+    const t=currentMission.targetGrid;let match=0,total=0;
+    for(let y=0;y<Math.min(pixelGridSize,t.length);y++)for(let x=0;x<Math.min(pixelGridSize,t[y].length);x++){
+        total++;if(!!t[y][x]===!!pixelGrid[y]?.[x])match++;
+    }
+    const pct=total?Math.round(match/total*100):0;
+    el.hidden=false;el.textContent='🎯 '+pct+'%';
+    el.style.background=pct>=90?'#C8E6C9':pct>=70?'#FFE0B2':'#f0f0f0';
+    el.style.color=pct>=90?'#2e7d32':pct>=70?'#e65100':'#666';
+}
+
+let targetMiniOn=true;
+function renderTargetMini(){
+    const box=document.getElementById('targetMini');if(!box)return;
+    const tg=currentMode==='pixel'&&currentMission?.targetGrid;
+    if(!tg||!targetMiniOn){box.classList.add('hidden');return;}
+    box.classList.remove('hidden');
+    const n=tg.length,grid=document.getElementById('targetMiniGrid');
+    const cs=n<=5?15:n<=8?10:6;
+    grid.style.gridTemplateColumns=`repeat(${n},${cs}px)`;grid.innerHTML='';
+    for(let y=0;y<n;y++)for(let x=0;x<(tg[y]||[]).length;x++){
+        const d=document.createElement('div');
+        d.style.width=cs+'px';d.style.height=cs+'px';
+        d.style.backgroundColor=tg[y][x]?'#FFD166':'#16162c';
+        grid.appendChild(d);
     }
 }
 
@@ -955,31 +1135,40 @@ function addChatMsg(role,text){
     const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
 }
 
-const TURTLE_PROMPT=`너는 터틀 그래픽 코딩 도우미야.
-아이가 거북이의 동작을 자연어로 직접 설명하면 그대로 DSL 코드로 변환해.
+const TURTLE_PROMPT=`너는 초등학생과 함께 그림을 그리는 거북이 탐험가 '토토'야.
+아이가 거북이의 동작을 자연어로 설명하면 DSL 코드로 변환해 줘.
 
-중요: 아이가 스스로 생각하도록 도와줘야 해.
-- "삼각형 그려줘"처럼 도형 이름만 말하면, 바로 코드를 주지 말고 질문해:
-  "삼각형의 한 변 길이는 얼마로 할까? 거북이가 몇 도를 돌아야 할까?"
-- 아이가 구체적으로 "앞으로 100 가고 오른쪽 120도 돌아"처럼 동작을 설명하면 그때 코드를 생성해.
-- 각도나 길이를 직접 알려주지 마. 아이가 생각하게 유도해.
+교육 원칙 (가장 중요):
+1. 아이가 "삼각형 그려줘"처럼 도형 이름만 말하면 절대 코드를 주지 마.
+   대신 딱 한 가지만 물어봐. 예: "좋아! 그럼 거북이가 한 변을 그린 다음 몇 도를 돌아야 세모가 될까? 🤔"
+   두세 번 물어봐도 모르면 힌트를 줘: "한 바퀴는 360도야. 세 번 돌아서 한 바퀴가 되려면?"
+2. 아이가 "앞으로 100 가고 오른쪽 120도 돌아"처럼 동작을 구체적으로 말하면 바로 DSL 코드만 출력해.
+3. 아이의 코드가 목표와 달라 보여도 정답을 말하지 말고, 관찰을 유도해: "그린 모양과 목표를 겹쳐서 비교해 볼까?"
+4. 답을 맞히면 짧게 칭찬해. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
+5. 수학 개념(각도, 길이, 반복)이 나오면 아이 수준에서 한 문장으로 연결해 줘.
 
 사용 가능한 명령어:
 FORWARD n, BACKWARD n, RIGHT d, LEFT d,
 PEN_UP, PEN_DOWN, PEN_COLOR #hex, PEN_SIZE n,
 REPEAT n { ... }, HOME, CLEAR
 
-규칙:
-1. 아이가 구체적 동작을 말하면 DSL 코드만 출력. 설명 금지.
-2. 아이가 도형 이름만 말하면 한국어로 짧게 질문해 (코드 출력 금지).
-3. 마크다운 코드블록 사용 금지.
-4. 각 명령어는 한 줄에 하나씩.
-5. REPEAT 중괄호는 반드시 짝 맞출 것.
-6. 색상은 #RRGGBB 형식 (ff0000, ffff00, 00cc00, 0000ff, ff8800, 8800ff, ffffff, 000000, ff66cc 중 선택).`;
+출력 규칙:
+1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
+2. 질문/대화할 때는 코드 없이 한국어만.
+3. 각 명령어는 한 줄에 하나씩. REPEAT 중괄호 짝 맞출 것.
+4. 색상은 #RRGGBB (ff0000, ffff00, 00cc00, 0000ff, ff8800, 8800ff, ffffff, 000000, ff66cc 중 선택).`;
 
-const PIXEL_PROMPT=`너는 마이크로비트 픽셀 아트 코딩 도우미야.
-아이가 LED에 그리고 싶은 그림을 설명하면,
-아래 DSL 명령어만 사용해서 코드를 생성해.
+const PIXEL_PROMPT=`너는 초등학생과 함께 LED 전광판을 고치는 로봇 '픽셀'이야.
+아이가 LED에 그리고 싶은 그림을 설명하면 DSL 코드로 변환해 줘.
+
+교육 원칙 (가장 중요):
+1. 아이가 좌표나 위치를 말하면("2,2에 불 켜줘", "가운데 켜줘", "첫 줄을 채워줘") 바로 DSL 코드만 출력해.
+2. "예쁘게 해줘", "멋진 거"처럼 애매하게 말하면 코드를 주지 말고 딱 한 가지만 물어봐.
+   예: "어느 칸에 불을 켜고 싶어? x랑 y 숫자로 말해줘! 🤖"
+3. 아이가 "하트"처럼 모양 이름을 말하면 SHOW_ICON을 써도 되지만,
+   미션 중이라면 "직접 좌표로 그려보면 더 멋질걸? 하트 맨 위 두 점은 어디에 있을까?"라고 먼저 한 번 유도해.
+4. 좌표는 (x, y): x는 가로(0부터 오른쪽으로), y는 세로(0부터 아래로)라는 걸 기억해.
+5. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
 
 사용 가능한 명령어:
 LED_ON x y, LED_OFF x y, LED_COLOR x y #hex, LED_TOGGLE x y,
@@ -989,11 +1178,56 @@ REPEAT n { ... }, FOR var from to { ... },
 ON_BUTTON_A { ... }, ON_BUTTON_B { ... }, ON_SHAKE { ... }, ON_START { ... },
 IF BUTTON_A { ... } ELSE { ... }, WAIT ms
 
-규칙:
-1. DSL 코드만 출력할 것. 설명이나 인사말 금지.
-2. 마크다운 코드블록 사용 금지.
-3. 기본 그리드 5x5 (x:0-4, y:0-4).
+출력 규칙:
+1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
+2. 질문/대화할 때는 코드 없이 한국어만.
+3. 기본 그리드 5x5 (x:0-4, y:0-4). 미션에 따라 8x8, 16x16일 수 있음.
 4. 색상은 #RRGGBB 형식.`;
+
+// DSL 한 줄 → 한국어 풀이 (프롬프트↔코드 연결을 눈으로 배우기)
+function glossLine(l){
+    let m;
+    if(m=l.match(/^FORWARD\s+(\S+)/))return'앞으로 '+m[1]+'만큼 가기';
+    if(m=l.match(/^BACKWARD\s+(\S+)/))return'뒤로 '+m[1]+'만큼 가기';
+    if(m=l.match(/^RIGHT\s+(\S+)/))return'오른쪽으로 '+m[1]+'° 돌기';
+    if(m=l.match(/^LEFT\s+(\S+)/))return'왼쪽으로 '+m[1]+'° 돌기';
+    if(l==='PEN_UP')return'펜 들기 (선 안 그려짐)';
+    if(l==='PEN_DOWN')return'펜 내리기 (선 그려짐)';
+    if(m=l.match(/^PEN_COLOR\s+(\S+)/))return'펜 색을 '+m[1]+'로 바꾸기';
+    if(m=l.match(/^PEN_SIZE\s+(\S+)/))return'펜 굵기를 '+m[1]+'로';
+    if(l==='HOME')return'처음 위치로 돌아가기';
+    if(l==='CLEAR')return'화면 지우기';
+    if(m=l.match(/^REPEAT\s+(\d+)/))return'┌ 아래를 '+m[1]+'번 반복!';
+    if(m=l.match(/^FOR\s+(\w+)\s+(\d+)\s+(\d+)/))return'┌ '+m[1]+'를 '+m[2]+'부터 '+m[3]+'까지 반복!';
+    if(l==='}')return'└ 반복 끝';
+    if(m=l.match(/^LED_ON\s+(\d+)\s+(\d+)/))return'(x:'+m[1]+', y:'+m[2]+') 불 켜기';
+    if(m=l.match(/^LED_OFF\s+(\d+)\s+(\d+)/))return'(x:'+m[1]+', y:'+m[2]+') 불 끄기';
+    if(m=l.match(/^LED_COLOR\s+(\d+)\s+(\d+)\s+(\S+)/))return'(x:'+m[1]+', y:'+m[2]+') '+m[3]+' 색으로';
+    if(m=l.match(/^LED_TOGGLE\s+(\d+)\s+(\d+)/))return'(x:'+m[1]+', y:'+m[2]+') 켜짐↔꺼짐 바꾸기';
+    if(m=l.match(/^FILL_ALL/))return'전체 채우기';
+    if(m=l.match(/^FILL_ROW\s+(\d+)/))return'y:'+m[1]+' 가로줄 전체 켜기';
+    if(m=l.match(/^FILL_COL\s+(\d+)/))return'x:'+m[1]+' 세로줄 전체 켜기';
+    if(l==='CLEAR_ALL')return'전체 지우기';
+    if(m=l.match(/^SHOW_ICON\s+(\w+)/))return m[1]+' 아이콘 보여주기';
+    if(m=l.match(/^WAIT\s+(\d+)/))return m[1]+'ms 기다리기';
+    if(m=l.match(/^ON_BUTTON_(\w+)/))return'┌ 버튼 '+m[1]+'을 누르면';
+    if(l.startsWith('ON_SHAKE'))return'┌ 흔들면';
+    if(l.startsWith('ON_START'))return'┌ 시작하면';
+    if(m=l.match(/^IF\s+BUTTON_(\w+)/))return'┌ 만약 버튼 '+m[1]+'이 눌려 있으면';
+    if(l.startsWith('ELSE'))return'├ 아니면';
+    return'';
+}
+function addCodeMsg(dsl){
+    const div=document.createElement('div');div.className='chat-msg code';
+    const lines=dsl.split('\n').map(l=>l.trim()).filter(l=>l);
+    let html='<div style="color:#B0BEC5;font-family:sans-serif;font-size:10px;margin-bottom:6px;">🤖 네 말이 이런 코드가 됐어!</div>';
+    for(const l of lines){
+        const g=glossLine(l.replace(/\s*\{$/,''))||glossLine(l);
+        html+='<div class="code-line"><span class="dsl">'+l.replace(/</g,'&lt;')+'</span><span class="gloss">'+(g?'← '+g:'')+'</span></div>';
+    }
+    div.innerHTML=html;
+    const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
+}
 
 async function sendChat(){
     const input=document.getElementById('chatInput');
@@ -1028,8 +1262,9 @@ async function sendChat(){
         if(isDSL){
             try{
                 dslToWorkspace(reply); updateDSLPreview();
+                addCodeMsg(reply);
                 const blockCount=workspace.getAllBlocks(false).length;
-                addChatMsg('ai',(currentMode==='turtle'?'🐢':'🎨')+' 블록 '+blockCount+'개를 만들었어요! ▶ 실행 버튼을 눌러보세요.');
+                addChatMsg('ai',(currentMode==='turtle'?'🐢':'🤖')+' 블록 '+blockCount+'개 완성! 코드와 그림을 비교해 보고, 다르면 다시 말해줘.');
                 if(currentMode==='turtle'){
                     const cmds=parseTurtleDSL(reply);
                     animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(reply);});
@@ -1052,6 +1287,8 @@ async function sendChat(){
 function requestHint(){
     if(!currentMission){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
     addChatMsg('system','💡 힌트: '+currentMission.hint);
+    const sd=getStoryData(currentMission);
+    if(sd.math)addMathMsg(sd.math);
 }
 
 // ============================================================
@@ -1271,26 +1508,142 @@ const PIXEL_MISSIONS=[
      targetGrid:null}
 ];
 
+// ============================================================
+//  STORY WORLD (코드모스 스타일: 캐릭터 + 행성 챕터 + 미션 스토리)
+// ============================================================
+const TURTLE_CHAPTERS={
+    '3-1':{emoji:'🌱',name:'새싹 행성',story:'도형 에너지가 사라진 새싹 행성! 선과 직각을 되살려 마을을 밝히자.'},
+    '3-2':{emoji:'🔷',name:'크리스탈 행성',story:'세모 크리스탈이 산산조각 났어! 삼각형의 비밀을 찾아 복구하자.'},
+    '4-1':{emoji:'🔮',name:'마법 행성',story:'각의 크기에 따라 마법이 달라지는 행성! 예각과 둔각을 구분해야 해.'},
+    '4-2':{emoji:'🧩',name:'퍼즐 행성',story:'사각형과 다각형 퍼즐이 흩어졌어! 조각을 맞춰 성문을 열자.'},
+    '5학년':{emoji:'🪞',name:'거울 행성',story:'반쪽이 사라진 거울 행성! 대칭과 색의 규칙으로 원래 모습을 찾자.'},
+    '도전':{emoji:'🌋',name:'용암 행성',story:'가장 뜨거운 시련의 행성! 배운 모든 것을 합쳐 별을 띄워라.'},
+    '자유':{emoji:'🌈',name:'무지개 행성',story:'무엇이든 그릴 수 있는 상상의 행성! 너만의 작품을 남겨줘.'}
+};
+const TURTLE_STORY={
+    1:{story:'토토가 첫 에너지 길을 놓아야 해. 곧게 뻗은 빛의 길을 만들어 줘!',math:'거북이가 간 거리 = 선의 길이! 100만큼 가면 길이 100짜리 선분이 생겨요.'},
+    2:{story:'길이 뚝 끊겨 있어! 직각으로 꺾인 다리를 놓아 마을을 이어 줘.',math:'직각은 90°! 거북이가 90° 돌면 길이 직각으로 꺾여요.'},
+    3:{story:'에너지 창고의 문이 사라졌어. 직사각형 문을 만들어 줘!',math:'직사각형은 마주 보는 변끼리 길이가 같아요. (긴 변, 짧은 변)이 2번씩!'},
+    4:{story:'네 변이 똑같은 마법의 창문이 필요해. 반복의 힘을 쓰면 금방이야!',math:'정사각형: 90°씩 4번 돌면 90×4=360°. 한 바퀴 돌아 제자리로 와요!'},
+    5:{story:'크리스탈 첫 조각! 세 변이 모두 똑같은 세모를 깎아 줘.',math:'정삼각형의 안쪽 각은 60°. 그런데 거북이가 도는 각은 180−60=120°!'},
+    6:{story:'두 변만 길이가 같은 특별한 세모 조각이 필요해.',math:'이등변삼각형은 두 변의 길이가 같고, 두 밑각의 크기도 같아요.'},
+    7:{story:'크리스탈 틈에 꼭 맞는 직각 세모 조각을 만들어 줘!',math:'직각삼각형: 한 각이 정확히 90°! 나머지 두 각의 합도 90°예요.'},
+    8:{story:'모든 각이 뾰족한 세모 마법진을 그려야 마법이 발동돼.',math:'예각삼각형: 세 각이 모두 90°보다 작아요(예각).'},
+    9:{story:'한 각이 뭉툭한 세모가 성문을 지키고 있어. 똑같이 만들면 통과!',math:'둔각삼각형: 한 각이 90°보다 커요(둔각). 거북이는 바깥쪽 각만큼 돌아요!'},
+    10:{story:'기울어진 퍼즐 조각을 찾았어! 마주 보는 변이 평행해.',math:'평행사변형: 이웃한 두 각의 합이 180°예요. (60°+120°=180°)'},
+    11:{story:'네 변이 모두 같은 다이아몬드 조각이야. 반짝반짝!',math:'마름모: 네 변의 길이가 모두 같아요. 평행사변형과 무엇이 다를까요?'},
+    12:{story:'위아래만 평행한 사다리꼴 조각으로 다리를 완성하자.',math:'사다리꼴: 평행한 변이 한 쌍! 나란한 두 변을 찾아보세요.'},
+    13:{story:'다섯 별빛 탑을 세워야 해. 외각의 비밀을 기억해!',math:'다각형 외각의 합은 언제나 360°! 정오각형은 360÷5=72°씩 돌아요.'},
+    14:{story:'벌집 모양 에너지 셀을 복구하자. 몇 도씩 돌면 될까?',math:'정육각형은 360÷6=60°씩! 변이 많아질수록 조금씩 돌아요.'},
+    15:{story:'거울 행성의 반쪽이 사라졌어! 좌우가 똑같은 대칭 무늬를 그려 줘.',math:'선대칭 도형: 접으면 완전히 포개져요. 색이 바뀌는 곳이 대칭축!'},
+    16:{story:'네 가지 색 에너지가 도는 사각형 회로를 만들어 줘!',math:'한 변마다 색이 바뀌는 순서(패턴)를 찾는 것도 수학이에요!'},
+    17:{story:'용암 위로 별을 띄워라! 거북이가 크게 돌아야 별이 돼.',math:'별은 두 바퀴(720°)를 5번에 나눠 돌아요. 720÷5=144°!'},
+    18:{story:'화산 대피소를 짓자! 두 가지 도형을 합치면 집이 돼.',math:'집 = 정사각형(90°×4) + 정삼각형(120°×3)의 조합이에요.'},
+    19:{story:'다섯 색깔 별로 용암을 잠재우자!',math:'색은 5가지가 순서대로, 각도는 144°로 일정한 규칙이에요!'},
+    20:{story:'하늘로 오르는 나선 계단! 규칙을 찾으면 오를 수 있어.',math:'20, 40, 60, 80… 20씩 커지는 수의 규칙(수열)이에요!'},
+    21:{story:'무지개 행성에선 뭐든 그릴 수 있어. 너의 상상을 보여줘!',math:'배운 각도와 길이의 규칙을 마음껏 조합해 보세요.'}
+};
+function pixelChapterKey(m){return m.gridSize===16?'16×16':m.gridSize===8?'8×8':(m.targetGrid===null&&m.id===18)?'자유':'5×5';}
+const PIXEL_CHAPTERS={
+    '5×5':{emoji:'🏘️',name:'픽셀 마을',story:'정전이 된 픽셀 마을! 로봇 픽셀과 함께 LED 불빛을 하나씩 되살리자.'},
+    '8×8':{emoji:'🌆',name:'네온 도시',story:'화면이 커진 네온 도시! 8×8 전광판의 규칙을 찾아 불을 밝히자.'},
+    '16×16':{emoji:'🌌',name:'은하 전광판',story:'우주에서도 보이는 거대 전광판! 큰 그림도 규칙만 알면 문제없어.'},
+    '자유':{emoji:'🎨',name:'자유 아틀리에',story:'네 마음대로 그리는 화가의 방! 상상하는 그림을 픽셀에게 말해 봐.'}
+};
+const PIXEL_STORY={
+    1:{story:'깜깜한 마을에 첫 가로등을 켜자! 한가운데 칸이 어디인지 찾아봐.',math:'좌표 (x, y): x는 가로(→), y는 세로(↓)! 숫자는 0부터 세어요.'},
+    2:{story:'큰길을 밝히자! 한 줄을 통째로 켜야 해.',math:'같은 y줄에서 x만 0→4로 변해요. 한 줄 전체 = 반복의 힘!'},
+    3:{story:'언덕길 조명을 켜자! 비스듬한 줄이야.',math:'규칙 발견: x와 y가 같은 칸! (0,0), (1,1), (2,2)…'},
+    4:{story:'마을 병원의 십자 표시등을 복구해 줘!',math:'가로줄 하나 + 세로줄 하나 = 십자! 두 줄이 겹치는 칸은 어디일까요?'},
+    5:{story:'마을 사람들에게 사랑의 불빛을! 하트를 켜 줘.',math:'하트는 좌우 대칭! 왼쪽 절반만 알면 오른쪽도 알 수 있어요.'},
+    6:{story:'마을 광장에 웃음을 되찾아 주자!',math:'두 눈 (1,1)과 (3,1)은 가운데를 기준으로 대칭인 위치예요!'},
+    7:{story:'마을 성벽의 테두리 조명을 모두 켜자!',math:'테두리 = x가 0 또는 4이거나, y가 0 또는 4인 칸!'},
+    8:{story:'광장 바닥을 체크무늬로 꾸미자!',math:'x+y가 짝수인 칸만 켜져요. 홀수·짝수의 규칙!'},
+    9:{story:'마을 신호등을 만들자! 버튼에 따라 다른 불빛이 나와야 해.',math:'이벤트: "~하면 ~한다" — 조건과 결과를 연결하는 코딩의 핵심!'},
+    10:{story:'네온 도시의 중앙 대로를 밝히자! 화면이 커졌어.',math:'격자가 8×8로 커져도 규칙은 같아요. 가운데 줄은 몇 번일까요?'},
+    11:{story:'도시의 보물 표시 X를 그려 줘!',math:'두 대각선: x=y인 칸과 x+y=7인 칸이 겹쳐요!'},
+    12:{story:'도시 성벽 테두리를 복구하자!',math:'5×5 테두리와 같은 규칙, 끝 번호만 7로 바뀌었어요!'},
+    13:{story:'비밀 미로의 이중 테두리를 켜야 문이 열려!',math:'테두리 속의 테두리! 같은 규칙이 크기만 다르게 반복돼요.'},
+    14:{story:'하늘을 가리키는 네온 화살표를 만들어 줘!',math:'위쪽은 점점 넓어지는 삼각형, 아래쪽은 직사각형 기둥!'},
+    15:{story:'은하 전광판에 거대 하트를 쏘아 올리자!',math:'작은 하트를 확대한 모양! 크기가 커져도 모양의 규칙은 같아요(닮음).'},
+    16:{story:'우주에서 빛나는 큰 별을 그려 줘!',math:'십자(+)와 대각선(×)을 겹치면 별이 돼요!'},
+    17:{story:'전광판에 웃는 얼굴을 띄워 우주에 인사하자!',math:'원은 중심에서 같은 거리에 있는 점들의 모임이에요!'},
+    18:{story:'자유 아틀리에에 온 걸 환영해! 상상하는 그림을 말해 봐.',math:'좌표, 대칭, 반복… 배운 규칙을 모두 써 볼 수 있어요.'}
+};
+const TURTLE_CHIPS=['앞으로 100만큼 가줘','오른쪽으로 90도 돌아줘','앞으로 100 가고 오른쪽 120도 돌기를 3번 반복해줘','펜 색을 빨강으로 바꿔줘'];
+const PIXEL_CHIPS=['x 2, y 2 칸에 불을 켜줘','2번째 가로줄을 모두 켜줘','테두리만 켜줘','버튼 A를 누르면 하트가 나오게 해줘'];
+
 let completedTurtle=JSON.parse(localStorage.getItem('turtle_completed')||'[]');
 let completedPixel=JSON.parse(localStorage.getItem('pixel_completed')||'[]');
+let starsTurtle=JSON.parse(localStorage.getItem('turtle_stars')||'{}');
+let starsPixel=JSON.parse(localStorage.getItem('pixel_stars')||'{}');
 
 function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:PIXEL_MISSIONS;}
 function getCompleted(){return currentMode==='turtle'?completedTurtle:completedPixel;}
+function getStars(){return currentMode==='turtle'?starsTurtle:starsPixel;}
 function saveCompleted(id){
     if(currentMode==='turtle'){if(!completedTurtle.includes(id)){completedTurtle.push(id);localStorage.setItem('turtle_completed',JSON.stringify(completedTurtle));}}
     else{if(!completedPixel.includes(id)){completedPixel.push(id);localStorage.setItem('pixel_completed',JSON.stringify(completedPixel));}}
 }
+function saveStars(id,n){
+    const s=getStars();
+    if((s[id]||0)<n){s[id]=n;localStorage.setItem(currentMode==='turtle'?'turtle_stars':'pixel_stars',JSON.stringify(s));}
+    updateStarTotal();
+}
+function updateStarTotal(){
+    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0);
+    const el=document.getElementById('starTotal');if(el)el.textContent='⭐ '+sum;
+}
+function getChapterKey(m){return currentMode==='turtle'?m.level:pixelChapterKey(m);}
+function getChapters(){return currentMode==='turtle'?TURTLE_CHAPTERS:PIXEL_CHAPTERS;}
+function getStoryData(m){return (currentMode==='turtle'?TURTLE_STORY:PIXEL_STORY)[m.id]||{};}
+function isFreeMission(m){return !m.targetDSL&&!m.targetGrid;}
+function isUnlocked(m){
+    if(isFreeMission(m))return true;
+    const missions=getMissions(),completed=getCompleted();
+    const chapter=missions.filter(x=>getChapterKey(x)===getChapterKey(m));
+    const idx=chapter.findIndex(x=>x.id===m.id);
+    return idx<=0||completed.includes(chapter[idx-1].id);
+}
+
+const MISSION_ICONS_T={1:'➖',2:'📐',3:'🚪',4:'🪟',5:'🔺',6:'⛰️',7:'📏',8:'✨',9:'🛡️',10:'🧩',11:'💎',12:'🌉',13:'⭐',14:'🐝',15:'🪞',16:'🎨',17:'🌟',18:'🏠',19:'🌈',20:'🪜',21:'🖌️'};
+const MISSION_ICONS_P={1:'💡',2:'🛣️',3:'⛰️',4:'🏥',5:'❤️',6:'😊',7:'🏰',8:'🏁',9:'🚦',10:'🌆',11:'❌',12:'🧱',13:'🌀',14:'⬆️',15:'💖',16:'🌟',17:'🙂',18:'🖌️'};
 
 function openMissionSelector(){
-    const missions=getMissions(),completed=getCompleted();
+    const missions=getMissions(),completed=getCompleted(),stars=getStars();
+    const chapters=getChapters();
+    const icons=currentMode==='turtle'?MISSION_ICONS_T:MISSION_ICONS_P;
     const g=document.getElementById('missionGrid');g.innerHTML='';
-    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🐢 터틀 미션':'🎨 픽셀 아트 미션';
-    for(const m of missions){
-        const done=completed.includes(m.id);
-        const c=document.createElement('div');c.className='mission-card'+(done?' completed':'');
-        c.innerHTML=`<span class="m-level" style="background:${m.levelColor}20;color:${m.levelColor}">${m.level}</span>
-            <div class="m-title">${m.title}</div><div class="m-desc">${m.description}</div>${done?'<span class="m-check">✅</span>':''}`;
-        c.onclick=()=>selectMission(m);g.appendChild(c);
+    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🗺️ 도형 행성 대모험 — 토토와 함께!':'🗺️ 픽셀 은하 구조대 — 픽셀과 함께!';
+    // 챕터별로 미션을 묶어 스토리 맵 구성
+    const order=[];const groups={};
+    for(const m of missions){const k=getChapterKey(m);if(!groups[k]){groups[k]=[];order.push(k);}groups[k].push(m);}
+    for(const key of order){
+        const ch=chapters[key]||{emoji:'🪐',name:key,story:''};
+        const list=groups[key];
+        const doneCnt=list.filter(m=>completed.includes(m.id)).length;
+        const block=document.createElement('div');block.className='chapter-block';
+        block.innerHTML=`<div class="chapter-head"><span class="chapter-emoji">${ch.emoji}</span>
+            <div><div class="chapter-name">${ch.name} <span style="font-size:10px;color:var(--text-light);font-weight:600;">${key}</span></div>
+            <div class="chapter-sub">${ch.story}</div></div>
+            <span class="chapter-prog">${doneCnt}/${list.length} 완료</span></div>`;
+        const path=document.createElement('div');path.className='node-path';
+        list.forEach((m,i)=>{
+            if(i>0){const link=document.createElement('span');link.className='node-link';link.textContent='›';path.appendChild(link);}
+            const done=completed.includes(m.id),unlocked=isUnlocked(m);
+            const st=stars[m.id]||0;
+            const node=document.createElement('div');
+            node.className='mission-node'+(done?' done':'')+(unlocked?'':' locked');
+            node.innerHTML=`<div class="n-icon">${unlocked?(icons[m.id]||'🪐'):'🔒'}</div>
+                <div class="n-title">${m.title}</div>
+                <div class="n-stars">${done?('⭐'.repeat(st||1)):''}</div>`;
+            node.onclick=()=>{
+                if(!unlocked){addChatMsg('system','🔒 앞 미션을 먼저 완료하면 열려요!');return;}
+                selectMission(m);
+            };
+            path.appendChild(node);
+        });
+        block.appendChild(path);g.appendChild(block);
     }
     document.getElementById('missionModal').classList.add('show');
 }
@@ -1302,20 +1655,38 @@ function selectMission(m){
     document.getElementById('levelBadge').textContent=m.level;
     document.getElementById('levelBadge').style.background=m.levelColor;
     document.getElementById('missionBadge').textContent=`미션 ${m.id}: ${m.title}`;
-    closeMissionSelector(); clearWorkspace();
+    closeMissionSelector();
+    // 스토리 인트로 먼저 보여주기 (코드모스 스타일)
+    const ch=getChapters()[getChapterKey(m)]||{emoji:'🪐',name:''};
+    const sd=getStoryData(m);
+    document.getElementById('storyChar').textContent=currentMode==='turtle'?'🐢':'🤖';
+    document.getElementById('storyChapter').textContent=`${ch.emoji} ${ch.name} · 미션 ${m.id}`;
+    document.getElementById('storyTitle').textContent=m.title;
+    document.getElementById('storyText').innerHTML=(sd.story||m.description)+
+        `<div style="margin-top:8px;font-size:11px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
+    document.getElementById('storyModal').classList.add('show');
+}
+
+function startMissionPlay(){
+    document.getElementById('storyModal').classList.remove('show');
+    const m=currentMission;if(!m)return;
+    clearWorkspace();
     chatMessages=[];document.getElementById('chatHistory').innerHTML='';
     addChatMsg('system',`🎯 미션 ${m.id}: ${m.title}`);
-    addChatMsg('system',m.description);
+    const sd=getStoryData(m);
+    if(sd.story)addChatMsg('ai',(currentMode==='turtle'?'🐢 ':'🤖 ')+sd.story);
+    renderChips(m);
     if(currentMode==='turtle'){
         resetTurtle();
         if(m.targetDSL){
-            addChatMsg('system','👀 목표 모양을 시연합니다! 잘 관찰하세요.');
+            addChatMsg('system','👀 목표 모양을 시연할게요! 길이 숫자와 각도(°)를 잘 관찰하세요.');
             setTimeout(()=>animateTurtle(parseTurtleDSL(m.targetDSL),()=>{
-                addChatMsg('system','시연 완료! 이 모양을 자연어로 설명해서 만들어 보세요.');
-            }),500);
-        }
+                addChatMsg('system','시연 완료! 👻 겹쳐보기로 목표가 흐리게 남아 있어요. 거북이에게 말로 설명해 보세요.');
+                if(sd.math)addMathMsg(sd.math);
+                resetTurtle();
+            }),400);
+        }else if(sd.math)addMathMsg(sd.math);
     }else{
-        // Auto-switch grid size for pixel missions
         if(m.gridSize&&m.gridSize!==pixelGridSize){
             pixelGridSize=m.gridSize;
             document.querySelectorAll('.grid-opt').forEach(b=>{
@@ -1323,22 +1694,30 @@ function selectMission(m){
             });
         }
         initPixelGrid();
+        renderTargetMini();
         if(m.targetGrid){
-            addChatMsg('system','👀 목표 패턴을 보여줍니다! 잘 관찰하세요.');
-            setTimeout(()=>{
-                // Show target grid briefly then clear
-                for(let y=0;y<Math.min(pixelGridSize,m.targetGrid.length);y++)
-                    for(let x=0;x<Math.min(pixelGridSize,m.targetGrid[y].length);x++)
-                        pixelGrid[y][x]=m.targetGrid[y][x]?pixelColor:null;
-                renderPixelGrid();
-                setTimeout(()=>{
-                    clearPixelGrid();
-                    addChatMsg('system','패턴을 기억했나요? AI에게 설명하거나 블록으로 만들어 보세요!');
-                },3000);
-            },500);
-        }
+            addChatMsg('system','🎯 왼쪽의 "목표" 그림을 보고 똑같이 만들어 보세요. 좌표 숫자가 도와줄 거예요!');
+            if(sd.math)addMathMsg(sd.math);
+        }else if(sd.math)addMathMsg(sd.math);
     }
-    if(!m.targetDSL&&!m.targetGrid)addChatMsg('system','자유롭게 AI에게 설명하거나 블록을 조합해 보세요!');
+    if(isFreeMission(m))addChatMsg('system','자유롭게 AI에게 설명하거나 블록을 조합해 보세요!');
+}
+
+function addMathMsg(text){
+    const div=document.createElement('div');div.className='chat-msg math';
+    div.innerHTML='<b>🔍 수학 돋보기</b>'+text;
+    const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
+}
+
+function renderChips(m){
+    const row=document.getElementById('chipRow');if(!row)return;
+    row.innerHTML='<span class="chip-label">💬 이렇게 말해봐</span>';
+    const chips=(getStoryData(m)&&getStoryData(m).chips)||(currentMode==='turtle'?TURTLE_CHIPS:PIXEL_CHIPS);
+    for(const c of chips){
+        const s=document.createElement('span');s.className='chip';s.textContent=c;
+        s.onclick=()=>{const inp=document.getElementById('chatInput');inp.value=c;inp.focus();};
+        row.appendChild(s);
+    }
 }
 
 function checkTurtleMission(studentDSL){
@@ -1351,9 +1730,33 @@ function checkTurtleMission(studentDSL){
         if(Math.abs(tp[i].x-sp[i].x)<=tol&&Math.abs(tp[i].y-sp[i].y)<=tol)match++;
     }
     const sim=maxLen>0?match/maxLen:0;
-    if(sim>=0.8){saveCompleted(currentMission.id);showFeedback(true,'🎉 미션 성공!','정확해요! 멋진 그림 완성!');addChatMsg('success','🎉 미션 성공!');}
-    else if(sim>=0.5)showFeedback(false,'거의 다 됐어요! 💪','조금만 더 수정하면 완성!');
-    else addChatMsg('system','🤔 목표와 달라요. 힌트를 확인해 보세요!');
+    if(sim>=0.8){
+        const stars=sim>=0.97?3:sim>=0.9?2:1;
+        saveCompleted(currentMission.id);saveStars(currentMission.id,stars);confetti();
+        showFeedback(true,'🎉 미션 성공!',starComment(stars),stars);
+        addChatMsg('success','🎉 미션 성공! '+'⭐'.repeat(stars));
+    }
+    else if(sim>=0.5)showFeedback(false,'거의 다 됐어요! 💪','목표와 '+Math.round(sim*100)+'% 비슷해요. 👻 겹쳐보기로 어디가 다른지 찾아보세요!',0);
+    else addChatMsg('system','🤔 목표와 달라요. 👻 겹쳐보기와 💡 힌트를 활용해 보세요!');
+}
+
+function starComment(n){
+    return n>=3?'완벽해요! 수학 박사님 인정! 🏆':n>=2?'훌륭해요! 조금만 더 정확하면 별 3개!':'성공! 다시 도전하면 별을 더 모을 수 있어요.';
+}
+
+function confetti(){
+    const wrap=document.createElement('div');wrap.className='confetti';
+    const em=['🎉','⭐','✨','🎊','💫','🌟'];
+    for(let i=0;i<26;i++){
+        const s=document.createElement('span');
+        s.textContent=em[i%em.length];
+        s.style.left=Math.random()*100+'%';
+        s.style.animationDelay=(Math.random()*0.5)+'s';
+        s.style.fontSize=(13+Math.random()*16)+'px';
+        wrap.appendChild(s);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(()=>wrap.remove(),3000);
 }
 
 function checkPixelMission(){
@@ -1363,13 +1766,28 @@ function checkPixelMission(){
         total++;if(!!t[y][x]===!!pixelGrid[y]?.[x])match++;
     }
     const sim=total>0?match/total:0;
-    if(sim>=0.9){saveCompleted(currentMission.id);showFeedback(true,'🎉 미션 성공!','멋진 픽셀 아트 완성!');addChatMsg('success','🎉 미션 성공!');}
-    else if(sim>=0.7)showFeedback(false,'거의 다 됐어요! 💪',Math.round(sim*100)+'% 일치!');
-    else addChatMsg('system','🤔 '+Math.round(sim*100)+'% 일치. 힌트를 확인해 보세요!');
+    if(sim>=0.9){
+        const stars=sim>=1?3:sim>=0.95?2:1;
+        saveCompleted(currentMission.id);saveStars(currentMission.id,stars);confetti();
+        showFeedback(true,'🎉 미션 성공!',starComment(stars),stars);
+        addChatMsg('success','🎉 미션 성공! '+'⭐'.repeat(stars));
+    }
+    else if(sim>=0.7)showFeedback(false,'거의 다 됐어요! 💪',Math.round(sim*100)+'% 일치! 🎯 목표 그림과 좌표를 비교해 보세요.',0);
+    else addChatMsg('system','🤔 '+Math.round(sim*100)+'% 일치. 🎯 목표 그림의 좌표를 하나씩 살펴보세요!');
 }
 
-function showFeedback(ok,title,text){
+function showFeedback(ok,title,text,stars){
     document.getElementById('fbIcon').textContent=ok?'🎉':'💪';
+    const st=document.getElementById('fbStars');
+    if(ok&&stars){
+        st.innerHTML='';
+        for(let i=0;i<3;i++){
+            const s=document.createElement('span');
+            s.className=i<stars?'lit':'dim';s.textContent='⭐';
+            if(i<stars)s.style.animationDelay=(i*0.25)+'s';
+            st.appendChild(s);
+        }
+    }else st.innerHTML='';
     document.getElementById('fbTitle').textContent=title;
     document.getElementById('fbText').textContent=text;
     document.getElementById('fbNextBtn').style.display=ok?'':'none';
@@ -1389,7 +1807,7 @@ function nextMission(){
 window.addEventListener('load',()=>{
     resizeTurtleCanvas(); clearTurtleCanvas();
     const sp=toScreen(0,0); drawTurtleSprite(sp.x,sp.y,0);
-    initPixelGrid(); initPalette();
+    initPixelGrid(); initPalette(); updateStarTotal();
     workspace=Blockly.inject('blocklyDiv',{toolbox:TURTLE_TOOLBOX,scrollbars:true,trashcan:true,
         zoom:{controls:true,wheel:true,startScale:0.9},grid:{spacing:20,length:3,colour:'#eee',snap:true}});
     workspace.addChangeListener(updateDSLPreview);
