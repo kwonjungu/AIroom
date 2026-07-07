@@ -638,6 +638,33 @@ app.patch('/api/vibe-progress/items/:id', requireAuth, async (req, res) => {
     }
 });
 
+// ----- NEIS 학교 검색 프록시 (vibecoding 학생 식별용 — 학교명 자동완성) -----
+// NEIS_API_KEY 환경변수는 선택 (없으면 무인증 호출 — 소량 조회는 동작)
+const schoolSearchCache = new Map();
+app.get('/api/school-search', requireAuth, async (req, res) => {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return res.json({ success: true, data: [] });
+    const cacheKey = q.toLowerCase();
+    const hit = schoolSearchCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < 3600 * 1000) return res.json({ success: true, data: hit.data });
+    try {
+        const params = new URLSearchParams({ Type: 'json', pIndex: '1', pSize: '20', SCHUL_NM: q });
+        if (process.env.NEIS_API_KEY) params.set('KEY', process.env.NEIS_API_KEY);
+        const r = await fetch('https://open.neis.go.kr/hub/schoolInfo?' + params.toString());
+        const j = await r.json();
+        const rows = (j.schoolInfo && j.schoolInfo[1] && j.schoolInfo[1].row) || [];
+        const data = rows
+            .filter(s => !s.SCHUL_KND_SC_NM || s.SCHUL_KND_SC_NM === '초등학교')
+            .slice(0, 12)
+            .map(s => ({ code: s.SD_SCHUL_CODE, name: s.SCHUL_NM, addr: s.ORG_RDNMA || '' }));
+        if (schoolSearchCache.size > 500) schoolSearchCache.clear();
+        schoolSearchCache.set(cacheKey, { at: Date.now(), data });
+        res.json({ success: true, data });
+    } catch (e) {
+        res.json({ success: true, data: [], error: 'neis_unavailable' });
+    }
+});
+
 // ----- sections.json 내부 nested item -----
 app.patch('/api/sections/:secId/items/:itemId', requireAuth, async (req, res) => {
     const { secId, itemId } = req.params;

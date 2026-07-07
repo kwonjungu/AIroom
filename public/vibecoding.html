@@ -377,6 +377,20 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 
 /* 학생·교사 모달은 타이틀 화면(z-index 2000) 위에 떠야 함 */
 #studentModal,#teacherModal{z-index:2600;}
+/* 학교 검색 자동완성 */
+.school-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.18);max-height:220px;overflow-y:auto;z-index:10;text-align:left;}
+.school-item{padding:9px 12px;cursor:pointer;font-size:14px;font-weight:700;border-bottom:1px solid #f0f4f8;}
+.school-item span{display:block;font-size:11px;color:var(--text-light);font-weight:400;}
+.school-item:hover{background:#EBF4FD;}
+.school-item.none{color:var(--text-light);cursor:default;font-weight:400;}
+/* 교사 LMS 요약 카드 */
+.lms-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px;}
+.lms-card{background:linear-gradient(135deg,#f5f9ff,#eef3fa);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;}
+.lms-card b{display:block;font-size:20px;font-family:'Jua',sans-serif;color:var(--primary);}
+.lms-card span{font-size:12px;color:var(--text-light);}
+.lms-bar{position:relative;background:#E2E8F0;border-radius:8px;height:18px;min-width:110px;overflow:hidden;}
+.lms-bar div{height:100%;background:linear-gradient(90deg,#51CF66,#94E3A2);}
+.lms-bar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#2D3748;}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;}
 .confetti span{position:absolute;top:-40px;animation:cfall 2.2s ease-in forwards;}
 @keyframes cfall{to{transform:translateY(110vh) rotate(560deg);opacity:.7;}}
@@ -635,7 +649,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
         <div class="fb-stars" id="fbStars"></div>
         <div class="feedback-title" id="fbTitle"></div>
         <div class="feedback-text" id="fbText"></div>
-        <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">다음 미션 →</button></div>
+        <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn retry" id="fbMapBtn" onclick="closeFeedback();openMissionSelector();">🗺️ 지도로</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">다음 미션 →</button></div>
     </div></div>
 </div>
 
@@ -684,31 +698,46 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
     <div class="title-teacher"><a onclick="openTeacherView()">👩‍🏫 선생님</a></div>
 </div>
 
-<!-- 학생 식별 모달 -->
+<!-- 학생 식별 모달 (이름 미수집 — 학교·학년·반·번호만) -->
 <div class="modal-overlay" id="studentModal">
-    <div class="modal" style="max-width:340px;">
-        <div style="padding:26px;text-align:center;">
+    <div class="modal" style="max-width:380px;">
+        <div style="padding:24px 24px 20px;text-align:center;">
             <div style="font-size:44px;">🐢</div>
-            <h2 style="margin:8px 0 4px;">넌 누구야?</h2>
-            <p style="font-size:13px;color:var(--text-light);margin-bottom:8px;">네가 모은 별이랑 진도를 기억해 줄게!</p>
-            <input class="student-input" id="stuCls" placeholder="학급 (예: 3-1)" maxlength="10">
-            <input class="student-input" id="stuName" placeholder="이름" maxlength="10" onkeydown="if(event.key==='Enter')saveStudentInfo()">
+            <h2 style="margin:8px 0 4px;">어느 학교 친구야?</h2>
+            <p style="font-size:13px;color:var(--text-light);margin-bottom:10px;">별이랑 진도를 기억해 줄게! (이름은 안 물어봐 😉)</p>
+            <div style="position:relative;">
+                <input class="student-input" id="stuSchool" placeholder="학교 이름을 검색해 봐 (예: 백암초)" autocomplete="off" oninput="schoolSearchInput()">
+                <div class="school-list hidden" id="schoolList"></div>
+            </div>
+            <div id="stuPicked" style="font-size:13px;font-weight:800;color:var(--primary);min-height:18px;margin:4px 0;"></div>
+            <div style="display:flex;gap:6px;justify-content:center;">
+                <select class="student-input" id="stuGrade" style="flex:1;"><option value="">학년</option></select>
+                <select class="student-input" id="stuCls" style="flex:1;"><option value="">반</option></select>
+                <select class="student-input" id="stuNum" style="flex:1;"><option value="">번호</option></select>
+            </div>
             <button class="student-go" onclick="saveStudentInfo()">시작!</button>
         </div>
     </div>
 </div>
 
-<!-- 교사 뷰 모달 -->
+<!-- 교사 학급 현황판 (LMS) -->
 <div class="modal-overlay" id="teacherModal">
-    <div class="modal" style="max-width:760px;">
-        <div class="modal-header"><h2>👩‍🏫 학급 진도 현황</h2><button class="modal-close" onclick="document.getElementById('teacherModal').classList.remove('show')">✕</button></div>
+    <div class="modal" style="max-width:860px;">
+        <div class="modal-header"><h2>👩‍🏫 학급 성취 현황판</h2><button class="modal-close" onclick="document.getElementById('teacherModal').classList.remove('show')">✕</button></div>
         <div class="modal-body">
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-                <select class="teacher-btn" id="teacherClsFilter" onchange="renderTeacherTable()"><option value="">전체 학급</option></select>
-                <button class="teacher-btn" onclick="downloadProgressCSV()">📥 CSV 다운로드</button>
+                <div style="position:relative;">
+                    <input class="student-input" id="tSchool" style="width:220px;margin:0;" placeholder="학교 검색" autocomplete="off" oninput="teacherSchoolInput()">
+                    <div class="school-list hidden" id="tSchoolList"></div>
+                </div>
+                <select class="teacher-btn" id="tGrade"><option value="">학년</option></select>
+                <select class="teacher-btn" id="tCls"><option value="">반</option></select>
+                <button class="teacher-btn" style="background:var(--primary);color:#fff;" onclick="loadTeacherBoard()">조회</button>
+                <button class="teacher-btn" onclick="downloadProgressCSV()">📥 CSV</button>
                 <button class="teacher-btn" onclick="clearLocalRecords()">🧹 이 컴퓨터 기록 지우기</button>
             </div>
-            <div id="teacherTableWrap" style="overflow:auto;max-height:60vh;">불러오는 중...</div>
+            <div class="lms-cards" id="lmsCards"></div>
+            <div id="teacherTableWrap" style="overflow:auto;max-height:52vh;">학교와 학년·반을 선택하고 조회를 눌러 주세요.</div>
         </div>
     </div>
 </div>
@@ -3787,20 +3816,53 @@ window.addEventListener('resize',()=>{if(tourActive)showTourStep();});
 // ============================================================
 let vibeStudent=null;
 try{vibeStudent=JSON.parse(localStorage.getItem('vibe_student')||'null');}catch(e){vibeStudent=null;}
-if(vibeStudent&&(!vibeStudent.cls||!vibeStudent.name))vibeStudent=null;
+// 구버전(이름 수집 형식) 기록은 무효화 — 개인정보 미수집 정책
+if(vibeStudent&&(!vibeStudent.school||!vibeStudent.grade||!vibeStudent.cls||!vibeStudent.num))vibeStudent=null;
 let pendingEnterMode=null;
 
-function studentId(){return vibeStudent?vibeStudent.cls+'-'+vibeStudent.name:null;}
+function studentId(){return vibeStudent?vibeStudent.school.code+'-'+vibeStudent.grade+'-'+vibeStudent.cls+'-'+vibeStudent.num:null;}
 
+// ── 나이스 학교 검색 (서버 프록시) ──
+let schoolPicked=null,tSchoolPicked=null,schoolSearchTimer=null;
+async function fetchSchools(q){
+    try{
+        const r=await fetch('/api/school-search?q='+encodeURIComponent(q),{headers:{'X-Auth-Token':AUTH_TOKEN}});
+        const j=await r.json();
+        return (j&&j.success&&Array.isArray(j.data))?j.data:[];
+    }catch(e){return[];}
+}
+function bindSchoolSearch(inputId,listId,onPick){
+    clearTimeout(schoolSearchTimer);
+    const inp=document.getElementById(inputId),list=document.getElementById(listId);
+    const q=inp.value.trim();
+    if(q.length<2){list.classList.add('hidden');return;}
+    schoolSearchTimer=setTimeout(async()=>{
+        const rows=await fetchSchools(q);
+        if(!rows.length){list.innerHTML='<div class="school-item none">검색 결과가 없어요</div>';list.classList.remove('hidden');return;}
+        list.innerHTML=rows.map((s,i)=>`<div class="school-item" data-i="${i}">${esc(s.name)}<span>${esc(s.addr)}</span></div>`).join('');
+        list.classList.remove('hidden');
+        list.querySelectorAll('.school-item[data-i]').forEach(el=>{
+            el.onclick=()=>{const s=rows[+el.dataset.i];onPick(s);inp.value=s.name;list.classList.add('hidden');};
+        });
+    },350);
+}
+function schoolSearchInput(){bindSchoolSearch('stuSchool','schoolList',s=>{schoolPicked=s;document.getElementById('stuPicked').textContent='✓ '+s.name;});}
+function teacherSchoolInput(){bindSchoolSearch('tSchool','tSchoolList',s=>{tSchoolPicked=s;});}
+
+function fillNumSelect(id,max,label){
+    const sel=document.getElementById(id);if(!sel||sel.options.length>1)return;
+    sel.innerHTML='<option value="">'+label+'</option>'+Array.from({length:max},(_,i)=>`<option value="${i+1}">${i+1}${label}</option>`).join('');
+}
 function openStudentModal(){
+    fillNumSelect('stuGrade',6,'학년');fillNumSelect('stuCls',15,'반');fillNumSelect('stuNum',40,'번');
     document.getElementById('studentModal').classList.add('show');
-    setTimeout(()=>document.getElementById('stuCls').focus(),100);
+    setTimeout(()=>document.getElementById('stuSchool').focus(),100);
 }
 function saveStudentInfo(){
-    const cls=document.getElementById('stuCls').value.trim();
-    const name=document.getElementById('stuName').value.trim();
-    if(!cls||!name){alert('학급이랑 이름을 다 적어 줘!');return;}
-    vibeStudent={cls,name};
+    const grade=document.getElementById('stuGrade').value,cls=document.getElementById('stuCls').value,num=document.getElementById('stuNum').value;
+    if(!schoolPicked){alert('학교를 검색해서 골라 줘!');return;}
+    if(!grade||!cls||!num){alert('학년·반·번호를 모두 골라 줘!');return;}
+    vibeStudent={school:{code:schoolPicked.code,name:schoolPicked.name},grade:+grade,cls:+cls,num:+num};
     localStorage.setItem('vibe_student',JSON.stringify(vibeStudent));
     document.getElementById('studentModal').classList.remove('show');
     renderStudentBadge();
@@ -3810,7 +3872,7 @@ function saveStudentInfo(){
 function renderStudentBadge(){
     const el=document.getElementById('titleStudent');if(!el)return;
     el.innerHTML=vibeStudent
-        ?'👋 <b>'+esc(vibeStudent.cls)+'반 '+esc(vibeStudent.name)+'</b><button onclick="resetStudent()">내가 아니에요</button>'
+        ?'👋 <b>'+esc(vibeStudent.school.name)+' '+vibeStudent.grade+'-'+vibeStudent.cls+' '+vibeStudent.num+'번</b><button onclick="resetStudent()">내가 아니에요</button>'
         :'';
 }
 function resetStudent(){
@@ -3833,7 +3895,8 @@ async function pushProgress(){
             method:'PATCH',
             headers:{'Content-Type':'application/json','X-Auth-Token':AUTH_TOKEN},
             body:JSON.stringify({
-                cls:vibeStudent.cls,name:vibeStudent.name,
+                school:vibeStudent.school.code,schoolName:vibeStudent.school.name,
+                grade:vibeStudent.grade,cls:vibeStudent.cls,num:vibeStudent.num,
                 stars:{turtle:starsTurtle,pixel:starsPixel,maze:starsMaze},
                 completed:{turtle:completedTurtle,pixel:completedPixel,maze:completedMaze},
                 updatedAt:new Date().toISOString()
@@ -3869,50 +3932,72 @@ async function syncFromServer(){
     }catch(e){/* 오프라인 허용 */}
 }
 
-// ---- 교사 뷰 (교직원용 — 존댓말) ----
+// ---- 교사 학급 현황판 LMS (교직원용 — 존댓말) ----
+const TOTAL_MISSIONS=51; // 터틀21+픽셀18+미로12
 let teacherData=[];
-async function openTeacherView(){
+function openTeacherView(){
+    fillNumSelect('tGrade',6,'학년');fillNumSelect('tCls',15,'반');
+    // 교사 설정 기억
+    try{
+        const saved=JSON.parse(localStorage.getItem('vibe_teacher')||'null');
+        if(saved){tSchoolPicked=saved.school;document.getElementById('tSchool').value=saved.school.name;
+            document.getElementById('tGrade').value=saved.grade;document.getElementById('tCls').value=saved.cls;}
+    }catch(e){}
     document.getElementById('teacherModal').classList.add('show');
+    if(tSchoolPicked&&document.getElementById('tGrade').value)loadTeacherBoard();
+}
+async function loadTeacherBoard(){
     const wrap=document.getElementById('teacherTableWrap');
+    const grade=document.getElementById('tGrade').value,cls=document.getElementById('tCls').value;
+    if(!tSchoolPicked){wrap.textContent='학교를 검색해서 선택해 주세요.';return;}
+    if(!grade||!cls){wrap.textContent='학년과 반을 선택해 주세요.';return;}
+    localStorage.setItem('vibe_teacher',JSON.stringify({school:tSchoolPicked,grade,cls}));
     wrap.textContent='불러오는 중...';
     try{
         const res=await fetch('/api/vibe-progress',{headers:{'X-Auth-Token':AUTH_TOKEN}});
         if(res.status===401||res.status===403){wrap.textContent='로그인이 필요합니다. 첫 화면(백암이)에서 다시 로그인해 주세요.';return;}
         const j=await res.json();
-        teacherData=(j&&j.success&&Array.isArray(j.data))?j.data:[];
+        const all=(j&&j.success&&Array.isArray(j.data))?j.data:[];
+        teacherData=all.filter(r=>r.school===tSchoolPicked.code&&String(r.grade)===String(grade)&&String(r.cls)===String(cls));
     }catch(e){wrap.textContent='서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.';return;}
-    const sel=document.getElementById('teacherClsFilter');
-    const classes=[...new Set(teacherData.map(r=>r.cls).filter(Boolean))].sort();
-    sel.innerHTML='<option value="">전체 학급</option>'+classes.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
     renderTeacherTable();
 }
 function progressRow(r){
     const sum=o=>Object.values(o||{}).reduce((a,b)=>a+(+b||0),0);
+    const done=(r.completed?.turtle||[]).length+(r.completed?.pixel||[]).length+(r.completed?.maze||[]).length;
     return{
-        cls:r.cls||'',name:r.name||'',
+        num:+r.num||0,
         t:sum(r.stars?.turtle),p:sum(r.stars?.pixel),m:sum(r.stars?.maze),
-        done:(r.completed?.turtle||[]).length+(r.completed?.pixel||[]).length+(r.completed?.maze||[]).length,
-        at:r.updatedAt?new Date(r.updatedAt).toLocaleString('ko-KR'):''
+        done,pct:Math.min(100,Math.round(done/TOTAL_MISSIONS*100)),
+        at:r.updatedAt?new Date(r.updatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''
     };
 }
-function teacherRows(){
-    const f=document.getElementById('teacherClsFilter').value;
-    return teacherData.filter(r=>!f||r.cls===f).map(progressRow)
-        .sort((a,b)=>a.cls.localeCompare(b.cls,'ko')||a.name.localeCompare(b.name,'ko'));
-}
+function teacherRows(){return teacherData.map(progressRow).sort((a,b)=>a.num-b.num);}
 function renderTeacherTable(){
     const rows=teacherRows();
     const wrap=document.getElementById('teacherTableWrap');
-    if(!rows.length){wrap.textContent='아직 기록이 없습니다.';return;}
-    wrap.innerHTML='<table class="teacher-table"><thead><tr><th>학급</th><th>이름</th><th>터틀⭐</th><th>픽셀⭐</th><th>미로⭐</th><th>완료 미션</th><th>마지막 활동</th></tr></thead><tbody>'
-        +rows.map(r=>'<tr><td>'+esc(r.cls)+'</td><td>'+esc(r.name)+'</td><td>'+r.t+'</td><td>'+r.p+'</td><td>'+r.m+'</td><td>'+r.done+'</td><td>'+esc(r.at)+'</td></tr>').join('')
+    const cards=document.getElementById('lmsCards');
+    if(!rows.length){cards.innerHTML='';wrap.textContent='이 학급의 학습 기록이 아직 없습니다. 학생들이 접속해 미션을 해결하면 여기에 나타납니다.';return;}
+    const totStar=rows.reduce((a,r)=>a+r.t+r.p+r.m,0);
+    const avgPct=Math.round(rows.reduce((a,r)=>a+r.pct,0)/rows.length);
+    const top=rows.reduce((a,r)=>r.done>a.done?r:a,rows[0]);
+    cards.innerHTML=`
+        <div class="lms-card"><b>${rows.length}</b><span>참여 학생</span></div>
+        <div class="lms-card"><b>⭐ ${totStar}</b><span>학급 총 별</span></div>
+        <div class="lms-card"><b>${avgPct}%</b><span>평균 진행률</span></div>
+        <div class="lms-card"><b>${top.num}번</b><span>최다 해결 (${top.done}개)</span></div>`;
+    wrap.innerHTML='<table class="teacher-table"><thead><tr><th>번호</th><th>🐢 터틀⭐</th><th>🤖 픽셀⭐</th><th>🔍 미로⭐</th><th>완료 미션</th><th>진행률</th><th>마지막 활동</th></tr></thead><tbody>'
+        +rows.map(r=>'<tr><td><b>'+r.num+'</b></td><td>'+r.t+'</td><td>'+r.p+'</td><td>'+r.m+'</td><td>'+r.done+' / '+TOTAL_MISSIONS
+            +'</td><td><div class="lms-bar"><div style="width:'+r.pct+'%"></div><span>'+r.pct+'%</span></div></td><td>'+esc(r.at)+'</td></tr>').join('')
         +'</tbody></table>';
 }
 function downloadProgressCSV(){
     const rows=teacherRows();
     const cell=v=>'"'+String(v).replace(/"/g,'""')+'"';
-    const lines=[['학급','이름','터틀별','픽셀별','미로별','완료미션수','마지막활동'].map(cell).join(',')]
-        .concat(rows.map(r=>[r.cls,r.name,r.t,r.p,r.m,r.done,r.at].map(cell).join(',')));
+    const meta=tSchoolPicked?tSchoolPicked.name+' '+document.getElementById('tGrade').value+'-'+document.getElementById('tCls').value:'';
+    const lines=[[meta,'','','','','',''].map(cell).join(','),
+        ['번호','터틀별','픽셀별','미로별','완료미션수','진행률(%)','마지막활동'].map(cell).join(',')]
+        .concat(rows.map(r=>[r.num,r.t,r.p,r.m,r.done,r.pct,r.at].map(cell).join(',')));
     const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'}); // BOM 포함 → 엑셀 한글 정상 표시
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
