@@ -375,6 +375,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .mode-card .mc-go{margin-top:10px;display:inline-block;padding:10px 26px;border-radius:22px;border:none;cursor:pointer;font-size:15px;font-weight:800;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.25);transition:transform .12s;}
 .mode-card .mc-go:active{transform:translateY(3px);box-shadow:none;}
 
+/* 학생·교사 모달은 타이틀 화면(z-index 2000) 위에 떠야 함 */
+#studentModal,#teacherModal{z-index:2600;}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;}
 .confetti span{position:absolute;top:-40px;animation:cfall 2.2s ease-in forwards;}
 @keyframes cfall{to{transform:translateY(110vh) rotate(560deg);opacity:.7;}}
