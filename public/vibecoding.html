@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>바이브 코딩 — 터틀 & 픽셀 아트</title>
+<title>바이브 코딩 — 토토와 픽셀의 코딩 대모험</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
 <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
 <script src="https://unpkg.com/blockly/msg/ko.js"></script>
@@ -17,6 +20,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .app-header{background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;padding:0;box-shadow:0 2px 12px rgba(0,0,0,.15);flex-shrink:0;transition:background .4s;}
 .app-header.pixel-mode{background:linear-gradient(135deg,#7C4DFF,#E040FB);}
 .app-header.maze-mode{background:linear-gradient(135deg,#3949AB,#00BCD4);}
+.app-header.studio-mode{background:linear-gradient(135deg,#E91E63,#FF9800);}
 .header-top{padding:8px 20px;display:flex;align-items:center;justify-content:space-between;}
 .header-top h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;}
 .header-center{display:flex;align-items:center;gap:10px;}
@@ -200,14 +204,14 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .maze-cell{width:var(--maze-cell);height:var(--maze-cell);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;user-select:none;}
 .maze-cell.path{background:#2E2E52;box-shadow:inset 0 2px 4px rgba(0,0,0,.45);border:1px solid #3A3A63;}
 .maze-cell.wall{background:linear-gradient(180deg,#6B6B94 0%,#4A4A6E 100%);border:1px solid #7D7DA8;box-shadow:inset 0 -6px 0 rgba(0,0,0,.35),0 3px 6px rgba(0,0,0,.5);}
-.maze-cell.wall::after{content:'🪨';font-size:20px;filter:saturate(.6);}
+.maze-cell.wall::after{content:'';width:82%;height:82%;background:url('/assets/vibe/tile-rock.png') center/contain no-repeat;}
 .maze-cell.goal{background:#1B3A4D;border:2px solid #00E5FF;box-shadow:inset 0 2px 4px rgba(0,0,0,.45);}
-.maze-cell.goal::after{content:'🌀';font-size:24px;animation:portalPulse 1.8s ease-in-out infinite;}
+.maze-cell.goal::after{content:'';width:86%;height:86%;background:url('/assets/vibe/tile-portal.png') center/contain no-repeat;animation:portalPulse 1.8s ease-in-out infinite;}
 @keyframes portalPulse{0%,100%{filter:drop-shadow(0 0 3px #00E5FF);transform:scale(1)}50%{filter:drop-shadow(0 0 10px #00E5FF);transform:scale(1.12)}}
 .maze-cell.gem{background:#2E2E52;box-shadow:inset 0 2px 4px rgba(0,0,0,.45);border:1px solid #3A3A63;}
-.maze-cell.gem::after{content:'💎';font-size:20px;animation:gemTwinkle 1.4s ease-in-out infinite;}
+.maze-cell.gem::after{content:'';width:70%;height:70%;background:url('/assets/vibe/tile-gem.png') center/contain no-repeat;animation:gemTwinkle 1.4s ease-in-out infinite;}
 @keyframes gemTwinkle{0%,100%{transform:scale(1);filter:drop-shadow(0 0 2px #7FDBFF)}50%{transform:scale(1.15);filter:drop-shadow(0 0 8px #7FDBFF)}}
-.maze-cell.gem.collected::after{content:'💎';animation:gemPop .35s ease forwards;}
+.maze-cell.gem.collected::after{animation:gemPop .35s ease forwards;}
 @keyframes gemPop{to{transform:scale(1.8);opacity:0;}}
 .maze-toto{position:absolute;width:calc(var(--maze-cell) - 6px);height:calc(var(--maze-cell) - 6px);top:14px;left:14px;transition:transform var(--maze-speed,.45s) ease-in-out;z-index:5;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
 .maze-dir{position:absolute;width:0;height:0;z-index:6;transition:all .3s ease;pointer-events:none;border:6px solid transparent;filter:drop-shadow(0 0 4px #00E5FF);}
@@ -223,6 +227,13 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .maze-progress .dot.now{background:#00E5FF;transform:scale(1.5);box-shadow:0 0 8px #00E5FF;}
 .maze-status{position:absolute;top:8px;left:10px;background:rgba(0,0,0,.55);color:#7FDBFF;font-family:'Consolas',monospace;font-size:11px;padding:4px 10px;border-radius:8px;pointer-events:none;}
 .ctrl-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+/* ===== STUDIO (자유 스튜디오) ===== */
+.studio-view{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:10px;background:#1a1a2e;position:relative;}
+#studioCanvas{display:block;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.5);}
+.studio-dpad{display:flex;gap:10px;justify-content:center;}
+.studio-dpad .vbtn{width:46px;height:46px;font-size:16px;}
+.studio-dpad .vbtn:active{background:#E91E63;border-color:#E91E63;}
 
 /* ===== STARS / CONFETTI ===== */
 .star-total{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:14px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:4px;}
@@ -247,6 +258,28 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .tour-wait{font-size:13px;color:#E65100;font-weight:800;animation:pulse-t 1.2s ease-in-out infinite;}
 @keyframes pulse-t{0%,100%{opacity:1}50%{opacity:.45}}
 
+/* ===== 타이틀 화면 (앱 시작 — 모드 선택) ===== */
+.title-screen{position:fixed;inset:0;z-index:2000;background:#0f0f22 url('/assets/vibe/title-hero.jpg') center/cover;display:flex;flex-direction:column;align-items:center;overflow-y:auto;}
+.title-screen.hidden{display:none;}
+.title-screen::before{content:'';position:fixed;inset:0;background:linear-gradient(180deg,rgba(10,10,30,.55) 0%,rgba(10,10,30,.15) 35%,rgba(10,10,30,.75) 100%);pointer-events:none;}
+.title-logo{position:relative;text-align:center;margin-top:6vh;animation:logoin .8s cubic-bezier(.2,1.4,.4,1) both;}
+.title-logo h1{font-size:clamp(38px,7vw,64px);font-weight:900;color:#fff;letter-spacing:2px;text-shadow:0 4px 0 #2E7D32,0 8px 24px rgba(0,0,0,.6);}
+.title-logo p{margin-top:6px;font-size:clamp(13px,2vw,17px);color:#FFD166;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,.7);}
+.title-star{position:relative;margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.45);padding:7px 18px;border-radius:20px;color:#fff;font-weight:800;font-size:15px;}
+.title-star img{width:20px;height:20px;}
+@keyframes logoin{from{opacity:0;transform:translateY(-30px) scale(.8)}to{opacity:1;transform:none}}
+.title-cards{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,270px));gap:18px;justify-content:center;padding:4vh 20px 6vh;width:100%;max-width:1200px;}
+.mode-card{background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.45);cursor:pointer;transition:transform .18s,box-shadow .18s;animation:cardin .6s ease both;}
+.mode-card:nth-child(1){animation-delay:.15s}.mode-card:nth-child(2){animation-delay:.3s}.mode-card:nth-child(3){animation-delay:.45s}.mode-card:nth-child(4){animation-delay:.6s}
+@keyframes cardin{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.mode-card:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 18px 40px rgba(0,0,0,.55);}
+.mode-card img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;}
+.mode-card .mc-body{padding:13px 16px 16px;text-align:center;}
+.mode-card .mc-name{font-size:17px;font-weight:900;}
+.mode-card .mc-desc{font-size:12.5px;color:#5A6B7F;margin-top:3px;line-height:1.45;min-height:36px;}
+.mode-card .mc-go{margin-top:10px;display:inline-block;padding:10px 26px;border-radius:22px;border:none;cursor:pointer;font-size:15px;font-weight:800;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.25);transition:transform .12s;}
+.mode-card .mc-go:active{transform:translateY(3px);box-shadow:none;}
+
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;}
 .confetti span{position:absolute;top:-40px;animation:cfall 2.2s ease-in forwards;}
 @keyframes cfall{to{transform:translateY(110vh) rotate(560deg);opacity:.7;}}
@@ -263,6 +296,41 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
     .canvas-panel,.blockly-panel{height:33vh;}
     .chat-panel{height:34vh;}
 }
+
+/* ===== 디자인 마감 (외주 폴리시 패스) ===== */
+/* 라운드 한글 디스플레이 폰트: 제목·버튼·배지에만 (본문 가독성 유지) */
+.header-top h1,.mode-tab,.title-logo h1,.title-logo p,.mode-card .mc-name,.mode-card .mc-go,
+.modal-header h2,.chapter-name,.mission-node .n-title,.story-title,.story-chapter,
+.feedback-title,.feedback-btn,.ctrl-btn,.hdr-btn,.tab-btn,.grid-opt,.send-btn,.hint-btn,
+.tour-next,.story-go,.level-badge,.mission-badge,.star-total,.chip-label{font-family:'Jua','Segoe UI','Malgun Gothic',sans-serif;letter-spacing:.3px;}
+.header-top h1{font-size:20px;}
+/* 버튼 촉감: 눌리는 느낌 통일 */
+.ctrl-btn,.hdr-btn,.tab-btn,.grid-opt,.send-btn,.hint-btn,.feedback-btn{transition:transform .1s,box-shadow .1s,background .15s;}
+.ctrl-btn:active,.hdr-btn:active,.tab-btn:active,.grid-opt:active,.send-btn:active,.hint-btn:active,.feedback-btn:active{transform:translateY(2px) scale(.97);}
+.ctrl-btn.run{box-shadow:0 4px 0 #2b6cb0,0 6px 14px rgba(74,144,217,.35);}
+.ctrl-btn.run:active{box-shadow:0 1px 0 #2b6cb0;transform:translateY(3px);}
+/* 헤더 질감 */
+.app-header{position:relative;}
+.app-header::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 15% 0%,rgba(255,255,255,.18),transparent 40%);pointer-events:none;}
+.mode-tabs{position:relative;z-index:1;}
+/* 패널 헤더 정돈 */
+.panel-header{background:linear-gradient(180deg,#fbfdff,#f2f6fa);}
+.panel-header h3{font-family:'Jua',sans-serif;font-size:14px;letter-spacing:.5px;}
+/* 모달 등장 애니메이션 */
+.modal-overlay.show .modal{animation:modalpop .3s cubic-bezier(.2,1.4,.4,1) both;}
+@keyframes modalpop{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}
+/* 채팅 말풍선 등장 */
+.chat-msg{animation:msgin .25s ease both;}
+@keyframes msgin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* 미션 노드 완료 반짝 테두리 */
+.mission-node.done{box-shadow:0 0 0 2px rgba(81,207,102,.25),0 2px 8px rgba(81,207,102,.2);}
+/* 스크롤바 */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:#c3cfdd;border-radius:6px;border:2px solid var(--bg);}
+::-webkit-scrollbar-thumb:hover{background:#a8b8ca;}
+::-webkit-scrollbar-track{background:transparent;}
+/* 포커스 접근성 */
+button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offset:2px;}
 </style>
 </head>
 <body>
@@ -278,6 +346,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         </div>
         <div class="header-actions">
             <button class="hdr-btn" id="mapBtn" onclick="openMissionSelector()">🗺️ 모험 지도</button>
+            <button class="hdr-btn" onclick="updateTitleStars();document.getElementById('titleScreen').classList.remove('hidden')">🏠 처음으로</button>
             <button class="hdr-btn" onclick="startTour()">❓ 도움말</button>
             <button class="hdr-btn" onclick="if(!workspace||workspace.getAllBlocks(false).length<3||confirm('만들던 블록이 사라져. 정말 나갈까?'))location.href='/'">← 돌아가기</button>
         </div>
@@ -286,6 +355,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         <button class="mode-tab active" data-mode="turtle" onclick="switchMode('turtle',this)">🐢 터틀 모드</button>
         <button class="mode-tab" data-mode="pixel" onclick="switchMode('pixel',this)">🎨 픽셀 아트</button>
         <button class="mode-tab" data-mode="maze" onclick="switchMode('maze',this)">🚀 미로 모험</button>
+        <button class="mode-tab" data-mode="studio" onclick="switchMode('studio',this)">🎮 스튜디오</button>
     </div>
 </div>
 
@@ -304,6 +374,9 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
             <div id="mazeHeader" class="hidden">
                 <h3>🚀 우주 미로</h3>
             </div>
+            <div id="studioHeader" class="hidden">
+                <h3>🎮 게임 스테이지</h3>
+            </div>
             <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <!-- Turtle controls -->
                 <div id="turtleControls" style="display:flex;gap:4px;align-items:center;">
@@ -312,6 +385,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                         <button class="tab-btn" onclick="switchCanvasTab('target',this)">목표</button>
                         <button class="tab-btn active" id="ghostBtn" onclick="toggleGhost(this)" title="목표 모양을 흐리게 겹쳐 보여줘요">👻 겹쳐보기</button>
                     </div>
+                    <button class="ctrl-btn" id="speedBtn" onclick="toggleTurtleSpeed(this)" title="거북이가 그리는 속도를 바꿔요">🐢 천천히</button>
                     <button class="ctrl-btn demo" onclick="showTurtleDemo()">👀 시연</button>
                 </div>
                 <!-- Pixel controls -->
@@ -328,6 +402,10 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                 <!-- Maze controls -->
                 <div id="mazeControls" class="hidden" style="display:flex;gap:4px;align-items:center;">
                     <button class="ctrl-btn" id="mazeSpeedBtn" onclick="toggleMazeSpeed(this)" title="토토가 빨리 움직여요">⏩ 빠르게</button>
+                </div>
+                <!-- Studio controls -->
+                <div id="studioControls" class="hidden" style="display:flex;gap:4px;align-items:center;">
+                    <button class="ctrl-btn" id="studioStopBtn" onclick="resetStudio();addChatMsg('system','⏹ 게임을 멈췄어! 블록을 고치고 다시 실행해 봐.')" title="게임을 멈춰요">⏹ 멈춤</button>
                 </div>
                 <!-- Common -->
                 <button class="ctrl-btn run" id="runBtn" onclick="runCode()">▶ 실행</button>
@@ -371,6 +449,16 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                 </div>
                 <div class="maze-progress" id="mazeProgress"></div>
                 <div class="maze-status" id="mazeStatus">🔍 미션을 선택하면 미로가 나타나요</div>
+            </div>
+            <!-- Studio view -->
+            <div class="studio-view hidden" id="studioView">
+                <canvas id="studioCanvas" width="400" height="300" tabindex="0"></canvas>
+                <div class="studio-dpad" id="studioDpad">
+                    <button class="vbtn" onmousedown="studioKey('LEFT')" ontouchstart="event.preventDefault();studioKey('LEFT')">◀</button>
+                    <button class="vbtn" onmousedown="studioKey('UP')" ontouchstart="event.preventDefault();studioKey('UP')">▲</button>
+                    <button class="vbtn" onmousedown="studioKey('DOWN')" ontouchstart="event.preventDefault();studioKey('DOWN')">▼</button>
+                    <button class="vbtn" onmousedown="studioKey('RIGHT')" ontouchstart="event.preventDefault();studioKey('RIGHT')">▶</button>
+                </div>
             </div>
         </div>
     </div>
@@ -422,6 +510,49 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
     </div></div>
 </div>
 
+<!-- 타이틀 화면 (앱 시작) -->
+<div class="title-screen" id="titleScreen">
+    <div class="title-logo">
+        <h1>🐢 바이브 코딩</h1>
+        <p>토토와 픽셀의 코딩 대모험</p>
+        <div class="title-star"><img src="/assets/vibe/ui-star.png" alt="별"> <span id="titleStarCnt">0</span>개 모았어!</div>
+    </div>
+    <div class="title-cards">
+        <div class="mode-card" onclick="enterMode('turtle')">
+            <img src="/assets/vibe/card-turtle.jpg" alt="도형 행성">
+            <div class="mc-body">
+                <div class="mc-name">🐢 도형 행성</div>
+                <div class="mc-desc">토토와 함께 도형을 그려서<br>행성의 에너지를 되살리자!</div>
+                <button class="mc-go" style="background:linear-gradient(135deg,#2E7D32,#43A047);">도형 행성으로 들어가기</button>
+            </div>
+        </div>
+        <div class="mode-card" onclick="enterMode('pixel')">
+            <img src="/assets/vibe/card-pixel.jpg" alt="픽셀 도시">
+            <div class="mc-body">
+                <div class="mc-name">🤖 픽셀 도시</div>
+                <div class="mc-desc">로봇 픽셀과 좌표를 배우며<br>꺼진 LED 도시를 밝히자!</div>
+                <button class="mc-go" style="background:linear-gradient(135deg,#7C4DFF,#E040FB);">픽셀 도시로 들어가기</button>
+            </div>
+        </div>
+        <div class="mode-card" onclick="enterMode('maze')">
+            <img src="/assets/vibe/card-maze.jpg" alt="미로 유적">
+            <div class="mc-body">
+                <div class="mc-name">🔍 미로 유적</div>
+                <div class="mc-desc">탐정 토토와 순차·반복·선택으로<br>고대 유적의 보물을 찾자!</div>
+                <button class="mc-go" style="background:linear-gradient(135deg,#3949AB,#00BCD4);">미로 유적으로 들어가기</button>
+            </div>
+        </div>
+        <div class="mode-card" onclick="enterMode('studio')">
+            <img src="/assets/vibe/card-studio.jpg" alt="게임 공방">
+            <div class="mc-body">
+                <div class="mc-name">🎮 게임 공방</div>
+                <div class="mc-desc">배운 걸 모두 모아서<br>너만의 게임을 만들어 보자!</div>
+                <button class="mc-go" style="background:linear-gradient(135deg,#E91E63,#FF9800);">게임 공방으로 들어가기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 온보딩 투어 레이어 -->
 <div class="tour-layer hidden" id="tourLayer">
     <div class="tour-spot" id="tourSpot"></div>
@@ -471,26 +602,31 @@ let workspace;
 // ============================================================
 function switchMode(mode, btn) {
     if (mode === currentMode) return;
+    stopStudioGame(); // 스튜디오 게임 루프·타이머 정리 (다른 모드 진입 시 유령 타이머 방지)
     currentMode = mode;
     document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
 
-    const isTurtle = mode === 'turtle', isPixel = mode === 'pixel', isMaze = mode === 'maze';
+    const isTurtle = mode === 'turtle', isPixel = mode === 'pixel', isMaze = mode === 'maze', isStudio = mode === 'studio';
     document.getElementById('appHeader').classList.toggle('pixel-mode', isPixel);
     document.getElementById('appHeader').classList.toggle('maze-mode', isMaze);
-    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : isPixel ? '🎨 바이브 코딩' : '🚀 바이브 코딩';
+    document.getElementById('appHeader').classList.toggle('studio-mode', isStudio);
+    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : isPixel ? '🎨 바이브 코딩' : isMaze ? '🚀 바이브 코딩' : '🎮 바이브 코딩';
     document.getElementById('turtleHeader').classList.toggle('hidden', !isTurtle);
     document.getElementById('pixelHeader').classList.toggle('hidden', !isPixel);
     document.getElementById('mazeHeader').classList.toggle('hidden', !isMaze);
+    document.getElementById('studioHeader').classList.toggle('hidden', !isStudio);
     document.getElementById('turtleControls').classList.toggle('hidden', !isTurtle);
     document.getElementById('pixelControls').classList.toggle('hidden', !isPixel);
     document.getElementById('mazeControls').classList.toggle('hidden', !isMaze);
+    document.getElementById('studioControls').classList.toggle('hidden', !isStudio);
     document.getElementById('turtleView').classList.toggle('hidden', !isTurtle);
     document.getElementById('pixelView').classList.toggle('hidden', !isPixel);
     document.getElementById('mazeView').classList.toggle('hidden', !isMaze);
+    document.getElementById('studioView').classList.toggle('hidden', !isStudio);
 
     // Swap Blockly toolbox
-    workspace.updateToolbox(isTurtle ? TURTLE_TOOLBOX : isPixel ? PIXEL_TOOLBOX : MAZE_TOOLBOX);
+    workspace.updateToolbox(isTurtle ? TURTLE_TOOLBOX : isPixel ? PIXEL_TOOLBOX : isMaze ? MAZE_TOOLBOX : STUDIO_TOOLBOX);
     workspace.clear();
     updateDSLPreview();
 
@@ -498,22 +634,32 @@ function switchMode(mode, btn) {
     currentMission = null;
     chatMessages = [];
     document.getElementById('levelBadge').textContent = '기초';
-    document.getElementById('missionBadge').textContent = '미션을 선택하세요';
+    document.getElementById('missionBadge').textContent = isStudio ? '만들 게임을 골라 보세요' : '미션을 선택하세요';
     document.getElementById('chatHistory').innerHTML = '';
     document.getElementById('chipRow').innerHTML = '';
     addChatMsg('system', isTurtle
         ? '🐢 안녕! 나는 거북이 탐험가 토토야. 도형 행성을 함께 되살려 줘!'
         : isPixel
         ? '🤖 안녕! 나는 로봇 픽셀이야. 꺼져버린 LED 도시를 함께 밝혀 줘!'
-        : '🔍 안녕! 나는 우주 견습 탐정 토토야. 코드로 잠긴 미로 유적을 함께 열어 보자!');
+        : isMaze
+        ? '🔍 안녕! 나는 우주 견습 탐정 토토야. 코드로 잠긴 미로 유적을 함께 열어 보자!'
+        : '🎮 여기는 스튜디오! 너만의 게임을 만들 수 있어. 나에게 만들고 싶은 게임을 말해 봐!');
     if (isMaze && !localStorage.getItem('maze_intro_seen')) {
         addChatMsg('ai', '🚀 ' + MAZE_WORLD.intro);
         localStorage.setItem('maze_intro_seen', '1');
     }
+    // 픽셀 모드 첫 진입: 좌표 개념부터 (모든 LED 학습의 기초)
+    if (isPixel && !localStorage.getItem('pixel_coord_seen')) {
+        addChatMsg('ai', '🤖 LED 도시의 모든 칸에는 주소가 있어! 가로로 몇 번째인지가 x, 세로로 몇 번째인지가 y야.');
+        addMathMsg('좌표 = 칸의 주소! 맨 왼쪽 위 칸이 (x:1, y:1)이에요. x는 오른쪽으로 갈수록, y는 아래로 갈수록 1씩 커져요. 격자 옆의 숫자를 보면서 세어 보세요!');
+        addChatMsg('system', '💡 격자 위에 마우스를 올리면 그 칸의 주소가 보여!');
+        localStorage.setItem('pixel_coord_seen', '1');
+    }
 
     if (isTurtle) resetTurtle();
     else if (isPixel) { initPixelGrid(); }
-    else { mazeState = null; renderMazeBoard(); }
+    else if (isMaze) { mazeState = null; renderMazeBoard(); }
+    else { resetStudio(); }
     renderTargetMini(); updateMatchMeter();
 
     Blockly.svgResize(workspace);
@@ -638,8 +784,12 @@ function resetTurtle() {
     updateTurtleStatus(0,0,0);
 }
 
+// 어두운 배경에서 도형이 또렷하게: 네온 글로우 + 기본 굵기 3
+function glowOn(color){tCtx.shadowColor=color;tCtx.shadowBlur=8;}
+function glowOff(){tCtx.shadowBlur=0;}
+
 function drawTurtlePath(commands, color, size) {
-    let x=0,y=0,angle=0,penDown=true,penColor=color||'#00FF88',penSize=size||2;
+    let x=0,y=0,angle=0,penDown=true,penColor=color||'#00FF88',penSize=size||3;
     turtleBgColor=scanBgColor(commands);
     clearTurtleCanvas(); tCtx.lineCap='round'; tCtx.lineJoin='round';
     const labels=[];const decos=[];
@@ -647,7 +797,7 @@ function drawTurtlePath(commands, color, size) {
         if(cmd.type==='FORWARD'||cmd.type==='BACKWARD'){
             const dir=cmd.type==='FORWARD'?1:-1,rad=(angle-90)*Math.PI/180;
             const nx=x+dir*cmd.value*Math.cos(rad),ny=y+dir*cmd.value*Math.sin(rad);
-            if(penDown){const f=toScreen(x,-y),t=toScreen(nx,-ny);tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(t.x,t.y);tCtx.strokeStyle=penColor;tCtx.lineWidth=penSize;tCtx.stroke();
+            if(penDown){const f=toScreen(x,-y),t=toScreen(nx,-ny);tCtx.beginPath();tCtx.moveTo(f.x,f.y);tCtx.lineTo(t.x,t.y);tCtx.strokeStyle=penColor;tCtx.lineWidth=penSize;glowOn(penColor);tCtx.stroke();glowOff();
                 labels.push({type:'distance',text:''+cmd.value,x:(f.x+t.x)/2,y:(f.y+t.y)/2});
             }
             x=nx;y=ny;
@@ -680,7 +830,7 @@ function drawTurtlePath(commands, color, size) {
     }}
     exec(commands);
     // Draw labels
-    tCtx.font='11px sans-serif';
+    tCtx.font='bold 13px sans-serif';
     for(const lb of labels){
         if(lb.type==='distance'){tCtx.fillStyle='#ffffff';tCtx.fillText(lb.text,lb.x+3,lb.y-3);}
         else{tCtx.fillStyle='#FFD700';tCtx.fillText(lb.text,lb.x+5,lb.y-5);}
@@ -690,10 +840,33 @@ function drawTurtlePath(commands, color, size) {
     updateTurtleStatus(x,y,angle);
 }
 
+// 실행 중 블록 하이라이트: 워크스페이스 블록 순서와 파싱된 명령 순서를 매칭
+let turtleSpeed=1.5; // 🐢 천천히 1.5 / 🐇 빨리 4
+function toggleTurtleSpeed(btn){
+    turtleSpeed=turtleSpeed>2?1.5:4;
+    if(btn)btn.textContent=turtleSpeed>2?'🐇 빨리':'🐢 천천히';
+}
+function attachBlockIds(cmds,dsl){
+    if(!workspace||/\b(DEF|CALL)\b/.test(dsl||''))return cmds; // 함수 사용 시 구조 불일치 → 생략
+    function walkChain(block,arr){
+        let b=block,i=0;
+        while(b&&i<arr.length){
+            const cmd=arr[i];cmd._bid=b.id;
+            const inner=b.getInputTargetBlock&&b.getInputTargetBlock('DO');
+            if(inner&&cmd.body)walkChain(inner,cmd.body);
+            const els=b.getInputTargetBlock&&b.getInputTargetBlock('ELSE');
+            if(els&&cmd.elseBody)walkChain(els,cmd.elseBody);
+            b=b.getNextBlock();i++;
+        }
+    }
+    try{const tops=workspace.getTopBlocks(true);if(tops.length)walkChain(tops[0],cmds);}catch(e){}
+    return cmds;
+}
+
 function animateTurtle(commands, onDone) {
     if(tAnimId)cancelAnimationFrame(tAnimId);
     const steps=[];
-    let x=0,y=0,angle=0,penDown=true,penColor='#00FF88',penSize=2;
+    let x=0,y=0,angle=0,penDown=true,penColor='#00FF88',penSize=3;
     function flatten(cmds){for(const cmd of cmds){
         if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)flatten(cmd.body);}
         else{steps.push({...cmd,_x:x,_y:y,_angle:angle,_penDown:penDown,_penColor:penColor,_penSize:penSize});
@@ -707,14 +880,14 @@ function animateTurtle(commands, onDone) {
     flatten(commands); turtleBgColor=scanBgColor(commands); clearTurtleCanvas();
     // Store drawn line segments for redraw
     const drawnLines=[];
-    let si=0,prog=0,cx=0,cy=0,ca=0,cp=true,cc='#00FF88',cs=2;
+    let si=0,prog=0,cx=0,cy=0,ca=0,cp=true,cc='#00FF88',cs=3,lastBid=null;
 
     function redrawScene(turtleX,turtleY,turtleAngle){
         clearTurtleCanvas();
         // Redraw all completed lines and labels
         for(const ln of drawnLines){
             if(ln.type==='label'){
-                tCtx.font='11px sans-serif';
+                tCtx.font='bold 13px sans-serif';
                 if(ln.labelType==='distance'){tCtx.fillStyle='#ffffff';tCtx.fillText(ln.text,ln.lx+3,ln.ly-3);}
                 else{tCtx.fillStyle='#FFD700';tCtx.fillText(ln.text,ln.lx+5,ln.ly-5);}
             }else if(ln.type==='circle'){
@@ -724,7 +897,7 @@ function animateTurtle(commands, onDone) {
             }else if(ln.type==='bubble'){drawBubbleAt(ln.cx,ln.cy,ln.text);
             }else{
                 tCtx.beginPath();tCtx.moveTo(ln.fx,ln.fy);tCtx.lineTo(ln.tx,ln.ty);
-                tCtx.strokeStyle=ln.color;tCtx.lineWidth=ln.size;tCtx.lineCap='round';tCtx.stroke();
+                tCtx.strokeStyle=ln.color;tCtx.lineWidth=ln.size;tCtx.lineCap='round';glowOn(ln.color);tCtx.stroke();glowOff();
             }
         }
         // Draw turtle sprite (no ghosting)
@@ -734,11 +907,17 @@ function animateTurtle(commands, onDone) {
     }
 
     function frame(){
-        if(si>=steps.length){redrawScene(cx,cy,ca);if(onDone)onDone();return;}
+        if(si>=steps.length){
+            redrawScene(cx,cy,ca);
+            try{workspace.highlightBlock(null);}catch(e){}
+            if(onDone)onDone();return;
+        }
         const s=steps[si];
+        // 지금 실행 중인 블록을 노랗게 표시 (블록 ↔ 움직임 연결)
+        if(s._bid&&s._bid!==lastBid){lastBid=s._bid;try{workspace.highlightBlock(s._bid);}catch(e){}}
         if(s.type==='FORWARD'||s.type==='BACKWARD'){
             const dir=s.type==='FORWARD'?1:-1,dist=s.value,rad=(ca-90)*Math.PI/180;
-            prog+=3;const t=Math.min(prog/dist,1);
+            prog+=turtleSpeed;const t=Math.min(prog/dist,1);
             const nx=s._x+dir*dist*t*Math.cos(rad),ny=s._y+dir*dist*t*Math.sin(rad);
             if(cp){
                 const f=toScreen(cx,-cy),to=toScreen(nx,-ny);
@@ -856,16 +1035,16 @@ function renderPixelGrid(){
     el.style.gridTemplateColumns=`16px repeat(${pixelGridSize},${cs}px)`;
     el.innerHTML='';
     const corner=document.createElement('div');corner.className='led-coord';corner.textContent='';el.appendChild(corner);
-    for(let x=0;x<pixelGridSize;x++){const l=document.createElement('div');l.className='led-coord';l.textContent=x;el.appendChild(l);}
+    for(let x=0;x<pixelGridSize;x++){const l=document.createElement('div');l.className='led-coord';l.textContent=x+1;el.appendChild(l);}
     for(let y=0;y<pixelGridSize;y++){
-        const yl=document.createElement('div');yl.className='led-coord';yl.textContent=y;el.appendChild(yl);
+        const yl=document.createElement('div');yl.className='led-coord';yl.textContent=y+1;el.appendChild(yl);
         for(let x=0;x<pixelGridSize;x++){
             const c=document.createElement('div');
             c.className='led-cell'+(pixelGrid[y][x]?' on':'');
             c.style.width=cs+'px'; c.style.height=cs+'px';
             c.style.color=pixelGrid[y][x]||'#1a1a1a';
             c.style.backgroundColor=pixelGrid[y][x]||'#1a1a1a';
-            c.title=`(x:${x}, y:${y})`;
+            c.title=`(x:${x+1}, y:${y+1})`;
             c.onmousedown=()=>{if(pixelGrid[y][x])pixelGrid[y][x]=null;else pixelGrid[y][x]=pixelColor;renderPixelGrid();};
             c.onmouseenter=(e)=>{if(e.buttons===1){pixelGrid[y][x]=pixelColor;renderPixelGrid();}};
             el.appendChild(c);
@@ -929,29 +1108,33 @@ function triggerShake(){
 }
 
 async function executePixelCommands(commands){
+    // DSL 좌표는 1부터 시작 (아이들 눈높이) — 실행 시점에만 내부 0기준으로 변환
+    const ix=v=>v-1, iy=v=>v-1;
+    const inb=(x,y)=>x>=0&&y>=0&&x<pixelGridSize&&y<pixelGridSize;
     for(const cmd of commands){
         if(pixelAnimCancel)return;
         switch(cmd.type){
-            case'LED_ON':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=pixelColor;renderPixelGrid();}break;
-            case'LED_OFF':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=null;renderPixelGrid();}break;
-            case'LED_COLOR':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=cmd.color;renderPixelGrid();}break;
-            case'LED_TOGGLE':if(cmd.y<pixelGridSize&&cmd.x<pixelGridSize){pixelGrid[cmd.y][cmd.x]=pixelGrid[cmd.y][cmd.x]?null:pixelColor;renderPixelGrid();}break;
+            case'LED_ON':{const x=ix(cmd.x),y=iy(cmd.y);if(inb(x,y)){pixelGrid[y][x]=pixelColor;renderPixelGrid();}break;}
+            case'LED_OFF':{const x=ix(cmd.x),y=iy(cmd.y);if(inb(x,y)){pixelGrid[y][x]=null;renderPixelGrid();}break;}
+            case'LED_COLOR':{const x=ix(cmd.x),y=iy(cmd.y);if(inb(x,y)){pixelGrid[y][x]=cmd.color;renderPixelGrid();}break;}
+            case'LED_TOGGLE':{const x=ix(cmd.x),y=iy(cmd.y);if(inb(x,y)){pixelGrid[y][x]=pixelGrid[y][x]?null:pixelColor;renderPixelGrid();}break;}
             case'FILL_ALL':for(let y=0;y<pixelGridSize;y++)for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=cmd.color;renderPixelGrid();break;
-            case'FILL_ROW':if(cmd.y<pixelGridSize){for(let x=0;x<pixelGridSize;x++)pixelGrid[cmd.y][x]=cmd.color;renderPixelGrid();}break;
-            case'FILL_COL':if(cmd.x<pixelGridSize){for(let y=0;y<pixelGridSize;y++)pixelGrid[y][cmd.x]=cmd.color;renderPixelGrid();}break;
+            case'FILL_ROW':{const y=iy(cmd.y);if(y>=0&&y<pixelGridSize){for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=cmd.color;renderPixelGrid();}break;}
+            case'FILL_COL':{const x=ix(cmd.x);if(x>=0&&x<pixelGridSize){for(let y=0;y<pixelGridSize;y++)pixelGrid[y][x]=cmd.color;renderPixelGrid();}break;}
             case'CLEAR_ALL':clearPixelGrid();break;
             case'RECT':{
-                const x1=Math.max(0,Math.min(cmd.x1,cmd.x2)),x2=Math.min(pixelGridSize-1,Math.max(cmd.x1,cmd.x2));
-                const y1=Math.max(0,Math.min(cmd.y1,cmd.y2)),y2=Math.min(pixelGridSize-1,Math.max(cmd.y1,cmd.y2));
+                const x1=Math.max(0,Math.min(ix(cmd.x1),ix(cmd.x2))),x2=Math.min(pixelGridSize-1,Math.max(ix(cmd.x1),ix(cmd.x2)));
+                const y1=Math.max(0,Math.min(iy(cmd.y1),iy(cmd.y2))),y2=Math.min(pixelGridSize-1,Math.max(iy(cmd.y1),iy(cmd.y2)));
                 for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)pixelGrid[y][x]=cmd.color;
                 renderPixelGrid();break;}
             case'BLINK':{
-                if(cmd.x>=pixelGridSize||cmd.y>=pixelGridSize)break;
+                const x=ix(cmd.x),y=iy(cmd.y);
+                if(!inb(x,y))break;
                 for(let r=0;r<cmd.count;r++){
                     if(pixelAnimCancel)return;
-                    pixelGrid[cmd.y][cmd.x]=pixelColor;renderPixelGrid();
+                    pixelGrid[y][x]=pixelColor;renderPixelGrid();
                     await new Promise(rs=>setTimeout(rs,200));
-                    pixelGrid[cmd.y][cmd.x]=null;renderPixelGrid();
+                    pixelGrid[y][x]=null;renderPixelGrid();
                     await new Promise(rs=>setTimeout(rs,200));
                 }break;}
             case'DEF':break; // 함수 정의는 resolveCalls에서 처리됨
@@ -1202,6 +1385,202 @@ function mazeSuccess(){
 }
 
 // ============================================================
+//  STUDIO ENGINE (자유 스튜디오 — 나만의 게임 만들기)
+// ============================================================
+// 논리 좌표: 왼쪽 위 (0,0) ~ 오른쪽 아래 (400,300). 캔버스 크기에 맞게 스케일.
+const sCanvas=document.getElementById('studioCanvas');
+const sCtx=sCanvas.getContext('2d');
+let studioScale=1;
+let studioGame=null;     // {player,items,bg,bgImg,score,keyHandlers,touchHandlers,over,win}
+let studioRafId=null;
+let studioTimers=[];     // EVERY setInterval id 목록
+const studioBgImgs={};   // 'space'|'maze' 배경 이미지 캐시
+
+function studioBgImg(name){
+    if(!studioBgImgs[name]){const im=new Image();im.src='/assets/vibe/bg-'+name+'.jpg';studioBgImgs[name]=im;}
+    return studioBgImgs[name];
+}
+
+function resizeStudioCanvas(){
+    const wrap=sCanvas.parentElement;if(!wrap)return;
+    const availW=Math.max(wrap.clientWidth-24,200),availH=Math.max(wrap.clientHeight-90,150);
+    studioScale=Math.max(0.5,Math.min(availW/400,availH/300));
+    sCanvas.width=Math.round(400*studioScale);
+    sCanvas.height=Math.round(300*studioScale);
+}
+
+// 게임 완전 정지: rAF + 모든 EVERY 타이머 정리 (모드 전환·재실행·미션 변경 시 필수)
+function stopStudioGame(){
+    if(studioRafId){cancelAnimationFrame(studioRafId);studioRafId=null;}
+    for(const t of studioTimers)clearInterval(t);
+    studioTimers=[];
+    studioGame=null;
+}
+
+function resetStudio(){
+    stopStudioGame();
+    resizeStudioCanvas();
+    sCtx.setTransform(1,0,0,1,0,0);
+    sCtx.fillStyle='#1a1a2e';sCtx.fillRect(0,0,sCanvas.width,sCanvas.height);
+    sCtx.fillStyle='rgba(255,255,255,.4)';
+    sCtx.font='bold '+Math.round(14*studioScale)+'px "Segoe UI","Malgun Gothic",sans-serif';
+    sCtx.textAlign='center';sCtx.textBaseline='middle';
+    sCtx.fillText('▶ 실행을 누르면 네 게임이 시작돼!',sCanvas.width/2,sCanvas.height/2);
+}
+
+// 명령 묶음 실행: 선언·즉시 동작은 바로 적용, ON_KEY/ON_TOUCH/EVERY는 핸들러 등록
+function execStudioBody(body,ctxItem){
+    const G=studioGame;if(!G||G.over)return;
+    for(const c of body){
+        if(c.type==='PLAYER')G.player={emoji:c.emoji,x:c.x,y:c.y,say:null,sayUntil:0};
+        else if(c.type==='SPAWN')G.items.push({emoji:c.emoji,x:c.x,y:c.y});
+        else if(c.type==='SPAWN_RANDOM')G.items.push({emoji:c.emoji,x:20+Math.random()*360,y:-10});
+        else if(c.type==='BG'){if(c.img){G.bg='#1a1a2e';G.bgImg=studioBgImg(c.img);}else{G.bg=c.color;G.bgImg=null;}}
+        else if(c.type==='SAY'){if(G.player){G.player.say=c.text;G.player.sayUntil=Date.now()+2000;}}
+        else if(c.type==='SCORE')G.score+=c.value;
+        else if(c.type==='MOVE_X'){if(G.player)G.player.x=Math.max(12,Math.min(388,G.player.x+c.value));}
+        else if(c.type==='MOVE_Y'){if(G.player)G.player.y=Math.max(12,Math.min(288,G.player.y+c.value));}
+        else if(c.type==='MOVE_ALL'){for(const it of G.items)if(it.emoji===c.emoji){it.x+=c.dx;it.y+=c.dy;}}
+        else if(c.type==='REMOVE'){if(ctxItem)ctxItem._dead=true;}
+        else if(c.type==='END_WIN'){studioEnd(true);return;}
+        else if(c.type==='END_LOSE'){studioEnd(false);return;}
+        else if(c.type==='ON_KEY')G.keyHandlers[c.key]=(G.keyHandlers[c.key]||[]).concat([c.body]);
+        else if(c.type==='ON_TOUCH')G.touchHandlers.push({emoji:c.emoji,body:c.body});
+        else if(c.type==='EVERY')studioTimers.push(setInterval(()=>execStudioBody(c.body),c.ms));
+    }
+}
+
+function initStudioGame(cmds){
+    stopStudioGame();
+    resizeStudioCanvas();
+    studioGame={player:null,items:[],bg:'#1a1a2e',bgImg:null,score:0,keyHandlers:{},touchHandlers:[],over:false,win:false};
+    execStudioBody(cmds);
+    drawStudio();
+}
+
+function runStudioGame(cmds){
+    initStudioGame(cmds);
+    if(!studioGame||studioGame.over)return;
+    if(!studioGame.player)addChatMsg('system','아직 주인공이 없네! 🎭 배치에서 "주인공 놓기" 블록을 끼우거나 나한테 말해 줘.');
+    else if(Object.keys(studioGame.keyHandlers).length)addChatMsg('system','🕹️ 화살표 키(또는 무대 아래 버튼)로 움직여 봐!');
+    studioRafId=requestAnimationFrame(studioLoop);
+}
+
+function studioLoop(){
+    const G=studioGame;
+    if(!G||G.over){studioRafId=null;return;}
+    // 충돌: 주인공-아이템 중심 거리 < 24 (논리 좌표), 새로 닿는 순간에만 발동
+    if(G.player){
+        for(const it of G.items){
+            if(it._dead)continue;
+            const touching=Math.hypot(it.x-G.player.x,it.y-G.player.y)<24;
+            if(touching&&!it._touching){
+                it._touching=true;
+                for(const h of G.touchHandlers){
+                    if(h.emoji===it.emoji)execStudioBody(h.body,it);
+                    if(!studioGame||studioGame.over)return; // 핸들러가 게임을 끝냈으면 즉시 중단
+                }
+            }else if(!touching)it._touching=false;
+        }
+    }
+    // 화면 밖(y>320) 아이템·REMOVE된 아이템 자동 제거
+    G.items=G.items.filter(it=>!it._dead&&it.y<=320);
+    drawStudio();
+    studioRafId=requestAnimationFrame(studioLoop);
+}
+
+function studioKey(k){
+    const G=studioGame;if(!G||G.over)return;
+    const hs=G.keyHandlers[k];if(!hs)return;
+    for(const b of hs){execStudioBody(b);if(!studioGame||studioGame.over)return;}
+}
+
+// 화살표 키: 스튜디오 모드에서만 반응, 스크롤 방지 (입력창 타이핑 중엔 무시)
+window.addEventListener('keydown',e=>{
+    if(currentMode!=='studio')return;
+    const map={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT'};
+    const k=map[e.key];if(!k)return;
+    const ae=document.activeElement;
+    if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;
+    e.preventDefault();
+    studioKey(k);
+});
+
+function studioEnd(win){
+    const G=studioGame;if(!G||G.over)return;
+    G.over=true;G.win=win;
+    if(studioRafId){cancelAnimationFrame(studioRafId);studioRafId=null;}
+    for(const t of studioTimers)clearInterval(t);
+    studioTimers=[];
+    drawStudio();
+    showFeedback(win,win?'🎉 승리!':'💥 아쉽다!',
+        win?('점수 '+G.score+'점! 네가 만든 규칙대로 게임이 끝났어. 더 재밌게 바꿔 볼까?')
+           :'다시 도전! 규칙이나 속도를 살짝 바꾸면 더 쉬워질지도 몰라.',0);
+    document.getElementById('fbNextBtn').style.display='none'; // 스튜디오는 다음 미션 없음
+    if(win)addChatMsg('success','🎉 승리! 점수 '+G.score+'점');
+}
+
+// 이모지 → 상용 스프라이트 이미지 매핑 (없으면 이모지로 폴백)
+const SPRITE_MAP={'🐢':'sp-turtle','🤖':'sp-robot','🐟':'sp-fish','🚀':'sp-rocket','🐱':'sp-cat','🦄':'sp-unicorn',
+    '🍎':'it-apple','⭐':'it-star','💎':'it-gem','🍬':'it-candy','💣':'it-bomb','👾':'it-alien','🌸':'it-flower','🪙':'it-coin'};
+const spriteCache={};
+function spriteImg(emoji){
+    const name=SPRITE_MAP[emoji];if(!name)return null;
+    if(!spriteCache[name]){const im=new Image();im.src='/assets/vibe/'+name+'.png';spriteCache[name]=im;}
+    const im=spriteCache[name];
+    return (im.complete&&im.naturalWidth)?im:null;
+}
+
+function drawStudioBubble(px,py,text){
+    const k=studioScale;
+    sCtx.font='bold '+Math.round(12*k)+'px "Segoe UI","Malgun Gothic",sans-serif';
+    const w=sCtx.measureText(text).width+16*k,h=22*k;
+    const bx=Math.max(2,Math.min(px-w/2,sCanvas.width-w-2)),by=Math.max(2,py-42*k);
+    sCtx.fillStyle='#fff';sCtx.strokeStyle='#ccc';sCtx.lineWidth=1;
+    sCtx.beginPath();
+    if(sCtx.roundRect)sCtx.roundRect(bx,by,w,h,8*k);else sCtx.rect(bx,by,w,h);
+    sCtx.fill();sCtx.stroke();
+    sCtx.fillStyle='#2D3748';sCtx.textAlign='center';sCtx.textBaseline='middle';
+    sCtx.fillText(text,bx+w/2,by+h/2);
+}
+
+function drawStudio(){
+    const G=studioGame,k=studioScale;
+    sCtx.setTransform(1,0,0,1,0,0);
+    sCtx.clearRect(0,0,sCanvas.width,sCanvas.height);
+    if(G&&G.bgImg&&G.bgImg.complete&&G.bgImg.naturalWidth)sCtx.drawImage(G.bgImg,0,0,sCanvas.width,sCanvas.height);
+    else{sCtx.fillStyle=(G&&G.bg)||'#1a1a2e';sCtx.fillRect(0,0,sCanvas.width,sCanvas.height);}
+    if(!G)return;
+    sCtx.textAlign='center';sCtx.textBaseline='middle';
+    sCtx.font=Math.round(24*k)+'px "Segoe UI Emoji",sans-serif';
+    for(const it of G.items){
+        const img=spriteImg(it.emoji);
+        if(img){const s=30*k;sCtx.drawImage(img,it.x*k-s/2,it.y*k-s/2,s,s);}
+        else sCtx.fillText(it.emoji,it.x*k,it.y*k);
+    }
+    if(G.player){
+        sCtx.font=Math.round(30*k)+'px "Segoe UI Emoji",sans-serif';
+        const pimg=spriteImg(G.player.emoji);
+        if(pimg){const s=42*k;sCtx.drawImage(pimg,G.player.x*k-s/2,G.player.y*k-s/2,s,s);}
+        else sCtx.fillText(G.player.emoji,G.player.x*k,G.player.y*k);
+        if(G.player.say&&Date.now()<G.player.sayUntil)drawStudioBubble(G.player.x*k,G.player.y*k,G.player.say);
+        else G.player.say=null;
+    }
+    // 점수 표시 (상단)
+    sCtx.textAlign='left';sCtx.textBaseline='top';
+    sCtx.font='bold '+Math.round(14*k)+'px "Segoe UI","Malgun Gothic",sans-serif';
+    sCtx.fillStyle='rgba(0,0,0,.4)';sCtx.fillText('⭐ 점수: '+G.score,9*k,9*k);
+    sCtx.fillStyle='#FFD166';sCtx.fillText('⭐ 점수: '+G.score,8*k,8*k);
+    if(G.over){
+        sCtx.fillStyle='rgba(0,0,0,.45)';sCtx.fillRect(0,0,sCanvas.width,sCanvas.height);
+        sCtx.textAlign='center';sCtx.textBaseline='middle';
+        sCtx.font='bold '+Math.round(28*k)+'px "Segoe UI","Malgun Gothic",sans-serif';
+        sCtx.fillStyle='#fff';
+        sCtx.fillText(G.win?'🎉 승리!':'💥 게임 끝',sCanvas.width/2,sCanvas.height/2);
+    }
+}
+
+// ============================================================
 //  DSL PARSERS
 // ============================================================
 // 함수(DEF/CALL) 해석: CALL을 함수 본문으로 치환 (블록 표시용 파싱은 forBlocks=true로 원형 유지)
@@ -1308,38 +1687,94 @@ function parsePixelDSL(text,forBlocks){
     return forBlocks?cmds:resolveCalls(cmds);
 }
 
+// 토큰 기반 파서: AI가 명령을 한 줄에 붙여 보내도('REPEAT 5 { MOVE }') 정상 해석
 function parseMazeDSL(text,forBlocks){
     if(!text?.trim())return[];
-    // '} ELSE {' 한 줄 표기를 '}' + 'ELSE {' 두 줄로 정규화
-    const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'))
-        .reduce((acc,l)=>{
-            if(/^\}\s*ELSE\s*\{?$/.test(l)){acc.push('}');acc.push('ELSE {');}
-            else acc.push(l);
-            return acc;
-        },[]);
+    const cleaned=text.split('\n').filter(l=>!l.trim().startsWith('//')).join(' ');
+    const toks=cleaned.replace(/([{}])/g,' $1 ').split(/\s+/).filter(t=>t);
+    let i=0;
+    function skipBrace(){if(toks[i]==='{')i++;}
+    function parseBlock(){
+        const cmds=[];
+        while(i<toks.length){
+            const t=toks[i];
+            if(t==='}'){i++;return cmds;}
+            if(t==='REPEAT'&&/^\d+$/.test(toks[i+1]||'')){
+                const n=parseInt(toks[i+1]);i+=2;skipBrace();
+                cmds.push({type:'REPEAT',count:n,body:parseBlock()});continue;
+            }
+            if(t==='IF'&&toks[i+1]==='WALL'){
+                i+=2;skipBrace();
+                const body=parseBlock();let elseBody=null;
+                if(toks[i]==='ELSE'){i++;skipBrace();elseBody=parseBlock();}
+                cmds.push({type:'IF_WALL',body,elseBody});continue;
+            }
+            if(t==='ELSE'){i++;skipBrace();parseBlock();continue;} // 고아 ELSE 무시
+            if(t==='MOVE'){
+                i++;
+                // 'MOVE 3' 표기 관용 처리: 3회 전개
+                if(/^\d+$/.test(toks[i]||'')){const n=Math.min(parseInt(toks[i]),50);i++;for(let k=0;k<n;k++)cmds.push({type:'MOVE'});}
+                else cmds.push({type:'MOVE'});
+                continue;
+            }
+            if(t==='TURN_LEFT'){cmds.push({type:'TURN_LEFT'});i++;continue;}
+            if(t==='TURN_RIGHT'){cmds.push({type:'TURN_RIGHT'});i++;continue;}
+            if(t==='PICK'){cmds.push({type:'PICK'});i++;continue;}
+            i++; // 모르는 토큰(한국어 설명 등) 건너뛰기
+        }
+        return cmds;
+    }
+    return parseBlock();
+}
+
+function parseStudioDSL(text,forBlocks){
+    if(!text?.trim())return[];
+    // 'ON_KEY UP { MOVE_Y -20 }' 같은 한 줄 표기를 여러 줄로 정규화 ({ } 를 줄로 분리)
+    const lines=[];
+    for(const raw of text.trim().split('\n')){
+        const t=raw.trim();if(!t||t.startsWith('//'))continue;
+        for(const piece of t.replace(/\{/g,' {\n').replace(/\}/g,'\n}\n').split('\n')){
+            const p=piece.trim();if(p)lines.push(p);
+        }
+    }
     let i=0;
     function parseBlock(){
         const cmds=[];
         while(i<lines.length){
             const line=lines[i];
             if(line==='}'){i++;return cmds;}
-            let m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
+            let m=line.match(/^ON_KEY\s+(UP|DOWN|LEFT|RIGHT)\s*\{?$/);
             if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
-                cmds.push({type:'REPEAT',count:parseInt(m[1]),body:parseBlock()});continue;}
-            m=line.match(/^IF\s+WALL\s*\{?$/);
+                cmds.push({type:'ON_KEY',key:m[1],body:parseBlock()});continue;}
+            m=line.match(/^ON_TOUCH\s+(\S+?)\s*\{?$/);
             if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
-                const body=parseBlock();let elseBody=null;
-                if(i<lines.length&&lines[i].match(/^ELSE\s*\{?$/)){
-                    const el=lines[i];i++;
-                    if(!el.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
-                    elseBody=parseBlock();
-                }
-                cmds.push({type:'IF_WALL',body,elseBody});continue;}
-            if(line.match(/^ELSE\s*\{?$/)){i++;continue;}
-            if(line==='MOVE'){cmds.push({type:'MOVE'});i++;continue;}
-            if(line==='TURN_LEFT'){cmds.push({type:'TURN_LEFT'});i++;continue;}
-            if(line==='TURN_RIGHT'){cmds.push({type:'TURN_RIGHT'});i++;continue;}
-            if(line==='PICK'){cmds.push({type:'PICK'});i++;continue;}
+                cmds.push({type:'ON_TOUCH',emoji:m[1],body:parseBlock()});continue;}
+            m=line.match(/^EVERY\s+(\d+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
+                cmds.push({type:'EVERY',ms:Math.max(50,parseInt(m[1])),body:parseBlock()});continue;}
+            m=line.match(/^PLAYER\s+(\S+)\s+(-?\d+)\s+(-?\d+)$/);
+            if(m){cmds.push({type:'PLAYER',emoji:m[1],x:+m[2],y:+m[3]});i++;continue;}
+            m=line.match(/^SPAWN_RANDOM\s+(\S+)$/);
+            if(m){cmds.push({type:'SPAWN_RANDOM',emoji:m[1]});i++;continue;}
+            m=line.match(/^SPAWN\s+(\S+)\s+(-?\d+)\s+(-?\d+)$/);
+            if(m){cmds.push({type:'SPAWN',emoji:m[1],x:+m[2],y:+m[3]});i++;continue;}
+            m=line.match(/^MOVE_ALL\s+(\S+)\s+(-?\d+)\s+(-?\d+)$/);
+            if(m){cmds.push({type:'MOVE_ALL',emoji:m[1],dx:+m[2],dy:+m[3]});i++;continue;}
+            m=line.match(/^MOVE_X\s+(-?\d+)$/);
+            if(m){cmds.push({type:'MOVE_X',value:+m[1]});i++;continue;}
+            m=line.match(/^MOVE_Y\s+(-?\d+)$/);
+            if(m){cmds.push({type:'MOVE_Y',value:+m[1]});i++;continue;}
+            m=line.match(/^BG\s+(space|maze|stage-meadow|stage-space)$/);
+            if(m){cmds.push({type:'BG',img:m[1]});i++;continue;}
+            m=line.match(/^BG\s+(#[0-9A-Fa-f]{3,6})$/);
+            if(m){cmds.push({type:'BG',color:m[1]});i++;continue;}
+            m=line.match(/^SCORE\s+(-?\d+)$/);
+            if(m){cmds.push({type:'SCORE',value:+m[1]});i++;continue;}
+            m=line.match(/^SAY\s+(.+)$/);
+            if(m){cmds.push({type:'SAY',text:m[1]});i++;continue;}
+            if(line==='REMOVE'){cmds.push({type:'REMOVE'});i++;continue;}
+            if(line==='END_WIN'){cmds.push({type:'END_WIN'});i++;continue;}
+            if(line==='END_LOSE'){cmds.push({type:'END_LOSE'});i++;continue;}
             i++;
         }
         return cmds;
@@ -1372,24 +1807,24 @@ Blockly.defineBlocksWithJsonArray([
     {type:'t_call',message0:'📦 함수 %1 부르기',args0:[{type:'field_input',name:'NM',text:'세모'}],previousStatement:null,nextStatement:null,colour:260},
 
     // === PIXEL BLOCKS ===
-    {type:'p_led_on',message0:'LED 켜기 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
-    {type:'p_led_off',message0:'LED 끄기 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
-    {type:'p_led_color',message0:'LED 색상 x%1 y%2 %3',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
-    {type:'p_led_toggle',message0:'LED 전환 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_on',message0:'LED 켜기 x%1 y%2',args0:[{type:'field_number',name:'X',value:1,min:1,max:16},{type:'field_number',name:'Y',value:1,min:1,max:16}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_off',message0:'LED 끄기 x%1 y%2',args0:[{type:'field_number',name:'X',value:1,min:1,max:16},{type:'field_number',name:'Y',value:1,min:1,max:16}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_color',message0:'LED 색상 x%1 y%2 %3',args0:[{type:'field_number',name:'X',value:1,min:1,max:16},{type:'field_number',name:'Y',value:1,min:1,max:16},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_led_toggle',message0:'LED 전환 x%1 y%2',args0:[{type:'field_number',name:'X',value:1,min:1,max:16},{type:'field_number',name:'Y',value:1,min:1,max:16}],previousStatement:null,nextStatement:null,colour:20},
     {type:'p_fill',message0:'전체 채우기 %1',args0:[{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
-    {type:'p_fill_row',message0:'행 %1 채우기 %2',args0:[{type:'field_number',name:'Y',value:0,min:0,max:15},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
-    {type:'p_fill_col',message0:'열 %1 채우기 %2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_fill_row',message0:'행 %1 채우기 %2',args0:[{type:'field_number',name:'Y',value:1,min:1,max:16},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_fill_col',message0:'열 %1 채우기 %2',args0:[{type:'field_number',name:'X',value:1,min:1,max:16},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['⚫ 검정','#000000'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
     {type:'p_clear',message0:'전체 지우기',previousStatement:null,nextStatement:null,colour:20},
     {type:'p_icon',message0:'아이콘 %1',args0:[{type:'field_dropdown',name:'N',options:[['❤️ 하트','HEART'],['😊 웃는얼굴','SMILEY'],['😢 슬픈얼굴','SAD'],['⬆ 위','ARROW_UP'],['⬇ 아래','ARROW_DOWN'],['⬅ 왼쪽','ARROW_LEFT'],['➡ 오른쪽','ARROW_RIGHT'],['✔ 체크','CHECK'],['✕ 엑스','X'],['◇ 다이아','DIAMOND'],['□ 사각형','SQUARE']]}],previousStatement:null,nextStatement:null,colour:20},
     {type:'p_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:4,min:1,max:100}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
-    {type:'p_for',message0:'%1 을 %2 부터 %3 까지',args0:[{type:'field_dropdown',name:'VAR',options:[['x','x'],['y','y']]},{type:'field_number',name:'FROM',value:0,min:0},{type:'field_number',name:'TO',value:4,min:0}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
+    {type:'p_for',message0:'%1 을 %2 부터 %3 까지',args0:[{type:'field_dropdown',name:'VAR',options:[['x','x'],['y','y']]},{type:'field_number',name:'FROM',value:1,min:1},{type:'field_number',name:'TO',value:5,min:1}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
     {type:'p_wait',message0:'%1 ms 기다리기',args0:[{type:'field_number',name:'MS',value:500,min:50,max:5000}],previousStatement:null,nextStatement:null,colour:290},
     {type:'p_on_btn',message0:'버튼 %1 누르면',args0:[{type:'field_dropdown',name:'B',options:[['A','A'],['B','B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
     {type:'p_on_shake',message0:'흔들면',message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
     {type:'p_on_start',message0:'시작하면',message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
     {type:'p_if_btn',message0:'만약 버튼 %1 눌려있으면',args0:[{type:'field_dropdown',name:'B',options:[['A','BUTTON_A'],['B','BUTTON_B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210},
-    {type:'p_rect',message0:'네모 채우기 (x%1,y%2)부터 (x%3,y%4)까지 %5',args0:[{type:'field_number',name:'X1',value:0,min:0,max:15},{type:'field_number',name:'Y1',value:0,min:0,max:15},{type:'field_number',name:'X2',value:2,min:0,max:15},{type:'field_number',name:'Y2',value:2,min:0,max:15},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
-    {type:'p_blink',message0:'x%1 y%2 %3번 깜빡이기 ✨',args0:[{type:'field_number',name:'X',value:2,min:0,max:15},{type:'field_number',name:'Y',value:2,min:0,max:15},{type:'field_number',name:'N',value:3,min:1,max:20}],previousStatement:null,nextStatement:null,colour:290},
+    {type:'p_rect',message0:'네모 채우기 (x%1,y%2)부터 (x%3,y%4)까지 %5',args0:[{type:'field_number',name:'X1',value:1,min:1,max:16},{type:'field_number',name:'Y1',value:1,min:1,max:16},{type:'field_number',name:'X2',value:3,min:1,max:16},{type:'field_number',name:'Y2',value:3,min:1,max:16},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_blink',message0:'x%1 y%2 %3번 깜빡이기 ✨',args0:[{type:'field_number',name:'X',value:3,min:1,max:16},{type:'field_number',name:'Y',value:3,min:1,max:16},{type:'field_number',name:'N',value:3,min:1,max:20}],previousStatement:null,nextStatement:null,colour:290},
     {type:'p_def',message0:'📦 함수 %1 만들기',args0:[{type:'field_input',name:'NM',text:'하트'}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:260},
     {type:'p_call',message0:'📦 함수 %1 부르기',args0:[{type:'field_input',name:'NM',text:'하트'}],previousStatement:null,nextStatement:null,colour:260},
 
@@ -1399,7 +1834,23 @@ Blockly.defineBlocksWithJsonArray([
     {type:'m_right',message0:'↱ 오른쪽으로 돌기',previousStatement:null,nextStatement:null,colour:210},
     {type:'m_pick',message0:'💎 줍기',previousStatement:null,nextStatement:null,colour:300},
     {type:'m_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:3,min:1,max:50}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
-    {type:'m_if_wall',message0:'만약 앞이 벽이면 🧱',message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210}
+    {type:'m_if_wall',message0:'만약 앞이 벽이면 🧱',message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210},
+
+    // === STUDIO BLOCKS (배치 20 / 이벤트 180 / 동작 160 / 게임 330) ===
+    {type:'st_player',message0:'주인공 %1 x%2 y%3 놓기',args0:[{type:'field_dropdown',name:'E',options:[['🐢 거북이','🐢'],['🤖 로봇','🤖'],['🐟 물고기','🐟'],['🚀 로켓','🚀'],['🐱 고양이','🐱'],['🦄 유니콘','🦄']]},{type:'field_number',name:'X',value:200,min:0,max:400},{type:'field_number',name:'Y',value:260,min:0,max:300}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'st_spawn',message0:'아이템 %1 x%2 y%3 놓기',args0:[{type:'field_dropdown',name:'E',options:[['🍎 사과','🍎'],['⭐ 별','⭐'],['💎 보석','💎'],['🍬 사탕','🍬'],['💣 폭탄','💣'],['👾 몬스터','👾'],['🌸 꽃','🌸'],['🐟 물고기','🐟']]},{type:'field_number',name:'X',value:100,min:0,max:400},{type:'field_number',name:'Y',value:40,min:0,max:300}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'st_bg',message0:'배경 %1',args0:[{type:'field_dropdown',name:'BGC',options:[['🌌 밤하늘','#1a1a2e'],['🌊 바다','#0d3b66'],['🌲 숲','#1b4332'],['🌆 노을','#6a2c70'],['🌳 초원','stage-meadow'],['🌕 달나라','stage-space'],['🖼️ 우주사진','space'],['🏛️ 유적사진','maze']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'st_on_key',message0:'%1 키를 누르면',args0:[{type:'field_dropdown',name:'K',options:[['⬆ 위','UP'],['⬇ 아래','DOWN'],['⬅ 왼쪽','LEFT'],['➡ 오른쪽','RIGHT']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
+    {type:'st_move_x',message0:'x로 %1 움직이기',args0:[{type:'field_number',name:'V',value:20,min:-100,max:100}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'st_move_y',message0:'y로 %1 움직이기',args0:[{type:'field_number',name:'V',value:-20,min:-100,max:100}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'st_on_touch',message0:'%1 에 닿으면',args0:[{type:'field_dropdown',name:'E',options:[['🍎 사과','🍎'],['⭐ 별','⭐'],['💎 보석','💎'],['🍬 사탕','🍬'],['💣 폭탄','💣'],['👾 몬스터','👾'],['🌸 꽃','🌸'],['🐟 물고기','🐟']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
+    {type:'st_score',message0:'점수 %1 올리기',args0:[{type:'field_number',name:'V',value:1,min:-10,max:100}],previousStatement:null,nextStatement:null,colour:330},
+    {type:'st_remove',message0:'닿은 아이템 없애기',previousStatement:null,nextStatement:null,colour:330},
+    {type:'st_say',message0:'%1 말하기 💬',args0:[{type:'field_input',name:'T',text:'안녕!'}],previousStatement:null,nextStatement:null,colour:330},
+    {type:'st_every',message0:'%1 ms마다 반복',args0:[{type:'field_number',name:'MS',value:1000,min:100,max:10000}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
+    {type:'st_spawn_random',message0:'%1 를 하늘에서 떨어뜨리기',args0:[{type:'field_dropdown',name:'E',options:[['🍎 사과','🍎'],['⭐ 별','⭐'],['💎 보석','💎'],['🍬 사탕','🍬'],['💣 폭탄','💣'],['👾 몬스터','👾'],['🌸 꽃','🌸'],['🐟 물고기','🐟']]}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'st_move_all',message0:'%1 모두 x%2 y%3 만큼 이동',args0:[{type:'field_dropdown',name:'E',options:[['🍎 사과','🍎'],['⭐ 별','⭐'],['💎 보석','💎'],['🍬 사탕','🍬'],['💣 폭탄','💣'],['👾 몬스터','👾'],['🌸 꽃','🌸'],['🐟 물고기','🐟']]},{type:'field_number',name:'DX',value:0,min:-50,max:50},{type:'field_number',name:'DY',value:5,min:-50,max:50}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'st_end',message0:'게임 끝! %1',args0:[{type:'field_dropdown',name:'W',options:[['🎉 승리','WIN'],['💥 패배','LOSE']]}],previousStatement:null,nextStatement:null,colour:330}
 ]);
 
 // ============================================================
@@ -1428,6 +1879,13 @@ const MAZE_TOOLBOX={kind:'categoryToolbox',contents:[
     {kind:'category',name:'🚶 이동',colour:'160',contents:[{kind:'block',type:'m_move'},{kind:'block',type:'m_left'},{kind:'block',type:'m_right'},{kind:'block',type:'m_pick'}]},
     {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'m_repeat'}]},
     {kind:'category',name:'🚪 선택',colour:'210',contents:[{kind:'block',type:'m_if_wall'}]}
+]};
+
+const STUDIO_TOOLBOX={kind:'categoryToolbox',contents:[
+    {kind:'category',name:'🎭 배치',colour:'20',contents:[{kind:'block',type:'st_player'},{kind:'block',type:'st_spawn'},{kind:'block',type:'st_bg'}]},
+    {kind:'category',name:'🕹️ 조작',colour:'180',contents:[{kind:'block',type:'st_on_key'},{kind:'block',type:'st_move_x'},{kind:'block',type:'st_move_y'}]},
+    {kind:'category',name:'💥 규칙',colour:'330',contents:[{kind:'block',type:'st_on_touch'},{kind:'block',type:'st_score'},{kind:'block',type:'st_remove'},{kind:'block',type:'st_say'},{kind:'block',type:'st_end'}]},
+    {kind:'category',name:'⏰ 타이머',colour:'160',contents:[{kind:'block',type:'st_every'},{kind:'block',type:'st_spawn_random'},{kind:'block',type:'st_move_all'}]}
 ]};
 
 // ============================================================
@@ -1464,6 +1922,21 @@ function workspaceToDSL(){
             else if(t==='m_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
             else if(t==='m_if_wall'){r+=p+'IF WALL {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';
                 const e=block.getInputTargetBlock('ELSE');if(e){r+=p+'ELSE {\n';r+=b2d(e,ind+1);r+=p+'}\n';}}
+            // Studio
+            else if(t==='st_player')r+=p+'PLAYER '+block.getFieldValue('E')+' '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
+            else if(t==='st_spawn')r+=p+'SPAWN '+block.getFieldValue('E')+' '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
+            else if(t==='st_bg')r+=p+'BG '+block.getFieldValue('BGC')+'\n';
+            else if(t==='st_move_x')r+=p+'MOVE_X '+block.getFieldValue('V')+'\n';
+            else if(t==='st_move_y')r+=p+'MOVE_Y '+block.getFieldValue('V')+'\n';
+            else if(t==='st_score')r+=p+'SCORE '+block.getFieldValue('V')+'\n';
+            else if(t==='st_remove')r+=p+'REMOVE\n';
+            else if(t==='st_say')r+=p+'SAY '+(block.getFieldValue('T')||'').replace(/\n/g,' ')+'\n';
+            else if(t==='st_spawn_random')r+=p+'SPAWN_RANDOM '+block.getFieldValue('E')+'\n';
+            else if(t==='st_move_all')r+=p+'MOVE_ALL '+block.getFieldValue('E')+' '+block.getFieldValue('DX')+' '+block.getFieldValue('DY')+'\n';
+            else if(t==='st_end')r+=p+(block.getFieldValue('W')==='WIN'?'END_WIN':'END_LOSE')+'\n';
+            else if(t==='st_on_key'){r+=p+'ON_KEY '+block.getFieldValue('K')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='st_on_touch'){r+=p+'ON_TOUCH '+block.getFieldValue('E')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='st_every'){r+=p+'EVERY '+block.getFieldValue('MS')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
             // Pixel
             else if(t==='p_led_on')r+=p+'LED_ON '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
             else if(t==='p_led_off')r+=p+'LED_OFF '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
@@ -1511,9 +1984,9 @@ function nearestColor(hex){
 
 function dslToWorkspace(dslText){
     workspace.clear();
-    const isTurtle=currentMode==='turtle',isMaze=currentMode==='maze';
+    const isTurtle=currentMode==='turtle',isMaze=currentMode==='maze',isStudio=currentMode==='studio';
     // forBlocks=true: DEF/CALL을 블록으로 유지 (실행 시에만 resolveCalls로 치환)
-    const commands=isTurtle?parseTurtleDSL(dslText,true):isMaze?parseMazeDSL(dslText,true):parsePixelDSL(dslText,true);
+    const commands=isTurtle?parseTurtleDSL(dslText,true):isMaze?parseMazeDSL(dslText,true):isStudio?parseStudioDSL(dslText,true):parsePixelDSL(dslText,true);
     if(!commands.length)return;
 
     function initBlock(block){block.initSvg();block.render();}
@@ -1548,6 +2021,37 @@ function dslToWorkspace(dslText){
                         initBlock(block);
                         if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
                         if(cmd.elseBody?.length)create(cmd.elseBody,block.getInput('ELSE').connection);
+                        break;
+                    default:continue;
+                }
+            }else if(isStudio){
+                switch(cmd.type){
+                    case'PLAYER':block=makeBlock('st_player',{E:cmd.emoji,X:cmd.x,Y:cmd.y});break;
+                    case'SPAWN':block=makeBlock('st_spawn',{E:cmd.emoji,X:cmd.x,Y:cmd.y});break;
+                    case'BG':block=makeBlock('st_bg',{BGC:cmd.img||cmd.color});break;
+                    case'MOVE_X':block=makeBlock('st_move_x',{V:cmd.value});break;
+                    case'MOVE_Y':block=makeBlock('st_move_y',{V:cmd.value});break;
+                    case'SCORE':block=makeBlock('st_score',{V:cmd.value});break;
+                    case'REMOVE':block=makeBlock('st_remove');break;
+                    case'SAY':block=makeBlock('st_say',{T:cmd.text});break;
+                    case'SPAWN_RANDOM':block=makeBlock('st_spawn_random',{E:cmd.emoji});break;
+                    case'MOVE_ALL':block=makeBlock('st_move_all',{E:cmd.emoji,DX:cmd.dx,DY:cmd.dy});break;
+                    case'END_WIN':block=makeBlock('st_end',{W:'WIN'});break;
+                    case'END_LOSE':block=makeBlock('st_end',{W:'LOSE'});break;
+                    case'ON_KEY':
+                        block=makeBlock('st_on_key',{K:cmd.key});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'ON_TOUCH':
+                        block=makeBlock('st_on_touch',{E:cmd.emoji});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'EVERY':
+                        block=makeBlock('st_every',{MS:cmd.ms});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
                         break;
                     default:continue;
                 }
@@ -1663,10 +2167,12 @@ function runCode(){
     if(!dsl){addChatMsg('system','아직 블록이 없네? 블록을 끼우거나 나한테 말로 시켜 줘!');return;}
     tourEvent('run');
     if(currentMode==='turtle'){
-        const cmds=parseTurtleDSL(dsl);
+        const cmds=attachBlockIds(parseTurtleDSL(dsl),dsl);
         animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(dsl);});
     }else if(currentMode==='maze'){
         runMaze(parseMazeDSL(dsl));
+    }else if(currentMode==='studio'){
+        runStudioGame(parseStudioDSL(dsl));
     }else{
         pixelAnimCancel=false;
         pixelEventHandlers={A:null,B:null,SHAKE:null};
@@ -1679,6 +2185,7 @@ function runCode(){
 function resetView(){
     if(currentMode==='turtle')resetTurtle();
     else if(currentMode==='maze')resetMaze();
+    else if(currentMode==='studio')resetStudio();
     else clearPixelGrid();
 }
 
@@ -1708,6 +2215,9 @@ function saveArtwork(){
         }
         a.href=c.toDataURL('image/png');
         a.download='미로탐험_'+new Date().toISOString().slice(0,10)+'.png';
+    }else if(currentMode==='studio'){
+        a.href=sCanvas.toDataURL('image/png');
+        a.download='내게임_'+new Date().toISOString().slice(0,10)+'.png';
     }else{
         const cs=24,pad=10,n=pixelGridSize;
         const c=document.createElement('canvas');
@@ -1779,7 +2289,7 @@ const PIXEL_PROMPT=`너는 초등학생과 함께 LED 전광판을 고치는 로
    예: "어느 칸에 불을 켜고 싶어? x랑 y 숫자로 말해줘! 🤖"
 3. 아이가 "하트"처럼 모양 이름을 말하면 SHOW_ICON을 써도 되지만,
    미션 중이라면 "직접 좌표로 그려보면 더 멋질걸? 하트 맨 위 두 점은 어디에 있을까?"라고 먼저 한 번 유도해.
-4. 좌표는 (x, y): x는 가로(0부터 오른쪽으로), y는 세로(0부터 아래로)라는 걸 기억해.
+4. 좌표는 (x, y): x는 가로(1부터 오른쪽으로), y는 세로(1부터 아래로). 첫 칸이 (1,1)이야.
 5. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
 
 사용 가능한 명령어:
@@ -1795,12 +2305,26 @@ DEF 이름 { ... } (함수 정의), CALL 이름 (함수 부르기)
 출력 규칙:
 1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
 2. 질문/대화할 때는 코드 없이 한국어만.
-3. 기본 그리드 5x5 (x:0-4, y:0-4). 미션에 따라 8x8, 16x16일 수 있음.
+3. 기본 그리드 5x5. 좌표는 1부터 시작! (x:1~5, y:1~5). 미션에 따라 8x8(1~8), 16x16(1~16)일 수 있음. 0은 없음.
 4. 색상은 #RRGGBB 형식.`;
 
 // DSL 한 줄 → 한국어 풀이 (프롬프트↔코드 연결을 눈으로 배우기)
 function glossLine(l){
     let m;
+    // 스튜디오
+    if(m=l.match(/^PLAYER\s+(\S+)\s+(-?\d+)\s+(-?\d+)/))return'주인공 '+m[1]+'을 ('+m[2]+', '+m[3]+')에 놓기';
+    if(m=l.match(/^SPAWN_RANDOM\s+(\S+)/))return m[1]+'를 하늘에서 떨어뜨리기';
+    if(m=l.match(/^SPAWN\s+(\S+)\s+(-?\d+)\s+(-?\d+)/))return'아이템 '+m[1]+'을 ('+m[2]+', '+m[3]+')에 놓기';
+    if(m=l.match(/^ON_KEY\s+(UP|DOWN|LEFT|RIGHT)/))return'┌ '+({UP:'⬆ 위',DOWN:'⬇ 아래',LEFT:'⬅ 왼쪽',RIGHT:'➡ 오른쪽'}[m[1]])+' 키를 누르면';
+    if(m=l.match(/^ON_TOUCH\s+(\S+)/))return'┌ '+m[1]+'에 닿으면';
+    if(m=l.match(/^EVERY\s+(\d+)/))return'┌ '+m[1]+'ms마다 반복';
+    if(m=l.match(/^MOVE_X\s+(-?\d+)/))return'x로 '+m[1]+'만큼 움직이기'+(+m[1]<0?' (왼쪽)':' (오른쪽)');
+    if(m=l.match(/^MOVE_Y\s+(-?\d+)/))return'y로 '+m[1]+'만큼 움직이기'+(+m[1]<0?' (위로)':' (아래로)');
+    if(m=l.match(/^MOVE_ALL\s+(\S+)\s+(-?\d+)\s+(-?\d+)/))return m[1]+' 모두 x'+m[2]+' y'+m[3]+'만큼 이동';
+    if(m=l.match(/^SCORE\s+(-?\d+)/))return'점수 '+m[1]+' 올리기';
+    if(l==='REMOVE')return'닿은 아이템 없애기';
+    if(l==='END_WIN')return'🎉 승리로 게임 끝!';
+    if(l==='END_LOSE')return'💥 패배로 게임 끝!';
     // 미로
     if(l==='MOVE')return'앞으로 한 칸 가기';
     if(l==='TURN_LEFT')return'왼쪽으로 돌기';
@@ -1850,6 +2374,19 @@ function glossLine(l){
 // "~하니까 → 이 블록!" 추론 문장 생성 (프롬프트→블록 사고 과정 시각화)
 function reasonForLine(l){
     let m;
+    // 스튜디오
+    if(m=l.match(/^PLAYER\s/))return'게임엔 움직일 주인공이 필요하니까';
+    if(m=l.match(/^SPAWN_RANDOM\s/))return'아이템이 하늘에서 계속 나타나야 하니까';
+    if(m=l.match(/^SPAWN\s/))return'무대에 아이템을 놓아야 하니까';
+    if(m=l.match(/^ON_KEY\s/))return'키를 눌러서 주인공을 조종해야 하니까';
+    if(m=l.match(/^ON_TOUCH\s/))return'주인공이 닿았을 때 일이 일어나야 하니까';
+    if(m=l.match(/^EVERY\s/))return'일정한 시간마다 같은 일이 반복돼야 하니까';
+    if(m=l.match(/^MOVE_X\s/))return'주인공이 옆으로 움직여야 하니까';
+    if(m=l.match(/^MOVE_Y\s/))return'주인공이 위아래로 움직여야 하니까';
+    if(m=l.match(/^MOVE_ALL\s/))return'아이템들이 한꺼번에 움직여야 하니까';
+    if(m=l.match(/^SCORE\s/))return'점수를 얻어야 하니까';
+    if(l==='REMOVE')return'받은 아이템은 화면에서 사라져야 하니까';
+    if(l==='END_WIN'||l==='END_LOSE')return'게임이 끝나는 조건이 필요하니까';
     // 미로
     if(l==='MOVE')return'토토가 한 칸 앞으로 가야 하니까';
     if(l==='TURN_LEFT')return'토토 기준 왼쪽으로 방향을 바꿔야 하니까';
@@ -1908,11 +2445,14 @@ function animateAssembly(dsl){
         (function step(){
             if(i>=blocks.length){workspace.render();return resolve();}
             const raw=(lines[i]||'').replace(/\s*\{$/,'');
+            // 1) 추론 문장이 먼저 뜨고
             const row=document.createElement('div');row.className='think-row';
             row.innerHTML='<span class="think-why">'+reasonForLine(raw)+'</span><span class="think-block">→ 🧩 '+(glossLine(raw)||raw)+'</span>';
             card.appendChild(row);h.scrollTop=999999;
-            const r=blocks[i].getSvgRoot();if(r)r.style.opacity='1';
-            i++;setTimeout(step,fast?60:480);
+            const idx=i;i++;
+            // 2) 한 박자 쉬고 블록이 나타남 (읽을 시간)
+            setTimeout(()=>{const r=blocks[idx].getSvgRoot();if(r)r.style.opacity='1';},fast?30:400);
+            setTimeout(step,fast?70:900);
         })();
     });
 }
@@ -1937,12 +2477,12 @@ async function sendChat(){
     isProcessing=true; document.getElementById('sendBtn').disabled=true;
 
     const ld=document.createElement('div');ld.className='chat-msg ai';
-    ld.innerHTML='<span class="loading"></span> '+(currentMode==='turtle'?'토토가 생각 중이야...':currentMode==='maze'?'탐정 토토가 추리 중이야...':'픽셀이 계산 중이야...');
+    ld.innerHTML='<span class="loading"></span> '+(currentMode==='turtle'?'토토가 생각 중이야...':currentMode==='maze'?'탐정 토토가 추리 중이야...':currentMode==='studio'?'토토가 게임을 만드는 중이야...':'픽셀이 계산 중이야...');
     document.getElementById('chatHistory').appendChild(ld);
     document.getElementById('chatHistory').scrollTop=999999;
 
     try{
-        const msgs=[{role:'system',content:currentMode==='turtle'?TURTLE_PROMPT:currentMode==='maze'?MAZE_PROMPT:PIXEL_PROMPT},...chatMessages.slice(-6),{role:'user',content:text}];
+        const msgs=[{role:'system',content:currentMode==='turtle'?TURTLE_PROMPT:currentMode==='maze'?MAZE_PROMPT:currentMode==='studio'?STUDIO_PROMPT:PIXEL_PROMPT},...chatMessages.slice(-6),{role:'user',content:text}];
         const res=await fetch('/api/ai/chat',{method:'POST',
             headers:{'Content-Type':'application/json','X-Auth-Token':AUTH_TOKEN},
             body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,temperature:0.5,max_tokens:1024})
@@ -1959,22 +2499,30 @@ async function sendChat(){
             ? /^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|REPEAT|HOME|CLEAR|JUMP|CIRCLE|SAY|STAMP|BG|DEF|CALL)/m.test(reply)
             : currentMode==='maze'
             ? /^(MOVE|TURN_LEFT|TURN_RIGHT|PICK|REPEAT|IF )/m.test(reply)
+            : currentMode==='studio'
+            ? /^(PLAYER|SPAWN|BG|ON_KEY|ON_TOUCH|EVERY|SAY|SCORE)/m.test(reply)
             : /^(LED_ON|LED_OFF|LED_COLOR|LED_TOGGLE|FILL_|CLEAR_ALL|SHOW_ICON|REPEAT|ON_|IF |FOR |WAIT|RECT|BLINK|DEF|CALL)/m.test(reply);
 
         if(isDSL){
             try{
                 // 1단계: 블록을 만들되 숨겨두고, 추론 과정과 함께 하나씩 쌓기
                 dslToWorkspace(reply); updateDSLPreview();
-                await animateAssembly(reply);
                 const blockCount=workspace.getAllBlocks(false).length;
-                addChatMsg('ai',(currentMode==='turtle'?'🐢':currentMode==='maze'?'🔍':'🤖')+' 블록 '+blockCount+'개 완성! 이제 실행해 볼게~');
-                // 2단계: 블록이 다 쌓인 뒤에 실행
-                await new Promise(r=>setTimeout(r,600));
+                if(blockCount===0){
+                    addChatMsg('system','앗, 코드를 블록으로 못 바꿨어! 조금 다르게 말해 줄래? 🙏');
+                    return;
+                }
+                await animateAssembly(reply);
+                addChatMsg('ai',(currentMode==='turtle'?'🐢':currentMode==='maze'?'🔍':currentMode==='studio'?'🎮':'🤖')+' 블록 '+blockCount+'개 완성! 자, 이제 실행해 볼게. 잘 봐~');
+                // 2단계: 블록이 다 쌓인 뒤 한 박자 쉬고 실행 (아이가 따라올 시간)
+                await new Promise(r=>setTimeout(r,1500));
                 if(currentMode==='turtle'){
-                    const cmds=parseTurtleDSL(reply);
+                    const cmds=attachBlockIds(parseTurtleDSL(reply),reply);
                     animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(reply);});
                 }else if(currentMode==='maze'){
                     await runMaze(parseMazeDSL(reply));
+                }else if(currentMode==='studio'){
+                    runStudioGame(parseStudioDSL(reply));
                 }else{
                     clearPixelGrid(); pixelAnimCancel=false;
                     pixelEventHandlers={A:null,B:null,SHAKE:null};
@@ -2265,18 +2813,18 @@ const PIXEL_CHAPTERS={
     '자유':{emoji:'🎨',img:'planet-atelier',name:'자유 아틀리에',story:'네 마음대로 그리는 화가의 방! 상상하는 그림을 픽셀에게 말해 봐.'}
 };
 const PIXEL_STORY={
-    1:{story:'깜깜한 마을에 첫 가로등을 켜자! 한가운데 칸이 어디인지 찾아봐.',math:'좌표 (x, y): x는 가로(→), y는 세로(↓)! 숫자는 0부터 세어요.'},
-    2:{story:'큰길을 밝히자! 한 줄을 통째로 켜야 해.',math:'같은 y줄에서 x만 0→4로 변해요. 한 줄 전체 = 반복의 힘!'},
-    3:{story:'언덕길 조명을 켜자! 비스듬한 줄이야.',math:'규칙 발견: x와 y가 같은 칸! (0,0), (1,1), (2,2)…'},
+    1:{story:'깜깜한 마을에 첫 가로등을 켜자! 한가운데 칸이 어디인지 찾아봐.',math:'좌표 (x, y): x는 가로(→), y는 세로(↓)! 첫 칸이 (1,1)이에요.'},
+    2:{story:'큰길을 밝히자! 한 줄을 통째로 켜야 해.',math:'같은 y줄에서 x만 1→5로 변해요. 한 줄 전체 = 반복의 힘!'},
+    3:{story:'언덕길 조명을 켜자! 비스듬한 줄이야.',math:'규칙 발견: x와 y가 같은 칸! (1,1), (2,2), (3,3)…'},
     4:{story:'마을 병원의 십자 표시등을 복구해 줘!',math:'가로줄 하나 + 세로줄 하나 = 십자! 두 줄이 겹치는 칸은 어디일까요?'},
     5:{story:'마을 사람들에게 사랑의 불빛을! 하트를 켜 줘.',math:'하트는 좌우 대칭! 왼쪽 절반만 알면 오른쪽도 알 수 있어요.'},
-    6:{story:'마을 광장에 웃음을 되찾아 주자!',math:'두 눈 (1,1)과 (3,1)은 가운데를 기준으로 대칭인 위치예요!'},
-    7:{story:'마을 성벽의 테두리 조명을 모두 켜자!',math:'테두리 = x가 0 또는 4이거나, y가 0 또는 4인 칸!'},
+    6:{story:'마을 광장에 웃음을 되찾아 주자!',math:'두 눈 (2,2)와 (4,2)는 가운데를 기준으로 대칭인 위치예요!'},
+    7:{story:'마을 성벽의 테두리 조명을 모두 켜자!',math:'테두리 = x가 1 또는 5이거나, y가 1 또는 5인 칸!'},
     8:{story:'광장 바닥을 체크무늬로 꾸미자!',math:'x+y가 짝수인 칸만 켜져요. 홀수·짝수의 규칙!'},
     9:{story:'마을 신호등을 만들자! 버튼에 따라 다른 불빛이 나와야 해.',math:'이벤트: "~하면 ~한다" — 조건과 결과를 연결하는 코딩의 핵심!'},
     10:{story:'네온 도시의 중앙 대로를 밝히자! 화면이 커졌어.',math:'격자가 8×8로 커져도 규칙은 같아요. 가운데 줄은 몇 번일까요?'},
-    11:{story:'도시의 보물 표시 X를 그려 줘!',math:'두 대각선: x=y인 칸과 x+y=7인 칸이 겹쳐요!'},
-    12:{story:'도시 성벽 테두리를 복구하자!',math:'5×5 테두리와 같은 규칙, 끝 번호만 7로 바뀌었어요!'},
+    11:{story:'도시의 보물 표시 X를 그려 줘!',math:'두 대각선: x=y인 칸과 x+y=9인 칸이 겹쳐요!'},
+    12:{story:'도시 성벽 테두리를 복구하자!',math:'5×5 테두리와 같은 규칙, 끝 번호만 8로 바뀌었어요!'},
     13:{story:'비밀 미로의 이중 테두리를 켜야 문이 열려!',math:'테두리 속의 테두리! 같은 규칙이 크기만 다르게 반복돼요.'},
     14:{story:'하늘을 가리키는 네온 화살표를 만들어 줘!',math:'위쪽은 점점 넓어지는 삼각형, 아래쪽은 직사각형 기둥!'},
     15:{story:'은하 전광판에 거대 하트를 쏘아 올리자!',math:'작은 하트를 확대한 모양! 크기가 커져도 모양의 규칙은 같아요(닮음).'},
@@ -2284,8 +2832,8 @@ const PIXEL_STORY={
     17:{story:'전광판에 웃는 얼굴을 띄워 우주에 인사하자!',math:'원은 중심에서 같은 거리에 있는 점들의 모임이에요!'},
     18:{story:'자유 아틀리에에 온 걸 환영해! 상상하는 그림을 말해 봐.',math:'좌표, 대칭, 반복… 배운 규칙을 모두 써 볼 수 있어요.'}
 };
-const TURTLE_CHIPS=['앞으로 100만큼 가줘','앞으로 100 가고 오른쪽 120도 돌기를 3번 반복해줘','세모 함수를 만들고 3번 불러줘','별을 그리고 "반짝!"이라고 말해줘'];
-const PIXEL_CHIPS=['x 2, y 2 칸에 불을 켜줘','2번째 가로줄을 모두 켜줘','가운데 칸을 5번 깜빡여줘','버튼 A를 누르면 하트가 나오게 해줘'];
+const TURTLE_CHIPS=['앞으로 □만큼 가 줘','오른쪽으로 □도 돌아 줘','앞으로 □ 가고 오른쪽 □도 돌기를 □번 반복해 줘','□모 함수를 만들고 □번 불러 줘'];
+const PIXEL_CHIPS=['x□, y□ 칸에 불을 켜 줘','□번째 가로줄을 모두 켜 줘','가운데 칸을 □번 깜빡여 줘','버튼 □를 누르면 하트가 나오게 해 줘'];
 
 // ============================================================
 //  MAZE WORLD (미로 모험 — 우주 견습 탐정 토토)
@@ -2417,7 +2965,84 @@ IF WALL { ... } ELSE { ... } (앞이 벽이면 앞 묶음, 아니면 뒤 묶음 
 2. 질문/대화할 때는 코드 없이 한국어만.
 3. 각 명령어는 한 줄에 하나씩. 중괄호 짝 맞출 것.`;
 
-const MAZE_CHIPS=['앞으로 세 칸 가 줘','앞으로 가기를 5번 반복해 줘','한 칸 가서 보석 줍기를 4번 반복해 줘','벽을 만나면 오른쪽으로 돌고, 아니면 앞으로 가 줘'];
+const MAZE_CHIPS=['앞으로 □칸 가 줘','왼쪽으로 돌아 줘','앞으로 가기를 □번 반복해 줘','벽을 만나면 □하고, 아니면 □해 줘'];
+
+// ============================================================
+//  STUDIO WORLD (자유 스튜디오 — 나만의 게임 만들기)
+// ============================================================
+const STUDIO_PROMPT=`너는 초등학생과 함께 게임을 만드는 거북이 친구 '토토'야.
+여기는 자유 창작 스튜디오! 아이가 만들고 싶은 게임을 말하면 DSL 코드로 만들어 줘.
+
+교육 원칙:
+1. 여기는 자유 모드야. 아이가 "사과 받기 게임 만들어 줘"처럼 게임을 통째로 부탁하면
+   완성된 작은 게임 DSL을 줘도 돼. 단, 12줄 이내로 간단하게!
+2. 게임을 준 다음 대화에서는 "어떤 걸 바꿔 볼까? 속도? 아이템?"처럼 아이가 직접 고치도록 유도해.
+3. 아이가 일부만 바꿔 달라고 하면(예: "주인공을 로켓으로") 바뀐 전체 게임 DSL을 다시 출력해.
+4. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
+
+좌표: 왼쪽 위가 (0,0), 오른쪽 아래가 (400,300). 주인공은 보통 바닥 근처(y 260)에 놓아.
+
+사용 가능한 명령어:
+PLAYER 이모지 x y (주인공 놓기, 이모지: 🐢🤖🐟🚀😀🦄 중),
+SPAWN 이모지 x y (아이템 놓기, 이모지: 🍎⭐💎🍬💣👾🌸🐟 중),
+BG #hex (1a1a2e, 0d3b66, 1b4332, 6a2c70 중) 또는 BG stage-meadow(초원)/BG stage-space(달나라)/BG space/BG maze (그림 배경),
+SAY 텍스트 (주인공 말풍선, 10자 이내), SCORE n (점수 올리기),
+ON_KEY UP|DOWN|LEFT|RIGHT { ... } (화살표 키를 누르면, 안에는 MOVE_X n / MOVE_Y n — 음수 가능),
+ON_TOUCH 이모지 { ... } (주인공이 그 아이템에 닿으면, REMOVE = 닿은 아이템 없애기),
+END_WIN / END_LOSE (게임 종료 — 승리/패배),
+EVERY ms { ... } (ms마다 반복, 안에는 SPAWN_RANDOM 이모지 / MOVE_ALL 이모지 dx dy)
+
+예시 (사과 받기 게임):
+PLAYER 🐢 200 260
+BG #0d3b66
+ON_KEY LEFT { MOVE_X -20 }
+ON_KEY RIGHT { MOVE_X 20 }
+EVERY 1000 { SPAWN_RANDOM 🍎 }
+EVERY 100 { MOVE_ALL 🍎 0 5 }
+ON_TOUCH 🍎 { SCORE 1
+REMOVE }
+
+출력 규칙:
+1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
+2. 질문/대화할 때는 코드 없이 한국어만.
+3. 각 명령어는 한 줄에 하나씩. 중괄호 짝 맞출 것.`;
+
+const STUDIO_CHIPS=['사과 받기 게임 만들어 줘','운석 피하기 게임 만들어 줘','보석 모으기 게임 만들어 줘','주인공을 로켓으로 바꿔 줘'];
+
+// 만들기 카드 4장 — 잠금·별 없음, 전부 자유 창작
+const STUDIO_PROJECTS=[
+    {id:1,title:'사과 받기',icon:'🍎',level:'스튜디오',levelColor:'#E91E63',
+     description:'하늘에서 떨어지는 사과를 받아 점수를 모으자!',
+     hint:'주인공을 놓고, 화살표 키로 움직이고, EVERY로 사과를 떨어뜨려 봐. 닿으면 점수!'},
+    {id:2,title:'운석 피하기',icon:'☄️',level:'스튜디오',levelColor:'#E91E63',
+     description:'떨어지는 운석을 피해서 살아남자!',
+     hint:'운석(💣)에 닿으면 END_LOSE! 주인공이 요리조리 피할 수 있게 키를 연결해 봐.'},
+    {id:3,title:'보석 모으기',icon:'💎',level:'스튜디오',levelColor:'#E91E63',
+     description:'화면 곳곳의 보석을 모두 모으면 승리!',
+     hint:'SPAWN으로 보석을 여러 개 놓고, 다 모으면 END_WIN이 나오게 규칙을 만들어 봐.'},
+    {id:4,title:'나만의 게임',icon:'🎨',level:'스튜디오',levelColor:'#E91E63',
+     description:'뭐든 좋아! 상상하는 게임을 말해 봐.',
+     hint:'주인공은 누구? 아이템은 뭐? 닿으면 어떻게 될까? 세 가지만 정하면 게임 완성!'}
+];
+
+const STUDIO_CHAPTERS={
+    '스튜디오':{emoji:'🎮',name:'자유 스튜디오',story:'만들고 싶은 게임을 골라 봐! 여긴 잠금도 별도 없는 자유 창작 공간이야.'}
+};
+
+const STUDIO_STORY={
+    1:{story:'하늘에서 사과가 우수수! 바구니를 든 주인공으로 사과를 받아 점수를 모으는 게임을 만들어 보자.',
+       guide:'아래 "사과 받기 게임 만들어 줘" 칩을 눌러 봐! 뼈대가 생기면 속도나 아이템을 네 마음대로 바꿔 보자.',
+       chips:['사과 받기 게임 만들어 줘','사과가 더 빨리 떨어지게 해 줘','폭탄도 같이 떨어지게 해 줘','폭탄에 닿으면 지게 해 줘']},
+    2:{story:'우주에서 운석이 쏟아진다! 요리조리 피하면서 오래 살아남는 게임을 만들어 보자.',
+       guide:'"운석 피하기 게임 만들어 줘"라고 말해 봐! 그다음 운석 개수나 속도를 바꿔서 난이도를 조절해 보자.',
+       chips:['운석 피하기 게임 만들어 줘','운석이 더 많이 떨어지게 해 줘','주인공을 로켓으로 바꿔 줘','배경을 우주 사진으로 바꿔 줘']},
+    3:{story:'무대 곳곳에 보석이 숨어 있어! 주인공을 움직여 보석을 전부 모으는 게임을 만들어 보자.',
+       guide:'"보석 모으기 게임 만들어 줘"라고 말해 봐! 보석 위치를 옮기거나 방해꾼을 넣어도 재밌겠지?',
+       chips:['보석 모으기 게임 만들어 줘','보석을 더 많이 놓아 줘','움직이는 폭탄을 넣어 줘','배경을 유적 사진으로 바꿔 줘']},
+    4:{story:'여긴 뭐든 만들 수 있는 무대야! 주인공, 아이템, 규칙까지 전부 네가 정해 봐.',
+       guide:'만들고 싶은 게임을 한 문장으로 말해 줘! 예를 들면 "물고기가 사탕을 먹는 게임 만들어 줘" 같은 것도 좋아.',
+       chips:STUDIO_CHIPS}
+};
 
 let completedTurtle=JSON.parse(localStorage.getItem('turtle_completed')||'[]');
 let completedPixel=JSON.parse(localStorage.getItem('pixel_completed')||'[]');
@@ -2426,15 +3051,17 @@ let starsTurtle=JSON.parse(localStorage.getItem('turtle_stars')||'{}');
 let starsPixel=JSON.parse(localStorage.getItem('pixel_stars')||'{}');
 let starsMaze=JSON.parse(localStorage.getItem('maze_stars')||'{}');
 
-function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:currentMode==='maze'?MAZE_MISSIONS:PIXEL_MISSIONS;}
-function getCompleted(){return currentMode==='turtle'?completedTurtle:currentMode==='maze'?completedMaze:completedPixel;}
-function getStars(){return currentMode==='turtle'?starsTurtle:currentMode==='maze'?starsMaze:starsPixel;}
+function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:currentMode==='maze'?MAZE_MISSIONS:currentMode==='studio'?STUDIO_PROJECTS:PIXEL_MISSIONS;}
+function getCompleted(){return currentMode==='turtle'?completedTurtle:currentMode==='maze'?completedMaze:currentMode==='studio'?[]:completedPixel;}
+function getStars(){return currentMode==='turtle'?starsTurtle:currentMode==='maze'?starsMaze:currentMode==='studio'?{}:starsPixel;}
 function saveCompleted(id){
+    if(currentMode==='studio')return; // 스튜디오는 완료·별 저장 없음 (자유 창작)
     if(currentMode==='turtle'){if(!completedTurtle.includes(id)){completedTurtle.push(id);localStorage.setItem('turtle_completed',JSON.stringify(completedTurtle));}}
     else if(currentMode==='maze'){if(!completedMaze.includes(id)){completedMaze.push(id);localStorage.setItem('maze_completed',JSON.stringify(completedMaze));}}
     else{if(!completedPixel.includes(id)){completedPixel.push(id);localStorage.setItem('pixel_completed',JSON.stringify(completedPixel));}}
 }
 function saveStars(id,n){
+    if(currentMode==='studio'){updateStarTotal();return;} // 스튜디오는 별 저장 없음
     const s=getStars();
     if((s[id]||0)<n){s[id]=n;localStorage.setItem(currentMode==='turtle'?'turtle_stars':currentMode==='maze'?'maze_stars':'pixel_stars',JSON.stringify(s));}
     updateStarTotal();
@@ -2444,9 +3071,9 @@ function updateStarTotal(){
     const el=document.getElementById('starTotal');if(el)el.innerHTML='<img src="/assets/vibe/ui-star.png" alt="별"> '+sum;
 }
 function getChapterKey(m){return currentMode==='pixel'?pixelChapterKey(m):m.level;}
-function getChapters(){return currentMode==='turtle'?TURTLE_CHAPTERS:currentMode==='maze'?MAZE_CHAPTERS:PIXEL_CHAPTERS;}
-function getStoryData(m){return (currentMode==='turtle'?TURTLE_STORY:currentMode==='maze'?MAZE_STORY:PIXEL_STORY)[m.id]||{};}
-function isFreeMission(m){if(currentMode==='maze')return false;return !m.targetDSL&&!m.targetGrid;}
+function getChapters(){return currentMode==='turtle'?TURTLE_CHAPTERS:currentMode==='maze'?MAZE_CHAPTERS:currentMode==='studio'?STUDIO_CHAPTERS:PIXEL_CHAPTERS;}
+function getStoryData(m){return (currentMode==='turtle'?TURTLE_STORY:currentMode==='maze'?MAZE_STORY:currentMode==='studio'?STUDIO_STORY:PIXEL_STORY)[m.id]||{};}
+function isFreeMission(m){if(currentMode==='maze')return false;if(currentMode==='studio')return true;return !m.targetDSL&&!m.targetGrid;}
 function isUnlocked(m){
     if(isFreeMission(m))return true;
     const missions=getMissions(),completed=getCompleted();
@@ -2458,14 +3085,15 @@ function isUnlocked(m){
 const MISSION_ICONS_T={1:'➖',2:'📐',3:'🚪',4:'🪟',5:'🔺',6:'⛰️',7:'📏',8:'✨',9:'🛡️',10:'🧩',11:'💎',12:'🌉',13:'⭐',14:'🐝',15:'🪞',16:'🎨',17:'🌟',18:'🏠',19:'🌈',20:'🪜',21:'🖌️'};
 const MISSION_ICONS_P={1:'💡',2:'🛣️',3:'⛰️',4:'🏥',5:'❤️',6:'😊',7:'🏰',8:'🏁',9:'🚦',10:'🌆',11:'❌',12:'🧱',13:'🌀',14:'⬆️',15:'💖',16:'🌟',17:'🙂',18:'🖌️'};
 const MISSION_ICONS_M={1:'🐾',2:'↪️',3:'💎',4:'🛤️',5:'🪜',6:'🌀',7:'📿',8:'🧱',9:'🚪',10:'🌪️',11:'🏔️',12:'🏆'};
+const MISSION_ICONS_S={1:'🍎',2:'☄️',3:'💎',4:'🎨'};
 
 function openMissionSelector(){
     if(tourActive&&!tourEvent('map'))return; // 투어 중엔 지도 단계에서만 열림
     const missions=getMissions(),completed=getCompleted(),stars=getStars();
     const chapters=getChapters();
-    const icons=currentMode==='turtle'?MISSION_ICONS_T:currentMode==='maze'?MISSION_ICONS_M:MISSION_ICONS_P;
+    const icons=currentMode==='turtle'?MISSION_ICONS_T:currentMode==='maze'?MISSION_ICONS_M:currentMode==='studio'?MISSION_ICONS_S:MISSION_ICONS_P;
     const g=document.getElementById('missionGrid');g.innerHTML='';
-    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🗺️ 도형 행성 대모험 — 토토와 함께!':currentMode==='maze'?'🗺️ 미로 유적 대탐험 — 탐정 토토와 함께!':'🗺️ 픽셀 은하 구조대 — 픽셀과 함께!';
+    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🗺️ 도형 행성 대모험 — 토토와 함께!':currentMode==='maze'?'🗺️ 미로 유적 대탐험 — 탐정 토토와 함께!':currentMode==='studio'?'🎮 자유 스튜디오 — 만들고 싶은 게임을 골라!':'🗺️ 픽셀 은하 구조대 — 픽셀과 함께!';
     // 챕터별로 미션을 묶어 스토리 맵 구성
     const order=[];const groups={};
     for(const m of missions){const k=getChapterKey(m);if(!groups[k]){groups[k]=[];order.push(k);}groups[k].push(m);}
@@ -2477,7 +3105,7 @@ function openMissionSelector(){
         block.innerHTML=`<div class="chapter-head"><span class="chapter-emoji">${ch.img?`<img src="/assets/vibe/${ch.img}.png" alt="${ch.name}">`:ch.emoji}</span>
             <div><div class="chapter-name">${ch.name} <span style="font-size:11px;color:var(--text-light);font-weight:600;">${key}</span></div>
             <div class="chapter-sub">${ch.story}</div></div>
-            <span class="chapter-prog">${doneCnt}/${list.length} 완료</span></div>`;
+            <span class="chapter-prog">${currentMode==='studio'?'자유 창작':`${doneCnt}/${list.length} 완료`}</span></div>`;
         const path=document.createElement('div');path.className='node-path';
         list.forEach((m,i)=>{
             if(i>0){const link=document.createElement('span');link.className='node-link';link.textContent='›';path.appendChild(link);}
@@ -2510,16 +3138,16 @@ function selectMission(m){
     currentMission=m;
     document.getElementById('levelBadge').textContent=m.level;
     document.getElementById('levelBadge').style.background=m.levelColor;
-    document.getElementById('missionBadge').textContent=`미션 ${m.id}: ${m.title}`;
+    document.getElementById('missionBadge').textContent=currentMode==='studio'?`만들기: ${m.title}`:`미션 ${m.id}: ${m.title}`;
     closeMissionSelector();
     // 스토리 인트로 먼저 보여주기 (코드모스 스타일)
     const ch=getChapters()[getChapterKey(m)]||{emoji:'🪐',name:''};
     const sd=getStoryData(m);
-    document.getElementById('storyChar').innerHTML='<img src="/assets/vibe/'+(currentMode==='pixel'?'pixel-hello':'toto-hello')+'.svg" alt="'+(currentMode==='pixel'?'픽셀':'토토')+'" style="width:96px;height:96px;">';
-    document.getElementById('storyChapter').textContent=`${ch.emoji} ${ch.name} · 미션 ${m.id}`;
+    document.getElementById('storyChar').innerHTML='<img src="/assets/vibe/'+(currentMode==='pixel'?'pixel-hello':currentMode==='studio'?'toto-success':'toto-hello')+'.svg" alt="'+(currentMode==='pixel'?'픽셀':'토토')+'" style="width:96px;height:96px;">';
+    document.getElementById('storyChapter').textContent=`${ch.emoji} ${ch.name} · ${currentMode==='studio'?'만들기':'미션'} ${m.id}`;
     document.getElementById('storyTitle').textContent=m.title;
     document.getElementById('storyText').innerHTML=(sd.story||m.description)+
-        `<div style="margin-top:8px;font-size:11px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':currentMode==='maze'?'우주 견습 탐정 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
+        `<div style="margin-top:8px;font-size:11px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':currentMode==='maze'?'우주 견습 탐정 토토':currentMode==='studio'?'게임 메이커 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
     document.getElementById('storyModal').classList.add('show');
 }
 
@@ -2529,10 +3157,15 @@ function startMissionPlay(){
     hintStage=0;
     clearWorkspace(true);
     chatMessages=[];document.getElementById('chatHistory').innerHTML='';
-    addChatMsg('system',`🎯 미션 ${m.id}: ${m.title}`);
+    addChatMsg('system',currentMode==='studio'?`🎮 만들기: ${m.title}`:`🎯 미션 ${m.id}: ${m.title}`);
     const sd=getStoryData(m);
-    if(sd.story)addChatMsg('ai',(currentMode==='turtle'?'🐢 ':'🤖 ')+sd.story);
+    if(sd.story)addChatMsg('ai',(currentMode==='turtle'?'🐢 ':currentMode==='studio'?'🎮 ':'🤖 ')+sd.story);
     renderChips(m);
+    if(currentMode==='studio'){
+        resetStudio();
+        if(sd.guide)addChatMsg('ai','🐢 '+sd.guide);
+        return;
+    }
     if(currentMode==='turtle'){
         resetTurtle();
         if(m.targetDSL){
@@ -2574,11 +3207,23 @@ function renderChips(m){
     const row=document.getElementById('chipRow');if(!row)return;
     row.innerHTML='<span class="chip-label">💬 이렇게 말해봐</span>';
     const sd=m?getStoryData(m):null;
-    const chips=(sd&&sd.chips)||(currentMode==='turtle'?TURTLE_CHIPS:currentMode==='maze'?MAZE_CHIPS:PIXEL_CHIPS);
+    const chips=(sd&&sd.chips)||(currentMode==='turtle'?TURTLE_CHIPS:currentMode==='maze'?MAZE_CHIPS:currentMode==='studio'?STUDIO_CHIPS:PIXEL_CHIPS);
     for(const c of chips){
         const s=document.createElement('span');s.className='chip';s.textContent=c;
-        // 칩 탭 = 즉시 전송 (저학년 1탭 루프)
-        s.onclick=()=>{const inp=document.getElementById('chatInput');inp.value=c;sendChat();tourEvent('chip');};
+        s.onclick=()=>{
+            const inp=document.getElementById('chatInput');
+            if(c.includes('□')&&!tourActive){
+                // 빈칸 칩: 말하는 방법만 알려주고 숫자·내용은 아이가 채움 (정답 금지)
+                inp.value=c;
+                const pos=c.indexOf('□');
+                inp.focus();inp.setSelectionRange(pos,pos+1);
+                addChatMsg('system','□ 자리에 네가 생각한 걸 넣어서 보내 봐!');
+            }else{
+                // 완성 칩(자유 창작·온보딩 전용): 즉시 전송
+                inp.value=c.replace(/□/g,'3');sendChat();
+            }
+            tourEvent('chip');
+        };
         row.appendChild(s);
     }
 }
@@ -2753,18 +3398,33 @@ window.addEventListener('resize',()=>{if(tourActive)showTourStep();});
 // ============================================================
 //  INIT
 // ============================================================
+// 타이틀 화면에서 모드 선택 → 해당 세계로 입장
+function enterMode(mode){
+    document.getElementById('titleScreen').classList.add('hidden');
+    if(mode!=='turtle'){
+        const btn=document.querySelector(`.mode-tab[data-mode="${mode}"]`);
+        if(btn)switchMode(mode,btn); // switchMode가 모험 지도까지 열어줌
+    }else{
+        // 첫 방문: 토토 온보딩 투어 / 재방문: 모험 지도
+        if(!localStorage.getItem('vibe_onboarded'))setTimeout(()=>startTour(),400);
+        else setTimeout(()=>openMissionSelector(),300);
+    }
+}
+function updateTitleStars(){
+    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0)+Object.values(starsMaze).reduce((a,b)=>a+b,0);
+    const el=document.getElementById('titleStarCnt');if(el)el.textContent=sum;
+}
+
 window.addEventListener('load',()=>{
     resizeTurtleCanvas(); clearTurtleCanvas();
     const sp=toScreen(0,0); drawTurtleSprite(sp.x,sp.y,0);
-    initPixelGrid(); initPalette(); updateStarTotal();
+    initPixelGrid(); initPalette(); updateStarTotal(); updateTitleStars();
     workspace=Blockly.inject('blocklyDiv',{toolbox:TURTLE_TOOLBOX,scrollbars:true,trashcan:true,
         zoom:{controls:true,wheel:true,startScale:0.9},grid:{spacing:20,length:3,colour:'#eee',snap:true}});
     workspace.addChangeListener(updateDSLPreview);
-    // 첫 방문: 토토 온보딩 투어 / 재방문: 모험 지도
-    if(!localStorage.getItem('vibe_onboarded'))setTimeout(()=>startTour(),600);
-    else setTimeout(()=>openMissionSelector(),500);
+    // 앱 시작은 타이틀 화면 — 모드를 골라야 입장
 });
-window.addEventListener('resize',()=>{resizeTurtleCanvas();if(workspace)Blockly.svgResize(workspace);});
+window.addEventListener('resize',()=>{resizeTurtleCanvas();if(workspace)Blockly.svgResize(workspace);if(currentMode==='studio'){if(studioGame){resizeStudioCanvas();drawStudio();}else resetStudio();}});
 </script>
 </body>
 </html>
