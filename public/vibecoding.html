@@ -157,6 +157,14 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .chat-msg.math{align-self:stretch;max-width:100%;background:#EDE7F6;color:#4527A0;border:1px solid #D1C4E9;border-radius:10px;font-size:12px;}
 .chat-msg.math b{display:block;margin-bottom:3px;}
 .chat-msg.code{align-self:stretch;max-width:100%;background:#263238;color:#ECEFF1;border-radius:10px;font-family:'Consolas','Courier New',monospace;font-size:11px;padding:10px 12px;}
+/* 추론 과정 카드: "~하니까 → 이 블록!" */
+.chat-msg.think{align-self:stretch;max-width:100%;background:#FFFDE7;border:1px solid #FFE082;color:#5D4037;border-radius:10px;font-size:12px;}
+.chat-msg.think>b{display:block;margin-bottom:5px;color:#E65100;}
+.think-row{display:flex;flex-direction:column;gap:1px;padding:5px 0;border-top:1px dashed #FFE082;animation:thinkin .35s ease both;}
+.think-row:first-of-type{border-top:none;}
+.think-why{color:#795548;font-size:11px;}
+.think-block{font-weight:700;color:#4527A0;}
+@keyframes thinkin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .code-line{display:flex;gap:8px;white-space:pre;line-height:1.8;}
 .code-line .dsl{color:#80CBC4;min-width:110px;}
 .code-line .gloss{color:#FFCC80;font-family:'Segoe UI','Malgun Gothic',sans-serif;}
@@ -261,6 +269,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                 <!-- Common -->
                 <button class="ctrl-btn run" onclick="runCode()">▶ 실행</button>
                 <button class="ctrl-btn" onclick="resetView()">🔄 초기화</button>
+                <button class="ctrl-btn" onclick="saveArtwork()" title="내 작품을 그림 파일로 저장해요">💾 저장</button>
             </div>
         </div>
         <div class="panel-body">
@@ -445,8 +454,32 @@ function drawTurtleSprite(sx, sy, angle) {
     tCtx.restore();
 }
 
+let turtleBgColor='#1a1a2e';
+function scanBgColor(cmds){
+    let bg='#1a1a2e';
+    (function walk(cs){for(const c of cs){if(c.type==='BG')bg=c.color;if(c.body)walk(c.body);}})(cmds);
+    return bg;
+}
+// 말풍선·도장 그리기 헬퍼
+function drawBubbleAt(sx,sy,text){
+    tCtx.save();
+    tCtx.font='bold 13px "Segoe UI","Malgun Gothic",sans-serif';
+    const w=tCtx.measureText(text).width+20,h=28,bx=sx+14,by=sy-46;
+    tCtx.fillStyle='#fff';tCtx.strokeStyle='#ccc';tCtx.lineWidth=1;
+    tCtx.beginPath();
+    if(tCtx.roundRect)tCtx.roundRect(bx,by,w,h,9);else tCtx.rect(bx,by,w,h);
+    tCtx.fill();tCtx.stroke();
+    tCtx.beginPath();tCtx.moveTo(bx+8,by+h);tCtx.lineTo(bx+2,by+h+9);tCtx.lineTo(bx+18,by+h);tCtx.closePath();tCtx.fill();
+    tCtx.fillStyle='#2D3748';tCtx.fillText(text,bx+10,by+19);
+    tCtx.restore();
+}
+function drawStampAt(sx,sy,emoji){
+    tCtx.save();tCtx.font='28px "Segoe UI Emoji",sans-serif';tCtx.textAlign='center';tCtx.textBaseline='middle';
+    tCtx.fillText(emoji,sx,sy);tCtx.restore();
+}
 function clearTurtleCanvas() {
     tCtx.clearRect(0,0,tCanvas.width,tCanvas.height);
+    tCtx.fillStyle=turtleBgColor;tCtx.fillRect(0,0,tCanvas.width,tCanvas.height);
     const cx=tCanvas.width/2, cy=tCanvas.height/2;
     tCtx.strokeStyle='rgba(255,255,255,0.05)'; tCtx.lineWidth=1;
     for(let i=-300;i<=300;i+=50){tCtx.beginPath();tCtx.moveTo(cx+i,0);tCtx.lineTo(cx+i,tCanvas.height);tCtx.stroke();tCtx.beginPath();tCtx.moveTo(0,cy+i);tCtx.lineTo(tCanvas.width,cy+i);tCtx.stroke();}
@@ -497,6 +530,7 @@ function updateTurtleStatus(x,y,a){
 
 function resetTurtle() {
     if(tAnimId) cancelAnimationFrame(tAnimId);
+    turtleBgColor='#1a1a2e';
     resizeTurtleCanvas(); clearTurtleCanvas();
     const sp=toScreen(0,0); drawTurtleSprite(sp.x,sp.y,0);
     updateTurtleStatus(0,0,0);
@@ -504,8 +538,9 @@ function resetTurtle() {
 
 function drawTurtlePath(commands, color, size) {
     let x=0,y=0,angle=0,penDown=true,penColor=color||'#00FF88',penSize=size||2;
+    turtleBgColor=scanBgColor(commands);
     clearTurtleCanvas(); tCtx.lineCap='round'; tCtx.lineJoin='round';
-    const labels=[];
+    const labels=[];const decos=[];
     function exec(cmds){for(const cmd of cmds){
         if(cmd.type==='FORWARD'||cmd.type==='BACKWARD'){
             const dir=cmd.type==='FORWARD'?1:-1,rad=(angle-90)*Math.PI/180;
@@ -535,6 +570,10 @@ function drawTurtlePath(commands, color, size) {
         else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
         else if(cmd.type==='PEN_COLOR')penColor=cmd.value;else if(cmd.type==='PEN_SIZE')penSize=cmd.value;
         else if(cmd.type==='HOME'){x=0;y=0;angle=0;}else if(cmd.type==='CLEAR')clearTurtleCanvas();
+        else if(cmd.type==='JUMP'){const rad=(angle-90)*Math.PI/180;x+=cmd.value*Math.cos(rad);y+=cmd.value*Math.sin(rad);}
+        else if(cmd.type==='CIRCLE'){const sp=toScreen(x,-y);tCtx.beginPath();tCtx.arc(sp.x,sp.y,cmd.value,0,Math.PI*2);tCtx.strokeStyle=penColor;tCtx.lineWidth=penSize;tCtx.stroke();}
+        else if(cmd.type==='STAMP'){const sp=toScreen(x,-y);decos.push({kind:'stamp',x:sp.x,y:sp.y,emoji:cmd.emoji});}
+        else if(cmd.type==='SAY'){const sp=toScreen(x,-y);decos.push({kind:'bubble',x:sp.x,y:sp.y,text:cmd.text});}
         else if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)exec(cmd.body);}
     }}
     exec(commands);
@@ -544,6 +583,7 @@ function drawTurtlePath(commands, color, size) {
         if(lb.type==='distance'){tCtx.fillStyle='#ffffff';tCtx.fillText(lb.text,lb.x+3,lb.y-3);}
         else{tCtx.fillStyle='#FFD700';tCtx.fillText(lb.text,lb.x+5,lb.y-5);}
     }
+    for(const d of decos){if(d.kind==='stamp')drawStampAt(d.x,d.y,d.emoji);else drawBubbleAt(d.x,d.y,d.text);}
     const sp=toScreen(x,-y); drawTurtleSprite(sp.x,sp.y,angle);
     updateTurtleStatus(x,y,angle);
 }
@@ -556,12 +596,13 @@ function animateTurtle(commands, onDone) {
         if(cmd.type==='REPEAT'){for(let r=0;r<cmd.count;r++)flatten(cmd.body);}
         else{steps.push({...cmd,_x:x,_y:y,_angle:angle,_penDown:penDown,_penColor:penColor,_penSize:penSize});
         if(cmd.type==='FORWARD'||cmd.type==='BACKWARD'){const dir=cmd.type==='FORWARD'?1:-1,rad=(angle-90)*Math.PI/180;x+=dir*cmd.value*Math.cos(rad);y+=dir*cmd.value*Math.sin(rad);}
+        else if(cmd.type==='JUMP'){const rad=(angle-90)*Math.PI/180;x+=cmd.value*Math.cos(rad);y+=cmd.value*Math.sin(rad);}
         else if(cmd.type==='RIGHT')angle+=cmd.value;else if(cmd.type==='LEFT')angle-=cmd.value;
         else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
         else if(cmd.type==='PEN_COLOR')penColor=cmd.value;else if(cmd.type==='PEN_SIZE')penSize=cmd.value;
         else if(cmd.type==='HOME'){x=0;y=0;angle=0;}}
     }}
-    flatten(commands); clearTurtleCanvas();
+    flatten(commands); turtleBgColor=scanBgColor(commands); clearTurtleCanvas();
     // Store drawn line segments for redraw
     const drawnLines=[];
     let si=0,prog=0,cx=0,cy=0,ca=0,cp=true,cc='#00FF88',cs=2;
@@ -574,6 +615,11 @@ function animateTurtle(commands, onDone) {
                 tCtx.font='11px sans-serif';
                 if(ln.labelType==='distance'){tCtx.fillStyle='#ffffff';tCtx.fillText(ln.text,ln.lx+3,ln.ly-3);}
                 else{tCtx.fillStyle='#FFD700';tCtx.fillText(ln.text,ln.lx+5,ln.ly-5);}
+            }else if(ln.type==='circle'){
+                tCtx.beginPath();tCtx.arc(ln.cx,ln.cy,ln.r,0,Math.PI*2);
+                tCtx.strokeStyle=ln.color;tCtx.lineWidth=ln.size;tCtx.stroke();
+            }else if(ln.type==='stamp'){drawStampAt(ln.cx,ln.cy,ln.emoji);
+            }else if(ln.type==='bubble'){drawBubbleAt(ln.cx,ln.cy,ln.text);
             }else{
                 tCtx.beginPath();tCtx.moveTo(ln.fx,ln.fy);tCtx.lineTo(ln.tx,ln.ty);
                 tCtx.strokeStyle=ln.color;tCtx.lineWidth=ln.size;tCtx.lineCap='round';tCtx.stroke();
@@ -625,6 +671,7 @@ function turtleCommandsToPath(commands){
     function exec(cmds){for(const cmd of cmds){
         if(cmd.type==='FORWARD'){const rad=(angle-90)*Math.PI/180;x+=cmd.value*Math.cos(rad);y+=cmd.value*Math.sin(rad);path.push({x,y});}
         else if(cmd.type==='BACKWARD'){const rad=(angle-90)*Math.PI/180;x-=cmd.value*Math.cos(rad);y-=cmd.value*Math.sin(rad);path.push({x,y});}
+        else if(cmd.type==='JUMP'){const rad=(angle-90)*Math.PI/180;x+=cmd.value*Math.cos(rad);y+=cmd.value*Math.sin(rad);}
         else if(cmd.type==='RIGHT')angle+=cmd.value;else if(cmd.type==='LEFT')angle-=cmd.value;
         else if(cmd.type==='PEN_UP')penDown=false;else if(cmd.type==='PEN_DOWN')penDown=true;
         else if(cmd.type==='HOME'){x=0;y=0;angle=0;}
@@ -791,6 +838,21 @@ async function executePixelCommands(commands){
             case'FILL_ROW':if(cmd.y<pixelGridSize){for(let x=0;x<pixelGridSize;x++)pixelGrid[cmd.y][x]=cmd.color;renderPixelGrid();}break;
             case'FILL_COL':if(cmd.x<pixelGridSize){for(let y=0;y<pixelGridSize;y++)pixelGrid[y][cmd.x]=cmd.color;renderPixelGrid();}break;
             case'CLEAR_ALL':clearPixelGrid();break;
+            case'RECT':{
+                const x1=Math.max(0,Math.min(cmd.x1,cmd.x2)),x2=Math.min(pixelGridSize-1,Math.max(cmd.x1,cmd.x2));
+                const y1=Math.max(0,Math.min(cmd.y1,cmd.y2)),y2=Math.min(pixelGridSize-1,Math.max(cmd.y1,cmd.y2));
+                for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)pixelGrid[y][x]=cmd.color;
+                renderPixelGrid();break;}
+            case'BLINK':{
+                if(cmd.x>=pixelGridSize||cmd.y>=pixelGridSize)break;
+                for(let r=0;r<cmd.count;r++){
+                    if(pixelAnimCancel)return;
+                    pixelGrid[cmd.y][cmd.x]=pixelColor;renderPixelGrid();
+                    await new Promise(rs=>setTimeout(rs,200));
+                    pixelGrid[cmd.y][cmd.x]=null;renderPixelGrid();
+                    await new Promise(rs=>setTimeout(rs,200));
+                }break;}
+            case'DEF':break; // 함수 정의는 resolveCalls에서 처리됨
             case'SHOW_ICON':showPixelIcon(cmd.name);break;
             case'WAIT':await new Promise(r=>setTimeout(r,cmd.ms));break;
             case'REPEAT':for(let r=0;r<cmd.count;r++)await executePixelCommands(cmd.body);break;
@@ -815,7 +877,26 @@ function resolvePixelVar(commands,varName,value){
 // ============================================================
 //  DSL PARSERS
 // ============================================================
-function parseTurtleDSL(text){
+// 함수(DEF/CALL) 해석: CALL을 함수 본문으로 치환 (블록 표시용 파싱은 forBlocks=true로 원형 유지)
+function resolveCalls(cmds){
+    const fns={};
+    (function collect(cs){for(const c of cs){if(c.type==='DEF')fns[c.name]=c.body||[];if(c.body)collect(c.body);if(c.elseBody)collect(c.elseBody);}})(cmds);
+    function walk(cs,depth){
+        const out=[];
+        for(const c of cs){
+            if(c.type==='DEF')continue;
+            if(c.type==='CALL'){if(depth<8&&fns[c.name])out.push(...walk(fns[c.name],depth+1));continue;}
+            const cc={...c};
+            if(cc.body)cc.body=walk(cc.body,depth);
+            if(cc.elseBody)cc.elseBody=walk(cc.elseBody,depth);
+            out.push(cc);
+        }
+        return out;
+    }
+    return walk(cmds,0);
+}
+
+function parseTurtleDSL(text,forBlocks){
     if(!text?.trim())return[];
     const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l);
     let i=0;
@@ -827,6 +908,19 @@ function parseTurtleDSL(text){
             let m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
             if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
                 cmds.push({type:'REPEAT',count:parseInt(m[1]),body:parseBlock()});continue;}
+            m=line.match(/^DEF\s+(\S+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
+                cmds.push({type:'DEF',name:m[1],body:parseBlock()});continue;}
+            m=line.match(/^CALL\s+(\S+)$/);
+            if(m){cmds.push({type:'CALL',name:m[1]});i++;continue;}
+            m=line.match(/^(CIRCLE|JUMP)\s+(\d+(?:\.\d+)?)$/);
+            if(m){cmds.push({type:m[1],value:parseFloat(m[2])});i++;continue;}
+            m=line.match(/^SAY\s+(.+)$/);
+            if(m){cmds.push({type:'SAY',text:m[1].trim().slice(0,20)});i++;continue;}
+            m=line.match(/^STAMP\s+(.+)$/);
+            if(m){cmds.push({type:'STAMP',emoji:m[1].trim().slice(0,4)});i++;continue;}
+            m=line.match(/^BG\s+(#[0-9A-Fa-f]{6})$/);
+            if(m){cmds.push({type:'BG',color:m[1]});i++;continue;}
             m=line.match(/^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|HOME|CLEAR)\s*(.*)$/);
             if(m){const cmd={type:m[1]};const arg=m[2].trim();
                 if(['FORWARD','BACKWARD','RIGHT','LEFT','PEN_SIZE'].includes(m[1]))cmd.value=parseFloat(arg)||0;
@@ -836,10 +930,11 @@ function parseTurtleDSL(text){
         }
         return cmds;
     }
-    return parseBlock();
+    const cmds=parseBlock();
+    return forBlocks?cmds:resolveCalls(cmds);
 }
 
-function parsePixelDSL(text){
+function parsePixelDSL(text,forBlocks){
     if(!text?.trim())return[];
     const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'));
     let i=0;
@@ -851,6 +946,14 @@ function parsePixelDSL(text){
             let m;
             m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
             if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'REPEAT',count:parseInt(m[1]),body:parseBlock()});continue;}
+            m=line.match(/^DEF\s+(\S+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'DEF',name:m[1],body:parseBlock()});continue;}
+            m=line.match(/^CALL\s+(\S+)$/);
+            if(m){cmds.push({type:'CALL',name:m[1]});i++;continue;}
+            m=line.match(/^RECT\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*(#[0-9A-Fa-f]{6})?$/);
+            if(m){cmds.push({type:'RECT',x1:+m[1],y1:+m[2],x2:+m[3],y2:+m[4],color:m[5]||'#ffffff'});i++;continue;}
+            m=line.match(/^BLINK\s+(\d+)\s+(\d+)\s+(\d+)$/);
+            if(m){cmds.push({type:'BLINK',x:+m[1],y:+m[2],count:Math.min(+m[3],20)});i++;continue;}
             m=line.match(/^ON_(BUTTON_A|BUTTON_B|SHAKE|START)\s*\{?$/);
             if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'ON_'+m[1],body:parseBlock()});continue;}
             m=line.match(/^IF\s+(BUTTON_A|BUTTON_B)\s*\{?$/);
@@ -874,7 +977,8 @@ function parsePixelDSL(text){
         }
         return cmds;
     }
-    return parseBlock();
+    const cmds=parseBlock();
+    return forBlocks?cmds:resolveCalls(cmds);
 }
 
 // ============================================================
@@ -893,6 +997,13 @@ Blockly.defineBlocksWithJsonArray([
     {type:'t_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:4,min:1,max:100}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
     {type:'t_home',message0:'처음 위치로',previousStatement:null,nextStatement:null,colour:290},
     {type:'t_clear',message0:'화면 지우기',previousStatement:null,nextStatement:null,colour:290},
+    {type:'t_jump',message0:'%1 만큼 점프 (선 없이)',args0:[{type:'field_number',name:'V',value:50,min:1,max:500}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_circle',message0:'반지름 %1 원 그리기',args0:[{type:'field_number',name:'V',value:50,min:5,max:200}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_say',message0:'%1 말하기 💬',args0:[{type:'field_input',name:'T',text:'안녕!'}],previousStatement:null,nextStatement:null,colour:300},
+    {type:'t_stamp',message0:'%1 도장 찍기',args0:[{type:'field_dropdown',name:'E',options:[['🌸 꽃','🌸'],['⭐ 별','⭐'],['❤️ 하트','❤️'],['🍀 클로버','🍀'],['🦋 나비','🦋'],['🌙 달','🌙'],['☀️ 해','☀️'],['🍎 사과','🍎'],['🐟 물고기','🐟'],['🏠 집','🏠']]}],previousStatement:null,nextStatement:null,colour:300},
+    {type:'t_bg',message0:'배경색 %1',args0:[{type:'field_dropdown',name:'C',options:[['🌌 밤하늘','#1a1a2e'],['🌊 바다','#0d3b66'],['🌲 숲','#1b4332'],['🌅 노을','#6a2c70'],['🍑 살구','#5c3a2e'],['⬛ 검정','#000000']]}],previousStatement:null,nextStatement:null,colour:290},
+    {type:'t_def',message0:'📦 함수 %1 만들기',args0:[{type:'field_input',name:'NM',text:'세모'}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:260},
+    {type:'t_call',message0:'📦 함수 %1 부르기',args0:[{type:'field_input',name:'NM',text:'세모'}],previousStatement:null,nextStatement:null,colour:260},
 
     // === PIXEL BLOCKS ===
     {type:'p_led_on',message0:'LED 켜기 x%1 y%2',args0:[{type:'field_number',name:'X',value:0,min:0,max:15},{type:'field_number',name:'Y',value:0,min:0,max:15}],previousStatement:null,nextStatement:null,colour:20},
@@ -910,26 +1021,33 @@ Blockly.defineBlocksWithJsonArray([
     {type:'p_on_btn',message0:'버튼 %1 누르면',args0:[{type:'field_dropdown',name:'B',options:[['A','A'],['B','B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
     {type:'p_on_shake',message0:'흔들면',message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
     {type:'p_on_start',message0:'시작하면',message1:'%1',args1:[{type:'input_statement',name:'DO'}],nextStatement:null,colour:180},
-    {type:'p_if_btn',message0:'만약 버튼 %1 눌려있으면',args0:[{type:'field_dropdown',name:'B',options:[['A','BUTTON_A'],['B','BUTTON_B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210}
+    {type:'p_if_btn',message0:'만약 버튼 %1 눌려있으면',args0:[{type:'field_dropdown',name:'B',options:[['A','BUTTON_A'],['B','BUTTON_B']]}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210},
+    {type:'p_rect',message0:'네모 채우기 (x%1,y%2)부터 (x%3,y%4)까지 %5',args0:[{type:'field_number',name:'X1',value:0,min:0,max:15},{type:'field_number',name:'Y1',value:0,min:0,max:15},{type:'field_number',name:'X2',value:2,min:0,max:15},{type:'field_number',name:'Y2',value:2,min:0,max:15},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
+    {type:'p_blink',message0:'x%1 y%2 %3번 깜빡이기 ✨',args0:[{type:'field_number',name:'X',value:2,min:0,max:15},{type:'field_number',name:'Y',value:2,min:0,max:15},{type:'field_number',name:'N',value:3,min:1,max:20}],previousStatement:null,nextStatement:null,colour:290},
+    {type:'p_def',message0:'📦 함수 %1 만들기',args0:[{type:'field_input',name:'NM',text:'하트'}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:260},
+    {type:'p_call',message0:'📦 함수 %1 부르기',args0:[{type:'field_input',name:'NM',text:'하트'}],previousStatement:null,nextStatement:null,colour:260}
 ]);
 
 // ============================================================
 //  BLOCKLY TOOLBOXES
 // ============================================================
 const TURTLE_TOOLBOX={kind:'categoryToolbox',contents:[
-    {kind:'category',name:'🚶 이동',colour:'160',contents:[{kind:'block',type:'t_forward'},{kind:'block',type:'t_backward'}]},
+    {kind:'category',name:'🚶 이동',colour:'160',contents:[{kind:'block',type:'t_forward'},{kind:'block',type:'t_backward'},{kind:'block',type:'t_jump'},{kind:'block',type:'t_circle'}]},
     {kind:'category',name:'🔄 회전',colour:'210',contents:[{kind:'block',type:'t_right'},{kind:'block',type:'t_left'}]},
     {kind:'category',name:'✏️ 펜',colour:'20',contents:[{kind:'block',type:'t_pen_color'},{kind:'block',type:'t_pen_size'},{kind:'block',type:'t_pen_up'},{kind:'block',type:'t_pen_down'}]},
     {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'t_repeat'}]},
+    {kind:'category',name:'📦 함수',colour:'260',contents:[{kind:'block',type:'t_def'},{kind:'block',type:'t_call'}]},
+    {kind:'category',name:'💬 꾸미기',colour:'300',contents:[{kind:'block',type:'t_say'},{kind:'block',type:'t_stamp'},{kind:'block',type:'t_bg'}]},
     {kind:'category',name:'🏠 기타',colour:'290',contents:[{kind:'block',type:'t_home'},{kind:'block',type:'t_clear'}]}
 ]};
 
 const PIXEL_TOOLBOX={kind:'categoryToolbox',contents:[
-    {kind:'category',name:'💡 LED',colour:'20',contents:[{kind:'block',type:'p_led_on'},{kind:'block',type:'p_led_off'},{kind:'block',type:'p_led_color'},{kind:'block',type:'p_led_toggle'},{kind:'block',type:'p_fill'},{kind:'block',type:'p_fill_row'},{kind:'block',type:'p_fill_col'},{kind:'block',type:'p_clear'},{kind:'block',type:'p_icon'}]},
+    {kind:'category',name:'💡 LED',colour:'20',contents:[{kind:'block',type:'p_led_on'},{kind:'block',type:'p_led_off'},{kind:'block',type:'p_led_color'},{kind:'block',type:'p_led_toggle'},{kind:'block',type:'p_fill'},{kind:'block',type:'p_fill_row'},{kind:'block',type:'p_fill_col'},{kind:'block',type:'p_rect'},{kind:'block',type:'p_clear'},{kind:'block',type:'p_icon'}]},
     {kind:'category',name:'🎮 이벤트',colour:'180',contents:[{kind:'block',type:'p_on_start'},{kind:'block',type:'p_on_btn'},{kind:'block',type:'p_on_shake'}]},
     {kind:'category',name:'🔀 조건',colour:'210',contents:[{kind:'block',type:'p_if_btn'}]},
     {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'p_repeat'},{kind:'block',type:'p_for'}]},
-    {kind:'category',name:'⏱ 기타',colour:'290',contents:[{kind:'block',type:'p_wait'}]}
+    {kind:'category',name:'📦 함수',colour:'260',contents:[{kind:'block',type:'p_def'},{kind:'block',type:'p_call'}]},
+    {kind:'category',name:'⏱ 기타',colour:'290',contents:[{kind:'block',type:'p_wait'},{kind:'block',type:'p_blink'}]}
 ]};
 
 // ============================================================
@@ -950,6 +1068,13 @@ function workspaceToDSL(){
             else if(t==='t_pen_color')r+=p+'PEN_COLOR '+block.getFieldValue('C')+'\n';
             else if(t==='t_pen_size')r+=p+'PEN_SIZE '+block.getFieldValue('V')+'\n';
             else if(t==='t_home')r+=p+'HOME\n'; else if(t==='t_clear')r+=p+'CLEAR\n';
+            else if(t==='t_jump')r+=p+'JUMP '+block.getFieldValue('V')+'\n';
+            else if(t==='t_circle')r+=p+'CIRCLE '+block.getFieldValue('V')+'\n';
+            else if(t==='t_say')r+=p+'SAY '+(block.getFieldValue('T')||'').replace(/\n/g,' ')+'\n';
+            else if(t==='t_stamp')r+=p+'STAMP '+block.getFieldValue('E')+'\n';
+            else if(t==='t_bg')r+=p+'BG '+block.getFieldValue('C')+'\n';
+            else if(t==='t_def'||t==='p_def'){r+=p+'DEF '+(block.getFieldValue('NM')||'f').replace(/\s+/g,'_')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='t_call'||t==='p_call')r+=p+'CALL '+(block.getFieldValue('NM')||'f').replace(/\s+/g,'_')+'\n';
             else if(t==='t_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
             // Pixel
             else if(t==='p_led_on')r+=p+'LED_ON '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
@@ -960,6 +1085,8 @@ function workspaceToDSL(){
             else if(t==='p_fill_row')r+=p+'FILL_ROW '+block.getFieldValue('Y')+' '+block.getFieldValue('C')+'\n';
             else if(t==='p_fill_col')r+=p+'FILL_COL '+block.getFieldValue('X')+' '+block.getFieldValue('C')+'\n';
             else if(t==='p_clear')r+=p+'CLEAR_ALL\n';
+            else if(t==='p_rect')r+=p+'RECT '+block.getFieldValue('X1')+' '+block.getFieldValue('Y1')+' '+block.getFieldValue('X2')+' '+block.getFieldValue('Y2')+' '+block.getFieldValue('C')+'\n';
+            else if(t==='p_blink')r+=p+'BLINK '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+' '+block.getFieldValue('N')+'\n';
             else if(t==='p_icon')r+=p+'SHOW_ICON '+block.getFieldValue('N')+'\n';
             else if(t==='p_wait')r+=p+'WAIT '+block.getFieldValue('MS')+'\n';
             else if(t==='p_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
@@ -997,7 +1124,8 @@ function nearestColor(hex){
 function dslToWorkspace(dslText){
     workspace.clear();
     const isTurtle=currentMode==='turtle';
-    const commands=isTurtle?parseTurtleDSL(dslText):parsePixelDSL(dslText);
+    // forBlocks=true: DEF/CALL을 블록으로 유지 (실행 시에만 resolveCalls로 치환)
+    const commands=isTurtle?parseTurtleDSL(dslText,true):parsePixelDSL(dslText,true);
     if(!commands.length)return;
 
     function initBlock(block){block.initSvg();block.render();}
@@ -1028,6 +1156,17 @@ function dslToWorkspace(dslText){
                     case'PEN_SIZE':block=makeBlock('t_pen_size',{V:cmd.value});break;
                     case'HOME':block=makeBlock('t_home');break;
                     case'CLEAR':block=makeBlock('t_clear');break;
+                    case'JUMP':block=makeBlock('t_jump',{V:cmd.value});break;
+                    case'CIRCLE':block=makeBlock('t_circle',{V:cmd.value});break;
+                    case'SAY':block=makeBlock('t_say',{T:cmd.text});break;
+                    case'STAMP':block=makeBlock('t_stamp',{E:cmd.emoji});break;
+                    case'BG':block=makeBlock('t_bg',{C:cmd.color});break;
+                    case'CALL':block=makeBlock('t_call',{NM:cmd.name});break;
+                    case'DEF':
+                        block=makeBlock('t_def',{NM:cmd.name});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
                     case'REPEAT':
                         block=makeBlock('t_repeat',{N:cmd.count});
                         initBlock(block);
@@ -1045,8 +1184,16 @@ function dslToWorkspace(dslText){
                     case'FILL_ROW':block=makeBlock('p_fill_row',{Y:cmd.y,C:cmd.color});break;
                     case'FILL_COL':block=makeBlock('p_fill_col',{X:cmd.x,C:cmd.color});break;
                     case'CLEAR_ALL':block=makeBlock('p_clear');break;
+                    case'RECT':block=makeBlock('p_rect',{X1:cmd.x1,Y1:cmd.y1,X2:cmd.x2,Y2:cmd.y2,C:cmd.color});break;
+                    case'BLINK':block=makeBlock('p_blink',{X:cmd.x,Y:cmd.y,N:cmd.count});break;
                     case'SHOW_ICON':block=makeBlock('p_icon',{N:cmd.name});break;
                     case'WAIT':block=makeBlock('p_wait',{MS:cmd.ms});break;
+                    case'CALL':block=makeBlock('p_call',{NM:cmd.name});break;
+                    case'DEF':
+                        block=makeBlock('p_def',{NM:cmd.name});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
                     case'REPEAT':
                         block=makeBlock('p_repeat',{N:cmd.count});
                         initBlock(block);
@@ -1124,6 +1271,29 @@ function resetView(){
     else clearPixelGrid();
 }
 
+// 내 작품 PNG 저장 (자유 창작 모드 결과물 공유용)
+function saveArtwork(){
+    const a=document.createElement('a');
+    if(currentMode==='turtle'){
+        a.href=tCanvas.toDataURL('image/png');
+        a.download='터틀작품_'+new Date().toISOString().slice(0,10)+'.png';
+    }else{
+        const cs=24,pad=10,n=pixelGridSize;
+        const c=document.createElement('canvas');
+        c.width=n*cs+pad*2;c.height=n*cs+pad*2;
+        const x=c.getContext('2d');
+        x.fillStyle='#1a1a2e';x.fillRect(0,0,c.width,c.height);
+        for(let yy=0;yy<n;yy++)for(let xx=0;xx<n;xx++){
+            x.fillStyle=pixelGrid[yy][xx]||'#26263f';
+            x.fillRect(pad+xx*cs+1,pad+yy*cs+1,cs-2,cs-2);
+        }
+        a.href=c.toDataURL('image/png');
+        a.download='픽셀작품_'+new Date().toISOString().slice(0,10)+'.png';
+    }
+    a.click();
+    addChatMsg('system','💾 작품을 그림 파일로 저장했어요!');
+}
+
 function clearWorkspace(){workspace.clear();updateDSLPreview();}
 
 // ============================================================
@@ -1150,12 +1320,19 @@ const TURTLE_PROMPT=`너는 초등학생과 함께 그림을 그리는 거북이
 사용 가능한 명령어:
 FORWARD n, BACKWARD n, RIGHT d, LEFT d,
 PEN_UP, PEN_DOWN, PEN_COLOR #hex, PEN_SIZE n,
-REPEAT n { ... }, HOME, CLEAR
+REPEAT n { ... }, HOME, CLEAR,
+JUMP n (선 없이 이동), CIRCLE r (반지름 r 원),
+SAY 텍스트 (말풍선, 10자 이내), STAMP 이모지 (🌸⭐❤️🍀🦋🌙☀️🍎🐟🏠 중),
+BG #hex (배경색: 1a1a2e, 0d3b66, 1b4332, 6a2c70, 5c3a2e, 000000 중),
+DEF 이름 { ... } (함수 정의), CALL 이름 (함수 부르기)
+
+함수 활용: 같은 도형을 여러 번 그릴 때 DEF로 정의하고 CALL로 재사용하도록 권해줘.
+예: DEF 세모 { REPEAT 3 { FORWARD 60 RIGHT 120 } } 후 CALL 세모
 
 출력 규칙:
 1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
 2. 질문/대화할 때는 코드 없이 한국어만.
-3. 각 명령어는 한 줄에 하나씩. REPEAT 중괄호 짝 맞출 것.
+3. 각 명령어는 한 줄에 하나씩. 중괄호 짝 맞출 것.
 4. 색상은 #RRGGBB (ff0000, ffff00, 00cc00, 0000ff, ff8800, 8800ff, ffffff, 000000, ff66cc 중 선택).`;
 
 const PIXEL_PROMPT=`너는 초등학생과 함께 LED 전광판을 고치는 로봇 '픽셀'이야.
@@ -1176,7 +1353,9 @@ FILL_ALL #hex, FILL_ROW y #hex, FILL_COL x #hex, CLEAR_ALL,
 SHOW_ICON name (HEART,SMILEY,SAD,ARROW_UP,ARROW_DOWN,ARROW_LEFT,ARROW_RIGHT,CHECK,X,DIAMOND,SQUARE),
 REPEAT n { ... }, FOR var from to { ... },
 ON_BUTTON_A { ... }, ON_BUTTON_B { ... }, ON_SHAKE { ... }, ON_START { ... },
-IF BUTTON_A { ... } ELSE { ... }, WAIT ms
+IF BUTTON_A { ... } ELSE { ... }, WAIT ms,
+RECT x1 y1 x2 y2 #hex (네모 영역 채우기), BLINK x y n (n번 깜빡),
+DEF 이름 { ... } (함수 정의), CALL 이름 (함수 부르기)
 
 출력 규칙:
 1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
@@ -1197,6 +1376,15 @@ function glossLine(l){
     if(m=l.match(/^PEN_SIZE\s+(\S+)/))return'펜 굵기를 '+m[1]+'로';
     if(l==='HOME')return'처음 위치로 돌아가기';
     if(l==='CLEAR')return'화면 지우기';
+    if(m=l.match(/^JUMP\s+(\S+)/))return m[1]+'만큼 점프 (선 없이 이동)';
+    if(m=l.match(/^CIRCLE\s+(\S+)/))return'반지름 '+m[1]+'인 원 그리기';
+    if(m=l.match(/^SAY\s+(.+)/))return'"'+m[1]+'" 말하기 💬';
+    if(m=l.match(/^STAMP\s+(.+)/))return m[1]+' 도장 찍기';
+    if(m=l.match(/^BG\s+(\S+)/))return'배경색 바꾸기';
+    if(m=l.match(/^DEF\s+(\S+)/))return'┌ 📦 함수 "'+m[1]+'" 만들기';
+    if(m=l.match(/^CALL\s+(\S+)/))return'📦 함수 "'+m[1]+'" 부르기';
+    if(m=l.match(/^RECT\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/))return'('+m[1]+','+m[2]+')부터 ('+m[3]+','+m[4]+')까지 네모 채우기';
+    if(m=l.match(/^BLINK\s+(\d+)\s+(\d+)\s+(\d+)/))return'(x:'+m[1]+', y:'+m[2]+') '+m[3]+'번 깜빡이기';
     if(m=l.match(/^REPEAT\s+(\d+)/))return'┌ 아래를 '+m[1]+'번 반복!';
     if(m=l.match(/^FOR\s+(\w+)\s+(\d+)\s+(\d+)/))return'┌ '+m[1]+'를 '+m[2]+'부터 '+m[3]+'까지 반복!';
     if(l==='}')return'└ 반복 끝';
@@ -1217,6 +1405,69 @@ function glossLine(l){
     if(l.startsWith('ELSE'))return'├ 아니면';
     return'';
 }
+// "~하니까 → 이 블록!" 추론 문장 생성 (프롬프트→블록 사고 과정 시각화)
+function reasonForLine(l){
+    let m;
+    if(m=l.match(/^REPEAT\s+(\d+)/))return'같은 동작이 '+m[1]+'번 되풀이되네? 그럼 반복 블록으로 묶으면 돼!';
+    if(m=l.match(/^FORWARD\s+(\S+)/))return'"앞으로 '+m[1]+'"이라고 했으니까';
+    if(m=l.match(/^BACKWARD\s+(\S+)/))return'뒤로 물러나야 하니까';
+    if(m=l.match(/^RIGHT\s+(\S+)/))return'방향을 오른쪽으로 '+m[1]+'° 꺾어야 하니까';
+    if(m=l.match(/^LEFT\s+(\S+)/))return'방향을 왼쪽으로 '+m[1]+'° 꺾어야 하니까';
+    if(l==='PEN_UP')return'선을 안 그리고 이동해야 하니까';
+    if(l==='PEN_DOWN')return'다시 선을 그려야 하니까';
+    if(m=l.match(/^PEN_COLOR/))return'색을 바꾸고 싶다고 했으니까';
+    if(m=l.match(/^PEN_SIZE/))return'선 굵기를 바꿔야 하니까';
+    if(l==='HOME')return'출발점으로 돌아가야 하니까';
+    if(l==='CLEAR')return'화면을 깨끗이 해야 하니까';
+    if(m=l.match(/^JUMP/))return'선 없이 자리만 옮겨야 하니까';
+    if(m=l.match(/^CIRCLE/))return'동그라미를 그려 달라고 했으니까';
+    if(m=l.match(/^SAY/))return'거북이가 말을 해야 하니까';
+    if(m=l.match(/^STAMP/))return'그림 도장을 찍고 싶다고 했으니까';
+    if(m=l.match(/^BG/))return'배경을 바꾸고 싶다고 했으니까';
+    if(m=l.match(/^DEF\s+(\S+)/))return'"'+m[1]+'" 동작을 여러 번 쓸 거니까 함수로 저장해 두자!';
+    if(m=l.match(/^CALL\s+(\S+)/))return'아까 만든 "'+m[1]+'" 함수를 그대로 쓰면 되니까';
+    if(m=l.match(/^LED_ON\s+(\d+)\s+(\d+)/))return'(x:'+m[1]+', y:'+m[2]+') 칸에 불을 켜야 하니까';
+    if(m=l.match(/^LED_OFF/))return'이 칸은 꺼야 하니까';
+    if(m=l.match(/^LED_COLOR/))return'이 칸만 다른 색으로 켜야 하니까';
+    if(m=l.match(/^FILL_ROW\s+(\d+)/))return'y:'+m[1]+' 가로줄을 통째로 켜야 하니까';
+    if(m=l.match(/^FILL_COL\s+(\d+)/))return'x:'+m[1]+' 세로줄을 통째로 켜야 하니까';
+    if(m=l.match(/^FILL_ALL/))return'전체를 한 번에 채워야 하니까';
+    if(m=l.match(/^RECT/))return'네모난 영역을 통째로 칠해야 하니까';
+    if(l==='CLEAR_ALL')return'화면을 깨끗이 해야 하니까';
+    if(m=l.match(/^SHOW_ICON/))return'준비된 아이콘을 쓰면 빠르니까';
+    if(m=l.match(/^WAIT/))return'잠깐 멈췄다가 다음 동작을 해야 하니까';
+    if(m=l.match(/^BLINK/))return'반짝반짝 깜빡여야 하니까';
+    if(m=l.match(/^ON_BUTTON_(\w+)/))return'"버튼 '+m[1]+'을 누르면"이라고 했으니까';
+    if(l.startsWith('ON_SHAKE'))return'"흔들면"이라고 했으니까';
+    if(l.startsWith('ON_START'))return'시작하자마자 실행돼야 하니까';
+    if(m=l.match(/^IF/))return'조건에 따라 다르게 움직여야 하니까';
+    if(m=l.match(/^FOR\s+(\w+)/))return m[1]+' 값을 하나씩 바꿔가며 반복해야 하니까';
+    return'다음 동작이 필요하니까';
+}
+
+// AI 답변 → 블록이 하나씩 쌓이며 추론 과정이 채팅에 표시되는 조립 애니메이션
+function animateAssembly(dsl){
+    return new Promise(resolve=>{
+        const blocks=workspace.getAllBlocks(true);
+        if(!blocks.length)return resolve();
+        const lines=dsl.split('\n').map(s=>s.trim()).filter(s=>s&&s!=='}'&&!s.startsWith('ELSE'));
+        blocks.forEach(b=>{const r=b.getSvgRoot();if(r){r.style.transition='opacity .25s';r.style.opacity='0';}});
+        const card=document.createElement('div');card.className='chat-msg think';
+        card.innerHTML='<b>🧠 '+(currentMode==='turtle'?'토토':'픽셀')+'의 생각 — 네 말을 이렇게 블록으로 바꿨어!</b>';
+        const h=document.getElementById('chatHistory');h.appendChild(card);h.scrollTop=999999;
+        let i=0;
+        (function step(){
+            if(i>=blocks.length){workspace.render();return resolve();}
+            const raw=(lines[i]||'').replace(/\s*\{$/,'');
+            const row=document.createElement('div');row.className='think-row';
+            row.innerHTML='<span class="think-why">'+reasonForLine(raw)+'</span><span class="think-block">→ 🧩 '+(glossLine(raw)||raw)+'</span>';
+            card.appendChild(row);h.scrollTop=999999;
+            const r=blocks[i].getSvgRoot();if(r)r.style.opacity='1';
+            i++;setTimeout(step,480);
+        })();
+    });
+}
+
 function addCodeMsg(dsl){
     const div=document.createElement('div');div.className='chat-msg code';
     const lines=dsl.split('\n').map(l=>l.trim()).filter(l=>l);
@@ -1256,15 +1507,18 @@ async function sendChat(){
         chatMessages.push({role:'assistant',content:reply});
 
         const isDSL = currentMode==='turtle'
-            ? /^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|REPEAT|HOME|CLEAR)/m.test(reply)
-            : /^(LED_ON|LED_OFF|LED_COLOR|LED_TOGGLE|FILL_|CLEAR_ALL|SHOW_ICON|REPEAT|ON_|IF |FOR |WAIT)/m.test(reply);
+            ? /^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|REPEAT|HOME|CLEAR|JUMP|CIRCLE|SAY|STAMP|BG|DEF|CALL)/m.test(reply)
+            : /^(LED_ON|LED_OFF|LED_COLOR|LED_TOGGLE|FILL_|CLEAR_ALL|SHOW_ICON|REPEAT|ON_|IF |FOR |WAIT|RECT|BLINK|DEF|CALL)/m.test(reply);
 
         if(isDSL){
             try{
+                // 1단계: 블록을 만들되 숨겨두고, 추론 과정과 함께 하나씩 쌓기
                 dslToWorkspace(reply); updateDSLPreview();
-                addCodeMsg(reply);
+                await animateAssembly(reply);
                 const blockCount=workspace.getAllBlocks(false).length;
-                addChatMsg('ai',(currentMode==='turtle'?'🐢':'🤖')+' 블록 '+blockCount+'개 완성! 코드와 그림을 비교해 보고, 다르면 다시 말해줘.');
+                addChatMsg('ai',(currentMode==='turtle'?'🐢':'🤖')+' 블록 '+blockCount+'개 완성! 이제 실행해 볼게~');
+                // 2단계: 블록이 다 쌓인 뒤에 실행
+                await new Promise(r=>setTimeout(r,600));
                 if(currentMode==='turtle'){
                     const cmds=parseTurtleDSL(reply);
                     animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(reply);});
@@ -1284,11 +1538,17 @@ async function sendChat(){
     finally{isProcessing=false;document.getElementById('sendBtn').disabled=false;}
 }
 
+let hintStage=0; // 단계형 힌트: 1차=관찰 힌트, 2차=수학 돋보기
 function requestHint(){
     if(!currentMission){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
-    addChatMsg('system','💡 힌트: '+currentMission.hint);
     const sd=getStoryData(currentMission);
-    if(sd.math)addMathMsg(sd.math);
+    if(hintStage===0||!sd.math){
+        addChatMsg('system','💡 힌트: '+currentMission.hint);
+        if(sd.math)addChatMsg('system','한 번 더 누르면 🔍 수학 돋보기가 열려요!');
+        hintStage=1;
+    }else{
+        addMathMsg(sd.math);
+    }
 }
 
 // ============================================================
@@ -1296,7 +1556,7 @@ function requestHint(){
 // ============================================================
 const TURTLE_MISSIONS=[
     // ── 3학년 1학기 ──
-    {id:1,title:'직선 긋기',level:'3-1',levelColor:'#4CAF50',
+    {id:1,title:'선분 긋기',level:'3-1',levelColor:'#4CAF50',
      description:'시연을 보고 똑같이 만들어 보세요!',
      hint:'거북이를 앞으로 보내면 돼요. 얼마나 갈까요?',
      targetDSL:'FORWARD 100',tolerance:15},
@@ -1313,26 +1573,26 @@ const TURTLE_MISSIONS=[
      hint:'모든 변의 길이와 각도가 같아요. 반복을 활용해 보세요.',
      targetDSL:'REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}',tolerance:15},
 
-    // ── 3학년 2학기 ──
-    {id:5,title:'정삼각형',level:'3-2',levelColor:'#2196F3',
-     description:'시연을 보고 똑같이 만들어 보세요!',
-     hint:'변의 길이와 내각을 관찰하세요. 반복이 가능할까요?',
-     targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
-    {id:6,title:'이등변삼각형',level:'3-2',levelColor:'#2196F3',
-     description:'시연을 보고 똑같이 만들어 보세요!',
-     hint:'변의 길이가 다 같지는 않아요. 각도도 잘 보세요.',
-     targetDSL:'FORWARD 120\nLEFT 50\nFORWARD 100\nLEFT 80\nFORWARD 100',tolerance:20},
-    {id:7,title:'직각삼각형',level:'3-2',levelColor:'#2196F3',
+    // ── 3-1 평면도형: 직각삼각형 ──
+    {id:7,title:'직각삼각형',level:'3-1',levelColor:'#4CAF50',
      description:'시연을 보고 똑같이 만들어 보세요!',
      hint:'내각 중 하나가 특별해요. 무슨 각도일까요?',
      targetDSL:'FORWARD 100\nLEFT 90\nFORWARD 80\nLEFT 141\nFORWARD 128',tolerance:25},
 
-    // ── 4학년 1학기 ──
-    {id:8,title:'예각삼각형',level:'4-1',levelColor:'#9C27B0',
+    // ── 4학년 각도·삼각형 ──
+    {id:5,title:'정삼각형',level:'4학년',levelColor:'#2196F3',
      description:'시연을 보고 똑같이 만들어 보세요!',
-     hint:'모든 내각이 어떤 범위에 있는지 관찰해 보세요.',
+     hint:'변의 길이와 내각을 관찰하세요. 반복이 가능할까요?',
      targetDSL:'REPEAT 3 {\nFORWARD 100\nRIGHT 120\n}',tolerance:15},
-    {id:9,title:'둔각삼각형',level:'4-1',levelColor:'#9C27B0',
+    {id:6,title:'이등변삼각형',level:'4학년',levelColor:'#2196F3',
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'변의 길이가 다 같지는 않아요. 각도도 잘 보세요.',
+     targetDSL:'FORWARD 120\nLEFT 50\nFORWARD 100\nLEFT 80\nFORWARD 100',tolerance:20},
+    {id:8,title:'예각삼각형',level:'4학년',levelColor:'#2196F3',
+     description:'시연을 보고 똑같이 만들어 보세요!',
+     hint:'세 각이 모두 90°보다 작아요. 그런데 세 변의 길이가 다 달라요!',
+     targetDSL:'FORWARD 115\nRIGHT 120\nFORWARD 141\nRIGHT 130\nFORWARD 130',tolerance:25},
+    {id:9,title:'둔각삼각형',level:'4학년',levelColor:'#2196F3',
      description:'시연을 보고 똑같이 만들어 보세요!',
      hint:'내각 중 하나가 90°보다 커요. 시연에서 확인해 보세요.',
      targetDSL:'FORWARD 100\nRIGHT 150\nFORWARD 100\nRIGHT 150\nFORWARD 180',tolerance:25},
@@ -1512,29 +1772,28 @@ const PIXEL_MISSIONS=[
 //  STORY WORLD (코드모스 스타일: 캐릭터 + 행성 챕터 + 미션 스토리)
 // ============================================================
 const TURTLE_CHAPTERS={
-    '3-1':{emoji:'🌱',name:'새싹 행성',story:'도형 에너지가 사라진 새싹 행성! 선과 직각을 되살려 마을을 밝히자.'},
-    '3-2':{emoji:'🔷',name:'크리스탈 행성',story:'세모 크리스탈이 산산조각 났어! 삼각형의 비밀을 찾아 복구하자.'},
-    '4-1':{emoji:'🔮',name:'마법 행성',story:'각의 크기에 따라 마법이 달라지는 행성! 예각과 둔각을 구분해야 해.'},
-    '4-2':{emoji:'🧩',name:'퍼즐 행성',story:'사각형과 다각형 퍼즐이 흩어졌어! 조각을 맞춰 성문을 열자.'},
-    '5학년':{emoji:'🪞',name:'거울 행성',story:'반쪽이 사라진 거울 행성! 대칭과 색의 규칙으로 원래 모습을 찾자.'},
+    '3-1':{emoji:'🌱',name:'새싹 행성',story:'선분·직각·사각형이 사라진 새싹 행성! 기본 도형을 되살려 마을을 밝히자. (3-1 평면도형 연계)'},
+    '4학년':{emoji:'🔷',name:'크리스탈 행성',story:'세모 크리스탈이 산산조각 났어! 여러 가지 삼각형의 비밀을 찾아 복구하자. (4학년 각도·삼각형 연계)'},
+    '4-2':{emoji:'🧩',name:'퍼즐 행성',story:'사각형과 다각형 퍼즐이 흩어졌어! 조각을 맞춰 성문을 열자. (4-2 사각형·다각형 연계)'},
+    '5학년':{emoji:'🪞',name:'거울 행성',story:'반쪽이 사라진 거울 행성! 대칭과 색의 규칙으로 원래 모습을 찾자. (5학년 대칭·규칙 연계)'},
     '도전':{emoji:'🌋',name:'용암 행성',story:'가장 뜨거운 시련의 행성! 배운 모든 것을 합쳐 별을 띄워라.'},
     '자유':{emoji:'🌈',name:'무지개 행성',story:'무엇이든 그릴 수 있는 상상의 행성! 너만의 작품을 남겨줘.'}
 };
 const TURTLE_STORY={
-    1:{story:'토토가 첫 에너지 길을 놓아야 해. 곧게 뻗은 빛의 길을 만들어 줘!',math:'거북이가 간 거리 = 선의 길이! 100만큼 가면 길이 100짜리 선분이 생겨요.'},
+    1:{story:'토토가 첫 에너지 길을 놓아야 해. 두 점을 곧게 잇는 빛의 길을 만들어 줘!',math:'두 점을 곧게 이은 선이 선분! 거북이가 100만큼 가면 길이 100인 선분이 생겨요. (끝없이 뻗으면 직선!)'},
     2:{story:'길이 뚝 끊겨 있어! 직각으로 꺾인 다리를 놓아 마을을 이어 줘.',math:'직각은 90°! 거북이가 90° 돌면 길이 직각으로 꺾여요.'},
     3:{story:'에너지 창고의 문이 사라졌어. 직사각형 문을 만들어 줘!',math:'직사각형은 마주 보는 변끼리 길이가 같아요. (긴 변, 짧은 변)이 2번씩!'},
     4:{story:'네 변이 똑같은 마법의 창문이 필요해. 반복의 힘을 쓰면 금방이야!',math:'정사각형: 90°씩 4번 돌면 90×4=360°. 한 바퀴 돌아 제자리로 와요!'},
     5:{story:'크리스탈 첫 조각! 세 변이 모두 똑같은 세모를 깎아 줘.',math:'정삼각형의 안쪽 각은 60°. 그런데 거북이가 도는 각은 180−60=120°!'},
     6:{story:'두 변만 길이가 같은 특별한 세모 조각이 필요해.',math:'이등변삼각형은 두 변의 길이가 같고, 두 밑각의 크기도 같아요.'},
-    7:{story:'크리스탈 틈에 꼭 맞는 직각 세모 조각을 만들어 줘!',math:'직각삼각형: 한 각이 정확히 90°! 나머지 두 각의 합도 90°예요.'},
-    8:{story:'모든 각이 뾰족한 세모 마법진을 그려야 마법이 발동돼.',math:'예각삼각형: 세 각이 모두 90°보다 작아요(예각).'},
+    7:{story:'마을 지붕을 받칠 직각 세모 버팀목이 필요해! 새싹 행성의 마지막 관문이야.',math:'직각삼각형: 한 각이 정확히 90°(직각)인 삼각형이에요!'},
+    8:{story:'모든 각이 뾰족한 세모 마법진을 그려야 마법이 발동돼. 이번엔 세 변이 다 달라!',math:'예각삼각형: 세 각(70°, 60°, 50°)이 모두 90°보다 작아요. 변이 달라도 각이 모두 예각이면 예각삼각형!'},
     9:{story:'한 각이 뭉툭한 세모가 성문을 지키고 있어. 똑같이 만들면 통과!',math:'둔각삼각형: 한 각이 90°보다 커요(둔각). 거북이는 바깥쪽 각만큼 돌아요!'},
     10:{story:'기울어진 퍼즐 조각을 찾았어! 마주 보는 변이 평행해.',math:'평행사변형: 이웃한 두 각의 합이 180°예요. (60°+120°=180°)'},
     11:{story:'네 변이 모두 같은 다이아몬드 조각이야. 반짝반짝!',math:'마름모: 네 변의 길이가 모두 같아요. 평행사변형과 무엇이 다를까요?'},
     12:{story:'위아래만 평행한 사다리꼴 조각으로 다리를 완성하자.',math:'사다리꼴: 평행한 변이 한 쌍! 나란한 두 변을 찾아보세요.'},
-    13:{story:'다섯 별빛 탑을 세워야 해. 외각의 비밀을 기억해!',math:'다각형 외각의 합은 언제나 360°! 정오각형은 360÷5=72°씩 돌아요.'},
-    14:{story:'벌집 모양 에너지 셀을 복구하자. 몇 도씩 돌면 될까?',math:'정육각형은 360÷6=60°씩! 변이 많아질수록 조금씩 돌아요.'},
+    13:{story:'다섯 별빛 탑을 세워야 해. 거북이가 도는 각의 비밀을 기억해!',math:'도형을 한 바퀴 돌면 거북이가 돈 각의 합은 꼭 360°! 다섯 번으로 나누면 360÷5=72°씩.'},
+    14:{story:'벌집 모양 에너지 셀을 복구하자. 몇 도씩 돌면 될까?',math:'여섯 번 돌아 한 바퀴: 360÷6=60°씩! 변이 많아질수록 조금씩 돌아요.'},
     15:{story:'거울 행성의 반쪽이 사라졌어! 좌우가 똑같은 대칭 무늬를 그려 줘.',math:'선대칭 도형: 접으면 완전히 포개져요. 색이 바뀌는 곳이 대칭축!'},
     16:{story:'네 가지 색 에너지가 도는 사각형 회로를 만들어 줘!',math:'한 변마다 색이 바뀌는 순서(패턴)를 찾는 것도 수학이에요!'},
     17:{story:'용암 위로 별을 띄워라! 거북이가 크게 돌아야 별이 돼.',math:'별은 두 바퀴(720°)를 5번에 나눠 돌아요. 720÷5=144°!'},
@@ -1570,8 +1829,8 @@ const PIXEL_STORY={
     17:{story:'전광판에 웃는 얼굴을 띄워 우주에 인사하자!',math:'원은 중심에서 같은 거리에 있는 점들의 모임이에요!'},
     18:{story:'자유 아틀리에에 온 걸 환영해! 상상하는 그림을 말해 봐.',math:'좌표, 대칭, 반복… 배운 규칙을 모두 써 볼 수 있어요.'}
 };
-const TURTLE_CHIPS=['앞으로 100만큼 가줘','오른쪽으로 90도 돌아줘','앞으로 100 가고 오른쪽 120도 돌기를 3번 반복해줘','펜 색을 빨강으로 바꿔줘'];
-const PIXEL_CHIPS=['x 2, y 2 칸에 불을 켜줘','2번째 가로줄을 모두 켜줘','테두리만 켜줘','버튼 A를 누르면 하트가 나오게 해줘'];
+const TURTLE_CHIPS=['앞으로 100만큼 가줘','앞으로 100 가고 오른쪽 120도 돌기를 3번 반복해줘','세모 함수를 만들고 3번 불러줘','별을 그리고 "반짝!"이라고 말해줘'];
+const PIXEL_CHIPS=['x 2, y 2 칸에 불을 켜줘','2번째 가로줄을 모두 켜줘','가운데 칸을 5번 깜빡여줘','버튼 A를 누르면 하트가 나오게 해줘'];
 
 let completedTurtle=JSON.parse(localStorage.getItem('turtle_completed')||'[]');
 let completedPixel=JSON.parse(localStorage.getItem('pixel_completed')||'[]');
@@ -1670,6 +1929,7 @@ function selectMission(m){
 function startMissionPlay(){
     document.getElementById('storyModal').classList.remove('show');
     const m=currentMission;if(!m)return;
+    hintStage=0;
     clearWorkspace();
     chatMessages=[];document.getElementById('chatHistory').innerHTML='';
     addChatMsg('system',`🎯 미션 ${m.id}: ${m.title}`);
@@ -1679,13 +1939,13 @@ function startMissionPlay(){
     if(currentMode==='turtle'){
         resetTurtle();
         if(m.targetDSL){
+            // 수학 카드는 여기서 미리 보여주지 않는다 (발견학습: 힌트 2단계·성공 후 정리에서 제공)
             addChatMsg('system','👀 목표 모양을 시연할게요! 길이 숫자와 각도(°)를 잘 관찰하세요.');
             setTimeout(()=>animateTurtle(parseTurtleDSL(m.targetDSL),()=>{
-                addChatMsg('system','시연 완료! 👻 겹쳐보기로 목표가 흐리게 남아 있어요. 거북이에게 말로 설명해 보세요.');
-                if(sd.math)addMathMsg(sd.math);
-                resetTurtle();
+                addChatMsg('system','시연 완료! 잠시 후 👻 겹쳐보기만 남아요. 거북이에게 말로 설명해 보세요.');
+                setTimeout(()=>resetTurtle(),3000);
             }),400);
-        }else if(sd.math)addMathMsg(sd.math);
+        }
     }else{
         if(m.gridSize&&m.gridSize!==pixelGridSize){
             pixelGridSize=m.gridSize;
@@ -1735,6 +1995,8 @@ function checkTurtleMission(studentDSL){
         saveCompleted(currentMission.id);saveStars(currentMission.id,stars);confetti();
         showFeedback(true,'🎉 미션 성공!',starComment(stars),stars);
         addChatMsg('success','🎉 미션 성공! '+'⭐'.repeat(stars));
+        const sd=getStoryData(currentMission);
+        if(sd.math)addMathMsg('오늘의 정리 📚 '+sd.math);
     }
     else if(sim>=0.5)showFeedback(false,'거의 다 됐어요! 💪','목표와 '+Math.round(sim*100)+'% 비슷해요. 👻 겹쳐보기로 어디가 다른지 찾아보세요!',0);
     else addChatMsg('system','🤔 목표와 달라요. 👻 겹쳐보기와 💡 힌트를 활용해 보세요!');
