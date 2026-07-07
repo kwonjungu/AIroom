@@ -202,32 +202,44 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .ep-go{margin-top:8px;padding:8px 18px;border:none;border-radius:18px;background:linear-gradient(135deg,#FF9800,#FF6B6B);color:#fff;font-family:'Jua',sans-serif;font-size:14px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.2);}
 .episode-card.locked .ep-go{background:#b8c2cf;box-shadow:none;}
 
-/* ===== 스테이지 맵 (쿠키런식 2단계 — 뱀길) ===== */
+/* ===== 스테이지 맵 (게임식 — 가로 스크롤 월드맵) ===== */
 .ep-back{padding:6px 14px;border:1px solid var(--border);border-radius:16px;background:#fff;cursor:pointer;font-family:'Jua',sans-serif;font-size:14px;color:var(--primary);margin-right:6px;}
-.stage-intro{background:rgba(255,255,255,.9);border-radius:12px;padding:10px 14px;font-size:14px;color:#5A6B7F;margin-bottom:14px;text-align:center;}
-.stage-map{display:flex;flex-direction:column;gap:8px;padding:6px 0 16px;}
-.stage-row{display:flex;justify-content:space-evenly;align-items:flex-start;position:relative;padding:14px 0;}
-.stage-row.rev{flex-direction:row-reverse;}
-.stage-row::before{content:'';position:absolute;top:44px;left:12%;right:12%;border-top:4px dotted #B9C8DB;z-index:0;}
-.stage-node{position:relative;z-index:1;width:96px;text-align:center;cursor:pointer;transition:transform .15s;}
-.stage-node:hover{transform:translateY(-4px);}
-.stage-node.locked{cursor:not-allowed;filter:grayscale(.9);opacity:.6;}
-.stage-node.locked:hover{transform:none;}
-.sn-circle{position:relative;width:64px;height:64px;margin:0 auto;border-radius:50%;background:#fff;border:4px solid #B9C8DB;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.15);}
-.stage-node.done .sn-circle{border-color:var(--success);background:#F0FFF4;}
-.stage-node.current .sn-circle{border-color:#FF9800;background:#FFF8EC;animation:curPulse 1.6s ease-in-out infinite;}
-@keyframes curPulse{0%,100%{box-shadow:0 4px 10px rgba(0,0,0,.15),0 0 0 0 rgba(255,152,0,.5)}50%{box-shadow:0 4px 10px rgba(0,0,0,.15),0 0 0 12px rgba(255,152,0,0)}}
-.sn-circle img{width:30px;height:30px;}
+.stage-intro{background:rgba(255,255,255,.9);border-radius:12px;padding:10px 14px;font-size:14px;color:#5A6B7F;margin-bottom:12px;text-align:center;}
+.stage-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:16px;background:linear-gradient(180deg,#20204a 0%,#2d2b55 60%,#1b3a52 100%);box-shadow:inset 0 2px 12px rgba(0,0,0,.4);}
+.stage-scroll::-webkit-scrollbar{height:12px;}
+.stage-scroll::-webkit-scrollbar-thumb{background:#5a6b9e;border:3px solid #20204a;}
+.stage-track{position:relative;height:262px;}
+.stage-track>svg{position:absolute;inset:0;width:100%;height:100%;}
+.seg-under{fill:none;stroke:rgba(255,255,255,.85);stroke-width:16;stroke-linecap:round;}
+.seg{fill:none;stroke-width:9;stroke-linecap:round;}
+.seg.todo{stroke:#8b97ad;stroke-dasharray:1 16;}
+.seg.done{stroke:#51CF66;}
+.stage-start{position:absolute;transform:translate(-50%,-50%);font-family:'Jua',sans-serif;font-size:12px;color:#fff;background:#FF6B6B;padding:5px 12px;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.3);white-space:nowrap;}
+.stage-goal{position:absolute;transform:translate(-50%,-50%);text-align:center;width:84px;}
+.stage-goal img{width:52px;height:52px;filter:grayscale(1);opacity:.5;transition:all .4s;}
+.stage-goal.cleared img{filter:none;opacity:1;animation:starpop .6s ease both;}
+.stage-goal .sg-label{font-family:'Jua',sans-serif;font-size:11.5px;color:#ffd166;margin-top:2px;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+.stage-node{position:absolute;transform:translate(-50%,-50%);width:104px;text-align:center;cursor:pointer;transition:transform .15s;z-index:1;}
+.stage-node:hover{transform:translate(-50%,-50%) scale(1.07);}
+.stage-node.locked{cursor:not-allowed;}
+.stage-node.locked .sn-circle{filter:grayscale(.9);opacity:.75;}
+.stage-node.locked:hover{transform:translate(-50%,-50%);}
+.sn-circle{position:relative;width:66px;height:66px;margin:0 auto;border-radius:50%;background:radial-gradient(circle at 32% 28%,#ffffff,#e8eef6);border:4px solid #8b97ad;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 5px 0 rgba(0,0,0,.28),0 8px 16px rgba(0,0,0,.35);}
+.stage-node.done .sn-circle{border-color:#51CF66;background:radial-gradient(circle at 32% 28%,#ffffff,#dcf5e2);}
+.stage-node.current .sn-circle{border-color:#FF9800;background:radial-gradient(circle at 32% 28%,#fffdf6,#ffedcf);animation:curPulse 1.6s ease-in-out infinite;}
+@keyframes curPulse{0%,100%{box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 0 0 rgba(255,166,0,.55)}50%{box-shadow:0 5px 0 rgba(0,0,0,.28),0 0 0 14px rgba(255,166,0,0)}}
+.sn-circle>img{width:30px;height:30px;}
 .sn-num{font-family:'Jua',sans-serif;font-size:15px;line-height:1;color:var(--text);}
 .sn-icon{font-size:17px;line-height:1.2;}
-.sn-char{position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:52px;height:52px;z-index:2;animation:floaty 2s ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));pointer-events:none;}
-.sn-title{margin-top:6px;font-family:'Jua',sans-serif;font-size:12.5px;word-break:keep-all;}
+.sn-char{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:50px;height:50px;z-index:2;animation:floaty 2s ease-in-out infinite;filter:drop-shadow(0 5px 7px rgba(0,0,0,.45));pointer-events:none;}
+.sn-badge{position:absolute;top:-7px;right:9px;width:24px!important;height:24px!important;z-index:2;}
+.sn-title{margin-top:5px;font-family:'Jua',sans-serif;font-size:13px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7);word-break:keep-all;}
 .sn-stars{margin-top:2px;height:16px;display:flex;justify-content:center;gap:1px;}
-.sn-stars img{width:14px;height:14px;}
-.sn-stars .sn-dim{filter:grayscale(1);opacity:.3;}
-.sn-free{font-size:11px;font-weight:800;color:#E91E63;}
+.sn-stars img{width:15px;height:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
+.sn-stars .sn-dim{filter:grayscale(1);opacity:.35;}
+.sn-free{font-size:11px;font-weight:800;color:#FF8FB5;}
+.stage-hint{font-size:12px;color:var(--text-light);text-align:center;margin-top:8px;}
 @media(max-width:600px){
-    .stage-node{width:30%;}
     .ep-thumb{width:72px;height:72px;}
     .ep-thumb img{width:58px;height:58px;}
 }
@@ -3434,38 +3446,70 @@ function renderStageMap(key){
     const intro=document.createElement('div');intro.className='stage-intro';intro.textContent=ch.story;g.appendChild(intro);
     // 현재 도전할 스테이지 = 잠금 해제됐지만 아직 못 깬 첫 미션
     const currentId=(list.find(m=>isUnlocked(m)&&!completed.includes(m.id))||{}).id;
-    const map=document.createElement('div');map.className='stage-map';
     const charSvg=currentMode==='pixel'?'pixel-hello':'toto-hello';
-    // 3개씩 지그재그 배치 (뱀길)
-    for(let r=0;r*3<list.length;r++){
-        const row=document.createElement('div');
-        row.className='stage-row'+(r%2?' rev':'');
-        const slice=list.slice(r*3,r*3+3);
-        slice.forEach((m,i)=>{
-            const gi=r*3+i;
-            const done=completed.includes(m.id),unlocked=isUnlocked(m),isCur=m.id===currentId;
-            const st=stars[m.id]||0;
-            const node=document.createElement('div');
-            node.className='stage-node'+(done?' done':'')+(unlocked?'':' locked')+(isCur?' current':'');
-            const starRow=isFreeMission(m)?'<span class="sn-free">자유</span>':
-                [1,2,3].map(k=>`<img src="/assets/vibe/${done&&k<=Math.max(st,1)?'ui-star.png':'ui-star.png'}" class="${done&&k<=Math.max(st,1)?'':'sn-dim'}" alt="">`).join('');
-            node.innerHTML=`
-                ${isCur?`<img class="sn-char" src="/assets/vibe/${charSvg}.svg" alt="여기!">`:''}
-                <div class="sn-circle">${unlocked?`<span class="sn-num">${gi+1}</span><span class="sn-icon">${icons[m.id]||'🪐'}</span>`:'<img src="/assets/vibe/ui-lock.png" alt="잠김">'}</div>
-                <div class="sn-title">${m.title}</div>
-                <div class="sn-stars">${done||isFreeMission(m)?starRow:''}</div>`;
-            node.onclick=()=>{
-                if(!unlocked){
-                    node.style.animation='shake .4s';setTimeout(()=>node.style.animation='',420);
-                    return;
-                }
-                selectMission(m);
-            };
-            row.appendChild(node);
-        });
-        map.appendChild(row);
+    const allDone=list.filter(m=>!isFreeMission(m)).every(m=>completed.includes(m.id))&&list.some(m=>!isFreeMission(m));
+    // ── 가로 스크롤 월드맵: SVG 곡선 길 위에 스테이지 배치 ──
+    const GAP=136,PADX=110,H=262;
+    const scroll=document.createElement('div');scroll.className='stage-scroll';
+    const track=document.createElement('div');track.className='stage-track';
+    const W=PADX*2+GAP*list.length+40;
+    track.style.width=W+'px';
+    const py=i=>138+34*Math.sin(i*1.15+0.6); // 완만한 물결 높이
+    const pts=list.map((m,i)=>({x:PADX+i*GAP,y:py(i)}));
+    const goal={x:PADX+list.length*GAP,y:py(list.length)};
+    const all=[...pts,goal];
+    // 길: 흰 바탕 도로 + 구간별 초록(해결)/점선(미해결)
+    const seg=(p,q)=>{const mx=(p.x+q.x)/2;return `M ${p.x} ${p.y} C ${mx} ${p.y}, ${mx} ${q.y}, ${q.x} ${q.y}`;};
+    let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
+    for(let i=1;i<all.length;i++)svg+=`<path class="seg-under" d="${seg(all[i-1],all[i])}"/>`;
+    for(let i=1;i<all.length;i++){
+        const cleared=completed.includes(list[i-1].id)||isFreeMission(list[i-1]);
+        svg+=`<path class="seg ${cleared?'done':'todo'}" d="${seg(all[i-1],all[i])}"/>`;
     }
-    g.appendChild(map);
+    svg+='</svg>';
+    track.innerHTML=svg;
+    // 출발 팻말
+    const start=document.createElement('div');start.className='stage-start';
+    start.style.left=(PADX-72)+'px';start.style.top=pts[0].y+'px';start.textContent='출발!';
+    track.appendChild(start);
+    // 스테이지 노드
+    list.forEach((m,gi)=>{
+        const done=completed.includes(m.id),unlocked=isUnlocked(m),isCur=m.id===currentId;
+        const st=stars[m.id]||0;
+        const node=document.createElement('div');
+        node.className='stage-node'+(done?' done':'')+(unlocked?'':' locked')+(isCur?' current':'');
+        node.style.left=pts[gi].x+'px';node.style.top=pts[gi].y+'px';
+        const starRow=isFreeMission(m)?'<span class="sn-free">자유</span>':
+            [1,2,3].map(k=>`<img src="/assets/vibe/ui-star.png" class="${done&&k<=Math.max(st,1)?'':'sn-dim'}" alt="">`).join('');
+        node.innerHTML=`
+            ${isCur?`<img class="sn-char" src="/assets/vibe/${charSvg}.svg" alt="여기!">`:''}
+            ${done?'<img class="sn-badge" src="/assets/vibe/ui-check.png" alt="완료">':''}
+            <div class="sn-circle">${unlocked?`<span class="sn-num">${gi+1}</span><span class="sn-icon">${icons[m.id]||'🪐'}</span>`:'<img src="/assets/vibe/ui-lock.png" alt="잠김">'}</div>
+            <div class="sn-title">${m.title}</div>
+            <div class="sn-stars">${starRow}</div>`;
+        node.onclick=()=>{
+            if(!unlocked){
+                node.style.animation='shake .4s';setTimeout(()=>node.style.animation='',420);
+                return;
+            }
+            selectMission(m);
+        };
+        track.appendChild(node);
+    });
+    // 골인 지점: 트로피 (에피소드 클리어 시 금색으로)
+    const goalEl=document.createElement('div');
+    goalEl.className='stage-goal'+(allDone?' cleared':'');
+    goalEl.style.left=goal.x+'px';goalEl.style.top=goal.y+'px';
+    goalEl.innerHTML=`<img src="/assets/vibe/ui-trophy.png" alt="트로피"><div class="sg-label">${allDone?'클리어! 🎉':'에피소드 클리어'}</div>`;
+    track.appendChild(goalEl);
+    scroll.appendChild(track);g.appendChild(scroll);
+    const hint=document.createElement('div');hint.className='stage-hint';hint.textContent='← 옆으로 밀어서 모든 스테이지를 볼 수 있어요 →';
+    g.appendChild(hint);
+    // 현재 스테이지가 화면 가운데 오도록 자동 스크롤
+    requestAnimationFrame(()=>{
+        const cur=track.querySelector('.stage-node.current')||track.querySelector('.stage-node');
+        if(cur)scroll.scrollLeft=Math.max(0,parseFloat(cur.style.left)-scroll.clientWidth/2);
+    });
 }
 
 function closeMissionSelector(){document.getElementById('missionModal').classList.remove('show');}
