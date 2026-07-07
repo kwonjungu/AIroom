@@ -1530,6 +1530,14 @@
             </div>
             <div style="font-size:12px;color:var(--text-light);margin-top:6px;">이름을 똑같이 입력하면 이전에 작성한 내용을 그대로 불러옵니다.</div>
         </div>
+        <div id="wsFortyOneBar" style="display:none;padding:12px 16px;background:#f1f8f1;border:1px solid #d3e8d3;border-radius:10px;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px;">📝 41조 연수 정보 <span style="font-weight:400;color:var(--text-light);">(허가원의 연수내용·장소·연락처 칸에 자동으로 들어갑니다)</span></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="wsFoContent" placeholder="연수 내용 (예: 교육공무원 인사실무편람 활용 연수)" oninput="wsSetFortyOneInfo()" style="flex:2;min-width:220px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                <input type="text" id="wsFoPlace" placeholder="연수 장소 (예: 자택 등)" oninput="wsSetFortyOneInfo()" style="flex:1;min-width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                <input type="text" id="wsFoNote" placeholder="비고·연락처 (예: 010-0000-0000)" oninput="wsSetFortyOneInfo()" style="flex:1;min-width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+            </div>
+        </div>
         <div id="wsGridWrapper" style="overflow:auto;max-height:600px;border:1px solid var(--border);border-radius:10px;">
             <table id="wsGrid" style="border-collapse:collapse;font-size:12px;width:max-content;min-width:100%;">
                 <thead id="wsGridHead"></thead>
@@ -11312,6 +11320,7 @@ function renderWinterSchedule(){
         idBar.style.display='none';
         who.textContent=`👤 ${wsMyName}`;
     }
+    wsSyncFortyOneBar();
 
     const cfg=wsData.config||{};
     if(!cfg.startDate||!cfg.endDate){
@@ -11518,6 +11527,36 @@ function renderWinterDailyStatus(){
     html+='</div>';
     if(!anyShown)html+='<div style="color:var(--text-light);font-size:13px;padding:12px;text-align:center;">표시할 데이터가 없습니다.</div>';
     box.innerHTML=html;
+}
+// 41조 연수 정보 (연수내용/장소/연락처) — 허가원 41조 기간표에 공통 적용
+function wsSyncFortyOneBar(){
+    const bar=document.getElementById('wsFortyOneBar');
+    if(!bar)return;
+    if(!wsMyStaffId){bar.style.display='none';return;}
+    bar.style.display='block';
+    const info=((wsData.entries||{})[wsMyStaffId]||{}).fortyOneInfo||{};
+    [['wsFoContent','content'],['wsFoPlace','place'],['wsFoNote','note']].forEach(([id,k])=>{
+        const el=document.getElementById(id);
+        if(el&&document.activeElement!==el)el.value=info[k]||'';
+    });
+}
+function wsSetFortyOneInfo(){
+    if(!wsMyStaffId)return;
+    if(!wsData.entries[wsMyStaffId]){
+        const me=(staff||[]).find(s=>s.id===wsMyStaffId);
+        wsData.entries[wsMyStaffId]={ staffId:wsMyStaffId, name:wsMyName, school:'백암초등학교', position:me?me.position:'교사', days:{} };
+    }
+    const entry=wsData.entries[wsMyStaffId];
+    entry.fortyOneInfo={
+        content:((document.getElementById('wsFoContent')||{}).value||'').trim(),
+        place:((document.getElementById('wsFoPlace')||{}).value||'').trim(),
+        note:((document.getElementById('wsFoNote')||{}).value||'').trim(),
+    };
+    if(_wsSaveTimer)clearTimeout(_wsSaveTimer);
+    _wsSaveTimer=setTimeout(async()=>{
+        const r=await api('PATCH',`/api/winter-schedule/entries/${wsMyStaffId}`,entry);
+        if(r&&r.success)showToast('저장됨','success');
+    },800);
 }
 let _wsSaveTimer=null;
 function wsSetCell(iso,value){

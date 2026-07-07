@@ -135,6 +135,19 @@ AIroom/
 - `summarize(days)` — 9개 카테고리 집계
 - `substituteHwpx(buf, replacements, xmlTransform)` — 저수준 zip-level 치환
 
+### ✅ 2026-07-08 — 허가원에 반응형 달력(근무상황일람표) 추가
+- 새 템플릿 `templates/permit-calendar-template.hwpx` (조성균 교감 수기 편집본 기반).
+  구조: 41조 기간표(4×5, 내용/장소/비고 포함) + **근무상황일람표 달력(9×7)** + 합계표(2×9) + 서명(2×1).
+  구 템플릿(permit-template.hwpx)과 `fillMainTable`은 레거시로 남겨둠 (근무 기간표는 달력으로 대체됨).
+- `buildCalendarWeeks(days, config)` — 방학 기간에 맞춰 주 수가 변하는 반응형 달력 데이터.
+  범위 = (시작일-1)=방학식 ~ (종료일+1)=개학식, 일~토 주 단위. 주말 빈칸, 평일 공휴일 '휴일',
+  방학식/개학식은 평일일 때만 라벨. 상태 표기: '41조연수'→'제41조', '오전근무/오후41조'→'근무/41조'.
+- `fillCalendarTable` — 주 단위 행 복제 (첫 주/중간 주/마지막 주 테두리 스타일 각각 다른 행 템플릿 사용, rowAddr 재번호).
+- `fill41Table` — 41조 기간표 재구성. 연수내용/장소/비고 컬럼 채움.
+- `entry.fortyOneInfo = {content, place, note}` — UI 입력(41조 연수 정보 바, `wsSetFortyOneInfo`)이
+  자동 계산된 모든 41조 기간에 공통 적용됨. HWPX/DOCX/HTML 3종 모두 반영.
+- 검증: `node _check/test-calendar-permit.js` — 조성균 샘플과 텍스트 완전 일치 확인.
+
 ### ✅ Phase 2 — Redis 스키마 + API 라우트
 - `defaults/winter-schedule.json` 초기값
 - server.js에 라우트 7개 추가
