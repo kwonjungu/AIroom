@@ -651,7 +651,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
         <div class="fb-stars" id="fbStars"></div>
         <div class="feedback-title" id="fbTitle"></div>
         <div class="feedback-text" id="fbText"></div>
-        <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn retry" id="fbMapBtn" onclick="closeFeedback();openMissionSelector();">🗺️ 지도로</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">다음 미션 →</button></div>
+        <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn retry hidden" id="fbMapBtn" onclick="closeFeedback();openMissionSelector();">🗺️ 지도로</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">🗺️ 지도로 가기</button></div>
     </div></div>
 </div>
 
@@ -3714,11 +3714,11 @@ function showFeedback(ok,title,text,stars){
     document.getElementById('feedbackModal').classList.add('show');
 }
 function closeFeedback(){document.getElementById('feedbackModal').classList.remove('show');}
+// 화면 흐름 고정: 메인 → 세부 스테이지(지도) → 미션.
+// 성공 후엔 반드시 지도로 돌아가 별이 채워진 걸 보고 다음 스테이지를 고른다.
 function nextMission(){
-    closeFeedback();if(!currentMission)return;
-    const ms=getMissions(),idx=ms.findIndex(m=>m.id===currentMission.id)+1;
-    if(idx<ms.length)selectMission(ms[idx]);
-    else addChatMsg('success','🏆 모든 미션 완료! 대단해요!');
+    closeFeedback();
+    openMissionSelector(); // 내 챕터 스테이지 맵으로 — 방금 깬 노드에 별, 다음 노드에 캐릭터 펄스
 }
 
 // ============================================================
