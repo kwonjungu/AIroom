@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 픽셀: 성공 포즈 (LED 하트 얼굴 + 두 팔 번쩍) -->
+  <defs>
+    <g id="led"><rect width="9" height="9" rx="2"/></g>
+  </defs>
+  <g stroke="#4A5568" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,-4)">
+    <path d="M90 174 Q100 196 110 174 Q105 181 100 179 Q95 181 90 174 Z" fill="#FFB74D" stroke="#F57C00" stroke-width="2.5"/>
+    <rect x="66" y="118" width="68" height="52" rx="16" fill="#EAF6F2"/>
+    <rect x="84" y="130" width="32" height="20" rx="5" fill="#7C4DFF" stroke="#5E35B1"/>
+    <circle cx="100" cy="140" r="5" fill="#B39DDB" stroke="none"/>
+    <!-- 두 팔 번쩍 -->
+    <path d="M66 128 Q46 112 48 94" fill="none" stroke="#4A5568" stroke-width="13"/>
+    <path d="M66 128 Q46 112 48 94" fill="none" stroke="#CFE7DF" stroke-width="7"/>
+    <path d="M134 128 Q154 112 152 94" fill="none" stroke="#4A5568" stroke-width="13"/>
+    <path d="M134 128 Q154 112 152 94" fill="none" stroke="#CFE7DF" stroke-width="7"/>
+    <circle cx="48" cy="92" r="8" fill="#7C4DFF" stroke="#5E35B1"/>
+    <circle cx="152" cy="92" r="8" fill="#7C4DFF" stroke="#5E35B1"/>
+    <line x1="100" y1="30" x2="100" y2="18"/>
+    <circle cx="100" cy="14" r="6" fill="#FF6B6B" stroke="#C62828"/>
+    <rect x="52" y="30" width="96" height="80" rx="20" fill="#F4FBF8"/>
+    <rect x="64" y="42" width="72" height="56" rx="10" fill="#1E1E32" stroke="#37374F"/>
+  </g>
+  <!-- LED 5x5: 하트 패턴 -->
+  <g fill="#FF6B9D" transform="translate(0,-4)">
+    <use href="#led" x="82" y="46"/><use href="#led" x="106" y="46"/>
+    <use href="#led" x="70" y="58"/><use href="#led" x="82" y="58"/><use href="#led" x="94" y="58"/><use href="#led" x="106" y="58"/><use href="#led" x="118" y="58"/>
+    <use href="#led" x="70" y="70"/><use href="#led" x="82" y="70"/><use href="#led" x="94" y="70"/><use href="#led" x="106" y="70"/><use href="#led" x="118" y="70"/>
+    <use href="#led" x="82" y="82"/><use href="#led" x="94" y="82"/><use href="#led" x="106" y="82"/>
+    <use href="#led" x="94" y="94"/>
+  </g>
+  <!-- 축하 별 -->
+  <path d="M166 48 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4 z" fill="#FFD166"/>
+  <path d="M28 56 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z" fill="#69F0AE"/>
+  <path d="M172 120 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#4A90D9"/>
+</svg>

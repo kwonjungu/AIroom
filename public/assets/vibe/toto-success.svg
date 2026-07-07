@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 토토: 성공 포즈 (두 팔 번쩍, 점프) -->
+  <g stroke="#1E6B43" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,-6)">
+    <ellipse cx="100" cy="128" rx="58" ry="50" fill="#2E9E5B"/>
+    <path d="M70 100 L100 92 L130 100 M62 128 L100 118 L138 128 M74 156 L100 148 L126 156 M100 92 L100 148" fill="none" stroke="#1E6B43" stroke-width="2.5" opacity=".55"/>
+    <rect x="34" y="108" width="24" height="40" rx="10" fill="#FF9800" stroke="#C66900"/>
+    <rect x="142" y="108" width="24" height="40" rx="10" fill="#FF9800" stroke="#C66900"/>
+    <ellipse cx="100" cy="134" rx="36" ry="34" fill="#FFF3C4" stroke="#D9B75A"/>
+    <path d="M84 122 H116 M80 136 H120 M86 150 H114" stroke="#E4CC85" stroke-width="2.5"/>
+    <!-- 두 팔 번쩍 -->
+    <path d="M50 122 Q34 100 38 82" fill="none" stroke="#1E6B43" stroke-width="14"/>
+    <path d="M50 122 Q34 100 38 82" fill="none" stroke="#6FCF8E" stroke-width="8"/>
+    <path d="M150 122 Q166 100 162 82" fill="none" stroke="#1E6B43" stroke-width="14"/>
+    <path d="M150 122 Q166 100 162 82" fill="none" stroke="#6FCF8E" stroke-width="8"/>
+    <!-- 점프한 발 (벌어짐) -->
+    <ellipse cx="72" cy="182" rx="14" ry="9" fill="#6FCF8E" transform="rotate(-14 72 182)"/>
+    <ellipse cx="128" cy="182" rx="14" ry="9" fill="#6FCF8E" transform="rotate(14 128 182)"/>
+    <circle cx="100" cy="58" r="34" fill="#7ED97E"/>
+    <path d="M68 42 Q100 30 132 42" fill="none" stroke="#FF9800" stroke-width="7"/>
+    <circle cx="84" cy="36" r="10" fill="#BBDEFB" stroke="#E65100" stroke-width="3"/>
+    <circle cx="116" cy="36" r="10" fill="#BBDEFB" stroke="#E65100" stroke-width="3"/>
+  </g>
+  <!-- 얼굴: 활짝 웃음 (^ ^ 눈 + 벌린 입) -->
+  <g transform="translate(0,-6)">
+    <path d="M81 58 Q88 51 95 58" fill="none" stroke="#243B2F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M105 58 Q112 51 119 58" fill="none" stroke="#243B2F" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="78" cy="70" r="5" fill="#FFB3B3" opacity=".8"/>
+    <circle cx="122" cy="70" r="5" fill="#FFB3B3" opacity=".8"/>
+    <path d="M88 72 Q100 88 112 72 Z" fill="#B3403F" stroke="#1E6B43" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M93 78 Q100 82 107 78" fill="#FF8B8A" stroke="none"/>
+  </g>
+  <!-- 축하 별들 -->
+  <path d="M164 44 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4 z" fill="#FFD166"/>
+  <path d="M32 40 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z" fill="#FF6B6B"/>
+  <path d="M172 110 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#4A90D9"/>
+  <path d="M22 116 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 z" fill="#7C4DFF"/>
+</svg>

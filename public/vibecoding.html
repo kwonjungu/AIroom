@@ -42,8 +42,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .canvas-panel{flex:0 0 35%;min-width:280px;}
 .ctrl-btn{padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;}
 .ctrl-btn:hover{border-color:var(--primary);color:var(--primary);}
-.ctrl-btn.run{background:var(--primary);color:#fff;border-color:var(--primary);}
-.ctrl-btn.run:hover{background:var(--primary-dark);}
+.ctrl-btn.run{background:var(--primary);color:#fff;border-color:var(--primary);padding:9px 20px;font-size:15px;font-weight:800;border-radius:12px;box-shadow:0 3px 8px rgba(74,144,217,.4);}
+.ctrl-btn.run:hover{background:var(--primary-dark);transform:scale(1.04);}
 .ctrl-btn.demo{background:#FF9800;color:#fff;border-color:#FF9800;}
 
 /* --- Turtle Canvas --- */
@@ -193,6 +193,22 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .fb-stars .lit{animation:starpop .5s ease both;}
 .fb-stars .dim{opacity:.25;filter:grayscale(1);}
 @keyframes starpop{0%{transform:scale(0) rotate(-90deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
+/* ===== 온보딩 투어 (토토가 안내) ===== */
+.tour-layer{position:fixed;inset:0;z-index:2500;pointer-events:none;}
+.tour-layer.hidden{display:none;}
+.tour-spot{position:absolute;border-radius:16px;box-shadow:0 0 0 9999px rgba(20,20,40,.62);transition:all .45s cubic-bezier(.4,0,.2,1);pointer-events:none;}
+.tour-bubble{position:absolute;width:320px;max-width:calc(100vw - 24px);background:#fff;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.35);padding:16px;pointer-events:auto;transition:all .45s cubic-bezier(.4,0,.2,1);}
+.tour-bubble .tb-row{display:flex;gap:12px;align-items:center;}
+.tour-bubble img{width:84px;height:84px;flex-shrink:0;animation:floaty 2.6s ease-in-out infinite;}
+.tour-bubble .tb-text{font-size:15px;line-height:1.55;font-weight:600;color:var(--text);}
+.tour-bubble .tb-actions{margin-top:12px;display:flex;justify-content:space-between;align-items:center;}
+.tour-bubble .tb-step{font-size:12px;color:var(--text-light);font-weight:700;}
+.tour-next{padding:10px 22px;border:none;border-radius:12px;background:linear-gradient(135deg,#FF9800,#FF6B6B);color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(255,107,107,.4);}
+.tour-next:hover{transform:scale(1.05);}
+.tour-skip{background:none;border:none;color:var(--text-light);font-size:12px;cursor:pointer;text-decoration:underline;}
+.tour-wait{font-size:13px;color:#E65100;font-weight:800;animation:pulse-t 1.2s ease-in-out infinite;}
+@keyframes pulse-t{0%,100%{opacity:1}50%{opacity:.45}}
+
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:3000;overflow:hidden;}
 .confetti span{position:absolute;top:-40px;animation:cfall 2.2s ease-in forwards;}
 @keyframes cfall{to{transform:translateY(110vh) rotate(560deg);opacity:.7;}}
@@ -223,7 +239,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
             <span class="star-total" id="starTotal">⭐ 0</span>
         </div>
         <div class="header-actions">
-            <button class="hdr-btn" onclick="openMissionSelector()">🗺️ 모험 지도</button>
+            <button class="hdr-btn" id="mapBtn" onclick="openMissionSelector()">🗺️ 모험 지도</button>
+            <button class="hdr-btn" onclick="startTour()">❓ 도움말</button>
             <button class="hdr-btn" onclick="location.href='/'">← 돌아가기</button>
         </div>
     </div>
@@ -267,7 +284,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                     <span class="match-badge" id="matchMeter" hidden>🎯 0%</span>
                 </div>
                 <!-- Common -->
-                <button class="ctrl-btn run" onclick="runCode()">▶ 실행</button>
+                <button class="ctrl-btn run" id="runBtn" onclick="runCode()">▶ 실행</button>
                 <button class="ctrl-btn" onclick="resetView()">🔄 초기화</button>
                 <button class="ctrl-btn" onclick="saveArtwork()" title="내 작품을 그림 파일로 저장해요">💾 저장</button>
             </div>
@@ -323,7 +340,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         </div>
         <div class="chip-row" id="chipRow"></div>
         <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="어떻게 움직이면 좋을지 말로 설명해 보세요" onkeydown="if(event.key==='Enter')sendChat()">
+            <input type="text" id="chatInput" placeholder="예: 앞으로 100만큼 가 줘" onkeydown="if(event.key==='Enter')sendChat()">
             <button class="send-btn" id="sendBtn" onclick="sendChat()">전송</button>
         </div>
     </div>
@@ -346,6 +363,23 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         <div class="feedback-text" id="fbText"></div>
         <div><button class="feedback-btn retry" onclick="closeFeedback()">다시 도전</button><button class="feedback-btn next" id="fbNextBtn" onclick="nextMission()">다음 미션 →</button></div>
     </div></div>
+</div>
+
+<!-- 온보딩 투어 레이어 -->
+<div class="tour-layer hidden" id="tourLayer">
+    <div class="tour-spot" id="tourSpot"></div>
+    <div class="tour-bubble" id="tourBubble">
+        <div class="tb-row">
+            <img id="tourChar" src="/assets/vibe/toto-hello.svg" alt="토토">
+            <div class="tb-text" id="tourText"></div>
+        </div>
+        <div class="tb-actions">
+            <button class="tour-skip" onclick="endTour()">건너뛰기</button>
+            <span class="tb-step" id="tourStepLabel"></span>
+            <button class="tour-next" id="tourNextBtn" onclick="nextTourStep()">다음</button>
+            <span class="tour-wait hidden" id="tourWait"></span>
+        </div>
+    </div>
 </div>
 
 <!-- Story Intro Modal -->
@@ -986,8 +1020,8 @@ function parsePixelDSL(text,forBlocks){
 // ============================================================
 Blockly.defineBlocksWithJsonArray([
     // === TURTLE BLOCKS ===
-    {type:'t_forward',message0:'앞으로 %1 가기',args0:[{type:'field_number',name:'V',value:100,min:1,max:500}],previousStatement:null,nextStatement:null,colour:160},
-    {type:'t_backward',message0:'뒤로 %1 가기',args0:[{type:'field_number',name:'V',value:100,min:1,max:500}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_forward',message0:'앞으로 %1 가기',args0:[{type:'field_number',name:'V',value:100,min:1,max:2000}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_backward',message0:'뒤로 %1 가기',args0:[{type:'field_number',name:'V',value:100,min:1,max:2000}],previousStatement:null,nextStatement:null,colour:160},
     {type:'t_right',message0:'오른쪽 %1 도',args0:[{type:'field_number',name:'V',value:90,min:1,max:360}],previousStatement:null,nextStatement:null,colour:210},
     {type:'t_left',message0:'왼쪽 %1 도',args0:[{type:'field_number',name:'V',value:90,min:1,max:360}],previousStatement:null,nextStatement:null,colour:210},
     {type:'t_pen_up',message0:'펜 올리기',previousStatement:null,nextStatement:null,colour:50},
@@ -997,7 +1031,7 @@ Blockly.defineBlocksWithJsonArray([
     {type:'t_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:4,min:1,max:100}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
     {type:'t_home',message0:'처음 위치로',previousStatement:null,nextStatement:null,colour:290},
     {type:'t_clear',message0:'화면 지우기',previousStatement:null,nextStatement:null,colour:290},
-    {type:'t_jump',message0:'%1 만큼 점프 (선 없이)',args0:[{type:'field_number',name:'V',value:50,min:1,max:500}],previousStatement:null,nextStatement:null,colour:160},
+    {type:'t_jump',message0:'%1 만큼 점프 (선 없이)',args0:[{type:'field_number',name:'V',value:50,min:1,max:2000}],previousStatement:null,nextStatement:null,colour:160},
     {type:'t_circle',message0:'반지름 %1 원 그리기',args0:[{type:'field_number',name:'V',value:50,min:5,max:200}],previousStatement:null,nextStatement:null,colour:160},
     {type:'t_say',message0:'%1 말하기 💬',args0:[{type:'field_input',name:'T',text:'안녕!'}],previousStatement:null,nextStatement:null,colour:300},
     {type:'t_stamp',message0:'%1 도장 찍기',args0:[{type:'field_dropdown',name:'E',options:[['🌸 꽃','🌸'],['⭐ 별','⭐'],['❤️ 하트','❤️'],['🍀 클로버','🍀'],['🦋 나비','🦋'],['🌙 달','🌙'],['☀️ 해','☀️'],['🍎 사과','🍎'],['🐟 물고기','🐟'],['🏠 집','🏠']]}],previousStatement:null,nextStatement:null,colour:300},
@@ -1253,7 +1287,8 @@ function updateDSLPreview(){
 // ============================================================
 function runCode(){
     const dsl=workspaceToDSL();
-    if(!dsl){addChatMsg('system','블록이 비어있어요! 블록을 조합하거나 AI에게 요청해 보세요.');return;}
+    if(!dsl){addChatMsg('system','아직 블록이 없네? 블록을 끼우거나 나한테 말로 시켜 줘!');return;}
+    tourEvent('run');
     if(currentMode==='turtle'){
         const cmds=parseTurtleDSL(dsl);
         animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(dsl);});
@@ -1453,7 +1488,8 @@ function animateAssembly(dsl){
         const lines=dsl.split('\n').map(s=>s.trim()).filter(s=>s&&s!=='}'&&!s.startsWith('ELSE'));
         blocks.forEach(b=>{const r=b.getSvgRoot();if(r){r.style.transition='opacity .25s';r.style.opacity='0';}});
         const card=document.createElement('div');card.className='chat-msg think';
-        card.innerHTML='<b>🧠 '+(currentMode==='turtle'?'토토':'픽셀')+'의 생각 — 네 말을 이렇게 블록으로 바꿨어!</b>';
+        card.innerHTML='<b>🧠 '+(currentMode==='turtle'?'토토':'픽셀')+'의 생각 — 네 말을 이렇게 블록으로 바꿨어! <span style="font-weight:400;font-size:10px;color:#999;">(누르면 빨리 감기)</span></b>';
+        let fast=false;card.onclick=()=>{fast=true;};
         const h=document.getElementById('chatHistory');h.appendChild(card);h.scrollTop=999999;
         let i=0;
         (function step(){
@@ -1463,7 +1499,7 @@ function animateAssembly(dsl){
             row.innerHTML='<span class="think-why">'+reasonForLine(raw)+'</span><span class="think-block">→ 🧩 '+(glossLine(raw)||raw)+'</span>';
             card.appendChild(row);h.scrollTop=999999;
             const r=blocks[i].getSvgRoot();if(r)r.style.opacity='1';
-            i++;setTimeout(step,480);
+            i++;setTimeout(step,fast?60:480);
         })();
     });
 }
@@ -1488,7 +1524,7 @@ async function sendChat(){
     isProcessing=true; document.getElementById('sendBtn').disabled=true;
 
     const ld=document.createElement('div');ld.className='chat-msg ai';
-    ld.innerHTML='<span class="loading"></span> 생각하고 있어요...';
+    ld.innerHTML='<span class="loading"></span> '+(currentMode==='turtle'?'토토가 생각 중이야...':'픽셀이 계산 중이야...');
     document.getElementById('chatHistory').appendChild(ld);
     document.getElementById('chatHistory').scrollTop=999999;
 
@@ -1869,6 +1905,7 @@ const MISSION_ICONS_T={1:'➖',2:'📐',3:'🚪',4:'🪟',5:'🔺',6:'⛰️',7:
 const MISSION_ICONS_P={1:'💡',2:'🛣️',3:'⛰️',4:'🏥',5:'❤️',6:'😊',7:'🏰',8:'🏁',9:'🚦',10:'🌆',11:'❌',12:'🧱',13:'🌀',14:'⬆️',15:'💖',16:'🌟',17:'🙂',18:'🖌️'};
 
 function openMissionSelector(){
+    if(tourActive&&!tourEvent('map'))return; // 투어 중엔 지도 단계에서만 열림
     const missions=getMissions(),completed=getCompleted(),stars=getStars();
     const chapters=getChapters();
     const icons=currentMode==='turtle'?MISSION_ICONS_T:MISSION_ICONS_P;
@@ -1918,7 +1955,7 @@ function selectMission(m){
     // 스토리 인트로 먼저 보여주기 (코드모스 스타일)
     const ch=getChapters()[getChapterKey(m)]||{emoji:'🪐',name:''};
     const sd=getStoryData(m);
-    document.getElementById('storyChar').textContent=currentMode==='turtle'?'🐢':'🤖';
+    document.getElementById('storyChar').innerHTML='<img src="/assets/vibe/'+(currentMode==='turtle'?'toto-hello':'pixel-hello')+'.svg" alt="'+(currentMode==='turtle'?'토토':'픽셀')+'" style="width:96px;height:96px;">';
     document.getElementById('storyChapter').textContent=`${ch.emoji} ${ch.name} · 미션 ${m.id}`;
     document.getElementById('storyTitle').textContent=m.title;
     document.getElementById('storyText').innerHTML=(sd.story||m.description)+
@@ -1972,10 +2009,12 @@ function addMathMsg(text){
 function renderChips(m){
     const row=document.getElementById('chipRow');if(!row)return;
     row.innerHTML='<span class="chip-label">💬 이렇게 말해봐</span>';
-    const chips=(getStoryData(m)&&getStoryData(m).chips)||(currentMode==='turtle'?TURTLE_CHIPS:PIXEL_CHIPS);
+    const sd=m?getStoryData(m):null;
+    const chips=(sd&&sd.chips)||(currentMode==='turtle'?TURTLE_CHIPS:PIXEL_CHIPS);
     for(const c of chips){
         const s=document.createElement('span');s.className='chip';s.textContent=c;
-        s.onclick=()=>{const inp=document.getElementById('chatInput');inp.value=c;inp.focus();};
+        // 칩 탭 = 즉시 전송 (저학년 1탭 루프)
+        s.onclick=()=>{const inp=document.getElementById('chatInput');inp.value=c;sendChat();tourEvent('chip');};
         row.appendChild(s);
     }
 }
@@ -2039,7 +2078,8 @@ function checkPixelMission(){
 }
 
 function showFeedback(ok,title,text,stars){
-    document.getElementById('fbIcon').textContent=ok?'🎉':'💪';
+    const ch=currentMode==='turtle'?(ok?'toto-success':'toto-cheer'):(ok?'pixel-success':'pixel-think');
+    document.getElementById('fbIcon').innerHTML='<img src="/assets/vibe/'+ch+'.svg" alt="" style="width:110px;height:110px;">';
     const st=document.getElementById('fbStars');
     if(ok&&stars){
         st.innerHTML='';
@@ -2064,6 +2104,89 @@ function nextMission(){
 }
 
 // ============================================================
+//  온보딩 투어 — 토토가 나와서 사용법 안내 (행동형: 직접 눌러야 진행)
+// ============================================================
+let tourActive=false,tourIdx=0,tourSteps=[];
+function makeTourSteps(){return[
+    {target:null,char:'toto-hello',text:'안녕! 난 거북이 <b>토토</b>야.<br>나랑 같이 그림 그리는 법,<br>딱 4개만 알려줄게. 준비됐어?',btn:'그래!'},
+    {target:'.canvas-panel',char:'toto-hello',text:'여기는 내 <b>놀이터</b>야!<br>내가 여기서 걸어다니면서 선을 그려.',btn:'다음'},
+    {target:'.blockly-panel',char:'toto-think',text:'이 조각들이 내 <b>명령서(블록)</b>야.<br>블록을 끼운 순서대로 내가 움직여!<br>미리 하나 놓아 뒀어.',btn:'다음'},
+    {target:'#runBtn',char:'toto-hello',text:'이제 <b>▶ 실행</b> 단추를 직접 눌러 봐!',advance:'run',wait:'▶ 실행을 눌러 봐!',
+     praise:{char:'toto-success',text:'봤지? 방금 <b>네가 나를 움직인 거야!</b>'}},
+    {target:'.chat-panel',char:'toto-hello',text:'글자를 안 쳐도 돼!<br>아래 <b>파란 말풍선 단추</b>를 눌러서<br>나한테 말을 걸어 봐.',advance:'chip',wait:'말풍선 단추를 눌러 봐! 💬',
+     praise:{char:'toto-success',text:'우와! 네 말이 <b>블록으로 변하고 있어!</b>'}},
+    {target:'#mapBtn',char:'toto-success',text:'이제 진짜 모험이야!<br><b>🗺️ 모험 지도</b>를 눌러서<br>첫 번째 미션을 골라 줘!',advance:'map',wait:'모험 지도를 눌러 봐! 🗺️'}
+];}
+function startTour(){
+    tourSteps=makeTourSteps();tourIdx=0;tourActive=true;
+    closeMissionSelector();
+    document.getElementById('storyModal').classList.remove('show');
+    document.getElementById('tourLayer').classList.remove('hidden');
+    showTourStep();
+}
+function showTourStep(){
+    const st=tourSteps[tourIdx];if(!st)return endTour();
+    document.getElementById('tourChar').src='/assets/vibe/'+st.char+'.svg';
+    document.getElementById('tourText').innerHTML=st.text;
+    document.getElementById('tourStepLabel').textContent=(tourIdx+1)+' / '+tourSteps.length;
+    const nb=document.getElementById('tourNextBtn'),w=document.getElementById('tourWait');
+    if(st.advance){nb.classList.add('hidden');w.classList.remove('hidden');w.textContent=st.wait||'';}
+    else{nb.classList.remove('hidden');w.classList.add('hidden');nb.textContent=st.btn||'다음';}
+    const spot=document.getElementById('tourSpot'),bub=document.getElementById('tourBubble');
+    let r=null;
+    if(st.target){const el=document.querySelector(st.target);if(el)r=el.getBoundingClientRect();}
+    if(r){
+        spot.style.left=(r.left-6)+'px';spot.style.top=(r.top-6)+'px';
+        spot.style.width=(r.width+12)+'px';spot.style.height=(r.height+12)+'px';
+    }else{
+        spot.style.left='50vw';spot.style.top='42vh';spot.style.width='0px';spot.style.height='0px';
+    }
+    requestAnimationFrame(()=>{
+        const bw=bub.offsetWidth,bh=bub.offsetHeight,vw=innerWidth,vh=innerHeight;
+        let bx,by;
+        if(!r){bx=(vw-bw)/2;by=vh*0.30;}
+        else{
+            bx=Math.min(Math.max(r.left+r.width/2-bw/2,12),vw-bw-12);
+            by=r.bottom+14;
+            if(by+bh>vh-12)by=Math.max(r.top-bh-14,12);
+            if(by+bh>vh-12)by=(vh-bh)/2;
+        }
+        bub.style.left=bx+'px';bub.style.top=by+'px';
+    });
+    // 실행 단계: 시범 블록을 미리 놓아 줌 (즉각적 성공 경험)
+    if(st.advance==='run'&&workspace.getAllBlocks(false).length===0){
+        const b=workspace.newBlock('t_forward');b.setFieldValue(100,'V');
+        b.initSvg();b.render();b.moveBy(40,40);updateDSLPreview();
+    }
+    if(st.advance==='chip'&&!document.querySelector('#chipRow .chip'))renderChips(null);
+}
+function nextTourStep(){tourIdx++;if(tourIdx>=tourSteps.length)endTour();else showTourStep();}
+// 행동 이벤트 수신: run/chip/map — 해당 단계면 칭찬 말풍선으로 전환
+function tourEvent(kind){
+    if(!tourActive)return false;
+    const st=tourSteps[tourIdx];
+    if(!st||st.advance!==kind)return false;
+    if(kind==='map'){endTour();return true;}
+    st.advance=null;
+    setTimeout(()=>{
+        document.getElementById('tourChar').src='/assets/vibe/'+st.praise.char+'.svg';
+        document.getElementById('tourText').innerHTML=st.praise.text;
+        document.getElementById('tourNextBtn').classList.remove('hidden');
+        document.getElementById('tourWait').classList.add('hidden');
+    },kind==='run'?1400:700);
+    return true;
+}
+function endTour(){
+    if(!tourActive){document.getElementById('tourLayer').classList.add('hidden');return;}
+    tourActive=false;
+    document.getElementById('tourLayer').classList.add('hidden');
+    localStorage.setItem('vibe_onboarded','1');
+    clearWorkspace();resetTurtle();
+    setTimeout(()=>openMissionSelector(),300);
+}
+window.addEventListener('resize',()=>{if(tourActive)showTourStep();});
+
+// ============================================================
 //  INIT
 // ============================================================
 window.addEventListener('load',()=>{
@@ -2073,7 +2196,9 @@ window.addEventListener('load',()=>{
     workspace=Blockly.inject('blocklyDiv',{toolbox:TURTLE_TOOLBOX,scrollbars:true,trashcan:true,
         zoom:{controls:true,wheel:true,startScale:0.9},grid:{spacing:20,length:3,colour:'#eee',snap:true}});
     workspace.addChangeListener(updateDSLPreview);
-    setTimeout(()=>openMissionSelector(),500);
+    // 첫 방문: 토토 온보딩 투어 / 재방문: 모험 지도
+    if(!localStorage.getItem('vibe_onboarded'))setTimeout(()=>startTour(),600);
+    else setTimeout(()=>openMissionSelector(),500);
 });
 window.addEventListener('resize',()=>{resizeTurtleCanvas();if(workspace)Blockly.svgResize(workspace);});
 </script>

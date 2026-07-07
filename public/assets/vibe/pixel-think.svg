@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 픽셀: 생각 포즈 (LED 물음표 + 팔 턱에) -->
+  <defs>
+    <g id="led"><rect width="9" height="9" rx="2"/></g>
+  </defs>
+  <g stroke="#4A5568" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 172 Q100 190 108 172 Q104 178 100 176 Q96 178 92 172 Z" fill="#FFB74D" stroke="#F57C00" stroke-width="2.5"/>
+    <rect x="66" y="118" width="68" height="52" rx="16" fill="#EAF6F2"/>
+    <rect x="84" y="130" width="32" height="20" rx="5" fill="#7C4DFF" stroke="#5E35B1"/>
+    <circle cx="100" cy="140" r="5" fill="#B39DDB" stroke="none"/>
+    <!-- 왼팔 내림 / 오른팔 턱(머리 아래)으로 -->
+    <path d="M66 134 Q48 142 46 158" fill="none" stroke="#4A5568" stroke-width="13"/>
+    <path d="M66 134 Q48 142 46 158" fill="none" stroke="#CFE7DF" stroke-width="7"/>
+    <path d="M134 138 Q148 128 138 112" fill="none" stroke="#4A5568" stroke-width="13"/>
+    <path d="M134 138 Q148 128 138 112" fill="none" stroke="#CFE7DF" stroke-width="7"/>
+    <circle cx="46" cy="160" r="8" fill="#7C4DFF" stroke="#5E35B1"/>
+    <circle cx="136" cy="110" r="8" fill="#7C4DFF" stroke="#5E35B1"/>
+    <line x1="100" y1="30" x2="100" y2="18"/>
+    <circle cx="100" cy="14" r="6" fill="#FF6B6B" stroke="#C62828"/>
+    <!-- 머리 (살짝 기울임) -->
+    <g transform="rotate(-5 100 70)">
+      <rect x="52" y="30" width="96" height="80" rx="20" fill="#F4FBF8"/>
+      <rect x="64" y="42" width="72" height="56" rx="10" fill="#1E1E32" stroke="#37374F"/>
+    </g>
+  </g>
+  <!-- LED 5x5: 물음표 패턴 -->
+  <g fill="#FFD166" transform="rotate(-5 100 70)">
+    <use href="#led" x="82" y="46"/><use href="#led" x="94" y="46"/><use href="#led" x="106" y="46"/>
+    <use href="#led" x="106" y="58"/>
+    <use href="#led" x="94" y="70"/>
+    <use href="#led" x="94" y="88"/>
+  </g>
+  <!-- 떠오르는 생각 점들 -->
+  <circle cx="156" cy="46" r="4" fill="#B39DDB"/>
+  <circle cx="166" cy="34" r="6" fill="#9575CD"/>
+  <text x="174" y="26" font-size="24" font-weight="bold" fill="#7C4DFF" font-family="sans-serif">?</text>
+</svg>

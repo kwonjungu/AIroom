@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 토토: 인사 포즈 (한 손 흔들기) -->
+  <g stroke="#1E6B43" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 등껍질 -->
+    <ellipse cx="100" cy="128" rx="58" ry="50" fill="#2E9E5B"/>
+    <path d="M70 100 L100 92 L130 100 M62 128 L100 118 L138 128 M74 156 L100 148 L126 156 M100 92 L100 148" fill="none" stroke="#1E6B43" stroke-width="2.5" opacity=".55"/>
+    <!-- 배낭 (오렌지, 옆으로 살짝 보임) -->
+    <rect x="34" y="108" width="24" height="40" rx="10" fill="#FF9800" stroke="#C66900"/>
+    <rect x="142" y="108" width="24" height="40" rx="10" fill="#FF9800" stroke="#C66900"/>
+    <!-- 배 -->
+    <ellipse cx="100" cy="134" rx="36" ry="34" fill="#FFF3C4" stroke="#D9B75A"/>
+    <path d="M84 122 H116 M80 136 H120 M86 150 H114" stroke="#E4CC85" stroke-width="2.5"/>
+    <!-- 팔: 왼쪽 내림 / 오른쪽 번쩍 흔들기 -->
+    <path d="M52 138 Q38 150 40 164" fill="none" stroke="#1E6B43" stroke-width="14"/>
+    <path d="M52 138 Q38 150 40 164" fill="none" stroke="#6FCF8E" stroke-width="8"/>
+    <path d="M150 122 Q168 100 164 82" fill="none" stroke="#1E6B43" stroke-width="14"/>
+    <path d="M150 122 Q168 100 164 82" fill="none" stroke="#6FCF8E" stroke-width="8"/>
+    <!-- 발 -->
+    <ellipse cx="78" cy="180" rx="14" ry="9" fill="#6FCF8E"/>
+    <ellipse cx="122" cy="180" rx="14" ry="9" fill="#6FCF8E"/>
+    <!-- 머리 -->
+    <circle cx="100" cy="58" r="34" fill="#7ED97E"/>
+    <!-- 고글 (이마 위) -->
+    <path d="M68 42 Q100 30 132 42" fill="none" stroke="#FF9800" stroke-width="7"/>
+    <circle cx="84" cy="36" r="10" fill="#BBDEFB" stroke="#E65100" stroke-width="3"/>
+    <circle cx="116" cy="36" r="10" fill="#BBDEFB" stroke="#E65100" stroke-width="3"/>
+  </g>
+  <!-- 얼굴 (스트로크 없는 디테일) -->
+  <ellipse cx="88" cy="60" rx="8.5" ry="10" fill="#fff"/>
+  <ellipse cx="112" cy="60" rx="8.5" ry="10" fill="#fff"/>
+  <circle cx="89.5" cy="62" r="4.6" fill="#243B2F"/>
+  <circle cx="110.5" cy="62" r="4.6" fill="#243B2F"/>
+  <circle cx="91" cy="60" r="1.7" fill="#fff"/>
+  <circle cx="112" cy="60" r="1.7" fill="#fff"/>
+  <circle cx="78" cy="72" r="5" fill="#FFB3B3" opacity=".8"/>
+  <circle cx="122" cy="72" r="5" fill="#FFB3B3" opacity=".8"/>
+  <path d="M92 76 Q100 84 108 76" fill="none" stroke="#1E6B43" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- 반짝이 -->
+  <path d="M172 60 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z" fill="#FFD166"/>
+  <path d="M30 78 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill="#FFD166"/>
+</svg>

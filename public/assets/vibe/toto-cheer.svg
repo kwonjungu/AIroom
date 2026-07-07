@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- 토토: 응원 포즈 (파이팅 주먹, 따뜻한 미소) — 실패 위로용 -->
+  <g stroke="#1E6B43" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="100" cy="128" rx="58" ry="50" fill="#2E9E5B"/>
+    <path d="M70 100 L100 92 L130 100 M62 128 L100 118 L138 128 M74 156 L100 148 L126 156 M100 92 L100 148" fill="none" stroke="#1E6B43" stroke-width="2.5" opacity=".55"/>
+    <rect x="34" y="108" width="24" height="40" rx="10" fill="#FF9800" stroke="#C66900"/>
+    <rect x="142" y="108" width="24" height="40" rx="10" fill="#FF9800" stroke="#C66900"/>
+    <ellipse cx="100" cy="134" rx="36" ry="34" fill="#FFF3C4" stroke="#D9B75A"/>
+    <path d="M84 122 H116 M80 136 H120 M86 150 H114" stroke="#E4CC85" stroke-width="2.5"/>
+    <!-- 두 주먹 가슴 앞 파이팅 -->
+    <path d="M56 132 Q66 118 80 116" fill="none" stroke="#1E6B43" stroke-width="14"/>
+    <path d="M56 132 Q66 118 80 116" fill="none" stroke="#6FCF8E" stroke-width="8"/>
+    <path d="M144 132 Q134 118 120 116" fill="none" stroke="#1E6B43" stroke-width="14"/>
+    <path d="M144 132 Q134 118 120 116" fill="none" stroke="#6FCF8E" stroke-width="8"/>
+    <circle cx="82" cy="114" r="9" fill="#6FCF8E"/>
+    <circle cx="118" cy="114" r="9" fill="#6FCF8E"/>
+    <ellipse cx="78" cy="180" rx="14" ry="9" fill="#6FCF8E"/>
+    <ellipse cx="122" cy="180" rx="14" ry="9" fill="#6FCF8E"/>
+    <circle cx="100" cy="58" r="34" fill="#7ED97E"/>
+    <path d="M68 42 Q100 30 132 42" fill="none" stroke="#FF9800" stroke-width="7"/>
+    <circle cx="84" cy="36" r="10" fill="#BBDEFB" stroke="#E65100" stroke-width="3"/>
+    <circle cx="116" cy="36" r="10" fill="#BBDEFB" stroke="#E65100" stroke-width="3"/>
+  </g>
+  <!-- 얼굴: 따뜻한 미소 + 반짝 눈 -->
+  <ellipse cx="88" cy="60" rx="8.5" ry="10" fill="#fff"/>
+  <ellipse cx="112" cy="60" rx="8.5" ry="10" fill="#fff"/>
+  <circle cx="89.5" cy="61" r="4.6" fill="#243B2F"/>
+  <circle cx="110.5" cy="61" r="4.6" fill="#243B2F"/>
+  <circle cx="91" cy="59" r="1.7" fill="#fff"/>
+  <circle cx="112" cy="59" r="1.7" fill="#fff"/>
+  <circle cx="78" cy="72" r="5" fill="#FFB3B3" opacity=".8"/>
+  <circle cx="122" cy="72" r="5" fill="#FFB3B3" opacity=".8"/>
+  <path d="M92 75 Q100 82 108 75" fill="none" stroke="#1E6B43" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- 응원 하트 -->
+  <path d="M164 62 c0-6 8-9 11-4 3-5 11-2 11 4 0 6-11 13-11 13 s-11-7-11-13z" fill="#FF6B6B"/>
+  <path d="M26 70 c0-4 6-7 8-3 2-4 8-1 8 3 0 5-8 9-8 9 s-8-4-8-9z" fill="#FFB3B3"/>
+</svg>
