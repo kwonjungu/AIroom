@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -8,13 +8,15 @@
 <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
 <script src="https://unpkg.com/blockly/msg/ko.js"></script>
 <style>
-:root{--primary:#4A90D9;--primary-dark:#357ABD;--accent:#FF6B6B;--success:#51CF66;--bg:#F0F4F8;--card:#fff;--text:#2D3748;--text-light:#718096;--border:#E2E8F0;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,.08);}
+:root{--primary:#4A90D9;--primary-dark:#357ABD;--accent:#FF6B6B;--success:#51CF66;--bg:#F0F4F8;--card:#fff;--text:#2D3748;--text-light:#718096;--border:#E2E8F0;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,.08);--maze-cell:48px;}
+@media(max-width:1200px){:root{--maze-cell:40px;}}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 
 /* ===== HEADER ===== */
 .app-header{background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;padding:0;box-shadow:0 2px 12px rgba(0,0,0,.15);flex-shrink:0;transition:background .4s;}
 .app-header.pixel-mode{background:linear-gradient(135deg,#7C4DFF,#E040FB);}
+.app-header.maze-mode{background:linear-gradient(135deg,#3949AB,#00BCD4);}
 .header-top{padding:8px 20px;display:flex;align-items:center;justify-content:space-between;}
 .header-top h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;}
 .header-center{display:flex;align-items:center;gap:10px;}
@@ -40,7 +42,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 
 /* ===== LEFT PANEL: CANVAS ===== */
 .canvas-panel{flex:0 0 35%;min-width:280px;}
-.ctrl-btn{padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;}
+.ctrl-btn{padding:8px 12px;min-height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;}
 .ctrl-btn:hover{border-color:var(--primary);color:var(--primary);}
 .ctrl-btn.run{background:var(--primary);color:#fff;border-color:var(--primary);padding:9px 20px;font-size:15px;font-weight:800;border-radius:12px;box-shadow:0 3px 8px rgba(74,144,217,.4);}
 .ctrl-btn.run:hover{background:var(--primary-dark);transform:scale(1.04);}
@@ -50,7 +52,7 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .turtle-view{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a2e;position:relative;}
 #turtleCanvas{display:block;}
 .tab-switch{display:flex;gap:3px;}
-.tab-btn{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:10px;font-weight:600;}
+.tab-btn{padding:7px 10px;min-height:32px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;}
 .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
 
 /* --- Pixel Grid --- */
@@ -64,16 +66,16 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .microbit-buttons{display:flex;align-items:center;gap:12px;width:100%;}
 .vbtn{width:40px;height:40px;border-radius:50%;border:2px solid #555;background:#222;color:#aaa;cursor:pointer;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;transition:all .12s;user-select:none;}
 .vbtn:active{background:#7C4DFF;border-color:#7C4DFF;color:#fff;transform:scale(.9);}
-.vbtn-label{font-size:9px;color:#666;text-align:center;margin-top:2px;}
+.vbtn-label{font-size:11px;color:#ccc;text-align:center;margin-top:2px;}
 .btn-group{display:flex;flex-direction:column;align-items:center;}
 .spacer{flex:1;}
 .shake-btn{padding:5px 10px;border-radius:10px;border:1px solid #555;background:#222;color:#aaa;cursor:pointer;font-size:10px;font-weight:600;}
 .shake-btn:active{background:#FF4081;border-color:#FF4081;color:#fff;}
 .grid-selector{display:flex;gap:3px;}
-.grid-opt{padding:3px 8px;border-radius:6px;border:1px solid #444;background:#222;color:#aaa;cursor:pointer;font-size:10px;font-weight:600;}
+.grid-opt{padding:7px 10px;min-height:32px;border-radius:6px;border:1px solid #444;background:#222;color:#ccc;cursor:pointer;font-size:12px;font-weight:600;}
 .grid-opt.active{background:#7C4DFF;color:#fff;border-color:#7C4DFF;}
 .color-palette{display:flex;gap:3px;flex-wrap:wrap;}
-.color-swatch{width:20px;height:20px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:all .12s;}
+.color-swatch{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .12s;}
 .color-swatch:hover,.color-swatch.active{border-color:#fff;transform:scale(1.15);}
 
 /* ===== CENTER: BLOCKLY ===== */
@@ -84,17 +86,17 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 /* ===== RIGHT: CHAT ===== */
 .chat-panel{flex:1;min-width:240px;}
 .chat-history{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
-.chat-msg{max-width:90%;padding:9px 12px;border-radius:12px;font-size:12px;line-height:1.5;word-break:break-word;}
+.chat-msg{max-width:90%;padding:9px 12px;border-radius:12px;font-size:15px;line-height:1.6;word-break:break-word;}
 .chat-msg.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px;}
 .chat-msg.ai{align-self:flex-start;background:#f0f0f0;color:var(--text);border-bottom-left-radius:4px;}
-.chat-msg.system{align-self:center;background:#fff3e0;color:#e65100;font-size:11px;text-align:center;border-radius:8px;}
-.chat-msg.success{align-self:center;background:#e8f5e9;color:#2e7d32;font-size:12px;font-weight:700;text-align:center;}
+.chat-msg.system{align-self:center;background:#fff3e0;color:#BF360C;font-size:14px;text-align:center;border-radius:8px;}
+.chat-msg.success{align-self:center;background:#e8f5e9;color:#2e7d32;font-size:15px;font-weight:700;text-align:center;}
 .chat-input-area{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0;background:#fafafa;}
-.chat-input-area input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;}
+.chat-input-area input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:16px;outline:none;}
 .chat-input-area input:focus{border-color:var(--primary);}
-.send-btn{padding:9px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;}
+.send-btn{padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:15px;}
 .send-btn:disabled{opacity:.5;cursor:not-allowed;}
-.hint-btn{padding:6px 10px;border:1px solid #FFA726;background:#FFF3E0;color:#E65100;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;}
+.hint-btn{padding:9px 14px;border:1px solid #FFA726;background:#FFF3E0;color:#BF360C;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;}
 
 /* ===== MODALS ===== */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;}
@@ -116,53 +118,57 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .feedback-modal .modal>div{padding:28px;}
 .feedback-icon{font-size:56px;margin-bottom:10px;}
 .feedback-title{font-size:20px;font-weight:800;margin-bottom:6px;}
-.feedback-text{font-size:13px;color:var(--text-light);margin-bottom:18px;line-height:1.6;}
+.feedback-text{font-size:15px;color:#5A6B7F;margin-bottom:18px;line-height:1.6;}
 .feedback-btn{padding:10px 24px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:700;transition:all .15s;}
 .feedback-btn.next{background:var(--primary);color:#fff;}
 .feedback-btn.retry{background:#f0f0f0;color:var(--text);margin-right:6px;}
 
 /* ===== STORY MAP ===== */
 .chapter-block{margin-bottom:20px;}
-.chapter-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,#f5f9ff,#eef3fa);}
-.chapter-emoji{font-size:28px;}
-.chapter-name{font-size:15px;font-weight:800;}
-.chapter-sub{font-size:11px;color:var(--text-light);margin-top:2px;}
-.chapter-prog{margin-left:auto;font-size:11px;font-weight:700;color:var(--primary);white-space:nowrap;}
+.chapter-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(245,249,255,.92),rgba(238,243,250,.92));}
+.chapter-emoji{font-size:28px;line-height:1;}
+.chapter-emoji img{width:44px;height:44px;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));}
+.chapter-name{font-size:16px;font-weight:800;}
+.chapter-sub{font-size:13px;color:#5A6B7F;margin-top:2px;}
+.chapter-prog{margin-left:auto;font-size:12px;font-weight:700;color:var(--primary);white-space:nowrap;}
 .node-path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 4px;}
-.mission-node{width:76px;padding:9px 4px 7px;border-radius:14px;border:2px solid var(--border);background:#fff;cursor:pointer;text-align:center;transition:all .15s;position:relative;}
+.mission-node{width:92px;padding:10px 4px 8px;border-radius:14px;border:2px solid var(--border);background:#fff;cursor:pointer;text-align:center;transition:all .15s;position:relative;}
 .mission-node:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.12);border-color:var(--primary);}
-.mission-node.locked{opacity:.45;cursor:not-allowed;filter:grayscale(.9);}
+.mission-node.locked{opacity:.5;cursor:not-allowed;filter:grayscale(.9);}
 .mission-node.locked:hover{transform:none;box-shadow:none;border-color:var(--border);}
 .mission-node.done{border-color:var(--success);background:#f0fff4;}
-.mission-node .n-icon{font-size:22px;line-height:1;}
-.mission-node .n-title{font-size:10px;font-weight:700;margin-top:3px;line-height:1.25;word-break:keep-all;}
-.mission-node .n-stars{font-size:10px;margin-top:2px;height:13px;letter-spacing:-1px;}
+.mission-node .n-icon{font-size:24px;line-height:1;}
+.mission-node .n-icon img{width:22px;height:26px;vertical-align:middle;}
+.mission-node .n-title{font-size:12px;font-weight:700;margin-top:4px;line-height:1.25;word-break:keep-all;}
+.mission-node .n-stars{margin-top:3px;height:15px;display:flex;justify-content:center;gap:1px;}
+.mission-node .n-stars img{width:13px;height:13px;}
 .node-link{color:#cbd5e0;font-size:13px;font-weight:800;}
+#missionModal .modal-body{background:#EAF2FB url('/assets/vibe/bg-map.jpg') top/cover;}
 
 /* ===== STORY INTRO MODAL ===== */
 .story-modal .modal{max-width:460px;overflow:hidden;}
-.story-scene{background:linear-gradient(160deg,#1a1a2e,#2d2b55);padding:26px 24px 20px;text-align:center;color:#fff;position:relative;}
+.story-scene{background:linear-gradient(160deg,#1a1a2e,#2d2b55) center/cover;background-image:url('/assets/vibe/bg-space.jpg');padding:26px 24px 20px;text-align:center;color:#fff;position:relative;}
 .story-stars{position:absolute;inset:0;pointer-events:none;opacity:.6;font-size:11px;}
 .story-char{font-size:64px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));animation:floaty 2.6s ease-in-out infinite;}
 @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .story-chapter{margin-top:10px;font-size:11px;font-weight:700;letter-spacing:1px;color:#ffd166;}
 .story-title{font-size:20px;font-weight:800;margin-top:4px;}
-.story-bubble{margin:16px 22px;background:#fff;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.7;color:var(--text);position:relative;}
+.story-bubble{margin:16px 22px;background:#fff;border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.7;color:var(--text);position:relative;}
 .story-bubble::before{content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-bottom-color:#fff;border-top:none;}
 .story-actions{padding:0 22px 20px;text-align:center;}
 .story-go{padding:12px 32px;border-radius:12px;border:none;cursor:pointer;font-size:15px;font-weight:800;background:linear-gradient(135deg,#FF9800,#FF6B6B);color:#fff;box-shadow:0 4px 14px rgba(255,107,107,.4);transition:transform .15s;}
 .story-go:hover{transform:scale(1.05);}
 
 /* ===== MATH / CODE CHAT CARDS ===== */
-.chat-msg.math{align-self:stretch;max-width:100%;background:#EDE7F6;color:#4527A0;border:1px solid #D1C4E9;border-radius:10px;font-size:12px;}
+.chat-msg.math{align-self:stretch;max-width:100%;background:#EDE7F6;color:#4527A0;border:1px solid #D1C4E9;border-radius:10px;font-size:14px;}
 .chat-msg.math b{display:block;margin-bottom:3px;}
 .chat-msg.code{align-self:stretch;max-width:100%;background:#263238;color:#ECEFF1;border-radius:10px;font-family:'Consolas','Courier New',monospace;font-size:11px;padding:10px 12px;}
 /* 추론 과정 카드: "~하니까 → 이 블록!" */
-.chat-msg.think{align-self:stretch;max-width:100%;background:#FFFDE7;border:1px solid #FFE082;color:#5D4037;border-radius:10px;font-size:12px;}
-.chat-msg.think>b{display:block;margin-bottom:5px;color:#E65100;}
+.chat-msg.think{align-self:stretch;max-width:100%;background:#FFFDE7;border:1px solid #FFE082;color:#5D4037;border-radius:10px;font-size:14px;}
+.chat-msg.think>b{display:block;margin-bottom:5px;color:#BF360C;}
 .think-row{display:flex;flex-direction:column;gap:1px;padding:5px 0;border-top:1px dashed #FFE082;animation:thinkin .35s ease both;}
 .think-row:first-of-type{border-top:none;}
-.think-why{color:#795548;font-size:11px;}
+.think-why{color:#795548;font-size:13px;}
 .think-block{font-weight:700;color:#4527A0;}
 @keyframes thinkin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .code-line{display:flex;gap:8px;white-space:pre;line-height:1.8;}
@@ -170,13 +176,13 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .code-line .gloss{color:#FFCC80;font-family:'Segoe UI','Malgun Gothic',sans-serif;}
 
 /* ===== PROMPT CHIPS ===== */
-.chip-row{display:flex;gap:5px;padding:6px 10px 0;flex-wrap:wrap;background:#fafafa;flex-shrink:0;}
-.chip-label{font-size:10px;color:var(--text-light);font-weight:700;align-self:center;}
-.chip{padding:4px 10px;border-radius:20px;border:1px solid #B3D4F5;background:#EBF4FD;color:#1565C0;cursor:pointer;font-size:11px;font-weight:600;transition:all .12s;}
+.chip-row{display:flex;gap:6px;padding:8px 10px 0;flex-wrap:wrap;background:#fafafa;flex-shrink:0;}
+.chip-label{font-size:13px;color:#5A6B7F;font-weight:700;align-self:center;}
+.chip{padding:8px 14px;border-radius:20px;border:1px solid #B3D4F5;background:#EBF4FD;color:#1565C0;cursor:pointer;font-size:14px;font-weight:600;transition:all .12s;}
 .chip:hover{background:#1565C0;color:#fff;}
 
 /* ===== PIXEL COORDS / TARGET / METER ===== */
-.led-coord{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#7C4DFF;user-select:none;}
+.led-coord{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#B39DDB;user-select:none;}
 .target-mini{background:#252540;border-radius:12px;padding:8px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;}
 .target-mini .tm-title{font-size:10px;font-weight:800;color:#FFD166;letter-spacing:1px;}
 .target-mini-grid{display:grid;gap:1px;}
@@ -187,8 +193,40 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 /* ===== TURTLE STATUS ===== */
 .turtle-status{position:absolute;top:8px;left:10px;background:rgba(0,0,0,.55);color:#9AE6B4;font-family:'Consolas',monospace;font-size:11px;padding:4px 10px;border-radius:8px;pointer-events:none;}
 
+/* ===== MAZE (미로 모험) ===== */
+.maze-view{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:10px;background:#1a1a2e url('/assets/vibe/bg-maze.jpg') center/cover;}
+.maze-board{position:relative;background:#252540;border-radius:16px;padding:14px;box-shadow:0 4px 24px rgba(0,0,0,.5);}
+.maze-grid{display:grid;gap:4px;grid-template-columns:repeat(var(--maze-cols,8),var(--maze-cell,48px));}
+.maze-cell{width:var(--maze-cell);height:var(--maze-cell);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;position:relative;user-select:none;}
+.maze-cell.path{background:#2E2E52;box-shadow:inset 0 2px 4px rgba(0,0,0,.45);border:1px solid #3A3A63;}
+.maze-cell.wall{background:linear-gradient(180deg,#6B6B94 0%,#4A4A6E 100%);border:1px solid #7D7DA8;box-shadow:inset 0 -6px 0 rgba(0,0,0,.35),0 3px 6px rgba(0,0,0,.5);}
+.maze-cell.wall::after{content:'🪨';font-size:20px;filter:saturate(.6);}
+.maze-cell.goal{background:#1B3A4D;border:2px solid #00E5FF;box-shadow:inset 0 2px 4px rgba(0,0,0,.45);}
+.maze-cell.goal::after{content:'🌀';font-size:24px;animation:portalPulse 1.8s ease-in-out infinite;}
+@keyframes portalPulse{0%,100%{filter:drop-shadow(0 0 3px #00E5FF);transform:scale(1)}50%{filter:drop-shadow(0 0 10px #00E5FF);transform:scale(1.12)}}
+.maze-cell.gem{background:#2E2E52;box-shadow:inset 0 2px 4px rgba(0,0,0,.45);border:1px solid #3A3A63;}
+.maze-cell.gem::after{content:'💎';font-size:20px;animation:gemTwinkle 1.4s ease-in-out infinite;}
+@keyframes gemTwinkle{0%,100%{transform:scale(1);filter:drop-shadow(0 0 2px #7FDBFF)}50%{transform:scale(1.15);filter:drop-shadow(0 0 8px #7FDBFF)}}
+.maze-cell.gem.collected::after{content:'💎';animation:gemPop .35s ease forwards;}
+@keyframes gemPop{to{transform:scale(1.8);opacity:0;}}
+.maze-toto{position:absolute;width:calc(var(--maze-cell) - 6px);height:calc(var(--maze-cell) - 6px);top:14px;left:14px;transition:transform var(--maze-speed,.45s) ease-in-out;z-index:5;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
+.maze-dir{position:absolute;width:0;height:0;z-index:6;transition:all .3s ease;pointer-events:none;border:6px solid transparent;filter:drop-shadow(0 0 4px #00E5FF);}
+.maze-dir.up{border-bottom:9px solid #00E5FF;}
+.maze-dir.down{border-top:9px solid #00E5FF;}
+.maze-dir.left{border-right:9px solid #00E5FF;}
+.maze-dir.right{border-left:9px solid #00E5FF;}
+.maze-toto.bump{animation:shake .4s ease;}
+.maze-cell.wall.hit{outline:3px solid var(--accent);outline-offset:-1px;}
+.maze-progress{display:flex;gap:6px;justify-content:center;min-height:14px;flex-wrap:wrap;max-width:440px;}
+.maze-progress .dot{width:10px;height:10px;border-radius:50%;background:#3A3A63;transition:all .2s;}
+.maze-progress .dot.done{background:#26A69A;}
+.maze-progress .dot.now{background:#00E5FF;transform:scale(1.5);box-shadow:0 0 8px #00E5FF;}
+.maze-status{position:absolute;top:8px;left:10px;background:rgba(0,0,0,.55);color:#7FDBFF;font-family:'Consolas',monospace;font-size:11px;padding:4px 10px;border-radius:8px;pointer-events:none;}
+.ctrl-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
 /* ===== STARS / CONFETTI ===== */
-.star-total{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:14px;font-size:12px;font-weight:800;}
+.star-total{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:14px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:4px;}
+.star-total img{width:16px;height:16px;}
 .fb-stars{font-size:34px;letter-spacing:4px;margin-bottom:8px;min-height:40px;}
 .fb-stars .lit{animation:starpop .5s ease both;}
 .fb-stars .dim{opacity:.25;filter:grayscale(1);}
@@ -241,12 +279,13 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
         <div class="header-actions">
             <button class="hdr-btn" id="mapBtn" onclick="openMissionSelector()">🗺️ 모험 지도</button>
             <button class="hdr-btn" onclick="startTour()">❓ 도움말</button>
-            <button class="hdr-btn" onclick="location.href='/'">← 돌아가기</button>
+            <button class="hdr-btn" onclick="if(!workspace||workspace.getAllBlocks(false).length<3||confirm('만들던 블록이 사라져. 정말 나갈까?'))location.href='/'">← 돌아가기</button>
         </div>
     </div>
     <div class="mode-tabs">
         <button class="mode-tab active" data-mode="turtle" onclick="switchMode('turtle',this)">🐢 터틀 모드</button>
         <button class="mode-tab" data-mode="pixel" onclick="switchMode('pixel',this)">🎨 픽셀 아트</button>
+        <button class="mode-tab" data-mode="maze" onclick="switchMode('maze',this)">🚀 미로 모험</button>
     </div>
 </div>
 
@@ -261,6 +300,9 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
             </div>
             <div id="pixelHeader" class="hidden">
                 <h3>💡 LED 디스플레이</h3>
+            </div>
+            <div id="mazeHeader" class="hidden">
+                <h3>🚀 우주 미로</h3>
             </div>
             <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
                 <!-- Turtle controls -->
@@ -282,6 +324,10 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                     <button class="ctrl-btn demo" onclick="showPixelDemo()">👀 시연</button>
                     <button class="ctrl-btn" onclick="targetMiniOn=!targetMiniOn;renderTargetMini();" title="목표 그림 보이기/숨기기">🎯 목표</button>
                     <span class="match-badge" id="matchMeter" hidden>🎯 0%</span>
+                </div>
+                <!-- Maze controls -->
+                <div id="mazeControls" class="hidden" style="display:flex;gap:4px;align-items:center;">
+                    <button class="ctrl-btn" id="mazeSpeedBtn" onclick="toggleMazeSpeed(this)" title="토토가 빨리 움직여요">⏩ 빠르게</button>
                 </div>
                 <!-- Common -->
                 <button class="ctrl-btn run" id="runBtn" onclick="runCode()">▶ 실행</button>
@@ -316,6 +362,16 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
                 </div>
                 <div class="color-palette" id="colorPalette"></div>
             </div>
+            <!-- Maze view -->
+            <div class="maze-view hidden" id="mazeView">
+                <div class="maze-board" id="mazeBoard">
+                    <div class="maze-grid" id="mazeGrid"></div>
+                    <img class="maze-toto hidden" id="mazeToto" src="/assets/vibe/toto-hello.svg" alt="토토">
+                    <div class="maze-dir hidden" id="mazeDir"></div>
+                </div>
+                <div class="maze-progress" id="mazeProgress"></div>
+                <div class="maze-status" id="mazeStatus">🔍 미션을 선택하면 미로가 나타나요</div>
+            </div>
         </div>
     </div>
 
@@ -323,7 +379,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
     <div class="panel blockly-panel">
         <div class="panel-header">
             <h3>🧩 블록 코딩</h3>
-            <button class="ctrl-btn" onclick="clearWorkspace()" style="font-size:10px;">🗑 초기화</button>
+            <button class="ctrl-btn" onclick="undoBlock()" title="방금 한 일을 되돌려요">↩️ 되돌리기</button>
+            <button class="ctrl-btn" onclick="clearWorkspace()" title="블록을 모두 지워요">🗑 블록 지우기</button>
         </div>
         <div class="panel-body"><div id="blocklyDiv"></div></div>
         <div class="dsl-preview" id="dslPreview">// 블록을 조합하면 여기에 코드가 표시됩니다</div>
@@ -418,18 +475,22 @@ function switchMode(mode, btn) {
     document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
 
-    const isTurtle = mode === 'turtle';
-    document.getElementById('appHeader').classList.toggle('pixel-mode', !isTurtle);
-    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : '🎨 바이브 코딩';
+    const isTurtle = mode === 'turtle', isPixel = mode === 'pixel', isMaze = mode === 'maze';
+    document.getElementById('appHeader').classList.toggle('pixel-mode', isPixel);
+    document.getElementById('appHeader').classList.toggle('maze-mode', isMaze);
+    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : isPixel ? '🎨 바이브 코딩' : '🚀 바이브 코딩';
     document.getElementById('turtleHeader').classList.toggle('hidden', !isTurtle);
-    document.getElementById('pixelHeader').classList.toggle('hidden', isTurtle);
+    document.getElementById('pixelHeader').classList.toggle('hidden', !isPixel);
+    document.getElementById('mazeHeader').classList.toggle('hidden', !isMaze);
     document.getElementById('turtleControls').classList.toggle('hidden', !isTurtle);
-    document.getElementById('pixelControls').classList.toggle('hidden', isTurtle);
+    document.getElementById('pixelControls').classList.toggle('hidden', !isPixel);
+    document.getElementById('mazeControls').classList.toggle('hidden', !isMaze);
     document.getElementById('turtleView').classList.toggle('hidden', !isTurtle);
-    document.getElementById('pixelView').classList.toggle('hidden', isTurtle);
+    document.getElementById('pixelView').classList.toggle('hidden', !isPixel);
+    document.getElementById('mazeView').classList.toggle('hidden', !isMaze);
 
     // Swap Blockly toolbox
-    workspace.updateToolbox(isTurtle ? TURTLE_TOOLBOX : PIXEL_TOOLBOX);
+    workspace.updateToolbox(isTurtle ? TURTLE_TOOLBOX : isPixel ? PIXEL_TOOLBOX : MAZE_TOOLBOX);
     workspace.clear();
     updateDSLPreview();
 
@@ -442,10 +503,17 @@ function switchMode(mode, btn) {
     document.getElementById('chipRow').innerHTML = '';
     addChatMsg('system', isTurtle
         ? '🐢 안녕! 나는 거북이 탐험가 토토야. 도형 행성을 함께 되살려 줘!'
-        : '🤖 안녕! 나는 로봇 픽셀이야. 꺼져버린 LED 도시를 함께 밝혀 줘!');
+        : isPixel
+        ? '🤖 안녕! 나는 로봇 픽셀이야. 꺼져버린 LED 도시를 함께 밝혀 줘!'
+        : '🔍 안녕! 나는 우주 견습 탐정 토토야. 코드로 잠긴 미로 유적을 함께 열어 보자!');
+    if (isMaze && !localStorage.getItem('maze_intro_seen')) {
+        addChatMsg('ai', '🚀 ' + MAZE_WORLD.intro);
+        localStorage.setItem('maze_intro_seen', '1');
+    }
 
     if (isTurtle) resetTurtle();
-    else { initPixelGrid(); }
+    else if (isPixel) { initPixelGrid(); }
+    else { mazeState = null; renderMazeBoard(); }
     renderTargetMini(); updateMatchMeter();
 
     Blockly.svgResize(workspace);
@@ -468,7 +536,7 @@ function resizeTurtleCanvas() {
 function toScreen(x, y) { return { x: tCanvas.width/2 + x, y: tCanvas.height/2 - y }; }
 
 const turtleImg = new Image();
-turtleImg.src = '/turtle-sprite.png';
+turtleImg.src = '/assets/vibe/turtle-top.png';
 let turtleImgLoaded = false;
 turtleImg.onload = () => { turtleImgLoaded = true; };
 
@@ -724,12 +792,12 @@ function switchCanvasTab(tab, btn){
 }
 
 function showTurtleDemo(){
-    if(!currentMission||!currentMission.targetDSL){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
+    if(!currentMission||!currentMission.targetDSL){addChatMsg('system','먼저 🗺️ 모험 지도에서 미션을 골라 줘!');return;}
     animateTurtle(parseTurtleDSL(currentMission.targetDSL));
 }
 
 function showPixelDemo(){
-    if(!currentMission||!currentMission.targetGrid){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
+    if(!currentMission||!currentMission.targetGrid){addChatMsg('system','먼저 🗺️ 모험 지도에서 미션을 골라 줘!');return;}
     clearPixelGrid();
     const tg=currentMission.targetGrid;
     // Animate: light up one pixel at a time
@@ -909,6 +977,231 @@ function resolvePixelVar(commands,varName,value){
 }
 
 // ============================================================
+//  MAZE ENGINE (미로 모험)
+// ============================================================
+let mazeState=null;      // {map,rows,cols,sr,sc,startDir,r,c,dir,gems:Set,gemsTotal,collected:Set,steps}
+let mazeFast=false;
+let mazeRunning=false;
+const MAZE_DELTA={up:[-1,0],right:[0,1],down:[1,0],left:[0,-1]};
+const MAZE_TURN_LEFT={up:'left',left:'down',down:'right',right:'up'};
+const MAZE_TURN_RIGHT={up:'right',right:'down',down:'left',left:'up'};
+
+function mazeIsWall(map,r,c){
+    if(r<0||c<0||r>=map.length||!map[r]||c>=map[r].length)return true;
+    return map[r][c]==='#';
+}
+function mazeFrontIsWall(S){
+    const[dr,dc]=MAZE_DELTA[S.dir];
+    return mazeIsWall(S.map,S.r+dr,S.c+dc);
+}
+// 순수 상태 전이: MOVE/TURN/PICK 한 개 적용 (엔진·테스트 공용)
+function mazeApplyCmd(S,c){
+    if(c.type==='MOVE'){
+        const[dr,dc]=MAZE_DELTA[S.dir];const nr=S.r+dr,nc=S.c+dc;
+        if(mazeIsWall(S.map,nr,nc))return{res:'bump',r:nr,c:nc};
+        S.r=nr;S.c=nc;S.steps++;
+        return S.map[nr][nc]==='G'?{res:'goal'}:{res:'moved'};
+    }
+    if(c.type==='TURN_LEFT'){S.dir=MAZE_TURN_LEFT[S.dir];return{res:'turned'};}
+    if(c.type==='TURN_RIGHT'){S.dir=MAZE_TURN_RIGHT[S.dir];return{res:'turned'};}
+    if(c.type==='PICK'){
+        const k=S.r+','+S.c;
+        if(S.gems.has(k)&&!S.collected.has(k)){S.collected.add(k);return{res:'gem'};}
+        return{res:'noop'}; // 빈 칸 PICK은 무시
+    }
+    return{res:'noop'};
+}
+// REPEAT만 전개, IF WALL은 실행 시점 판단이므로 그대로 유지
+function mazeFlatten(cmds){
+    const flat=[];
+    (function fl(cs){for(const c of cs){
+        if(c.type==='REPEAT'){for(let i=0;i<c.count;i++)fl(c.body);}
+        else flat.push(c);
+    }})(cmds);
+    return flat;
+}
+
+function initMazeMission(m){
+    const map=m.map.map(row=>row.split(''));
+    let sr=0,sc=0;const gems=new Set();
+    map.forEach((row,r)=>row.forEach((ch,c)=>{
+        if(ch==='S'){sr=r;sc=c;}
+        else if(ch==='D')gems.add(r+','+c);
+    }));
+    mazeState={map,rows:map.length,cols:map[0].length,sr,sc,startDir:m.startDir||'right',
+        r:sr,c:sc,dir:m.startDir||'right',gems,gemsTotal:gems.size,collected:new Set(),steps:0};
+    document.getElementById('mazeProgress').innerHTML='';
+    renderMazeBoard();
+}
+
+function mazeCellPx(){return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--maze-cell'))||48;}
+function mazeCellEl(r,c){return document.querySelector('#mazeGrid .maze-cell[data-rc="'+r+','+c+'"]');}
+
+function renderMazeBoard(){
+    const grid=document.getElementById('mazeGrid');
+    const toto=document.getElementById('mazeToto'),dirEl=document.getElementById('mazeDir');
+    const S=mazeState;
+    if(!S){
+        grid.innerHTML='';
+        toto.classList.add('hidden');dirEl.classList.add('hidden');
+        document.getElementById('mazeStatus').textContent='🔍 미션을 선택하면 미로가 나타나요';
+        document.getElementById('mazeProgress').innerHTML='';
+        return;
+    }
+    grid.style.setProperty('--maze-cols',S.cols);
+    grid.innerHTML='';
+    for(let r=0;r<S.rows;r++)for(let c=0;c<S.cols;c++){
+        const ch=(S.map[r]&&S.map[r][c])||'#';
+        const d=document.createElement('div');
+        let cls='maze-cell ';
+        if(ch==='#')cls+='wall';
+        else if(ch==='G')cls+='goal';
+        else if(ch==='D')cls+='gem'+(S.collected.has(r+','+c)?' collected':'');
+        else cls+='path';
+        d.className=cls;d.dataset.rc=r+','+c;
+        grid.appendChild(d);
+    }
+    toto.src='/assets/vibe/toto-hello.svg';
+    toto.classList.remove('hidden','bump');
+    dirEl.classList.remove('hidden');
+    updateTotoPos(true);
+    updateMazeStatus();
+}
+
+function updateTotoPos(instant){
+    const S=mazeState;if(!S)return;
+    const toto=document.getElementById('mazeToto'),dirEl=document.getElementById('mazeDir');
+    const cs=mazeCellPx(),step=cs+4; // 셀 + gap 4px
+    if(instant){toto.style.transition='none';dirEl.style.transition='none';}
+    toto.style.transform=`translate(${S.c*step+3}px, ${S.r*step+3}px)`;
+    // 방향 배지: 현재 칸의 진행 방향 가장자리에 표시
+    const cx=14+S.c*step+cs/2, cy=14+S.r*step+cs/2, off=cs/2-3;
+    let dx=0,dy=0;
+    if(S.dir==='up')dy=-off;else if(S.dir==='down')dy=off;
+    else if(S.dir==='left')dx=-off;else dx=off;
+    dirEl.className='maze-dir '+S.dir;
+    dirEl.style.left=(cx+dx-7)+'px';dirEl.style.top=(cy+dy-7)+'px';
+    if(instant){void toto.offsetWidth;toto.style.transition='';dirEl.style.transition='';}
+}
+
+function updateMazeStatus(){
+    const S=mazeState;if(!S)return;
+    document.getElementById('mazeStatus').textContent=`💎 ${S.collected.size}/${S.gemsTotal} · ${S.steps}걸음`;
+}
+
+function renderMazeProgress(n){
+    const p=document.getElementById('mazeProgress');p.innerHTML='';
+    for(let i=0;i<n;i++){const d=document.createElement('span');d.className='dot';p.appendChild(d);}
+}
+function setMazeProgress(i){
+    document.querySelectorAll('#mazeProgress .dot').forEach((d,j)=>{
+        d.className='dot'+(j<i?' done':j===i?' now':'');
+    });
+}
+
+function resetMaze(){
+    const S=mazeState;if(!S)return;
+    S.r=S.sr;S.c=S.sc;S.dir=S.startDir;S.steps=0;S.collected=new Set();
+    document.getElementById('mazeProgress').innerHTML='';
+    renderMazeBoard();
+}
+
+function toggleMazeSpeed(btn){
+    mazeFast=!mazeFast;
+    btn.classList.toggle('active',mazeFast);
+    btn.textContent=mazeFast?'🐢 보통 속도':'⏩ 빠르게';
+    document.getElementById('mazeBoard').style.setProperty('--maze-speed',mazeFast?'.2s':'.45s');
+}
+
+async function mazeBump(r,c){
+    const toto=document.getElementById('mazeToto');
+    toto.classList.add('bump');
+    const cell=mazeCellEl(r,c);if(cell)cell.classList.add('hit');
+    await new Promise(rs=>setTimeout(rs,450));
+    toto.classList.remove('bump');if(cell)cell.classList.remove('hit');
+}
+
+async function runMaze(commands){
+    if(!currentMission||!mazeState){addChatMsg('system','먼저 🗺️ 모험 지도에서 미션을 골라 줘!');return;}
+    if(mazeRunning)return;
+    resetMaze();
+    const flat=mazeFlatten(commands);
+    if(!flat.length){addChatMsg('system','실행할 명령이 없어! 블록을 끼우거나 나한테 말해 줘.');return;}
+    renderMazeProgress(flat.length);
+    mazeRunning=true;
+    const S=mazeState;
+    const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const gap=()=>sleep(mazeFast?50:150); // 명령 간 간격
+
+    async function execCmd(c){ // returns 'goal' | 'bump' | null
+        if(c.type==='IF_WALL'){
+            const branch=mazeFrontIsWall(S)?c.body:(c.elseBody||[]);
+            return await execList(mazeFlatten(branch));
+        }
+        const a=mazeApplyCmd(S,c);
+        if(a.res==='bump'){await mazeBump(a.r,a.c);return'bump';}
+        if(a.res==='moved'||a.res==='goal'){
+            updateTotoPos();updateMazeStatus();
+            await sleep(mazeFast?200:450);
+            if(a.res==='goal')return'goal';
+        }else if(a.res==='turned'){
+            updateTotoPos();
+            await sleep(mazeFast?150:300);
+        }else if(a.res==='gem'){
+            const cell=mazeCellEl(S.r,S.c);if(cell)cell.classList.add('collected');
+            updateMazeStatus();
+            await sleep(mazeFast?120:250);
+        }
+        return null;
+    }
+    async function execList(cs){
+        for(const c of cs){
+            const r=await execCmd(c);
+            if(r)return r;
+            await gap();
+        }
+        return null;
+    }
+
+    let result=null;
+    for(let i=0;i<flat.length;i++){
+        setMazeProgress(i);
+        const r=await execCmd(flat[i]);
+        if(r){result=r;break;}
+        await gap();
+    }
+    if(!result)setMazeProgress(flat.length); // 전부 완료 표시
+    document.querySelectorAll('#mazeProgress .dot.now').forEach(d=>d.classList.remove('now'));
+    mazeRunning=false;
+
+    if(result==='goal'){ // G 도착 즉시 성공 판정 (남은 명령 무시)
+        if(S.collected.size>=S.gemsTotal)mazeSuccess();
+        else{
+            const left=S.gemsTotal-S.collected.size;
+            showFeedback(false,'보석을 놓쳤어! 💎',`보물까지 갔지만 보석 ${left}개를 놓쳤어. 보석 칸을 지날 때 💎 줍기를 잊지 말자!`,0);
+            addChatMsg('system','🔍 보석을 놓쳤어! 💎 지나가는 길에 줍기 명령을 넣어서 다시 도전해 봐.');
+        }
+    }else if(result==='bump'){
+        addChatMsg('system','앗! 바위에 부딪혔어 🪨 토토가 멈춘 곳 바로 앞 명령을 다시 살펴보고 도전해 봐!');
+    }else{
+        addChatMsg('system','🤔 명령이 다 끝났는데 토토가 보물에 도착하지 못했어. 몇 걸음이 더 필요할까?');
+    }
+}
+
+function mazeSuccess(){
+    document.getElementById('mazeToto').src='/assets/vibe/toto-cheer.svg';
+    const usable={m_move:1,m_left:1,m_right:1,m_pick:1,m_repeat:1,m_if_wall:1};
+    const n=workspace.getAllBlocks(false).filter(b=>usable[b.type]).length;
+    const par=currentMission.par||n;
+    const stars=n<=par?3:n<=par+2?2:1;
+    saveCompleted(currentMission.id);saveStars(currentMission.id,stars);confetti();
+    showFeedback(true,'🎉 미션 성공!',starComment(stars)+(stars<3?` (블록 ${n}개 — ${par}개까지 줄이면 별 3개!)`:''),stars);
+    addChatMsg('success','🎉 미션 성공! '+'⭐'.repeat(stars));
+    const sd=getStoryData(currentMission);
+    if(sd.ct)addMathMsg('오늘의 정리 📚 '+sd.ct);
+}
+
+// ============================================================
 //  DSL PARSERS
 // ============================================================
 // 함수(DEF/CALL) 해석: CALL을 함수 본문으로 치환 (블록 표시용 파싱은 forBlocks=true로 원형 유지)
@@ -1015,6 +1308,45 @@ function parsePixelDSL(text,forBlocks){
     return forBlocks?cmds:resolveCalls(cmds);
 }
 
+function parseMazeDSL(text,forBlocks){
+    if(!text?.trim())return[];
+    // '} ELSE {' 한 줄 표기를 '}' + 'ELSE {' 두 줄로 정규화
+    const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'))
+        .reduce((acc,l)=>{
+            if(/^\}\s*ELSE\s*\{?$/.test(l)){acc.push('}');acc.push('ELSE {');}
+            else acc.push(l);
+            return acc;
+        },[]);
+    let i=0;
+    function parseBlock(){
+        const cmds=[];
+        while(i<lines.length){
+            const line=lines[i];
+            if(line==='}'){i++;return cmds;}
+            let m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
+                cmds.push({type:'REPEAT',count:parseInt(m[1]),body:parseBlock()});continue;}
+            m=line.match(/^IF\s+WALL\s*\{?$/);
+            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
+                const body=parseBlock();let elseBody=null;
+                if(i<lines.length&&lines[i].match(/^ELSE\s*\{?$/)){
+                    const el=lines[i];i++;
+                    if(!el.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;
+                    elseBody=parseBlock();
+                }
+                cmds.push({type:'IF_WALL',body,elseBody});continue;}
+            if(line.match(/^ELSE\s*\{?$/)){i++;continue;}
+            if(line==='MOVE'){cmds.push({type:'MOVE'});i++;continue;}
+            if(line==='TURN_LEFT'){cmds.push({type:'TURN_LEFT'});i++;continue;}
+            if(line==='TURN_RIGHT'){cmds.push({type:'TURN_RIGHT'});i++;continue;}
+            if(line==='PICK'){cmds.push({type:'PICK'});i++;continue;}
+            i++;
+        }
+        return cmds;
+    }
+    return parseBlock();
+}
+
 // ============================================================
 //  BLOCKLY — BLOCK DEFINITIONS
 // ============================================================
@@ -1059,7 +1391,15 @@ Blockly.defineBlocksWithJsonArray([
     {type:'p_rect',message0:'네모 채우기 (x%1,y%2)부터 (x%3,y%4)까지 %5',args0:[{type:'field_number',name:'X1',value:0,min:0,max:15},{type:'field_number',name:'Y1',value:0,min:0,max:15},{type:'field_number',name:'X2',value:2,min:0,max:15},{type:'field_number',name:'Y2',value:2,min:0,max:15},{type:'field_dropdown',name:'C',options:[['🔴 빨강','#ff0000'],['🟠 주황','#ff8800'],['🟡 노랑','#ffff00'],['🟢 초록','#00cc00'],['🔵 파랑','#0000ff'],['🟣 보라','#8800ff'],['⚪ 하양','#ffffff'],['🩷 분홍','#ff66cc']]}],previousStatement:null,nextStatement:null,colour:20},
     {type:'p_blink',message0:'x%1 y%2 %3번 깜빡이기 ✨',args0:[{type:'field_number',name:'X',value:2,min:0,max:15},{type:'field_number',name:'Y',value:2,min:0,max:15},{type:'field_number',name:'N',value:3,min:1,max:20}],previousStatement:null,nextStatement:null,colour:290},
     {type:'p_def',message0:'📦 함수 %1 만들기',args0:[{type:'field_input',name:'NM',text:'하트'}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:260},
-    {type:'p_call',message0:'📦 함수 %1 부르기',args0:[{type:'field_input',name:'NM',text:'하트'}],previousStatement:null,nextStatement:null,colour:260}
+    {type:'p_call',message0:'📦 함수 %1 부르기',args0:[{type:'field_input',name:'NM',text:'하트'}],previousStatement:null,nextStatement:null,colour:260},
+
+    // === MAZE BLOCKS ===
+    {type:'m_move',message0:'🚶 앞으로 한 칸',previousStatement:null,nextStatement:null,colour:160},
+    {type:'m_left',message0:'↰ 왼쪽으로 돌기',previousStatement:null,nextStatement:null,colour:210},
+    {type:'m_right',message0:'↱ 오른쪽으로 돌기',previousStatement:null,nextStatement:null,colour:210},
+    {type:'m_pick',message0:'💎 줍기',previousStatement:null,nextStatement:null,colour:300},
+    {type:'m_repeat',message0:'%1 번 반복',args0:[{type:'field_number',name:'N',value:3,min:1,max:50}],message1:'%1',args1:[{type:'input_statement',name:'DO'}],previousStatement:null,nextStatement:null,colour:120},
+    {type:'m_if_wall',message0:'만약 앞이 벽이면 🧱',message1:'%1',args1:[{type:'input_statement',name:'DO'}],message2:'아니면',message3:'%1',args3:[{type:'input_statement',name:'ELSE'}],previousStatement:null,nextStatement:null,colour:210}
 ]);
 
 // ============================================================
@@ -1082,6 +1422,12 @@ const PIXEL_TOOLBOX={kind:'categoryToolbox',contents:[
     {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'p_repeat'},{kind:'block',type:'p_for'}]},
     {kind:'category',name:'📦 함수',colour:'260',contents:[{kind:'block',type:'p_def'},{kind:'block',type:'p_call'}]},
     {kind:'category',name:'⏱ 기타',colour:'290',contents:[{kind:'block',type:'p_wait'},{kind:'block',type:'p_blink'}]}
+]};
+
+const MAZE_TOOLBOX={kind:'categoryToolbox',contents:[
+    {kind:'category',name:'🚶 이동',colour:'160',contents:[{kind:'block',type:'m_move'},{kind:'block',type:'m_left'},{kind:'block',type:'m_right'},{kind:'block',type:'m_pick'}]},
+    {kind:'category',name:'🔁 반복',colour:'120',contents:[{kind:'block',type:'m_repeat'}]},
+    {kind:'category',name:'🚪 선택',colour:'210',contents:[{kind:'block',type:'m_if_wall'}]}
 ]};
 
 // ============================================================
@@ -1110,6 +1456,14 @@ function workspaceToDSL(){
             else if(t==='t_def'||t==='p_def'){r+=p+'DEF '+(block.getFieldValue('NM')||'f').replace(/\s+/g,'_')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
             else if(t==='t_call'||t==='p_call')r+=p+'CALL '+(block.getFieldValue('NM')||'f').replace(/\s+/g,'_')+'\n';
             else if(t==='t_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            // Maze
+            else if(t==='m_move')r+=p+'MOVE\n';
+            else if(t==='m_left')r+=p+'TURN_LEFT\n';
+            else if(t==='m_right')r+=p+'TURN_RIGHT\n';
+            else if(t==='m_pick')r+=p+'PICK\n';
+            else if(t==='m_repeat'){r+=p+'REPEAT '+block.getFieldValue('N')+' {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';}
+            else if(t==='m_if_wall'){r+=p+'IF WALL {\n';const i=block.getInputTargetBlock('DO');if(i)r+=b2d(i,ind+1);r+=p+'}\n';
+                const e=block.getInputTargetBlock('ELSE');if(e){r+=p+'ELSE {\n';r+=b2d(e,ind+1);r+=p+'}\n';}}
             // Pixel
             else if(t==='p_led_on')r+=p+'LED_ON '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
             else if(t==='p_led_off')r+=p+'LED_OFF '+block.getFieldValue('X')+' '+block.getFieldValue('Y')+'\n';
@@ -1157,9 +1511,9 @@ function nearestColor(hex){
 
 function dslToWorkspace(dslText){
     workspace.clear();
-    const isTurtle=currentMode==='turtle';
+    const isTurtle=currentMode==='turtle',isMaze=currentMode==='maze';
     // forBlocks=true: DEF/CALL을 블록으로 유지 (실행 시에만 resolveCalls로 치환)
-    const commands=isTurtle?parseTurtleDSL(dslText,true):parsePixelDSL(dslText,true);
+    const commands=isTurtle?parseTurtleDSL(dslText,true):isMaze?parseMazeDSL(dslText,true):parsePixelDSL(dslText,true);
     if(!commands.length)return;
 
     function initBlock(block){block.initSvg();block.render();}
@@ -1178,7 +1532,26 @@ function dslToWorkspace(dslText){
         let prev=null;
         for(const cmd of cmds){
             let block=null;
-            if(isTurtle){
+            if(isMaze){
+                switch(cmd.type){
+                    case'MOVE':block=makeBlock('m_move');break;
+                    case'TURN_LEFT':block=makeBlock('m_left');break;
+                    case'TURN_RIGHT':block=makeBlock('m_right');break;
+                    case'PICK':block=makeBlock('m_pick');break;
+                    case'REPEAT':
+                        block=makeBlock('m_repeat',{N:cmd.count});
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        break;
+                    case'IF_WALL':
+                        block=makeBlock('m_if_wall');
+                        initBlock(block);
+                        if(cmd.body?.length)create(cmd.body,block.getInput('DO').connection);
+                        if(cmd.elseBody?.length)create(cmd.elseBody,block.getInput('ELSE').connection);
+                        break;
+                    default:continue;
+                }
+            }else if(isTurtle){
                 switch(cmd.type){
                     case'FORWARD':block=makeBlock('t_forward',{V:cmd.value});break;
                     case'BACKWARD':block=makeBlock('t_backward',{V:cmd.value});break;
@@ -1292,6 +1665,8 @@ function runCode(){
     if(currentMode==='turtle'){
         const cmds=parseTurtleDSL(dsl);
         animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(dsl);});
+    }else if(currentMode==='maze'){
+        runMaze(parseMazeDSL(dsl));
     }else{
         pixelAnimCancel=false;
         pixelEventHandlers={A:null,B:null,SHAKE:null};
@@ -1303,6 +1678,7 @@ function runCode(){
 
 function resetView(){
     if(currentMode==='turtle')resetTurtle();
+    else if(currentMode==='maze')resetMaze();
     else clearPixelGrid();
 }
 
@@ -1312,6 +1688,26 @@ function saveArtwork(){
     if(currentMode==='turtle'){
         a.href=tCanvas.toDataURL('image/png');
         a.download='터틀작품_'+new Date().toISOString().slice(0,10)+'.png';
+    }else if(currentMode==='maze'){
+        if(!mazeState){addChatMsg('system','먼저 🗺️ 모험 지도에서 미션을 골라 줘!');return;}
+        const S=mazeState,cs=36,pad=12;
+        const c=document.createElement('canvas');
+        c.width=S.cols*cs+pad*2;c.height=S.rows*cs+pad*2;
+        const x=c.getContext('2d');
+        x.fillStyle='#1a1a2e';x.fillRect(0,0,c.width,c.height);
+        x.font='22px "Segoe UI Emoji",sans-serif';x.textAlign='center';x.textBaseline='middle';
+        for(let r=0;r<S.rows;r++)for(let cc=0;cc<S.cols;cc++){
+            const ch=S.map[r][cc];
+            x.fillStyle=ch==='#'?'#5a5a84':ch==='G'?'#1B3A4D':'#2E2E52';
+            x.fillRect(pad+cc*cs+1,pad+r*cs+1,cs-2,cs-2);
+            let em='';
+            if(ch==='#')em='🪨';else if(ch==='G')em='🌀';
+            else if(ch==='D'&&!S.collected.has(r+','+cc))em='💎';
+            if(S.r===r&&S.c===cc)em='🐢';
+            if(em)x.fillText(em,pad+cc*cs+cs/2,pad+r*cs+cs/2+1);
+        }
+        a.href=c.toDataURL('image/png');
+        a.download='미로탐험_'+new Date().toISOString().slice(0,10)+'.png';
     }else{
         const cs=24,pad=10,n=pixelGridSize;
         const c=document.createElement('canvas');
@@ -1329,7 +1725,11 @@ function saveArtwork(){
     addChatMsg('system','💾 작품을 그림 파일로 저장했어요!');
 }
 
-function clearWorkspace(){workspace.clear();updateDSLPreview();}
+function clearWorkspace(force){
+    if(!force&&workspace.getAllBlocks(false).length>2&&!confirm('블록을 정말 모두 지울까?'))return;
+    workspace.clear();updateDSLPreview();
+}
+function undoBlock(){if(workspace)workspace.undo(false);}
 
 // ============================================================
 //  CHAT / API
@@ -1401,6 +1801,13 @@ DEF 이름 { ... } (함수 정의), CALL 이름 (함수 부르기)
 // DSL 한 줄 → 한국어 풀이 (프롬프트↔코드 연결을 눈으로 배우기)
 function glossLine(l){
     let m;
+    // 미로
+    if(l==='MOVE')return'앞으로 한 칸 가기';
+    if(l==='TURN_LEFT')return'왼쪽으로 돌기';
+    if(l==='TURN_RIGHT')return'오른쪽으로 돌기';
+    if(l==='PICK')return'💎 보석 줍기';
+    if(/^IF\s+WALL/.test(l))return'┌ 만약 앞이 벽이면';
+    if(/^\}\s*ELSE/.test(l))return'├ 아니면';
     if(m=l.match(/^FORWARD\s+(\S+)/))return'앞으로 '+m[1]+'만큼 가기';
     if(m=l.match(/^BACKWARD\s+(\S+)/))return'뒤로 '+m[1]+'만큼 가기';
     if(m=l.match(/^RIGHT\s+(\S+)/))return'오른쪽으로 '+m[1]+'° 돌기';
@@ -1443,6 +1850,12 @@ function glossLine(l){
 // "~하니까 → 이 블록!" 추론 문장 생성 (프롬프트→블록 사고 과정 시각화)
 function reasonForLine(l){
     let m;
+    // 미로
+    if(l==='MOVE')return'토토가 한 칸 앞으로 가야 하니까';
+    if(l==='TURN_LEFT')return'토토 기준 왼쪽으로 방향을 바꿔야 하니까';
+    if(l==='TURN_RIGHT')return'토토 기준 오른쪽으로 방향을 바꿔야 하니까';
+    if(l==='PICK')return'그 칸에 있는 보석을 주워야 하니까';
+    if(/^IF\s+WALL/.test(l))return'앞이 벽인지 아닌지 보고 다르게 움직여야 하니까';
     if(m=l.match(/^REPEAT\s+(\d+)/))return'같은 동작이 '+m[1]+'번 되풀이되네? 그럼 반복 블록으로 묶으면 돼!';
     if(m=l.match(/^FORWARD\s+(\S+)/))return'"앞으로 '+m[1]+'"이라고 했으니까';
     if(m=l.match(/^BACKWARD\s+(\S+)/))return'뒤로 물러나야 하니까';
@@ -1485,10 +1898,10 @@ function animateAssembly(dsl){
     return new Promise(resolve=>{
         const blocks=workspace.getAllBlocks(true);
         if(!blocks.length)return resolve();
-        const lines=dsl.split('\n').map(s=>s.trim()).filter(s=>s&&s!=='}'&&!s.startsWith('ELSE'));
+        const lines=dsl.split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('}')&&!s.startsWith('ELSE'));
         blocks.forEach(b=>{const r=b.getSvgRoot();if(r){r.style.transition='opacity .25s';r.style.opacity='0';}});
         const card=document.createElement('div');card.className='chat-msg think';
-        card.innerHTML='<b>🧠 '+(currentMode==='turtle'?'토토':'픽셀')+'의 생각 — 네 말을 이렇게 블록으로 바꿨어! <span style="font-weight:400;font-size:10px;color:#999;">(누르면 빨리 감기)</span></b>';
+        card.innerHTML='<b>🧠 '+(currentMode==='pixel'?'픽셀':'토토')+'의 생각 — 네 말을 이렇게 블록으로 바꿨어! <span style="font-weight:400;font-size:10px;color:#999;">(누르면 빨리 감기)</span></b>';
         let fast=false;card.onclick=()=>{fast=true;};
         const h=document.getElementById('chatHistory');h.appendChild(card);h.scrollTop=999999;
         let i=0;
@@ -1524,18 +1937,18 @@ async function sendChat(){
     isProcessing=true; document.getElementById('sendBtn').disabled=true;
 
     const ld=document.createElement('div');ld.className='chat-msg ai';
-    ld.innerHTML='<span class="loading"></span> '+(currentMode==='turtle'?'토토가 생각 중이야...':'픽셀이 계산 중이야...');
+    ld.innerHTML='<span class="loading"></span> '+(currentMode==='turtle'?'토토가 생각 중이야...':currentMode==='maze'?'탐정 토토가 추리 중이야...':'픽셀이 계산 중이야...');
     document.getElementById('chatHistory').appendChild(ld);
     document.getElementById('chatHistory').scrollTop=999999;
 
     try{
-        const msgs=[{role:'system',content:currentMode==='turtle'?TURTLE_PROMPT:PIXEL_PROMPT},...chatMessages.slice(-6),{role:'user',content:text}];
+        const msgs=[{role:'system',content:currentMode==='turtle'?TURTLE_PROMPT:currentMode==='maze'?MAZE_PROMPT:PIXEL_PROMPT},...chatMessages.slice(-6),{role:'user',content:text}];
         const res=await fetch('/api/ai/chat',{method:'POST',
             headers:{'Content-Type':'application/json','X-Auth-Token':AUTH_TOKEN},
             body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,temperature:0.5,max_tokens:1024})
         });
         const data=await res.json(); ld.remove();
-        if(!res.ok){addChatMsg('system','⚠️ AI 호출 실패: '+(data?.error?.message||data?.error||'알 수 없는 오류'));return;}
+        if(!res.ok){console.error('AI error:',data?.error);addChatMsg('system','앗, '+(currentMode==='pixel'?'픽셀이':'토토가')+' 잠깐 딴생각을 했나 봐! 다시 한번 말해 줄래? 🙏');return;}
 
         let reply=data.choices?.[0]?.message?.content||'';
         reply=reply.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim();
@@ -1544,6 +1957,8 @@ async function sendChat(){
 
         const isDSL = currentMode==='turtle'
             ? /^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|REPEAT|HOME|CLEAR|JUMP|CIRCLE|SAY|STAMP|BG|DEF|CALL)/m.test(reply)
+            : currentMode==='maze'
+            ? /^(MOVE|TURN_LEFT|TURN_RIGHT|PICK|REPEAT|IF )/m.test(reply)
             : /^(LED_ON|LED_OFF|LED_COLOR|LED_TOGGLE|FILL_|CLEAR_ALL|SHOW_ICON|REPEAT|ON_|IF |FOR |WAIT|RECT|BLINK|DEF|CALL)/m.test(reply);
 
         if(isDSL){
@@ -1552,12 +1967,14 @@ async function sendChat(){
                 dslToWorkspace(reply); updateDSLPreview();
                 await animateAssembly(reply);
                 const blockCount=workspace.getAllBlocks(false).length;
-                addChatMsg('ai',(currentMode==='turtle'?'🐢':'🤖')+' 블록 '+blockCount+'개 완성! 이제 실행해 볼게~');
+                addChatMsg('ai',(currentMode==='turtle'?'🐢':currentMode==='maze'?'🔍':'🤖')+' 블록 '+blockCount+'개 완성! 이제 실행해 볼게~');
                 // 2단계: 블록이 다 쌓인 뒤에 실행
                 await new Promise(r=>setTimeout(r,600));
                 if(currentMode==='turtle'){
                     const cmds=parseTurtleDSL(reply);
                     animateTurtle(cmds,()=>{if(currentMission?.targetDSL)checkTurtleMission(reply);});
+                }else if(currentMode==='maze'){
+                    await runMaze(parseMazeDSL(reply));
                 }else{
                     clearPixelGrid(); pixelAnimCancel=false;
                     pixelEventHandlers={A:null,B:null,SHAKE:null};
@@ -1567,7 +1984,8 @@ async function sendChat(){
                 }
             }catch(e){
                 console.error('블록 변환 오류:',e);
-                addChatMsg('system','⚠️ 블록 변환 중 문제가 생겼어요: '+e.message);
+                console.error('block convert error:',e);
+                addChatMsg('system','앗, 블록을 만들다가 살짝 헷갈렸어! 조금 다르게 말해 줄래? 🙏');
             }
         }else{addChatMsg('ai',reply);}
     }catch(e){ld.remove();addChatMsg('system','⚠️ 네트워크 오류: '+e.message);}
@@ -1576,14 +1994,15 @@ async function sendChat(){
 
 let hintStage=0; // 단계형 힌트: 1차=관찰 힌트, 2차=수학 돋보기
 function requestHint(){
-    if(!currentMission){addChatMsg('system','먼저 미션을 선택해 주세요!');return;}
+    if(!currentMission){addChatMsg('system','먼저 🗺️ 모험 지도에서 미션을 골라 줘!');return;}
     const sd=getStoryData(currentMission);
-    if(hintStage===0||!sd.math){
+    const deep=currentMode==='maze'?sd.ct:sd.math; // 미로는 ct(생각 돋보기)로 2단계 힌트
+    if(hintStage===0||!deep){
         addChatMsg('system','💡 힌트: '+currentMission.hint);
-        if(sd.math)addChatMsg('system','한 번 더 누르면 🔍 수학 돋보기가 열려요!');
+        if(deep)addChatMsg('system','한 번 더 누르면 🔍 '+(currentMode==='maze'?'생각 돋보기':'수학 돋보기')+'가 열려요!');
         hintStage=1;
     }else{
-        addMathMsg(sd.math);
+        addMathMsg(deep);
     }
 }
 
@@ -1808,12 +2227,12 @@ const PIXEL_MISSIONS=[
 //  STORY WORLD (코드모스 스타일: 캐릭터 + 행성 챕터 + 미션 스토리)
 // ============================================================
 const TURTLE_CHAPTERS={
-    '3-1':{emoji:'🌱',name:'새싹 행성',story:'선분·직각·사각형이 사라진 새싹 행성! 기본 도형을 되살려 마을을 밝히자. (3-1 평면도형 연계)'},
-    '4학년':{emoji:'🔷',name:'크리스탈 행성',story:'세모 크리스탈이 산산조각 났어! 여러 가지 삼각형의 비밀을 찾아 복구하자. (4학년 각도·삼각형 연계)'},
-    '4-2':{emoji:'🧩',name:'퍼즐 행성',story:'사각형과 다각형 퍼즐이 흩어졌어! 조각을 맞춰 성문을 열자. (4-2 사각형·다각형 연계)'},
-    '5학년':{emoji:'🪞',name:'거울 행성',story:'반쪽이 사라진 거울 행성! 대칭과 색의 규칙으로 원래 모습을 찾자. (5학년 대칭·규칙 연계)'},
-    '도전':{emoji:'🌋',name:'용암 행성',story:'가장 뜨거운 시련의 행성! 배운 모든 것을 합쳐 별을 띄워라.'},
-    '자유':{emoji:'🌈',name:'무지개 행성',story:'무엇이든 그릴 수 있는 상상의 행성! 너만의 작품을 남겨줘.'}
+    '3-1':{emoji:'🌱',img:'planet-sprout',name:'새싹 행성',story:'선분·직각·사각형이 사라진 새싹 행성! 기본 도형을 되살려 마을을 밝히자. (3-1 평면도형 연계)'},
+    '4학년':{emoji:'🔷',img:'planet-crystal',name:'크리스탈 행성',story:'세모 크리스탈이 산산조각 났어! 여러 가지 삼각형의 비밀을 찾아 복구하자. (4학년 각도·삼각형 연계)'},
+    '4-2':{emoji:'🧩',img:'planet-puzzle',name:'퍼즐 행성',story:'사각형과 다각형 퍼즐이 흩어졌어! 조각을 맞춰 성문을 열자. (4-2 사각형·다각형 연계)'},
+    '5학년':{emoji:'🪞',img:'planet-mirror',name:'거울 행성',story:'반쪽이 사라진 거울 행성! 대칭과 색의 규칙으로 원래 모습을 찾자. (5학년 대칭·규칙 연계)'},
+    '도전':{emoji:'🌋',img:'planet-lava',name:'용암 행성',story:'가장 뜨거운 시련의 행성! 배운 모든 것을 합쳐 별을 띄워라.'},
+    '자유':{emoji:'🌈',img:'planet-rainbow',name:'무지개 행성',story:'무엇이든 그릴 수 있는 상상의 행성! 너만의 작품을 남겨줘.'}
 };
 const TURTLE_STORY={
     1:{story:'토토가 첫 에너지 길을 놓아야 해. 두 점을 곧게 잇는 빛의 길을 만들어 줘!',math:'두 점을 곧게 이은 선이 선분! 거북이가 100만큼 가면 길이 100인 선분이 생겨요. (끝없이 뻗으면 직선!)'},
@@ -1840,10 +2259,10 @@ const TURTLE_STORY={
 };
 function pixelChapterKey(m){return m.gridSize===16?'16×16':m.gridSize===8?'8×8':(m.targetGrid===null&&m.id===18)?'자유':'5×5';}
 const PIXEL_CHAPTERS={
-    '5×5':{emoji:'🏘️',name:'픽셀 마을',story:'정전이 된 픽셀 마을! 로봇 픽셀과 함께 LED 불빛을 하나씩 되살리자.'},
-    '8×8':{emoji:'🌆',name:'네온 도시',story:'화면이 커진 네온 도시! 8×8 전광판의 규칙을 찾아 불을 밝히자.'},
-    '16×16':{emoji:'🌌',name:'은하 전광판',story:'우주에서도 보이는 거대 전광판! 큰 그림도 규칙만 알면 문제없어.'},
-    '자유':{emoji:'🎨',name:'자유 아틀리에',story:'네 마음대로 그리는 화가의 방! 상상하는 그림을 픽셀에게 말해 봐.'}
+    '5×5':{emoji:'🏘️',img:'planet-village',name:'픽셀 마을',story:'정전이 된 픽셀 마을! 로봇 픽셀과 함께 LED 불빛을 하나씩 되살리자.'},
+    '8×8':{emoji:'🌆',img:'planet-neon',name:'네온 도시',story:'화면이 커진 네온 도시! 8×8 전광판의 규칙을 찾아 불을 밝히자.'},
+    '16×16':{emoji:'🌌',img:'planet-billboard',name:'은하 전광판',story:'우주에서도 보이는 거대 전광판! 큰 그림도 규칙만 알면 문제없어.'},
+    '자유':{emoji:'🎨',img:'planet-atelier',name:'자유 아틀리에',story:'네 마음대로 그리는 화가의 방! 상상하는 그림을 픽셀에게 말해 봐.'}
 };
 const PIXEL_STORY={
     1:{story:'깜깜한 마을에 첫 가로등을 켜자! 한가운데 칸이 어디인지 찾아봐.',math:'좌표 (x, y): x는 가로(→), y는 세로(↓)! 숫자는 0부터 세어요.'},
@@ -1868,31 +2287,166 @@ const PIXEL_STORY={
 const TURTLE_CHIPS=['앞으로 100만큼 가줘','앞으로 100 가고 오른쪽 120도 돌기를 3번 반복해줘','세모 함수를 만들고 3번 불러줘','별을 그리고 "반짝!"이라고 말해줘'];
 const PIXEL_CHIPS=['x 2, y 2 칸에 불을 켜줘','2번째 가로줄을 모두 켜줘','가운데 칸을 5번 깜빡여줘','버튼 A를 누르면 하트가 나오게 해줘'];
 
+// ============================================================
+//  MAZE WORLD (미로 모험 — 우주 견습 탐정 토토)
+// ============================================================
+const MAZE_WORLD={
+    emoji:'🔍',name:'미로 유적',
+    intro:'먼 우주 어딘가에서 코드로 잠긴 고대 미로 유적이 발견됐어! 우주 견습 탐정 토토는 유적 깊은 곳에 잠든 별의 보물을 찾으라는 임무를 받았지. 하지만 유적의 문은 정확한 순서로 명령하는 탐정에게만 열려. 토토에게 한 칸씩 길을 알려 줄 사람, 바로 너야!'
+};
+
+const MAZE_CHAPTERS={
+    '순차':{emoji:'🐾',name:'순차의 유적',story:'한 걸음씩 차례대로! 명령한 순서 그대로 걸어야 문이 열리는 유적이야.'},
+    '반복':{emoji:'🔁',name:'반복의 유적',story:'같은 무늬가 계속 이어지는 유적! 반복의 힘을 알면 긴 길도 짧은 주문으로 통과할 수 있어.'},
+    '선택':{emoji:'🚪',name:'선택의 유적',story:'안개 때문에 앞이 안 보이는 유적! 벽을 만나면 어떻게 할지 미리 정해 두는 탐정만 통과할 수 있어.'},
+    '시험':{emoji:'🏆',name:'탐정 시험',story:'우주 탐정 협회의 마지막 시험! 배운 모든 것을 합쳐 진짜 탐정 배지를 받자.'}
+};
+
+const MAZE_MISSIONS=[
+    {id:1,title:'첫걸음',level:'순차',levelColor:'#4CAF50',
+     description:'토토를 보물(G)까지 데려다 주세요!',
+     map:['######','#S..G#','######'],
+     startDir:'right',
+     hint:'S에서 G까지 몇 칸인지 손가락으로 짚으며 세어 봐.',
+     par:3,solution:'MOVE\nMOVE\nMOVE'},
+    {id:2,title:'모퉁이',level:'순차',levelColor:'#4CAF50',
+     description:'토토를 보물(G)까지 데려다 주세요!',
+     map:['######','#..G##','#.####','#S####','######'],
+     startDir:'up',
+     hint:'토토가 지금 어느 쪽을 보고 있지? 몇 칸 가서 어느 손 쪽으로 돌지 생각해 봐.',
+     par:5,solution:'MOVE\nMOVE\nTURN_RIGHT\nMOVE\nMOVE'},
+    {id:3,title:'보석길',level:'순차',levelColor:'#4CAF50',
+     description:'보석(D)을 줍고 보물(G)까지 가세요!',
+     map:['#######','###..G#','###D###','#S..###','#######'],
+     startDir:'right',
+     hint:'꺾는 곳이 두 번이야. 보석 칸에서는 무엇을 해야 할까?',
+     par:9,solution:'MOVE\nMOVE\nTURN_LEFT\nMOVE\nPICK\nMOVE\nTURN_RIGHT\nMOVE\nMOVE'},
+    {id:4,title:'긴복도',level:'반복',levelColor:'#FF9800',
+     description:'토토를 보물(G)까지 데려다 주세요!',
+     map:['########','#S....G#','########'],
+     startDir:'right',
+     hint:'MOVE를 다섯 번 쓰는 대신, 한 번만 쓰는 마법의 주문이 유적 벽에 새겨져 있대!',
+     par:2,solution:'REPEAT 5 {\nMOVE\n}'},
+    {id:5,title:'지그재그',level:'반복',levelColor:'#FF9800',
+     description:'계단을 올라 보물(G)까지 가세요!',
+     map:['######','####G#','###..#','##..##','#S.###','######'],
+     startDir:'right',
+     hint:'계단 한 칸을 오르는 데 필요한 명령 네 개를 먼저 찾아봐. 그게 몇 번 반복될까?',
+     par:5,solution:'REPEAT 3 {\nMOVE\nTURN_LEFT\nMOVE\nTURN_RIGHT\n}'},
+    {id:6,title:'빙글길',level:'반복',levelColor:'#FF9800',
+     description:'빙글 감긴 길을 따라 보물(G)까지!',
+     map:['#####','#####','#G..#','###.#','#S..#','#####'],
+     startDir:'right',
+     hint:'"두 칸 가고 왼쪽으로 돌기"가 몇 번이면 도착할까?',
+     par:4,solution:'REPEAT 3 {\nMOVE\nMOVE\nTURN_LEFT\n}'},
+    {id:7,title:'보석복도',level:'반복',levelColor:'#FF9800',
+     description:'보석 4개를 모두 줍고 보물(G)까지!',
+     map:['########','#SDDDDG#','########'],
+     startDir:'right',
+     hint:'한 칸 가서 줍고, 한 칸 가서 줍고… 어? 뭔가 계속 반복되지 않아?',
+     par:4,solution:'REPEAT 4 {\nMOVE\nPICK\n}\nMOVE'},
+    {id:8,title:'벽탐지',level:'선택',levelColor:'#2196F3',
+     description:'안개 속! "벽이면 돌기" 수칙으로 통과하세요.',
+     map:['######','#S...#','####.#','####.#','####G#','######'],
+     startDir:'right',
+     hint:'"앞이 벽이면 돌고, 아니면 간다"를 계속 반복하면 토토는 어떻게 움직일까?',
+     par:4,solution:'REPEAT 7 {\nIF WALL {\nTURN_RIGHT\n} ELSE {\nMOVE\n}\n}'},
+    {id:9,title:'두모퉁이',level:'선택',levelColor:'#2196F3',
+     description:'모퉁이 두 개! 아까 그 수칙이 또 통할까요?',
+     map:['######','#S...#','####.#','#G...#','######'],
+     startDir:'right',
+     hint:'지난 미션 코드에서 숫자 하나만 바꾸면 돼. 지나갈 칸과 모퉁이 수를 세어 봐!',
+     par:4,solution:'REPEAT 10 {\nIF WALL {\nTURN_RIGHT\n} ELSE {\nMOVE\n}\n}'},
+    {id:10,title:'소용돌이',level:'선택',levelColor:'#2196F3',
+     description:'세 번 감기는 소용돌이! 같은 수칙으로 뚫어 보세요.',
+     map:['########','#S.....#','######.#','###G##.#','###....#','########'],
+     startDir:'right',
+     hint:'모퉁이가 세 개나 되지만 규칙은 딱 하나야. 반복 횟수만 다시 세어 봐!',
+     par:4,solution:'REPEAT 15 {\nIF WALL {\nTURN_RIGHT\n} ELSE {\nMOVE\n}\n}'},
+    {id:11,title:'보석계단',level:'시험',levelColor:'#E91E63',
+     description:'시험 1교시! 계단의 보석 3개를 모두 줍고 올라가세요.',
+     map:['######','####G#','###.D#','##.D##','#SD###','######'],
+     startDir:'right',
+     hint:'한 계단에서 하는 일을 순서대로 말해 봐. 가서 줍고, 돌고, 오르고, 또 돌고… 묶을 수 있겠지?',
+     par:6,solution:'REPEAT 3 {\nMOVE\nPICK\nTURN_LEFT\nMOVE\nTURN_RIGHT\n}'},
+    {id:12,title:'탐정시험',level:'시험',levelColor:'#E91E63',
+     description:'마지막 시험! 안개 낀 미로의 보석 2개를 줍고 보물까지.',
+     map:['########','#S..D..#','######.#','#G####.#','#..D...#','########'],
+     startDir:'right',
+     hint:'벽이면 돌고, 아니면 "가면서 줍기". 배운 걸 전부 한 가지 규칙에 담아 봐!',
+     par:5,solution:'REPEAT 17 {\nIF WALL {\nTURN_RIGHT\n} ELSE {\nMOVE\nPICK\n}\n}'}
+];
+
+const MAZE_STORY={
+    1:{story:'유적의 첫 번째 문이 열렸어! 토토가 보물까지 곧장 걸어가기만 하면 돼.',ct:'순차: 컴퓨터는 내가 적은 순서 그대로, 한 번에 하나씩 실행해요!'},
+    2:{story:'이런, 길이 꺾여 있네? 토토는 지금 위쪽을 보고 서 있어.',ct:'순차: "가기"와 "돌기"의 순서가 바뀌면 도착하는 곳도 달라져요.'},
+    3:{story:'벽 틈에서 보석이 반짝! 지나가는 길에 꼭 주워 가자.',ct:'순차: 길고 복잡한 일도 작은 명령으로 쪼개면 하나씩 해결돼요.'},
+    4:{story:'이 복도는 정말 길다! 그런데 벽에 "같은 말을 다섯 번 하지 말라"는 옛 글자가 새겨져 있어.',ct:'반복: 같은 명령이 이어질 땐 REPEAT 하나로 묶으면 코드가 짧아져요!'},
+    5:{story:'계단처럼 생긴 길이야! 자세히 보면 똑같은 모양이 세 번 이어져 있어.',ct:'반복: 반복되는 묶음(패턴)을 찾아내는 눈이 코딩 탐정의 눈이에요!'},
+    6:{story:'길이 안쪽으로 빙글 감겨 있어! 토토가 어지럽지 않게 규칙을 찾아 줘.',ct:'반복: 반복 묶음 안에는 명령이 여러 개 들어가도 괜찮아요.'},
+    7:{story:'우와, 보석이 줄줄이 떨어져 있어! 하나도 빠뜨리지 말고 줍자.',ct:'반복: "가서 줍기"처럼 서로 다른 두 일도 한 묶음으로 반복할 수 있어요.'},
+    8:{story:'이 방은 안개 때문에 앞이 안 보여! 이럴 땐 탐정 수칙 1번, "벽을 만나면 오른쪽으로 돌아라"를 쓸 시간이야.',ct:'선택: IF는 "만약 ~라면"! 상황을 보고 컴퓨터가 스스로 행동을 골라요.'},
+    9:{story:'이번엔 모퉁이가 두 개야. 그런데 이상하지? 아까 만든 코드가 그대로 통할 것 같은 느낌!',ct:'선택: 잘 만든 규칙 하나는 미로가 바뀌어도 다시 쓸 수 있어요!'},
+    10:{story:'선택의 유적 가장 깊은 곳, 소용돌이 방이야! 토토의 벽 감지 수칙이 여기서도 통할까?',ct:'선택+반복: 짧은 규칙 하나로 복잡한 미로를 푸는 것, 그게 바로 알고리즘!'},
+    11:{story:'드디어 탐정 시험 1교시! 보석이 놓인 계단을 오르며 하나도 빠짐없이 주워야 해.',ct:'종합: 순차로 묶음을 만들고 반복으로 돌리면 긴 일이 짧아져요.'},
+    12:{story:'마지막 시험이야! 안개 낀 소용돌이 미로에 보석이 숨어 있어. 여길 통과하면 토토는 진짜 우주 탐정이 돼!',ct:'종합: 순차+반복+선택을 합치면 어떤 미로든 여는 만능 열쇠가 돼요!'}
+};
+
+const MAZE_PROMPT=`너는 초등학생과 함께 미로 유적을 탐험하는 거북이 탐정 '토토'야.
+아이가 토토의 움직임을 자연어로 설명하면 DSL 코드로 변환해 줘.
+
+교육 원칙 (가장 중요):
+1. 아이가 "도착하게 해줘", "미로 풀어줘"처럼 답을 통째로 원하면 절대 코드를 주지 마.
+   대신 딱 한 가지만 물어봐. 예: "좋아, 탐정! 토토가 먼저 몇 칸 가야 할까? 🔍"
+   두세 번 물어봐도 모르면 힌트를 줘: "토토가 보는 쪽으로 손가락을 대고 길을 따라가 봐."
+2. 아이가 "앞으로 세 칸 가고 오른쪽으로 돌아"처럼 동작을 구체적으로 말하면 바로 DSL 코드만 출력해.
+3. 토토가 벽에 부딪히거나 보물을 지나쳐도 정답을 말하지 말고 관찰을 유도해:
+   "토토가 어디서 멈췄지? 그 바로 앞 명령을 다시 봐!"
+4. 같은 명령이 이어진 코드를 아이가 말하면 한 번은 권해줘: "반복되는 부분이 보여? REPEAT로 묶으면 짧아져!"
+5. 방향은 토토 기준이야. 아이가 화면 기준과 헷갈려하면 "토토가 보는 쪽이 앞이야"라고 알려줘.
+6. 답을 맞히면 짧게 칭찬해. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
+
+사용 가능한 명령어:
+MOVE (앞으로 한 칸), TURN_LEFT (왼쪽으로 돌기), TURN_RIGHT (오른쪽으로 돌기),
+PICK (보석 줍기 — 보석 없는 칸에서는 그냥 무시됨),
+REPEAT n { ... } (n번 반복),
+IF WALL { ... } ELSE { ... } (앞이 벽이면 앞 묶음, 아니면 뒤 묶음 실행)
+
+출력 규칙:
+1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
+2. 질문/대화할 때는 코드 없이 한국어만.
+3. 각 명령어는 한 줄에 하나씩. 중괄호 짝 맞출 것.`;
+
+const MAZE_CHIPS=['앞으로 세 칸 가 줘','앞으로 가기를 5번 반복해 줘','한 칸 가서 보석 줍기를 4번 반복해 줘','벽을 만나면 오른쪽으로 돌고, 아니면 앞으로 가 줘'];
+
 let completedTurtle=JSON.parse(localStorage.getItem('turtle_completed')||'[]');
 let completedPixel=JSON.parse(localStorage.getItem('pixel_completed')||'[]');
+let completedMaze=JSON.parse(localStorage.getItem('maze_completed')||'[]');
 let starsTurtle=JSON.parse(localStorage.getItem('turtle_stars')||'{}');
 let starsPixel=JSON.parse(localStorage.getItem('pixel_stars')||'{}');
+let starsMaze=JSON.parse(localStorage.getItem('maze_stars')||'{}');
 
-function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:PIXEL_MISSIONS;}
-function getCompleted(){return currentMode==='turtle'?completedTurtle:completedPixel;}
-function getStars(){return currentMode==='turtle'?starsTurtle:starsPixel;}
+function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:currentMode==='maze'?MAZE_MISSIONS:PIXEL_MISSIONS;}
+function getCompleted(){return currentMode==='turtle'?completedTurtle:currentMode==='maze'?completedMaze:completedPixel;}
+function getStars(){return currentMode==='turtle'?starsTurtle:currentMode==='maze'?starsMaze:starsPixel;}
 function saveCompleted(id){
     if(currentMode==='turtle'){if(!completedTurtle.includes(id)){completedTurtle.push(id);localStorage.setItem('turtle_completed',JSON.stringify(completedTurtle));}}
+    else if(currentMode==='maze'){if(!completedMaze.includes(id)){completedMaze.push(id);localStorage.setItem('maze_completed',JSON.stringify(completedMaze));}}
     else{if(!completedPixel.includes(id)){completedPixel.push(id);localStorage.setItem('pixel_completed',JSON.stringify(completedPixel));}}
 }
 function saveStars(id,n){
     const s=getStars();
-    if((s[id]||0)<n){s[id]=n;localStorage.setItem(currentMode==='turtle'?'turtle_stars':'pixel_stars',JSON.stringify(s));}
+    if((s[id]||0)<n){s[id]=n;localStorage.setItem(currentMode==='turtle'?'turtle_stars':currentMode==='maze'?'maze_stars':'pixel_stars',JSON.stringify(s));}
     updateStarTotal();
 }
 function updateStarTotal(){
-    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0);
-    const el=document.getElementById('starTotal');if(el)el.textContent='⭐ '+sum;
+    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0)+Object.values(starsMaze).reduce((a,b)=>a+b,0);
+    const el=document.getElementById('starTotal');if(el)el.innerHTML='<img src="/assets/vibe/ui-star.png" alt="별"> '+sum;
 }
-function getChapterKey(m){return currentMode==='turtle'?m.level:pixelChapterKey(m);}
-function getChapters(){return currentMode==='turtle'?TURTLE_CHAPTERS:PIXEL_CHAPTERS;}
-function getStoryData(m){return (currentMode==='turtle'?TURTLE_STORY:PIXEL_STORY)[m.id]||{};}
-function isFreeMission(m){return !m.targetDSL&&!m.targetGrid;}
+function getChapterKey(m){return currentMode==='pixel'?pixelChapterKey(m):m.level;}
+function getChapters(){return currentMode==='turtle'?TURTLE_CHAPTERS:currentMode==='maze'?MAZE_CHAPTERS:PIXEL_CHAPTERS;}
+function getStoryData(m){return (currentMode==='turtle'?TURTLE_STORY:currentMode==='maze'?MAZE_STORY:PIXEL_STORY)[m.id]||{};}
+function isFreeMission(m){if(currentMode==='maze')return false;return !m.targetDSL&&!m.targetGrid;}
 function isUnlocked(m){
     if(isFreeMission(m))return true;
     const missions=getMissions(),completed=getCompleted();
@@ -1903,14 +2457,15 @@ function isUnlocked(m){
 
 const MISSION_ICONS_T={1:'➖',2:'📐',3:'🚪',4:'🪟',5:'🔺',6:'⛰️',7:'📏',8:'✨',9:'🛡️',10:'🧩',11:'💎',12:'🌉',13:'⭐',14:'🐝',15:'🪞',16:'🎨',17:'🌟',18:'🏠',19:'🌈',20:'🪜',21:'🖌️'};
 const MISSION_ICONS_P={1:'💡',2:'🛣️',3:'⛰️',4:'🏥',5:'❤️',6:'😊',7:'🏰',8:'🏁',9:'🚦',10:'🌆',11:'❌',12:'🧱',13:'🌀',14:'⬆️',15:'💖',16:'🌟',17:'🙂',18:'🖌️'};
+const MISSION_ICONS_M={1:'🐾',2:'↪️',3:'💎',4:'🛤️',5:'🪜',6:'🌀',7:'📿',8:'🧱',9:'🚪',10:'🌪️',11:'🏔️',12:'🏆'};
 
 function openMissionSelector(){
     if(tourActive&&!tourEvent('map'))return; // 투어 중엔 지도 단계에서만 열림
     const missions=getMissions(),completed=getCompleted(),stars=getStars();
     const chapters=getChapters();
-    const icons=currentMode==='turtle'?MISSION_ICONS_T:MISSION_ICONS_P;
+    const icons=currentMode==='turtle'?MISSION_ICONS_T:currentMode==='maze'?MISSION_ICONS_M:MISSION_ICONS_P;
     const g=document.getElementById('missionGrid');g.innerHTML='';
-    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🗺️ 도형 행성 대모험 — 토토와 함께!':'🗺️ 픽셀 은하 구조대 — 픽셀과 함께!';
+    document.getElementById('missionModalTitle').textContent=currentMode==='turtle'?'🗺️ 도형 행성 대모험 — 토토와 함께!':currentMode==='maze'?'🗺️ 미로 유적 대탐험 — 탐정 토토와 함께!':'🗺️ 픽셀 은하 구조대 — 픽셀과 함께!';
     // 챕터별로 미션을 묶어 스토리 맵 구성
     const order=[];const groups={};
     for(const m of missions){const k=getChapterKey(m);if(!groups[k]){groups[k]=[];order.push(k);}groups[k].push(m);}
@@ -1919,8 +2474,8 @@ function openMissionSelector(){
         const list=groups[key];
         const doneCnt=list.filter(m=>completed.includes(m.id)).length;
         const block=document.createElement('div');block.className='chapter-block';
-        block.innerHTML=`<div class="chapter-head"><span class="chapter-emoji">${ch.emoji}</span>
-            <div><div class="chapter-name">${ch.name} <span style="font-size:10px;color:var(--text-light);font-weight:600;">${key}</span></div>
+        block.innerHTML=`<div class="chapter-head"><span class="chapter-emoji">${ch.img?`<img src="/assets/vibe/${ch.img}.png" alt="${ch.name}">`:ch.emoji}</span>
+            <div><div class="chapter-name">${ch.name} <span style="font-size:11px;color:var(--text-light);font-weight:600;">${key}</span></div>
             <div class="chapter-sub">${ch.story}</div></div>
             <span class="chapter-prog">${doneCnt}/${list.length} 완료</span></div>`;
         const path=document.createElement('div');path.className='node-path';
@@ -1930,11 +2485,16 @@ function openMissionSelector(){
             const st=stars[m.id]||0;
             const node=document.createElement('div');
             node.className='mission-node'+(done?' done':'')+(unlocked?'':' locked');
-            node.innerHTML=`<div class="n-icon">${unlocked?(icons[m.id]||'🪐'):'🔒'}</div>
+            const starImgs='<img src="/assets/vibe/ui-star.png" alt="⭐">'.repeat(done?(st||1):0);
+            node.innerHTML=`<div class="n-icon">${unlocked?(icons[m.id]||'🪐'):'<img src="/assets/vibe/ui-lock.png" alt="잠김">'}</div>
                 <div class="n-title">${m.title}</div>
-                <div class="n-stars">${done?('⭐'.repeat(st||1)):''}</div>`;
+                <div class="n-stars">${starImgs}</div>`;
             node.onclick=()=>{
-                if(!unlocked){addChatMsg('system','🔒 앞 미션을 먼저 완료하면 열려요!');return;}
+                if(!unlocked){
+                    node.style.animation='shake .4s';setTimeout(()=>node.style.animation='',420);
+                    addChatMsg('system','🔒 앞 미션을 먼저 깨면 열려!');
+                    return;
+                }
                 selectMission(m);
             };
             path.appendChild(node);
@@ -1955,11 +2515,11 @@ function selectMission(m){
     // 스토리 인트로 먼저 보여주기 (코드모스 스타일)
     const ch=getChapters()[getChapterKey(m)]||{emoji:'🪐',name:''};
     const sd=getStoryData(m);
-    document.getElementById('storyChar').innerHTML='<img src="/assets/vibe/'+(currentMode==='turtle'?'toto-hello':'pixel-hello')+'.svg" alt="'+(currentMode==='turtle'?'토토':'픽셀')+'" style="width:96px;height:96px;">';
+    document.getElementById('storyChar').innerHTML='<img src="/assets/vibe/'+(currentMode==='pixel'?'pixel-hello':'toto-hello')+'.svg" alt="'+(currentMode==='pixel'?'픽셀':'토토')+'" style="width:96px;height:96px;">';
     document.getElementById('storyChapter').textContent=`${ch.emoji} ${ch.name} · 미션 ${m.id}`;
     document.getElementById('storyTitle').textContent=m.title;
     document.getElementById('storyText').innerHTML=(sd.story||m.description)+
-        `<div style="margin-top:8px;font-size:11px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
+        `<div style="margin-top:8px;font-size:11px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':currentMode==='maze'?'우주 견습 탐정 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
     document.getElementById('storyModal').classList.add('show');
 }
 
@@ -1967,7 +2527,7 @@ function startMissionPlay(){
     document.getElementById('storyModal').classList.remove('show');
     const m=currentMission;if(!m)return;
     hintStage=0;
-    clearWorkspace();
+    clearWorkspace(true);
     chatMessages=[];document.getElementById('chatHistory').innerHTML='';
     addChatMsg('system',`🎯 미션 ${m.id}: ${m.title}`);
     const sd=getStoryData(m);
@@ -1977,12 +2537,16 @@ function startMissionPlay(){
         resetTurtle();
         if(m.targetDSL){
             // 수학 카드는 여기서 미리 보여주지 않는다 (발견학습: 힌트 2단계·성공 후 정리에서 제공)
-            addChatMsg('system','👀 목표 모양을 시연할게요! 길이 숫자와 각도(°)를 잘 관찰하세요.');
+            addChatMsg('system','👀 목표 모양을 보여줄게! 길이 숫자랑 각도(°)를 잘 봐 둬.');
             setTimeout(()=>animateTurtle(parseTurtleDSL(m.targetDSL),()=>{
-                addChatMsg('system','시연 완료! 잠시 후 👻 겹쳐보기만 남아요. 거북이에게 말로 설명해 보세요.');
+                addChatMsg('system','시연 끝! 잠시 후 👻 겹쳐보기만 남아. 나한테 말로 설명해 줘!');
                 setTimeout(()=>resetTurtle(),3000);
             }),400);
         }
+    }else if(currentMode==='maze'){
+        // 미로는 시연 없음 — 맵이 처음부터 보이므로 바로 시작
+        initMazeMission(m);
+        addChatMsg('system','🗺️ 미로가 준비됐어! 토토를 🌀 보물까지 데려다 줘.'+(mazeState.gemsTotal?` 가는 길의 💎 보석 ${mazeState.gemsTotal}개도 잊지 말고!`:''));
     }else{
         if(m.gridSize&&m.gridSize!==pixelGridSize){
             pixelGridSize=m.gridSize;
@@ -2002,7 +2566,7 @@ function startMissionPlay(){
 
 function addMathMsg(text){
     const div=document.createElement('div');div.className='chat-msg math';
-    div.innerHTML='<b>🔍 수학 돋보기</b>'+text;
+    div.innerHTML='<b>🔍 '+(currentMode==='maze'?'생각 돋보기':'수학 돋보기')+'</b>'+text;
     const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
 }
 
@@ -2010,7 +2574,7 @@ function renderChips(m){
     const row=document.getElementById('chipRow');if(!row)return;
     row.innerHTML='<span class="chip-label">💬 이렇게 말해봐</span>';
     const sd=m?getStoryData(m):null;
-    const chips=(sd&&sd.chips)||(currentMode==='turtle'?TURTLE_CHIPS:PIXEL_CHIPS);
+    const chips=(sd&&sd.chips)||(currentMode==='turtle'?TURTLE_CHIPS:currentMode==='maze'?MAZE_CHIPS:PIXEL_CHIPS);
     for(const c of chips){
         const s=document.createElement('span');s.className='chip';s.textContent=c;
         // 칩 탭 = 즉시 전송 (저학년 1탭 루프)
@@ -2037,12 +2601,12 @@ function checkTurtleMission(studentDSL){
         const sd=getStoryData(currentMission);
         if(sd.math)addMathMsg('오늘의 정리 📚 '+sd.math);
     }
-    else if(sim>=0.5)showFeedback(false,'거의 다 됐어요! 💪','목표와 '+Math.round(sim*100)+'% 비슷해요. 👻 겹쳐보기로 어디가 다른지 찾아보세요!',0);
-    else addChatMsg('system','🤔 목표와 달라요. 👻 겹쳐보기와 💡 힌트를 활용해 보세요!');
+    else if(sim>=0.5)showFeedback(false,'거의 다 왔어! 💪','목표랑 '+Math.round(sim*100)+'% 비슷해. 👻 겹쳐보기로 어디가 다른지 찾아봐!',0);
+    else showFeedback(false,'괜찮아, 같이 해 보자! 🤝','👻 겹쳐보기로 목표랑 비교해 보고, 💡 힌트 버튼을 눌러 봐. 토토가 도와줄게!',0);
 }
 
 function starComment(n){
-    return n>=3?'완벽해요! 수학 박사님 인정! 🏆':n>=2?'훌륭해요! 조금만 더 정확하면 별 3개!':'성공! 다시 도전하면 별을 더 모을 수 있어요.';
+    return n>=3?'완벽해! 넌 진짜 코딩 박사야! 🏆':n>=2?'훌륭해! 조금만 더 정확하면 별 3개!':'성공! 다시 도전하면 별을 더 모을 수 있어.';
 }
 
 function confetti(){
@@ -2073,12 +2637,12 @@ function checkPixelMission(){
         showFeedback(true,'🎉 미션 성공!',starComment(stars),stars);
         addChatMsg('success','🎉 미션 성공! '+'⭐'.repeat(stars));
     }
-    else if(sim>=0.7)showFeedback(false,'거의 다 됐어요! 💪',Math.round(sim*100)+'% 일치! 🎯 목표 그림과 좌표를 비교해 보세요.',0);
-    else addChatMsg('system','🤔 '+Math.round(sim*100)+'% 일치. 🎯 목표 그림의 좌표를 하나씩 살펴보세요!');
+    else if(sim>=0.7)showFeedback(false,'거의 다 왔어! 💪',Math.round(sim*100)+'% 일치! 🎯 목표 그림과 좌표를 비교해 봐.',0);
+    else showFeedback(false,'괜찮아, 같이 해 보자! 🤝',Math.round(sim*100)+'% 일치야. 🎯 목표 그림의 좌표를 하나씩 살펴보면 금방이야!',0);
 }
 
 function showFeedback(ok,title,text,stars){
-    const ch=currentMode==='turtle'?(ok?'toto-success':'toto-cheer'):(ok?'pixel-success':'pixel-think');
+    const ch=currentMode==='pixel'?(ok?'pixel-success':'pixel-think'):(ok?'toto-success':'toto-cheer');
     document.getElementById('fbIcon').innerHTML='<img src="/assets/vibe/'+ch+'.svg" alt="" style="width:110px;height:110px;">';
     const st=document.getElementById('fbStars');
     if(ok&&stars){
@@ -2181,7 +2745,7 @@ function endTour(){
     tourActive=false;
     document.getElementById('tourLayer').classList.add('hidden');
     localStorage.setItem('vibe_onboarded','1');
-    clearWorkspace();resetTurtle();
+    clearWorkspace(true);resetTurtle();
     setTimeout(()=>openMissionSelector(),300);
 }
 window.addEventListener('resize',()=>{if(tourActive)showTourStep();});
