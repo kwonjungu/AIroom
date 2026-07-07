@@ -353,7 +353,8 @@ const KV_KEYS = {
     'bap2-managers.json': 'bap2-managers',
     'bap2-bosses.json': 'bap2-bosses',
     'bap3-managers.json': 'bap3-managers',
-    'bap3-bosses.json': 'bap3-bosses'
+    'bap3-bosses.json': 'bap3-bosses',
+    'vibe-progress.json': 'vibe-progress'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -440,7 +441,8 @@ const DATA_ROUTES = [
     { path: 'tdist-docs', file: 'tdist-docs.json', fallback: [] },
     { path: 'checklist-posts', file: 'checklist-posts.json', fallback: [] },
     { path: 'checklist-extra-staff', file: 'checklist-extra-staff.json', fallback: [] },
-    { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } }
+    { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
+    { path: 'vibe-progress', file: 'vibe-progress.json', fallback: [] }
 ];
 
 DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
@@ -521,7 +523,8 @@ const ARRAY_COLLECTIONS = {
     'esign-docs': 'esign-docs.json',
     'tdist-docs': 'tdist-docs.json',
     'checklist-posts': 'checklist-posts.json',
-    'checklist-extra-staff': 'checklist-extra-staff.json'
+    'checklist-extra-staff': 'checklist-extra-staff.json',
+    'vibe-progress': 'vibe-progress.json'
 };
 
 function reorderArrayByIds(arr, ids) {
@@ -606,6 +609,28 @@ app.post('/api/items/:collection/replace', requireAuth, async (req, res) => {
     try {
         await withRedisLock('data:' + collection, async () => {
             await writeData(file, arr);
+        });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(e.status || 500).json({ error: e.message });
+    }
+});
+
+// ----- vibe-progress 전용 per-item PATCH 별칭 -----
+// 클라이언트 계약: PATCH /api/vibe-progress/items/:id (항목: {id, cls, name, stars, completed, updatedAt})
+// 일반 형식(PATCH /api/items/vibe-progress/:id)도 ARRAY_COLLECTIONS 등록으로 함께 동작.
+app.patch('/api/vibe-progress/items/:id', requireAuth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await withRedisLock('data:vibe-progress', async () => {
+            let arr = (await readData('vibe-progress.json')) || [];
+            if (!Array.isArray(arr)) arr = [];
+            const incoming = { ...(req.body || {}), id };
+            if (!incoming.updatedAt) incoming.updatedAt = new Date().toISOString();
+            const idx = arr.findIndex(x => x && x.id === id);
+            if (idx === -1) arr.push(incoming);
+            else arr[idx] = { ...arr[idx], ...incoming };
+            await writeData('vibe-progress.json', arr);
         });
         res.json({ success: true });
     } catch (e) {
@@ -2104,6 +2129,7 @@ const POSTING_DATA = {
     'checklist-posts': { file: 'checklist-posts.json', fallback: [] },
     'checklist-extra-staff': { file: 'checklist-extra-staff.json', fallback: [] },
     'winter-schedule': { file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
+    'vibe-progress': { file: 'vibe-progress.json', fallback: [] },
 };
 Object.entries(POSTING_DATA).forEach(([p, { file, fallback }]) => {
     app.get(`/api/posting/${p}`, (req, res) => {
