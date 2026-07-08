@@ -184,34 +184,23 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 #missionModal .modal-body{flex:1;overflow-y:auto;background:transparent!important;max-width:980px;width:100%;margin:0 auto;}
 
 /* ===== 에피소드 선택 (쿠키런식 1단계) ===== */
-.episode-list{display:flex;flex-direction:column;gap:14px;}
-.episode-card{display:flex;gap:14px;background:rgba(255,255,255,.94);border:2px solid var(--border);border-radius:18px;padding:12px;cursor:pointer;transition:all .18s;align-items:center;}
-.episode-card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,.14);border-color:var(--primary);}
-.episode-card.locked{filter:grayscale(.85);opacity:.65;cursor:not-allowed;}
-.episode-card.locked:hover{transform:none;box-shadow:none;border-color:var(--border);}
-.episode-card.cleared{border-color:var(--success);}
-.ep-thumb{position:relative;width:92px;height:92px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#1a1a2e,#2d2b55);border-radius:14px;}
-.ep-thumb img{width:76px;height:76px;object-fit:contain;}
-.ep-thumb span{font-size:44px;}
-.ep-lock{position:absolute;width:36px!important;height:36px!important;bottom:-6px;right:-6px;}
-.ep-clear{position:absolute;width:32px!important;height:32px!important;top:-8px;right:-8px;}
-.ep-body{flex:1;min-width:0;}
-.ep-name{font-family:'Jua',sans-serif;font-size:18px;}
-.ep-key{font-size:11px;color:var(--text-light);font-weight:600;}
-.ep-story{font-size:13px;color:#5A6B7F;margin-top:2px;line-height:1.5;}
-.ep-progress{display:flex;align-items:center;gap:8px;margin-top:8px;}
-.ep-bar{flex:1;max-width:220px;height:10px;background:#E2E8F0;border-radius:6px;overflow:hidden;}
-.ep-bar div{height:100%;background:linear-gradient(90deg,#51CF66,#94E3A2);border-radius:6px;transition:width .4s;}
-.ep-cnt{font-size:12px;font-weight:800;color:var(--text-light);}
-.ep-stars{margin-top:4px;font-size:13px;font-weight:800;color:#B8860B;display:flex;align-items:center;gap:4px;}
-.ep-stars img{width:16px;height:16px;}
-.ep-free{margin-top:8px;font-size:13px;font-weight:800;color:#E91E63;}
-.ep-go{margin-top:8px;padding:8px 18px;border:none;border-radius:18px;background:linear-gradient(135deg,#FF9800,#FF6B6B);color:#fff;font-family:'Jua',sans-serif;font-size:14px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.2);}
-.episode-card.locked .ep-go{background:#b8c2cf;box-shadow:none;}
-
-/* ===== 스테이지 맵 (게임식 — 가로 스크롤 월드맵) ===== */
-.ep-back{padding:6px 14px;border:1px solid var(--border);border-radius:16px;background:#fff;cursor:pointer;font-family:'Jua',sans-serif;font-size:14px;color:var(--primary);margin-right:6px;}
+/* ===== 통합 월드맵 (게임식 — 전체 에피소드가 한 맵에, 가로 스크롤) ===== */
 .stage-intro{background:rgba(255,255,255,.9);border-radius:12px;padding:10px 14px;font-size:14px;color:#5A6B7F;margin-bottom:12px;text-align:center;}
+/* 챕터(소주제) 관문: 길 위의 행성 표지판 */
+.ch-gate{position:absolute;transform:translate(-50%,-50%);width:118px;text-align:center;z-index:1;cursor:pointer;}
+.ch-gate-thumb{position:relative;width:78px;height:78px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 34% 30%,#3a3a6e,#191932);border-radius:50%;border:4px solid #ffd166;box-shadow:0 6px 0 rgba(0,0,0,.3),0 10px 22px rgba(0,0,0,.4);}
+.ch-gate-thumb img{width:60px;height:60px;object-fit:contain;}
+.ch-gate-thumb span{font-size:38px;line-height:1;}
+.ch-gate.locked .ch-gate-thumb{border-color:#5a6478;filter:grayscale(.85);opacity:.8;}
+.ch-gate.cleared .ch-gate-thumb{border-color:#51CF66;}
+.ch-gate-lock{position:absolute;width:30px!important;height:30px!important;bottom:-6px;right:-6px;}
+.ch-gate-clear{position:absolute;width:26px!important;height:26px!important;top:-7px;right:-3px;}
+.ch-gate-name{margin-top:5px;font-family:'Jua',sans-serif;font-size:14px;color:#ffd166;text-shadow:0 1px 4px rgba(0,0,0,.75);word-break:keep-all;}
+.ch-gate.locked .ch-gate-name{color:#9aa4b8;}
+.ch-gate-cnt{font-size:11px;font-weight:800;color:#cfd8ea;text-shadow:0 1px 3px rgba(0,0,0,.7);}
+/* 챕터 구간 배경 살짝 구분 (지도 위 색 띠) */
+.ch-zone{position:absolute;top:0;bottom:0;border-radius:18px;background:rgba(255,255,255,.045);}
+.ch-zone.alt{background:rgba(255,209,102,.06);}
 .stage-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:16px;background:linear-gradient(180deg,#20204a 0%,#2d2b55 60%,#1b3a52 100%);box-shadow:inset 0 2px 12px rgba(0,0,0,.4);}
 .stage-scroll::-webkit-scrollbar{height:12px;}
 .stage-scroll::-webkit-scrollbar-thumb{background:#5a6b9e;border:3px solid #20204a;}
@@ -254,8 +243,8 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .sn-free{font-size:11px;font-weight:800;color:#FF8FB5;}
 .stage-hint{font-size:12px;color:var(--text-light);text-align:center;margin-top:8px;}
 @media(max-width:600px){
-    .ep-thumb{width:72px;height:72px;}
-    .ep-thumb img{width:58px;height:58px;}
+    .ch-gate-thumb{width:64px;height:64px;}
+    .ch-gate-thumb img{width:48px;height:48px;}
 }
 
 /* ===== STORY INTRO MODAL ===== */
@@ -3413,7 +3402,8 @@ const MISSION_ICONS_M={1:'🐾',2:'↪️',3:'💎',4:'🛤️',5:'🪜',6:'🌀
 const MISSION_ICONS_S={1:'🍎',2:'☄️',3:'💎',4:'🎨'};
 
 // ============================================================
-//  모험 지도 2단 구조 (쿠키런식): 에피소드 선택 → 스테이지 맵
+//  통합 월드맵: 전체 에피소드(챕터)와 모든 스테이지가 한 맵에
+//  챕터는 길 위의 행성 관문(🪐 표지판)으로 구분 — 단계 이동 없음
 // ============================================================
 let lastClearedId=null; // 방금 성공한 미션 — 지도 복귀 시 클리어 모션 재생용
 function chapterGroups(){
@@ -3421,7 +3411,7 @@ function chapterGroups(){
     for(const m of getMissions()){const k=getChapterKey(m);if(!groups[k]){groups[k]=[];order.push(k);}groups[k].push(m);}
     return {order,groups};
 }
-// 에피소드 잠금: 이전 에피소드 전부 완료 시 해제 (자유 챕터·기존 진행 기록은 예외)
+// 챕터 잠금: 이전 챕터 전부 완료 시 해제 (자유 챕터·기존 진행 기록은 예외)
 function isChapterUnlocked(key,order,groups){
     const idx=order.indexOf(key);
     if(idx<=0||currentMode==='studio')return true;
@@ -3435,103 +3425,129 @@ function isChapterUnlocked(key,order,groups){
 function openMissionSelector(){
     if(tourActive&&!tourEvent('map'))return; // 투어 중엔 지도 단계에서만 열림
     document.getElementById('missionModal').classList.add('show');
-    // 플레이 중이던 챕터가 있으면 그 스테이지 맵으로 바로 (내 자리로 돌아온 느낌)
-    if(currentMission&&currentMode!=='studio')renderStageMap(getChapterKey(currentMission));
-    else renderEpisodeSelect();
+    renderWorldMap();
 }
 
-// ── 1단계: 에피소드(행성/유적) 선택 ──
-function renderEpisodeSelect(){
+// ── 통합 월드맵: 챕터 관문 + 전 스테이지가 한 길 위에 ──
+function renderWorldMap(){
     const {order,groups}=chapterGroups();
     const chapters=getChapters(),completed=getCompleted(),stars=getStars();
-    const g=document.getElementById('missionGrid');g.innerHTML='';
-    document.getElementById('missionModalTitle').innerHTML=
-        currentMode==='turtle'?'🗺️ 도형 행성 대모험':currentMode==='maze'?'🗺️ 미로 유적 대탐험':currentMode==='studio'?'🎮 게임 공방':'🗺️ 픽셀 은하 구조대';
-    const wrap=document.createElement('div');wrap.className='episode-list';
-    for(const key of order){
-        const ch=chapters[key]||{emoji:'🪐',name:key,story:''};
-        const list=groups[key];
-        const scored=list.filter(m=>!isFreeMission(m));
-        const doneCnt=list.filter(m=>completed.includes(m.id)).length;
-        const starSum=scored.reduce((a,m)=>a+(stars[m.id]||0),0);
-        const starMax=scored.length*3;
-        const unlocked=isChapterUnlocked(key,order,groups);
-        const allDone=scored.length>0&&scored.every(m=>completed.includes(m.id));
-        const pct=list.length?Math.round(doneCnt/list.length*100):0;
-        const card=document.createElement('div');
-        card.className='episode-card'+(unlocked?'':' locked')+(allDone?' cleared':'');
-        card.innerHTML=`
-            <div class="ep-thumb">${ch.img?`<img src="/assets/vibe/${ch.img}.png" alt="">`:`<span>${ch.emoji}</span>`}
-                ${unlocked?'':'<img class="ep-lock" src="/assets/vibe/ui-lock.png" alt="잠김">'}
-                ${allDone?'<img class="ep-clear" src="/assets/vibe/ui-check.png" alt="완료">':''}</div>
-            <div class="ep-body">
-                <div class="ep-name">${ch.name} <span class="ep-key">${key}</span></div>
-                <div class="ep-story">${unlocked?ch.story:'이전 에피소드를 모두 깨면 열려!'}</div>
-                ${currentMode==='studio'?'<div class="ep-free">자유 창작</div>':`
-                <div class="ep-progress"><div class="ep-bar"><div style="width:${pct}%"></div></div>
-                    <span class="ep-cnt">${doneCnt}/${list.length}</span></div>
-                <div class="ep-stars"><img src="/assets/vibe/ui-star.png" alt="별"> ${starSum} / ${starMax}</div>`}
-                <button class="ep-go">${unlocked?(doneCnt===0?'모험 시작!':allDone?'다시 탐험':'이어서 하기')+' →':'🔒 잠김'}</button>
-            </div>`;
-        card.onclick=()=>{
-            if(!unlocked){card.style.animation='shake .4s';setTimeout(()=>card.style.animation='',420);return;}
-            renderStageMap(key);
-        };
-        wrap.appendChild(card);
-    }
-    g.appendChild(wrap);
-}
-
-// ── 2단계: 스테이지 맵 (구불구불 길 + 별 + 현재 위치 캐릭터) ──
-function renderStageMap(key){
-    const {order,groups}=chapterGroups();
-    const chapters=getChapters(),completed=getCompleted(),stars=getStars();
-    const ch=chapters[key]||{emoji:'🪐',name:key,story:''};
-    const list=groups[key];
     const icons=currentMode==='turtle'?MISSION_ICONS_T:currentMode==='maze'?MISSION_ICONS_M:currentMode==='studio'?MISSION_ICONS_S:MISSION_ICONS_P;
     const g=document.getElementById('missionGrid');g.innerHTML='';
     document.getElementById('missionModalTitle').innerHTML=
-        `<button class="ep-back" onclick="renderEpisodeSelect()">‹ 에피소드</button> ${ch.img?`<img src="/assets/vibe/${ch.img}.png" style="width:30px;height:30px;vertical-align:middle;">`:ch.emoji} ${ch.name}`;
-    const intro=document.createElement('div');intro.className='stage-intro';intro.textContent=ch.story;g.appendChild(intro);
-    // 현재 도전할 스테이지 = 잠금 해제됐지만 아직 못 깬 첫 미션
-    const currentId=(list.find(m=>isUnlocked(m)&&!completed.includes(m.id))||{}).id;
-    const charSvg=currentMode==='pixel'?'pixel-hello':'toto-hello';
-    const allDone=list.filter(m=>!isFreeMission(m)).every(m=>completed.includes(m.id))&&list.some(m=>!isFreeMission(m));
-    // ── 가로 스크롤 월드맵: SVG 곡선 길 위에 스테이지 배치 ──
+        currentMode==='turtle'?'🗺️ 도형 행성 대모험':currentMode==='maze'?'🗺️ 미로 유적 대탐험':currentMode==='studio'?'🎮 게임 공방':'🗺️ 픽셀 은하 구조대';
+
+    // 슬롯 배열: [관문, 미션...] × 챕터 + 마지막 골인
+    const slots=[];
+    for(const key of order){
+        slots.push({type:'gate',key});
+        for(const m of groups[key])slots.push({type:'m',m,key});
+    }
+    slots.push({type:'goal'});
+    const missionSlots=slots.filter(s=>s.type==='m');
+    const chUnlocked={};for(const key of order)chUnlocked[key]=isChapterUnlocked(key,order,groups);
+    const mUnlocked=s=>chUnlocked[s.key]&&isUnlocked(s.m);
+
+    // 현재 도전 스테이지 = 열려 있으면서 아직 못 깬 첫 미션 (전체 기준)
+    const curSlot=missionSlots.find(s=>mUnlocked(s)&&!completed.includes(s.m.id));
+    const currentId=curSlot?curSlot.m.id:null;
+    const allDone=missionSlots.filter(s=>!isFreeMission(s.m)).every(s=>completed.includes(s.m.id))&&missionSlots.some(s=>!isFreeMission(s.m));
+
+    // 상단 안내: 지금 도전 중인 챕터의 스토리
+    const curKey=curSlot?curSlot.key:order[order.length-1];
+    const curCh=chapters[curKey]||{story:''};
+    const intro=document.createElement('div');intro.className='stage-intro';intro.id='wmIntro';
+    intro.textContent=curCh.story||'모든 에피소드를 클리어했어요! 🎉';
+    g.appendChild(intro);
+
+    // ── 가로 스크롤 트랙 ──
     const GAP=136,PADX=110,H=262;
     const scroll=document.createElement('div');scroll.className='stage-scroll';
     const track=document.createElement('div');track.className='stage-track';
-    const W=PADX*2+GAP*list.length+40;
+    const W=PADX*2+GAP*(slots.length-1)+40;
     track.style.width=W+'px';
     const py=i=>138+34*Math.sin(i*1.15+0.6); // 완만한 물결 높이
-    const pts=list.map((m,i)=>({x:PADX+i*GAP,y:py(i)}));
-    const goal={x:PADX+list.length*GAP,y:py(list.length)};
-    const all=[...pts,goal];
-    // 길: 흰 바탕 도로 + 구간별 초록(해결)/점선(미해결)
-    // 방금 깬 미션이면 클리어 모션 (선 그리기 + 캐릭터 이동 + 별 팡팡)
-    const clearedIdx=lastClearedId!=null?list.findIndex(m=>m.id===lastClearedId):-1;
+    const pts=slots.map((s,i)=>({x:PADX+i*GAP,y:py(i)}));
+
+    // 진행선: 슬롯 i까지 도달했으면 초록 — 그 앞의 모든 미션이 완료(또는 자유)여야 함
+    const reach=[];let ok=true;
+    slots.forEach((s,i)=>{reach[i]=ok;if(s.type==='m'&&!(completed.includes(s.m.id)||isFreeMission(s.m)))ok=false;});
+    const clearedSlotIdx=lastClearedId!=null?slots.findIndex(s=>s.type==='m'&&s.m.id===lastClearedId):-1;
+
     const seg=(p,q)=>{const mx=(p.x+q.x)/2;return `M ${p.x} ${p.y} C ${mx} ${p.y}, ${mx} ${q.y}, ${q.x} ${q.y}`;};
     let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
-    for(let i=1;i<all.length;i++)svg+=`<path class="seg-under" d="${seg(all[i-1],all[i])}"/>`;
-    for(let i=1;i<all.length;i++){
-        const cleared=completed.includes(list[i-1].id)||isFreeMission(list[i-1]);
-        const isNew=(i-1)===clearedIdx; // 방금 깬 노드에서 뻗어나가는 구간
-        svg+=`<path class="seg ${isNew?'draw':cleared?'done':'todo'}" pathLength="1" d="${seg(all[i-1],all[i])}"/>`;
+    for(let i=1;i<slots.length;i++)svg+=`<path class="seg-under" d="${seg(pts[i-1],pts[i])}"/>`;
+    for(let i=1;i<slots.length;i++){
+        // 방금 깬 노드에서 뻗어나가는 구간은 그리기 모션
+        const isNew=clearedSlotIdx>=0&&(i-1)===clearedSlotIdx&&reach[i];
+        svg+=`<path class="seg ${isNew?'draw':reach[i]?'done':'todo'}" pathLength="1" d="${seg(pts[i-1],pts[i])}"/>`;
     }
     svg+='</svg>';
     track.innerHTML=svg;
+
+    // 챕터 구간 배경 띠 (소주제 시각 구분)
+    order.forEach((key,ci)=>{
+        const first=slots.findIndex(s=>s.type==='gate'&&s.key===key);
+        let last=first;for(let i=first+1;i<slots.length&&slots[i].type==='m'&&slots[i].key===key;i++)last=i;
+        const zone=document.createElement('div');
+        zone.className='ch-zone'+(ci%2?' alt':'');
+        zone.style.left=(pts[first].x-GAP*0.42)+'px';
+        zone.style.width=(pts[last].x-pts[first].x+GAP*0.84)+'px';
+        track.appendChild(zone);
+    });
+
     // 출발 팻말
     const start=document.createElement('div');start.className='stage-start';
     start.style.left=(PADX-72)+'px';start.style.top=pts[0].y+'px';start.textContent='출발!';
     track.appendChild(start);
-    // 스테이지 노드
-    list.forEach((m,gi)=>{
-        const done=completed.includes(m.id),unlocked=isUnlocked(m),isCur=m.id===currentId;
+
+    let stageNo=0; // 챕터 내 스테이지 번호
+    slots.forEach((s,si)=>{
+        if(s.type==='goal'){
+            const goalEl=document.createElement('div');
+            goalEl.className='stage-goal'+(allDone?' cleared':'');
+            goalEl.style.left=pts[si].x+'px';goalEl.style.top=pts[si].y+'px';
+            goalEl.innerHTML=`<img src="/assets/vibe/ui-trophy.png" alt="트로피"><div class="sg-label">${allDone?'클리어! 🎉':'전체 클리어'}</div>`;
+            track.appendChild(goalEl);
+            return;
+        }
+        if(s.type==='gate'){
+            stageNo=0;
+            const ch=chapters[s.key]||{emoji:'🪐',name:s.key,story:''};
+            const list=groups[s.key];
+            const scored=list.filter(m=>!isFreeMission(m));
+            const doneCnt=list.filter(m=>completed.includes(m.id)).length;
+            const chDone=scored.length>0&&scored.every(m=>completed.includes(m.id));
+            const unlocked=chUnlocked[s.key];
+            const gate=document.createElement('div');
+            gate.className='ch-gate'+(unlocked?'':' locked')+(chDone?' cleared':'');
+            gate.style.left=pts[si].x+'px';gate.style.top=pts[si].y+'px';
+            gate.innerHTML=`
+                <div class="ch-gate-thumb">${ch.img?`<img src="/assets/vibe/${ch.img}.png" alt="">`:`<span>${ch.emoji}</span>`}
+                    ${unlocked?'':'<img class="ch-gate-lock" src="/assets/vibe/ui-lock.png" alt="잠김">'}
+                    ${chDone?'<img class="ch-gate-clear" src="/assets/vibe/ui-check.png" alt="완료">':''}</div>
+                <div class="ch-gate-name">${ch.name}</div>
+                <div class="ch-gate-cnt">${currentMode==='studio'?'자유 창작':doneCnt+'/'+list.length}</div>`;
+            gate.onclick=()=>{
+                const introEl=document.getElementById('wmIntro');
+                if(!unlocked){
+                    gate.style.animation='shake .4s';setTimeout(()=>gate.style.animation='',420);
+                    if(introEl)introEl.textContent='🔒 이전 에피소드를 모두 깨면 열려!';
+                    return;
+                }
+                if(introEl)introEl.textContent=ch.story;
+            };
+            track.appendChild(gate);
+            return;
+        }
+        // 미션 노드
+        const m=s.m;stageNo++;
+        const done=completed.includes(m.id),unlocked=mUnlocked(s),isCur=m.id===currentId;
         const st=stars[m.id]||0;
-        const justCleared=gi===clearedIdx;
+        const justCleared=si===clearedSlotIdx;
         const node=document.createElement('div');
         node.className='stage-node'+(done?' done':'')+(unlocked?'':' locked')+(isCur?' current':'');
-        node.style.left=pts[gi].x+'px';node.style.top=pts[gi].y+'px';
+        node.style.left=pts[si].x+'px';node.style.top=pts[si].y+'px';
         const starRow=isFreeMission(m)?'<span class="sn-free">자유</span>':
             [1,2,3].map(k=>{
                 const lit=done&&k<=Math.max(st,1);
@@ -3540,7 +3556,7 @@ function renderStageMap(key){
             }).join('');
         node.innerHTML=`
             ${done?'<img class="sn-badge" src="/assets/vibe/ui-check.png" alt="완료">':''}
-            <div class="sn-circle">${unlocked?`<span class="sn-num">${gi+1}</span><span class="sn-icon">${icons[m.id]||'🪐'}</span>`:'<img src="/assets/vibe/ui-lock.png" alt="잠김">'}</div>
+            <div class="sn-circle">${unlocked?`<span class="sn-num">${stageNo}</span><span class="sn-icon">${icons[m.id]||'🪐'}</span>`:'<img src="/assets/vibe/ui-lock.png" alt="잠김">'}</div>
             <div class="sn-title">${m.title}</div>
             <div class="sn-stars">${starRow}</div>`;
         node.onclick=()=>{
@@ -3552,30 +3568,27 @@ function renderStageMap(key){
         };
         track.appendChild(node);
     });
-    // 캐릭터: 방금 깼으면 그 노드에서 다음 노드로 선을 따라 걸어감
-    const curPos=pts[Math.max(list.findIndex(m=>m.id===currentId),0)]||goal;
+
+    // 캐릭터: 방금 깼으면 그 노드에서 다음 도전 노드로 걸어감
+    const charSvg=currentMode==='pixel'?'pixel-hello':'toto-hello';
+    const curIdx=curSlot?slots.indexOf(curSlot):slots.length-1; // 다 깼으면 트로피로
+    const curPos=pts[curIdx];
     const ch2=document.createElement('img');
     ch2.className='map-char';ch2.src='/assets/vibe/'+charSvg+'.svg';ch2.alt='내 위치';
-    if(clearedIdx>=0){
-        const from=pts[clearedIdx];
-        const to=currentId?curPos:goal; // 챕터 마지막이면 트로피로!
+    if(clearedSlotIdx>=0){
+        const from=pts[clearedSlotIdx];
         ch2.style.left=from.x+'px';ch2.style.top=from.y+'px';
         track.appendChild(ch2);
-        requestAnimationFrame(()=>requestAnimationFrame(()=>{ch2.style.left=to.x+'px';ch2.style.top=to.y+'px';}));
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{ch2.style.left=curPos.x+'px';ch2.style.top=curPos.y+'px';}));
     }else{
         ch2.style.transition='none';
         ch2.style.left=curPos.x+'px';ch2.style.top=curPos.y+'px';
         track.appendChild(ch2);
     }
     lastClearedId=null;
-    // 골인 지점: 트로피 (에피소드 클리어 시 금색으로)
-    const goalEl=document.createElement('div');
-    goalEl.className='stage-goal'+(allDone?' cleared':'');
-    goalEl.style.left=goal.x+'px';goalEl.style.top=goal.y+'px';
-    goalEl.innerHTML=`<img src="/assets/vibe/ui-trophy.png" alt="트로피"><div class="sg-label">${allDone?'클리어! 🎉':'에피소드 클리어'}</div>`;
-    track.appendChild(goalEl);
+
     scroll.appendChild(track);g.appendChild(scroll);
-    const hint=document.createElement('div');hint.className='stage-hint';hint.textContent='← 옆으로 밀어서 모든 스테이지를 볼 수 있어요 →';
+    const hint=document.createElement('div');hint.className='stage-hint';hint.textContent='← 옆으로 밀어서 모든 에피소드와 스테이지를 볼 수 있어요 →';
     g.appendChild(hint);
     // 현재 스테이지가 화면 가운데 오도록 자동 스크롤
     requestAnimationFrame(()=>{
