@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>내가 바이브 코딩으로 키우는 SW 컴퓨팅 사고력!</title>
+<link rel="icon" href="/assets/vibe/toto-hello.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/vibe/toto-hello.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
@@ -37,9 +39,9 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .header-top h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;}
 .header-center{display:flex;align-items:center;gap:10px;}
 .mission-badge{background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;}
-.level-badge{background:rgba(255,255,255,.3);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+.level-badge{background:rgba(255,255,255,.3);padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700;}
 .header-actions{display:flex;gap:6px;}
-.hdr-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:11px;font-weight:600;transition:all .15s;}
+.hdr-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;}
 .hdr-btn:hover{background:rgba(255,255,255,.3);}
 
 /* Mode Tabs */
@@ -137,14 +139,6 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .modal-header h2{font-size:18px;font-weight:800;}
 .modal-close{width:32px;height:32px;border-radius:50%;border:none;background:#f0f0f0;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
 .modal-body{padding:18px 22px;}
-.mission-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
-.mission-card{padding:14px;border-radius:12px;border:2px solid var(--border);cursor:pointer;transition:all .2s;position:relative;}
-.mission-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1);}
-.mission-card.completed{border-color:var(--success);background:#f0fff4;}
-.mission-card .m-level{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;display:inline-block;margin-bottom:4px;}
-.mission-card .m-title{font-size:14px;font-weight:700;margin-bottom:3px;}
-.mission-card .m-desc{font-size:11px;color:var(--text-light);}
-.mission-card .m-check{position:absolute;top:8px;right:8px;font-size:16px;}
 .feedback-modal .modal{max-width:420px;text-align:center;}
 .feedback-modal .modal>div{padding:28px;}
 .feedback-icon{font-size:56px;margin-bottom:10px;}
@@ -154,34 +148,12 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .feedback-btn.next{background:var(--primary);color:#fff;}
 .feedback-btn.retry{background:#f0f0f0;color:var(--text);margin-right:6px;}
 
-/* ===== STORY MAP ===== */
-.chapter-block{margin-bottom:20px;}
-.chapter-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(245,249,255,.92),rgba(238,243,250,.92));}
-.chapter-emoji{font-size:28px;line-height:1;}
-.chapter-emoji img{width:44px;height:44px;display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));}
-.chapter-name{font-size:16px;font-weight:800;}
-.chapter-sub{font-size:13px;color:#5A6B7F;margin-top:2px;}
-.chapter-prog{margin-left:auto;font-size:12px;font-weight:700;color:var(--primary);white-space:nowrap;}
-.node-path{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 4px;}
-.mission-node{width:92px;padding:10px 4px 8px;border-radius:14px;border:2px solid var(--border);background:#fff;cursor:pointer;text-align:center;transition:all .15s;position:relative;}
-.mission-node:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.12);border-color:var(--primary);}
-.mission-node.locked{opacity:.5;cursor:not-allowed;filter:grayscale(.9);}
-.mission-node.locked:hover{transform:none;box-shadow:none;border-color:var(--border);}
-.mission-node.done{border-color:var(--success);background:#f0fff4;}
-.mission-node .n-icon{font-size:24px;line-height:1;}
-.mission-node .n-icon img{width:22px;height:26px;vertical-align:middle;}
-.mission-node .n-title{font-size:12px;font-weight:700;margin-top:4px;line-height:1.25;word-break:keep-all;}
-.mission-node .n-stars{margin-top:3px;height:15px;display:flex;justify-content:center;gap:1px;}
-.mission-node .n-stars img{width:13px;height:13px;}
-.node-link{color:#cbd5e0;font-size:13px;font-weight:800;}
-#missionModal .modal-body{background:#EAF2FB url('/assets/vibe/bg-map.jpg') top/cover;}
-
 /* ===== 모험 지도 = 분리된 전체 화면 (모달 아님) ===== */
 #missionModal{background:none;align-items:stretch;justify-content:stretch;padding:0;}
 #missionModal .modal{width:100%;max-width:none;height:100%;max-height:none;border-radius:0;display:flex;flex-direction:column;background:#EAF2FB url('/assets/vibe/bg-map.jpg') center/cover;box-shadow:none;animation:mapslide .45s cubic-bezier(.2,1,.4,1) both!important;}
 @keyframes mapslide{from{opacity:0;transform:translateY(4vh) scale(.98)}to{opacity:1;transform:none}}
 #missionModal .modal-header{background:rgba(255,255,255,.86);backdrop-filter:blur(6px);}
-#missionModal .modal-body{flex:1;overflow-y:auto;background:transparent!important;max-width:980px;width:100%;margin:0 auto;}
+#missionModal .modal-body{flex:1;overflow-y:auto;background:transparent;max-width:980px;width:100%;margin:0 auto;}
 
 /* ===== 에피소드 선택 (쿠키런식 1단계) ===== */
 /* ===== 통합 월드맵 (게임식 — 전체 에피소드가 한 맵에, 가로 스크롤) ===== */
@@ -197,10 +169,13 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .ch-gate-clear{position:absolute;width:26px!important;height:26px!important;top:-7px;right:-3px;}
 .ch-gate-name{margin-top:5px;font-family:'Jua',sans-serif;font-size:14px;color:#ffd166;text-shadow:0 1px 4px rgba(0,0,0,.75);word-break:keep-all;}
 .ch-gate.locked .ch-gate-name{color:#9aa4b8;}
-.ch-gate-cnt{font-size:11px;font-weight:800;color:#cfd8ea;text-shadow:0 1px 3px rgba(0,0,0,.7);}
-/* 챕터 구간 배경 살짝 구분 (지도 위 색 띠) */
-.ch-zone{position:absolute;top:0;bottom:0;border-radius:18px;background:rgba(255,255,255,.045);}
-.ch-zone.alt{background:rgba(255,209,102,.06);}
+.ch-gate-cnt{font-size:13px;font-weight:800;color:#cfd8ea;text-shadow:0 1px 3px rgba(0,0,0,.7);}
+/* 챕터 구간 배경 구분 (지도 위 색 띠) — 어두운 트랙에서 실제로 보이는 수준 */
+.ch-zone{position:absolute;top:0;bottom:0;border-radius:18px;background:rgba(255,255,255,.10);}
+.ch-zone.alt{background:rgba(255,209,102,.12);}
+/* 챕터 시작 깃발 (관문 옆 장식) */
+.ch-flag{position:absolute;left:-22px;top:-26px;width:34px;height:auto;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));}
+.ch-gate.locked .ch-flag{filter:grayscale(.85) drop-shadow(0 3px 4px rgba(0,0,0,.45));opacity:.7;}
 .stage-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-radius:16px;background:linear-gradient(180deg,#20204a 0%,#2d2b55 60%,#1b3a52 100%);box-shadow:inset 0 2px 12px rgba(0,0,0,.4);}
 .stage-scroll::-webkit-scrollbar{height:12px;}
 .stage-scroll::-webkit-scrollbar-thumb{background:#5a6b9e;border:3px solid #20204a;}
@@ -217,11 +192,11 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .map-char{position:absolute;width:54px;height:54px;transform:translate(-50%,-118%);z-index:3;pointer-events:none;filter:drop-shadow(0 5px 7px rgba(0,0,0,.45));transition:left 1.15s cubic-bezier(.45,.05,.55,.95) .5s,top 1.15s cubic-bezier(.45,.05,.55,.95) .5s;animation:floaty 2s ease-in-out infinite;}
 /* 방금 깬 노드의 별: 하나씩 팡팡 */
 .sn-stars img.pop{animation:starpop .5s ease both;}
-.stage-start{position:absolute;transform:translate(-50%,-50%);font-family:'Jua',sans-serif;font-size:12px;color:#fff;background:#FF6B6B;padding:5px 12px;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.3);white-space:nowrap;}
+.stage-start{position:absolute;transform:translate(-50%,-50%);font-family:'Jua',sans-serif;font-size:13px;color:#fff;background:#FF6B6B;padding:5px 12px;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.3);white-space:nowrap;}
 .stage-goal{position:absolute;transform:translate(-50%,-50%);text-align:center;width:84px;}
 .stage-goal img{width:52px;height:52px;filter:grayscale(1);opacity:.5;transition:all .4s;}
 .stage-goal.cleared img{filter:none;opacity:1;animation:starpop .6s ease both;}
-.stage-goal .sg-label{font-family:'Jua',sans-serif;font-size:11.5px;color:#ffd166;margin-top:2px;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+.stage-goal .sg-label{font-family:'Jua',sans-serif;font-size:13px;color:#ffd166;margin-top:2px;text-shadow:0 1px 3px rgba(0,0,0,.6);}
 .stage-node{position:absolute;transform:translate(-50%,-50%);width:104px;text-align:center;cursor:pointer;transition:transform .15s;z-index:1;}
 .stage-node:hover{transform:translate(-50%,-50%) scale(1.07);}
 .stage-node.locked{cursor:not-allowed;}
@@ -239,9 +214,17 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .sn-title{margin-top:5px;font-family:'Jua',sans-serif;font-size:13px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7);word-break:keep-all;}
 .sn-stars{margin-top:2px;height:16px;display:flex;justify-content:center;gap:1px;}
 .sn-stars img{width:15px;height:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
-.sn-stars .sn-dim{filter:grayscale(1);opacity:.35;}
-.sn-free{font-size:11px;font-weight:800;color:#FF8FB5;}
-.stage-hint{font-size:12px;color:var(--text-light);text-align:center;margin-top:8px;}
+.sn-stars .sn-dim{opacity:.85;}
+.sn-free{font-size:13px;font-weight:800;color:#FF8FB5;}
+.stage-hint{font-size:13px;color:var(--text-light);text-align:center;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.stage-hint img{width:22px;height:22px;animation:hintslide 1.4s ease-in-out infinite;}
+.stage-hint img.flip{transform:scaleX(-1);animation:hintslideL 1.4s ease-in-out infinite;}
+@keyframes hintslide{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+@keyframes hintslideL{0%,100%{transform:scaleX(-1) translateX(0)}50%{transform:scaleX(-1) translateX(6px)}}
+/* 가로 스크롤 가능 힌트: 오른쪽 가장자리 페이드 */
+.stage-scroll-wrap{position:relative;}
+.stage-scroll-wrap::after{content:'';position:absolute;top:0;bottom:14px;right:0;width:58px;border-radius:0 16px 16px 0;background:linear-gradient(to left,rgba(18,18,40,.72),transparent);pointer-events:none;opacity:1;transition:opacity .3s;}
+.stage-scroll-wrap.at-end::after{opacity:0;}
 @media(max-width:600px){
     .ch-gate-thumb{width:64px;height:64px;}
     .ch-gate-thumb img{width:48px;height:48px;}
@@ -336,9 +319,10 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 /* ===== STARS / CONFETTI ===== */
 .star-total{background:rgba(255,255,255,.25);padding:4px 12px;border-radius:14px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:4px;}
 .star-total img{width:16px;height:16px;}
-.fb-stars{font-size:34px;letter-spacing:4px;margin-bottom:8px;min-height:40px;}
+.fb-stars{margin-bottom:8px;min-height:40px;display:flex;justify-content:center;gap:6px;align-items:center;}
+.fb-stars img{width:38px;height:38px;}
 .fb-stars .lit{animation:starpop .5s ease both;}
-.fb-stars .dim{opacity:.25;filter:grayscale(1);}
+.fb-stars .dim{opacity:.8;}
 @keyframes starpop{0%{transform:scale(0) rotate(-90deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
 /* ===== 온보딩 투어 (토토가 안내) ===== */
 .tour-layer{position:fixed;inset:0;z-index:2500;pointer-events:none;}
@@ -442,7 +426,7 @@ html,body{touch-action:manipulation;}
 /* ===== 디자인 마감 (외주 폴리시 패스) ===== */
 /* 라운드 한글 디스플레이 폰트: 제목·버튼·배지에만 (본문 가독성 유지) */
 .header-top h1,.mode-tab,.title-logo h1,.title-logo p,.mode-card .mc-name,.mode-card .mc-go,
-.modal-header h2,.chapter-name,.mission-node .n-title,.story-title,.story-chapter,
+.modal-header h2,.story-title,.story-chapter,
 .feedback-title,.feedback-btn,.ctrl-btn,.hdr-btn,.tab-btn,.grid-opt,.send-btn,.hint-btn,
 .tour-next,.story-go,.level-badge,.mission-badge,.star-total,.chip-label{font-family:'Jua','Segoe UI','Malgun Gothic',sans-serif;letter-spacing:.3px;}
 .header-top h1{font-size:20px;}
@@ -464,8 +448,6 @@ html,body{touch-action:manipulation;}
 /* 채팅 말풍선 등장 */
 .chat-msg{animation:msgin .25s ease both;}
 @keyframes msgin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-/* 미션 노드 완료 반짝 테두리 */
-.mission-node.done{box-shadow:0 0 0 2px rgba(81,207,102,.25),0 2px 8px rgba(81,207,102,.2);}
 /* 스크롤바 */
 ::-webkit-scrollbar{width:10px;height:10px;}
 ::-webkit-scrollbar-thumb{background:#c3cfdd;border-radius:6px;border:2px solid var(--bg);}
@@ -493,6 +475,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
             <span class="star-total" id="starTotal">⭐ 0</span>
         </div>
         <div class="header-actions">
+            <button class="hdr-btn" id="muteBtn" onclick="toggleMute()" title="효과음 켜기/끄기">🔊</button>
             <button class="hdr-btn" id="mapBtn" onclick="openMissionSelector()">🗺️ 모험 지도</button>
             <button class="hdr-btn" onclick="updateTitleStars();document.getElementById('titleScreen').classList.remove('hidden')">🏠 처음으로</button>
             <button class="hdr-btn" onclick="startTour()">❓ 도움말</button>
@@ -826,6 +809,105 @@ function execBusyNotice() {
 
 // HTML 이스케이프 (학생 이름 등 사용자 입력 표시용)
 function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// ============================================================
+//  SFX — WebAudio 합성 효과음 (에셋 파일 없이 오실레이터로 생성)
+//  음소거: localStorage vibe_muted ('1'=끔), 기본 소리 켬
+// ============================================================
+let sfxMuted = localStorage.getItem('vibe_muted') === '1';
+let audioCtx = null;
+function sfxCtx() {
+    if (sfxMuted) return null;
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume(); // 첫 제스처에서 resume
+        return audioCtx;
+    } catch (e) { return null; }
+}
+// 첫 사용자 제스처에서 AudioContext 준비 (모바일 자동재생 정책 대응)
+document.addEventListener('pointerdown', function warmAudio() {
+    if (!sfxMuted) sfxCtx();
+    document.removeEventListener('pointerdown', warmAudio);
+}, { once: true });
+
+function playSfx(name, pitch) {
+    const ctx = sfxCtx(); if (!ctx) return;
+    const t = ctx.currentTime;
+    const out = ctx.createGain(); out.gain.value = 1; out.connect(ctx.destination);
+    // 공용 톤 헬퍼: freq에서 시작해 slide까지 미끄러지는 감쇠음
+    const tone = (freq, start, dur, opt) => {
+        opt = opt || {};
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = opt.type || 'sine';
+        o.frequency.setValueAtTime(freq, t + start);
+        if (opt.slide) o.frequency.exponentialRampToValueAtTime(opt.slide, t + start + dur);
+        g.gain.setValueAtTime(0, t + start);
+        g.gain.linearRampToValueAtTime(opt.vol || .16, t + start + .012);
+        g.gain.exponentialRampToValueAtTime(.0001, t + start + dur);
+        o.connect(g); g.connect(out);
+        o.start(t + start); o.stop(t + start + dur + .03);
+    };
+    switch (name) {
+        case 'click': // 짧은 틱
+            tone(1400, 0, .05, { type: 'triangle', vol: .09 });
+            break;
+        case 'run': { // 휙 — 밴드패스 노이즈 스윕
+            const dur = .22, buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+            const src = ctx.createBufferSource(); src.buffer = buf;
+            const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
+            f.frequency.setValueAtTime(500, t);
+            f.frequency.exponentialRampToValueAtTime(2600, t + dur);
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(.22, t);
+            g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+            src.connect(f); f.connect(g); g.connect(out); src.start(t);
+            break;
+        }
+        case 'success': // 밝은 3음 차임 (도-미-솔)
+            tone(523.25, 0, .18, { type: 'triangle', vol: .15 });
+            tone(659.25, .12, .18, { type: 'triangle', vol: .15 });
+            tone(783.99, .24, .34, { type: 'triangle', vol: .17 });
+            tone(1567.98, .24, .34, { type: 'sine', vol: .06 }); // 반짝이 배음
+            break;
+        case 'star': { // 상승 글리산도 — pitch(1~3)마다 높아짐
+            const k = Math.max(1, pitch || 1);
+            const base = 520 * Math.pow(1.25, k - 1);
+            tone(base, 0, .3, { type: 'sine', vol: .15, slide: base * 2 });
+            tone(base * 3, .05, .2, { type: 'sine', vol: .05, slide: base * 4 });
+            break;
+        }
+        case 'fail': // 부드러운 2음 하강 (버저 금지)
+            tone(392, 0, .22, { type: 'sine', vol: .13 });
+            tone(311.13, .18, .34, { type: 'sine', vol: .12 });
+            break;
+        case 'unlock': // 반짝 아르페지오
+            tone(880, 0, .1, { type: 'triangle', vol: .11 });
+            tone(1174.66, .08, .1, { type: 'triangle', vol: .11 });
+            tone(1567.98, .16, .22, { type: 'triangle', vol: .12 });
+            tone(2349.32, .24, .3, { type: 'sine', vol: .07 });
+            break;
+        case 'pop': // 뽁
+            tone(300, 0, .09, { type: 'sine', vol: .18, slide: 640 });
+            break;
+    }
+}
+function toggleMute() {
+    sfxMuted = !sfxMuted;
+    localStorage.setItem('vibe_muted', sfxMuted ? '1' : '0');
+    const b = document.getElementById('muteBtn');
+    if (b) { b.textContent = sfxMuted ? '🔇' : '🔊'; b.title = sfxMuted ? '효과음 켜기' : '효과음 끄기'; }
+    if (!sfxMuted) playSfx('pop'); // 켰을 때 확인음
+}
+// 초기 아이콘 반영 (스크립트가 헤더 뒤에 있어 바로 접근 가능)
+(function () { const b = document.getElementById('muteBtn'); if (b && sfxMuted) { b.textContent = '🔇'; b.title = '효과음 켜기'; } })();
+// 주요 버튼 공용 클릭음 (실행 버튼은 run 효과음이 따로 있어 제외)
+document.addEventListener('click', e => {
+    const b = e.target.closest('button,.chip,.mode-card');
+    if (!b || b.id === 'runBtn' || b.id === 'muteBtn') return;
+    playSfx('click');
+}, true);
 
 // ============================================================
 //  MODE SWITCHING
@@ -2506,6 +2588,7 @@ function runCode(){
     const dsl=workspaceToDSL();
     if(!dsl){addChatMsg('system','아직 블록이 없네? 블록을 끼우거나 나한테 말로 시켜 줘!');return;}
     if(currentMode!=='turtle'&&execBusy){execBusyNotice();return;} // 터틀은 자체 취소(rAF 재시작)가 있어 제외
+    playSfx('run');
     tourEvent('run');
     if(currentMode==='turtle'){
         const cmds=attachBlockIds(parseTurtleDSL(dsl),dsl);
@@ -3234,10 +3317,10 @@ const MAZE_WORLD={
 };
 
 const MAZE_CHAPTERS={
-    '순차':{emoji:'🐾',name:'순차의 유적',story:'한 걸음씩 차례대로! 명령한 순서 그대로 걸어야 문이 열리는 유적이야.'},
-    '반복':{emoji:'🔁',name:'반복의 유적',story:'같은 무늬가 계속 이어지는 유적! 반복의 힘을 알면 긴 길도 짧은 주문으로 통과할 수 있어.'},
-    '선택':{emoji:'🚪',name:'선택의 유적',story:'안개 때문에 앞이 안 보이는 유적! 벽을 만나면 어떻게 할지 미리 정해 두는 탐정만 통과할 수 있어.'},
-    '시험':{emoji:'🏆',name:'탐정 시험',story:'우주 탐정 협회의 마지막 시험! 배운 모든 것을 합쳐 진짜 탐정 배지를 받자.'}
+    '순차':{emoji:'🐾',img:'gate-seq',name:'순차의 유적',story:'한 걸음씩 차례대로! 명령한 순서 그대로 걸어야 문이 열리는 유적이야.'},
+    '반복':{emoji:'🔁',img:'gate-loop',name:'반복의 유적',story:'같은 무늬가 계속 이어지는 유적! 반복의 힘을 알면 긴 길도 짧은 주문으로 통과할 수 있어.'},
+    '선택':{emoji:'🚪',img:'gate-choice',name:'선택의 유적',story:'안개 때문에 앞이 안 보이는 유적! 벽을 만나면 어떻게 할지 미리 정해 두는 탐정만 통과할 수 있어.'},
+    '시험':{emoji:'🏆',img:'gate-exam',name:'탐정 시험',story:'우주 탐정 협회의 마지막 시험! 배운 모든 것을 합쳐 진짜 탐정 배지를 받자.'}
 };
 
 const MAZE_MISSIONS=[
@@ -3419,7 +3502,7 @@ const STUDIO_PROJECTS=[
 ];
 
 const STUDIO_CHAPTERS={
-    '스튜디오':{emoji:'🎮',name:'자유 스튜디오',story:'만들고 싶은 게임을 골라 봐! 여긴 잠금도 별도 없는 자유 창작 공간이야.'}
+    '스튜디오':{emoji:'🎮',img:'planet-studio',name:'자유 스튜디오',story:'만들고 싶은 게임을 골라 봐! 여긴 잠금도 별도 없는 자유 창작 공간이야.'}
 };
 
 const STUDIO_STORY={
@@ -3588,7 +3671,7 @@ function renderWorldMap(){
             const goalEl=document.createElement('div');
             goalEl.className='stage-goal'+(allDone?' cleared':'');
             goalEl.style.left=pts[si].x+'px';goalEl.style.top=pts[si].y+'px';
-            goalEl.innerHTML=`<img src="/assets/vibe/ui-trophy.png" alt="트로피"><div class="sg-label">${allDone?'클리어! 🎉':'전체 클리어'}</div>`;
+            goalEl.innerHTML=`<img src="/assets/vibe/${allDone?'ui-trophy-glow':'ui-trophy'}.png" alt="트로피"><div class="sg-label">${allDone?'클리어! 🎉':'전체 클리어'}</div>`;
             track.appendChild(goalEl);
             return;
         }
@@ -3604,6 +3687,7 @@ function renderWorldMap(){
             gate.className='ch-gate'+(unlocked?'':' locked')+(chDone?' cleared':'');
             gate.style.left=pts[si].x+'px';gate.style.top=pts[si].y+'px';
             gate.innerHTML=`
+                <img class="ch-flag" src="/assets/vibe/flag-chapter.png" alt="">
                 <div class="ch-gate-thumb">${ch.img?`<img src="/assets/vibe/${ch.img}.png" alt="">`:`<span>${ch.emoji}</span>`}
                     ${unlocked?'':'<img class="ch-gate-lock" src="/assets/vibe/ui-lock.png" alt="잠김">'}
                     ${chDone?'<img class="ch-gate-clear" src="/assets/vibe/ui-check.png" alt="완료">':''}</div>
@@ -3612,10 +3696,12 @@ function renderWorldMap(){
             gate.onclick=()=>{
                 const introEl=document.getElementById('wmIntro');
                 if(!unlocked){
+                    playSfx('fail');
                     gate.style.animation='shake .4s';setTimeout(()=>gate.style.animation='',420);
                     if(introEl)introEl.textContent='🔒 이전 에피소드를 모두 깨면 열려!';
                     return;
                 }
+                playSfx('pop');
                 if(introEl)introEl.textContent=ch.story;
             };
             track.appendChild(gate);
@@ -3633,7 +3719,8 @@ function renderWorldMap(){
             [1,2,3].map(k=>{
                 const lit=done&&k<=Math.max(st,1);
                 const pop=justCleared&&lit?` class="pop" style="animation-delay:${.5+k*.25}s"`:lit?'':' class="sn-dim"';
-                return `<img src="/assets/vibe/ui-star.png"${pop} alt="">`;
+                if(justCleared&&lit)setTimeout(()=>playSfx('star',k),(0.5+k*0.25)*1000); // 별 팡팡에 맞춰
+                return `<img src="/assets/vibe/${lit?'ui-star':'ui-star-empty'}.png"${pop} alt="">`;
             }).join('');
         node.innerHTML=`
             ${done?'<img class="sn-badge" src="/assets/vibe/ui-check.png" alt="완료">':''}
@@ -3642,6 +3729,7 @@ function renderWorldMap(){
             <div class="sn-stars">${starRow}</div>`;
         node.onclick=()=>{
             if(!unlocked){
+                playSfx('fail');
                 node.style.animation='shake .4s';setTimeout(()=>node.style.animation='',420);
                 return;
             }
@@ -3666,15 +3754,27 @@ function renderWorldMap(){
         ch2.style.left=curPos.x+'px';ch2.style.top=curPos.y+'px';
         track.appendChild(ch2);
     }
+    // 방금 깬 미션이 챕터의 마지막이었다면 = 다음 관문이 열림 → 반짝 효과음
+    if(clearedSlotIdx>=0){
+        const nx=slots[clearedSlotIdx+1];
+        if(nx&&nx.type==='gate'&&chUnlocked[nx.key])setTimeout(()=>playSfx('unlock'),1500);
+    }
     lastClearedId=null;
 
-    scroll.appendChild(track);g.appendChild(scroll);
-    const hint=document.createElement('div');hint.className='stage-hint';hint.textContent='← 옆으로 밀어서 모든 에피소드와 스테이지를 볼 수 있어요 →';
+    scroll.appendChild(track);
+    const wrap=document.createElement('div');wrap.className='stage-scroll-wrap';
+    wrap.appendChild(scroll);g.appendChild(wrap);
+    // 스크롤 가능하면 오른쪽 페이드 표시, 끝까지 밀면 숨김
+    const updFade=()=>{wrap.classList.toggle('at-end',scroll.scrollLeft+scroll.clientWidth>=scroll.scrollWidth-8);};
+    scroll.addEventListener('scroll',updFade,{passive:true});
+    const hint=document.createElement('div');hint.className='stage-hint';
+    hint.innerHTML='<img src="/assets/vibe/arrow-scroll.png" class="flip" alt="">옆으로 밀어서 모든 에피소드와 스테이지를 볼 수 있어요<img src="/assets/vibe/arrow-scroll.png" alt="">';
     g.appendChild(hint);
     // 현재 스테이지가 화면 가운데 오도록 자동 스크롤
     requestAnimationFrame(()=>{
         const cur=track.querySelector('.stage-node.current')||track.querySelector('.stage-node');
         if(cur)scroll.scrollLeft=Math.max(0,parseFloat(cur.style.left)-scroll.clientWidth/2);
+        updFade();
     });
 }
 
@@ -3682,6 +3782,7 @@ function closeMissionSelector(){document.getElementById('missionModal').classLis
 
 function selectMission(m){
     currentMission=m;
+    playSfx('pop');
     document.getElementById('levelBadge').textContent=m.level;
     document.getElementById('levelBadge').style.background=m.levelColor;
     document.getElementById('missionBadge').textContent=currentMode==='studio'?`만들기: ${m.title}`:`미션 ${m.id}: ${m.title}`;
@@ -3689,11 +3790,15 @@ function selectMission(m){
     // 스토리 인트로 먼저 보여주기 (코드모스 스타일)
     const ch=getChapters()[getChapterKey(m)]||{emoji:'🪐',name:''};
     const sd=getStoryData(m);
+    // 스토리 장면 배경: 모드별 세계관에 맞게 분기
+    const sceneBg=currentMode==='maze'?'bg-story-ruin.jpg':currentMode==='studio'?'bg-story-studio.jpg':currentMode==='pixel'?'bg-story-city.jpg':'bg-space.jpg';
+    const scene=document.querySelector('#storyModal .story-scene');
+    if(scene)scene.style.backgroundImage="url('/assets/vibe/"+sceneBg+"')";
     document.getElementById('storyChar').innerHTML='<img src="/assets/vibe/'+(currentMode==='pixel'?'pixel-hello':currentMode==='studio'?'toto-success':'toto-hello')+'.svg" alt="'+(currentMode==='pixel'?'픽셀':'토토')+'" style="width:96px;height:96px;">';
     document.getElementById('storyChapter').textContent=`${ch.emoji} ${ch.name} · ${currentMode==='studio'?'만들기':'미션'} ${m.id}`;
     document.getElementById('storyTitle').textContent=m.title;
     document.getElementById('storyText').innerHTML=(sd.story||m.description)+
-        `<div style="margin-top:8px;font-size:11px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':currentMode==='maze'?'우주 견습 탐정 토토':currentMode==='studio'?'게임 메이커 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
+        `<div style="margin-top:8px;font-size:13px;color:var(--text-light);">${currentMode==='turtle'?'거북이 탐험가 토토':currentMode==='maze'?'우주 견습 탐정 토토':currentMode==='studio'?'게임 메이커 토토':'로봇 픽셀'}가 너의 말을 기다리고 있어!</div>`;
     document.getElementById('storyModal').classList.add('show');
 }
 
@@ -3829,15 +3934,22 @@ function checkPixelMission(){
 
 function showFeedback(ok,title,text,stars){
     if(ok&&currentMission&&currentMode!=='studio')lastClearedId=currentMission.id; // 지도 복귀 시 클리어 모션
-    const ch=currentMode==='pixel'?(ok?'pixel-success':'pixel-think'):(ok?'toto-success':'toto-cheer');
+    playSfx(ok?'success':'fail');
+    // 실패 시엔 모드 무관 '생각하는' 표정으로 통일 (감정 톤 일치)
+    const ch=currentMode==='pixel'?(ok?'pixel-success':'pixel-think'):(ok?'toto-success':'toto-think');
     document.getElementById('fbIcon').innerHTML='<img src="/assets/vibe/'+ch+'.svg" alt="" style="width:110px;height:110px;">';
     const st=document.getElementById('fbStars');
     if(ok&&stars){
         st.innerHTML='';
         for(let i=0;i<3;i++){
-            const s=document.createElement('span');
-            s.className=i<stars?'lit':'dim';s.textContent='⭐';
-            if(i<stars)s.style.animationDelay=(i*0.25)+'s';
+            const s=document.createElement('img');
+            const lit=i<stars;
+            s.className=lit?'lit':'dim';
+            s.src='/assets/vibe/'+(lit?'ui-star.png':'ui-star-empty.png');s.alt=lit?'별':'빈 별';
+            if(lit){
+                s.style.animationDelay=(i*0.25)+'s';
+                setTimeout(()=>playSfx('star',i+1),300+i*250); // 별 팡팡 타이밍에 맞춰
+            }
             st.appendChild(s);
         }
     }else st.innerHTML='';
