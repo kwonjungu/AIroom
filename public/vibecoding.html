@@ -2830,6 +2830,7 @@ function reasonForLine(l){
     if(m=l.match(/^PLAYER\s/))return'게임엔 움직일 주인공이 필요하니까';
     if(m=l.match(/^SPAWN_RANDOM\s/))return'아이템이 하늘에서 계속 나타나야 하니까';
     if(m=l.match(/^SPAWN\s/))return'무대에 아이템을 놓아야 하니까';
+    if(m=l.match(/^ON_KEY\s+(UP|DOWN|LEFT|RIGHT)/))return({UP:'위로',DOWN:'아래로',LEFT:'왼쪽으로',RIGHT:'오른쪽으로'}[m[1]])+' 움직이려면 그 키가 필요하니까';
     if(m=l.match(/^ON_KEY\s/))return'키를 눌러서 주인공을 조종해야 하니까';
     if(m=l.match(/^ON_TOUCH\s/))return'주인공이 닿았을 때 일이 일어나야 하니까';
     if(m=l.match(/^ON_SCORE\s+(\d+)/))return'점수가 '+m[1]+'점에 닿는 순간 규칙이 발동해야 하니까';
@@ -2884,11 +2885,20 @@ function reasonForLine(l){
 }
 
 // AI 답변 → 블록이 하나씩 쌓이며 추론 과정이 채팅에 표시되는 조립 애니메이션
+// DSL을 "문장" 단위로 분해해 설명 줄 수와 내용을 코드에 정확히 맞춘다.
+// 중괄호를 경계로 갈라서 인라인 본문(ON_TOUCH 🍎 { SCORE 1 / REMOVE })도 한 문장씩 처리 —
+// 예전처럼 블록 개수 기준으로 돌면 줄이 모자랄 때 빈 "다음 동작이 필요하니까 → 🧩"가 반복됐음.
+function dslStatements(dsl){
+    return dsl.split('\n')
+        .flatMap(s=>s.split(/[{}]/))
+        .map(s=>s.trim())
+        .filter(s=>s&&!/^ELSE/.test(s));
+}
 function animateAssembly(dsl,userText){
     return new Promise(resolve=>{
         const blocks=workspace.getAllBlocks(true);
         if(!blocks.length)return resolve();
-        const lines=dsl.split('\n').map(s=>s.trim()).filter(s=>s&&!s.startsWith('}')&&!s.startsWith('ELSE'));
+        const stmts=dslStatements(dsl);
         blocks.forEach(b=>{const r=b.getSvgRoot();if(r){r.style.transition='opacity .25s';r.style.opacity='0';}});
         const card=document.createElement('div');card.className='chat-msg think';
         // 아이의 발화를 인용해 "내 말이 코드가 됐다"는 연결을 보여줌 (30자 초과 시 말줄임)
@@ -2896,18 +2906,26 @@ function animateAssembly(dsl,userText){
         card.innerHTML='<b>🧠 '+(currentMode==='pixel'?'픽셀':'토토')+'의 생각 — '+(quote?'네가 "'+quote+'"라고 했지? 이렇게 바꿔 봤어!':'네 말을 이렇게 블록으로 바꿨어!')+' <span style="font-weight:400;font-size:10px;color:#999;">(누르면 빨리 감기)</span></b>';
         let fast=false;card.onclick=()=>{fast=true;};
         const h=document.getElementById('chatHistory');h.appendChild(card);h.scrollTop=999999;
-        let i=0;
+        let i=0,bi=0;
         (function step(){
-            if(i>=blocks.length){workspace.render();return resolve();}
-            const raw=(lines[i]||'').replace(/\s*\{$/,'');
-            // 1) 추론 문장이 먼저 뜨고
-            const row=document.createElement('div');row.className='think-row';
-            row.innerHTML='<span class="think-why">'+reasonForLine(raw)+'</span><span class="think-block">→ 🧩 '+(glossLine(raw)||raw)+'</span>';
-            card.appendChild(row);h.scrollTop=999999;
-            const idx=i;i++;
-            // 2) 한 박자 쉬고 블록이 나타남 (읽을 시간)
-            setTimeout(()=>{const r=blocks[idx].getSvgRoot();if(r)r.style.opacity='1';},fast?30:400);
-            setTimeout(step,fast?70:900);
+            if(i>=stmts.length){
+                // 설명이 끝나면 남은 블록(설명 줄보다 블록이 많을 때)을 한 번에 표시
+                blocks.forEach(b=>{const r=b.getSvgRoot();if(r)r.style.opacity='1';});
+                workspace.render();return resolve();
+            }
+            const raw=stmts[i];i++;
+            const gloss=glossLine(raw);
+            // 설명할 수 없는 문장은 조용히 건너뜀 (빈 🧩 줄 금지)
+            if(gloss){
+                const row=document.createElement('div');row.className='think-row';
+                row.innerHTML='<span class="think-why">'+reasonForLine(raw)+'</span><span class="think-block">→ 🧩 '+gloss+'</span>';
+                card.appendChild(row);h.scrollTop=999999;
+            }
+            if(bi<blocks.length){
+                const r=blocks[bi++].getSvgRoot();
+                setTimeout(()=>{if(r)r.style.opacity='1';},fast?30:400);
+            }
+            setTimeout(step,gloss?(fast?70:900):(fast?15:80));
         })();
     });
 }
@@ -2917,10 +2935,35 @@ function addCodeMsg(dsl){
     const lines=dsl.split('\n').map(l=>l.trim()).filter(l=>l);
     let html='<div style="color:#B0BEC5;font-family:sans-serif;font-size:10px;margin-bottom:6px;">🤖 네 말이 이런 코드가 됐어!</div>';
     for(const l of lines){
-        const g=glossLine(l.replace(/\s*\{$/,''))||glossLine(l);
+        // 인라인 중괄호 줄(ON_TOUCH 🍎 { SCORE 1)은 머리 문장 기준으로 풀이
+        const head=l.split(/[{}]/).map(s=>s.trim()).filter(Boolean)[0]||l;
+        const g=glossLine(head);
         html+='<div class="code-line"><span class="dsl">'+l.replace(/</g,'&lt;')+'</span><span class="gloss">'+(g?'← '+g:'')+'</span></div>';
     }
     div.innerHTML=html;
+    const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
+}
+
+// 🎯 코칭 제안 칩 — AI가 준 "다음에 이렇게 말해 봐" 문장을 눌러서 바로 보낼 수 있게
+// (막연한 말 → 구체적인 부탁으로 다듬는 바이브코딩 연습 유도)
+function addSuggestChips(list){
+    if(!list||!list.length)return;
+    const div=document.createElement('div');div.className='chat-msg suggest';
+    div.style.cssText='background:transparent;box-shadow:none;padding:4px 0;';
+    const label=document.createElement('div');
+    label.style.cssText='font-size:12px;color:#B0BEC5;margin-bottom:6px;font-weight:700;';
+    label.textContent='🎯 다음엔 이렇게 말해 봐! (누르면 바로 보내져)';
+    div.appendChild(label);
+    const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-wrap:wrap;gap:6px;';
+    list.slice(0,3).forEach(t=>{
+        const b=document.createElement('button');b.className='chip';b.textContent=t;
+        b.onclick=()=>{
+            const inp=document.getElementById('chatInput');
+            if(inp){inp.value=t;sendChat();}
+        };
+        wrap.appendChild(b);
+    });
+    div.appendChild(wrap);
     const h=document.getElementById('chatHistory');h.appendChild(div);h.scrollTop=999999;
 }
 
@@ -2963,6 +3006,13 @@ async function sendChat(){
         reply=reply.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim();
         chatMessages.push({role:'user',content:text});
         chatMessages.push({role:'assistant',content:reply});
+
+        // 코칭 제안 분리: 마지막 "NEXT: 문장 | 문장 | 문장" 줄 → 클릭 칩 (구체화 연습 유도)
+        let nextChips=null;
+        reply=reply.replace(/^NEXT\s*:\s*(.+)$/im,(_,s)=>{
+            nextChips=s.split('|').map(t=>t.trim()).filter(Boolean).slice(0,3);
+            return'';
+        }).trim();
 
         const isDSL = currentMode==='turtle'
             ? /^(FORWARD|BACKWARD|RIGHT|LEFT|PEN_UP|PEN_DOWN|PEN_COLOR|PEN_SIZE|REPEAT|HOME|CLEAR|JUMP|CIRCLE|SAY|STAMP|BG|DEF|CALL)/m.test(reply)
@@ -3008,7 +3058,11 @@ async function sendChat(){
                 console.error('block convert error:',e);
                 addChatMsg('system','앗, 블록을 만들다가 살짝 헷갈렸어! 조금 다르게 말해 줄래? 🙏');
             }
-        }else{addChatMsg('ai',reply);}
+            addSuggestChips(nextChips); // 게임을 만든 뒤: 다음 개선 아이디어 칩
+        }else{
+            addChatMsg('ai',reply);
+            addSuggestChips(nextChips); // 질문에 답할 때: 따라 말할 수 있는 예시 문장 칩
+        }
     }catch(e){ld.remove();addChatMsg('system','⚠️ 네트워크 오류: '+e.message);}
     finally{isProcessing=false;document.getElementById('sendBtn').disabled=false;}
 }
@@ -3452,6 +3506,12 @@ const STUDIO_PROMPT=`너는 초등학생과 함께 게임을 만드는 거북이
 2. 게임을 준 다음 대화에서는 "어떤 걸 바꿔 볼까? 속도? 아이템?"처럼 아이가 직접 고치도록 유도해.
 3. 아이가 일부만 바꿔 달라고 하면(예: "주인공을 로켓으로") 바뀐 전체 게임 DSL을 다시 출력해.
 4. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
+5. [구체화 코칭 — 가장 중요!] 매 답변의 맨 마지막 줄에 반드시 "NEXT: 문장1 | 문장2 | 문장3" 형식으로,
+   아이가 그대로 따라 말할 수 있는 다음 부탁 2~3개를 제안해. 제안은 지금 게임에서 실제로 되는 것만,
+   점점 구체적으로 (숫자·조건 포함). 예: NEXT: 사과가 더 빨리 떨어지게 해 줘 | 점수가 10점이 되면 이기게 해 줘 | 폭탄에 닿으면 지게 해 줘
+6. 아이의 부탁이 두루뭉술하면(예: "게임 만들어 줘", "재밌게 해 줘", "멋지게 해 줘") 바로 코드를 주지 말고,
+   주인공·아이템·규칙 중 빠진 것 하나를 골라 짧게 물어봐. 그리고 NEXT: 에 답이 될 예시 문장을 담아 줘.
+   예: "주인공이 누구면 좋을까?" + NEXT: 주인공은 고양이로 해 줘 | 주인공은 로켓으로 해 줘
 
 좌표: 왼쪽 위가 (0,0), 오른쪽 아래가 (400,300). 주인공은 보통 바닥 근처(y 260)에 놓아.
 
@@ -3477,10 +3537,12 @@ EVERY 100 { MOVE_ALL 🍎 0 5 }
 ON_TOUCH 🍎 { SCORE 1
 REMOVE }
 ON_SCORE 10 { END_WIN }
+NEXT: 사과가 더 빨리 떨어지게 해 줘 | 폭탄도 같이 떨어지게 해 줘 | 점수가 20점이 되면 이기게 해 줘
 
 출력 규칙:
 1. 코드를 출력할 때는 DSL 코드만. 설명·인사 금지, 마크다운 코드블록 금지.
-2. 질문/대화할 때는 코드 없이 한국어만.
+   단, 맨 마지막 줄의 NEXT: 제안은 항상 예외로 붙일 것.
+2. 질문/대화할 때는 코드 없이 한국어만 (역시 마지막 줄에 NEXT: 붙이기).
 3. 각 명령어는 한 줄에 하나씩. 중괄호 짝 맞출 것.`;
 
 const STUDIO_CHIPS=['사과 받기 게임 만들어 줘','운석 피하기 게임 만들어 줘','보석 모으기 게임 만들어 줘','주인공을 로켓으로 바꿔 줘'];
