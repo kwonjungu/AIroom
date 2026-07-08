@@ -130,6 +130,40 @@ function rateLimit(maxRequests, windowMs) {
     };
 }
 
+// vibecoding(학생용 독립 페이지) 접근 미들웨어
+// - 정식 세션 토큰이 있으면 그대로 통과 (기존 교직원 사용자)
+// - 없으면 X-Vibe-Client: vibecoding 헤더 + IP 레이트리밋(분당 30회)으로 제한적 허용
+//   (학생 기기는 로그인 이력이 없어 토큰이 없음 — 무분별한 공개 대신 가벼운 보호를 둠)
+const vibeRateLimits = new Map(); // ip → { count, resetAt }
+const VIBE_RATE_MAX = 30;
+const VIBE_RATE_WINDOW = 60 * 1000;
+async function requireAuthOrVibe(req, res, next) {
+    const token = req.headers['x-auth-token'];
+    if (token) {
+        const session = await validateSession(token);
+        if (session) { req.session = session; return next(); }
+    }
+    if (req.headers['x-vibe-client'] !== 'vibecoding') {
+        return res.status(401).json({ error: '인증이 필요합니다.' });
+    }
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    if (vibeRateLimits.size > 5000) { // 메모리 보호: 만료 엔트리 청소
+        for (const [k, v] of vibeRateLimits) if (now > v.resetAt) vibeRateLimits.delete(k);
+    }
+    let entry = vibeRateLimits.get(ip);
+    if (!entry || now > entry.resetAt) {
+        entry = { count: 0, resetAt: now + VIBE_RATE_WINDOW };
+        vibeRateLimits.set(ip, entry);
+    }
+    entry.count++;
+    if (entry.count > VIBE_RATE_MAX) {
+        return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+    }
+    req.session = null; // 비로그인 학생 접근 표시
+    next();
+}
+
 // ===== 브루트포스 방어 시스템 =====
 // IP별 로그인 실패 추적 및 점진적 잠금
 const loginAttempts = new Map(); // ip → { failures, lockedUntil, totalFailures }
@@ -442,11 +476,12 @@ const DATA_ROUTES = [
     { path: 'checklist-posts', file: 'checklist-posts.json', fallback: [] },
     { path: 'checklist-extra-staff', file: 'checklist-extra-staff.json', fallback: [] },
     { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
-    { path: 'vibe-progress', file: 'vibe-progress.json', fallback: [] }
+    // vibe-progress GET은 vibecoding 학생 기기(비로그인)도 조회 필요 → requireAuthOrVibe
+    { path: 'vibe-progress', file: 'vibe-progress.json', fallback: [], auth: requireAuthOrVibe }
 ];
 
-DATA_ROUTES.forEach(({ path: p, file, fallback }) => {
-    app.get(`/api/${p}`, requireAuth, async (req, res) => {
+DATA_ROUTES.forEach(({ path: p, file, fallback, auth }) => {
+    app.get(`/api/${p}`, auth || requireAuth, async (req, res) => {
         try {
             const data = await readData(file);
             res.json(data !== null && data !== undefined ? data : fallback);
@@ -619,7 +654,7 @@ app.post('/api/items/:collection/replace', requireAuth, async (req, res) => {
 // ----- vibe-progress 전용 per-item PATCH 별칭 -----
 // 클라이언트 계약: PATCH /api/vibe-progress/items/:id (항목: {id, cls, name, stars, completed, updatedAt})
 // 일반 형식(PATCH /api/items/vibe-progress/:id)도 ARRAY_COLLECTIONS 등록으로 함께 동작.
-app.patch('/api/vibe-progress/items/:id', requireAuth, async (req, res) => {
+app.patch('/api/vibe-progress/items/:id', requireAuthOrVibe, async (req, res) => {
     const { id } = req.params;
     try {
         await withRedisLock('data:vibe-progress', async () => {
@@ -641,7 +676,7 @@ app.patch('/api/vibe-progress/items/:id', requireAuth, async (req, res) => {
 // ----- NEIS 학교 검색 프록시 (vibecoding 학생 식별용 — 학교명 자동완성) -----
 // NEIS_API_KEY 환경변수는 선택 (없으면 무인증 호출 — 소량 조회는 동작)
 const schoolSearchCache = new Map();
-app.get('/api/school-search', requireAuth, async (req, res) => {
+app.get('/api/school-search', requireAuthOrVibe, async (req, res) => {
     const q = String(req.query.q || '').trim();
     if (q.length < 2) return res.json({ success: true, data: [] });
     const cacheKey = q.toLowerCase();
@@ -1758,11 +1793,10 @@ app.get('/api/ai/status', (req, res) => {
 
 // Groq 모델 폴백 순서 — 앞의 모델이 할당량 초과/폐기 시 다음 모델로 자동 전환
 // 품질 우선순위: 70B > 8B. 70B 계열이 동일 공급량 기준 먼저 소진되므로 8B로 폴백.
+// (llama3-70b-8192 / llama3-8b-8192 는 Groq에서 폐기(decommissioned)되어 제거함 — 2026-07)
 const GROQ_FALLBACK_MODELS = [
     'llama-3.3-70b-versatile',  // 기본 (고품질)
-    'llama-3.1-8b-instant',     // 빠르고 할당량 여유
-    'llama3-70b-8192',          // 이전 세대 70B
-    'llama3-8b-8192'            // 이전 세대 8B (최종 폴백)
+    'llama-3.1-8b-instant'      // 빠르고 할당량 여유 (최종 폴백)
 ];
 
 // 429/할당량/모델 폐기 에러인지 판별
@@ -1845,7 +1879,7 @@ async function callGroqWithFallback(body) {
     return { ok: false, status: lastStatus, data: lastData };
 }
 
-app.post('/api/ai/chat', requireAuth, async (req, res) => {
+app.post('/api/ai/chat', requireAuthOrVibe, async (req, res) => {
     const result = await callGroqWithFallback(req.body);
     res.status(result.status).json(result.data);
 });
