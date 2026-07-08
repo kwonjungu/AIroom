@@ -89,13 +89,24 @@
         /* 안전수칙 포스터 모달 */
         .wx-modal{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;}
         .wx-modal[hidden]{display:none;}
-        .wx-modal-inner{position:relative;max-width:96vw;max-height:94vh;display:flex;flex-direction:column;align-items:center;gap:14px;}
-        .wx-modal-img{max-width:96vw;max-height:80vh;border-radius:16px;box-shadow:0 12px 50px rgba(0,0,0,0.5);background:#fff;}
-        .wx-modal-close{position:absolute;top:-12px;right:-12px;width:44px;height:44px;border-radius:50%;border:none;background:#fff;color:#111;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.3);}
+        .wx-modal-inner{position:relative;width:min(1100px,94vw);max-height:94vh;display:flex;flex-direction:column;align-items:center;gap:14px;}
+        /* 포스터 + 영상 가로 1:1 반응형 그리드 */
+        .wx-modal-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;align-items:stretch;}
+        .wx-modal-body.no-video{grid-template-columns:1fr;justify-items:center;}
+        .wx-modal-img{width:100%;max-height:76vh;object-fit:contain;border-radius:16px;box-shadow:0 12px 50px rgba(0,0,0,0.5);background:#fff;}
+        .wx-modal-body.no-video .wx-modal-img{width:auto;max-width:100%;}
+        .wx-modal-video{position:relative;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 12px 50px rgba(0,0,0,0.5);min-height:240px;}
+        .wx-modal-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
+        .wx-modal-close{position:absolute;top:-12px;right:-12px;width:44px;height:44px;border-radius:50%;border:none;background:#fff;color:#111;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.3);z-index:1;}
         .wx-modal-nav{display:flex;align-items:center;gap:18px;color:#fff;font-weight:700;font-size:16px;}
         .wx-modal-nav button{width:54px;height:54px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;}
         .wx-modal-nav button:hover{background:rgba(255,255,255,0.35);}
-        @media (max-width:640px){.wx-modal-img{max-height:70vh;}.wx-modal-nav button{width:46px;height:46px;}}
+        @media (max-width:760px){
+            .wx-modal-body{grid-template-columns:1fr;}
+            .wx-modal-img{max-height:52vh;}
+            .wx-modal-video{min-height:0;aspect-ratio:16/9;}
+            .wx-modal-nav button{width:46px;height:46px;}
+        }
 
         /* School info bar */
         .school-info{max-width:960px;margin:0 auto;padding:12px 24px;}
@@ -883,8 +894,10 @@
     <div class="wx-modal" id="wxModal" hidden onclick="if(event.target===this)closeSafetyModal()">
         <div class="wx-modal-inner">
             <button class="wx-modal-close" onclick="closeSafetyModal()" title="닫기">✕</button>
-            <img class="wx-modal-img" id="wxModalImg" src="" alt="안전수칙 포스터">
-            <div id="wxModalVideo" style="margin-top:10px;"></div>
+            <div class="wx-modal-body" id="wxModalBody">
+                <img class="wx-modal-img" id="wxModalImg" src="" alt="안전수칙 포스터">
+                <div class="wx-modal-video" id="wxModalVideo"></div>
+            </div>
             <div class="wx-modal-nav" id="wxModalNav" style="display:none;">
                 <button onclick="safetyPrev()" title="이전">◀</button>
                 <span id="wxModalCount"></span>
@@ -2163,9 +2176,12 @@ function renderSafetyPoster(){
     document.getElementById('wxModalCount').textContent=`${safetyIdx+1} / ${safetyList.length} · ${p.label}`;
     document.getElementById('wxModalNav').style.display=safetyList.length>1?'':'none';
     const vWrap=document.getElementById('wxModalVideo');
+    const body=document.getElementById('wxModalBody');
     if(vWrap){
-        vWrap.innerHTML=p.video?`<iframe width="100%" height="220" src="${p.video}" title="${p.label} 안전교육" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`:'';
+        vWrap.innerHTML=p.video?`<iframe src="${p.video}" title="${p.label} 안전교육" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`:'';
+        vWrap.style.display=p.video?'':'none';
     }
+    if(body)body.classList.toggle('no-video',!p.video);
 }
 function safetyNext(){ if(safetyList.length){ safetyIdx=(safetyIdx+1)%safetyList.length; renderSafetyPoster(); } }
 function safetyPrev(){ if(safetyList.length){ safetyIdx=(safetyIdx-1+safetyList.length)%safetyList.length; renderSafetyPoster(); } }
