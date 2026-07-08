@@ -1244,7 +1244,6 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
             applyDate: entry.applyDate,
             days: entry.days || {},
             config: (ws && ws.config) || null, // 달력 범위 + 주말·공휴일 자동 집계용
-            fortyOneInfo: entry.fortyOneInfo || null, // 41조 공통 연수내용/장소/연락처
             fortyOnePeriods: entry.fortyOnePeriods,
             workPeriods: entry.workPeriods,
             summary: entry.summary,

@@ -143,10 +143,15 @@ AIroom/
   범위 = (시작일-1)=방학식 ~ (종료일+1)=개학식, 일~토 주 단위. 주말 빈칸, 평일 공휴일 '휴일',
   방학식/개학식은 평일일 때만 라벨. 상태 표기: '41조연수'→'제41조', '오전근무/오후41조'→'근무/41조'.
 - `fillCalendarTable` — 주 단위 행 복제 (첫 주/중간 주/마지막 주 테두리 스타일 각각 다른 행 템플릿 사용, rowAddr 재번호).
-- `fill41Table` — 41조 기간표 재구성. 연수내용/장소/비고 컬럼 채움.
-- `entry.fortyOneInfo = {content, place, note}` — UI 입력(41조 연수 정보 바, `wsSetFortyOneInfo`)이
-  자동 계산된 모든 41조 기간에 공통 적용됨. HWPX/DOCX/HTML 3종 모두 반영.
-- 검증: `node _check/test-calendar-permit.js` — 조성균 샘플과 텍스트 완전 일치 확인.
+  셀 name도 원본 규칙(날짜행 aN/상태행 bN, N=주*7+열+1)으로 재부여, 글자색 charPr도 원본 규칙대로
+  명시 지정 (평일 공휴일 날짜 36 빨강/'휴일' 37, 방학식·개학식 32/34 파랑, 평일 일반 20/21).
+- `fill41Table` — 41조 기간표 재구성. 연수내용/장소/비고 칸은 **비워 두고 한글에서 직접 입력**
+  (웹 입력 UI는 만들었다가 사용자 요청으로 제거함. entry.fortyOnePeriods override에 content 등이 있으면 채움).
+- **ZIP 컨테이너도 한글 재현**: JSZip generateAsync 대신 자체 `buildHwpxZip` 사용 —
+  한글이 기록하는 값(madeby 11/23, need 2.0, deflate flag 0x0004, 타임스탬프 1980-01-01 고정,
+  extattr 0x81800020, 원본 엔트리 순서)을 그대로 기록. **"문서 보안 설정 낮음에서만 열림" 이슈 대응**:
+  생성물이 원본 수기본과 deflate 스트림 바이트를 제외하고 완전 동일해지도록 함.
+- 검증: `node _check/test-calendar-permit.js` — 조성균 샘플(파일 b)과 내부 파일 전체 바이트 동일 확인.
 
 ### ✅ Phase 2 — Redis 스키마 + API 라우트
 - `defaults/winter-schedule.json` 초기값
