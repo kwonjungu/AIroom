@@ -1240,7 +1240,8 @@ app.get('/api/winter-schedule/permit/:staffId', requireAuth, async (req, res) =>
         const payload = {
             name,
             school: entry.school || '백암초등학교',
-            position: entry.position || staffRecord.position || '교사',
+            // 허가원 직위는 교장/교감/교사만 표기 (담당·부장 표기는 '교사'로 정규화)
+            position: hwpx.normalizePosition(entry.position || staffRecord.position),
             applyDate: entry.applyDate,
             days: entry.days || {},
             config: (ws && ws.config) || null, // 달력 범위 + 주말·공휴일 자동 집계용
