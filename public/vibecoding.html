@@ -3285,7 +3285,12 @@ function addSuggestChips(list){
         const b=document.createElement('button');b.className='chip';b.textContent=t;
         b.onclick=()=>{
             const inp=document.getElementById('chatInput');
-            if(inp){inp.value=t;sendChat();}
+            if(!inp)return;
+            if(inp.value.trim()){
+                // 쓰던 내용이 있으면 뒤에 붙이고 전송은 아이가
+                inp.value=inp.value.replace(/\s+$/,'')+' '+t;
+                inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
+            }else{inp.value=t;sendChat();}
         };
         wrap.appendChild(b);
     });
@@ -4263,14 +4268,20 @@ function renderChips(m){
         const s=document.createElement('span');s.className='chip';s.textContent=c;
         s.onclick=()=>{
             const inp=document.getElementById('chatInput');
+            // 이미 쓰던 내용이 있으면 지우지 않고 뒤에 이어 붙임 (아이가 문장을 조합할 수 있게)
+            const prefix=inp.value.trim()?inp.value.replace(/\s+$/,'')+' ':'';
             if(c.includes('□')&&!tourActive){
                 // 빈칸 칩: 말하는 방법만 알려주고 숫자·내용은 아이가 채움 (정답 금지)
-                inp.value=c;
-                const pos=c.indexOf('□');
+                inp.value=prefix+c;
+                const pos=prefix.length+c.indexOf('□');
                 inp.focus();inp.setSelectionRange(pos,pos+1);
                 addChatMsg('system','□ 자리에 네가 생각한 걸 넣어서 보내 봐!');
+            }else if(prefix){
+                // 쓰던 내용 뒤에 붙이기만 하고 전송은 아이가 (조합해서 보낼 기회)
+                inp.value=prefix+c.replace(/□/g,'3');
+                inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);
             }else{
-                // 완성 칩(자유 창작·온보딩 전용): 즉시 전송
+                // 빈 입력창에서 완성 칩: 즉시 전송
                 inp.value=c.replace(/□/g,'3');sendChat();
             }
             tourEvent('chip');
