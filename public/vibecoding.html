@@ -35,6 +35,87 @@ body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;bac
 .app-header.pixel-mode{background:linear-gradient(135deg,#7C4DFF,#E040FB);}
 .app-header.maze-mode{background:linear-gradient(135deg,#3949AB,#00BCD4);}
 .app-header.studio-mode{background:linear-gradient(135deg,#E91E63,#FF9800);}
+.app-header.goal-mode{background:linear-gradient(135deg,#00897B,#26C6DA);}
+.app-header.shape-mode{background:linear-gradient(135deg,#F4511E,#FFB300);}
+
+/* ===== LOWGRADE:CSS ===== */
+/* §3.5 카드 레일 CSS 토큰 + 저학년 무대/레일/가이드 스켈레톤. WP1~WP4가 확장. */
+:root{
+  --card-w:72px; --card-h:96px; --card-radius:14px;
+  --rail-bg:#EEF6F9; --rail-slot:#ffffff; --rail-border:#B3C7D6;
+  --card-shadow:0 4px 0 rgba(0,0,0,.18),0 6px 12px rgba(0,0,0,.2);
+}
+.mode-tab.lg-tab{background:rgba(255,255,255,.14);}
+.title-section-label{font-weight:800;font-size:15px;color:var(--text);opacity:.7;margin:14px 0 4px;text-align:center;}
+.lowgrade-stage{flex:1;display:flex;align-items:center;justify-content:center;background:var(--rail-bg);overflow:auto;}
+.card-rail{background:var(--rail-bg);border-top:3px solid var(--rail-border);padding:10px;display:flex;flex-direction:column;gap:10px;min-height:120px;}
+.card-track{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;min-height:calc(var(--card-h) + 20px);background:var(--rail-slot);border:2px dashed var(--rail-border);border-radius:var(--card-radius);padding:12px;transition:background .12s,border-color .12s;}
+.card-track.is-empty{align-items:center;justify-content:center;}
+.card-track.drop-hint,.repeat-body.drop-hint{background:#E3F2FD;border-color:#42A5F5;}
+.card-palette{display:flex;flex-wrap:wrap;gap:10px;}
+.card-rail-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.guide-panel{background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;gap:12px;overflow:auto;}
+
+/* --- 카드 (§3.5 토큰) --- */
+.vc-card{width:var(--card-w);min-height:var(--card-h);border-radius:var(--card-radius);background:var(--card-c,#607D8B);
+  box-shadow:var(--card-shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  padding:6px 4px;cursor:pointer;user-select:none;position:relative;color:#fff;
+  border:3px solid rgba(255,255,255,.85);transition:transform .1s,box-shadow .1s;font-family:'Jua',sans-serif;touch-action:manipulation;}
+.vc-card:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18),0 3px 6px rgba(0,0,0,.2);}
+.vc-card:focus-visible{outline:3px solid #FFD166;outline-offset:2px;}
+.vc-card .card-emoji{font-size:40px;line-height:1;}
+.vc-card img{width:48px;height:48px;object-fit:contain;pointer-events:none;}
+.vc-card .card-label{font-size:14px;font-weight:700;text-align:center;line-height:1.05;text-shadow:0 1px 1px rgba(0,0,0,.25);}
+.pal-card{min-width:64px;}
+.track-card.dragging{opacity:.4;}
+.stamp-badge{position:absolute;top:2px;right:4px;background:rgba(0,0,0,.35);border-radius:8px;font-size:12px;font-weight:700;padding:1px 6px;}
+
+/* --- repeat 컨테이너 카드 --- */
+.vc-card.is-repeat{width:auto;min-width:calc(var(--card-w) + 24px);align-items:stretch;padding:8px;}
+.vc-card.is-repeat .card-emoji{font-size:28px;text-align:center;}
+.repeat-head{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0 6px;}
+.rep-step{width:30px;height:30px;border-radius:50%;border:2px solid #fff;background:rgba(255,255,255,.25);color:#fff;font-size:18px;font-weight:800;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+.rep-step:active{background:rgba(255,255,255,.45);}
+.rep-count{font-size:22px;font-weight:800;min-width:22px;text-align:center;}
+.repeat-body{display:flex;flex-wrap:wrap;gap:8px;min-height:calc(var(--card-h) - 8px);background:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.8);border-radius:10px;padding:8px;align-items:flex-start;}
+.repeat-body .drop-slot{width:100%;min-height:calc(var(--card-h) - 24px);display:flex;align-items:center;justify-content:center;font-size:28px;color:rgba(255,255,255,.8);}
+.repeat-body .vc-card{--card-shadow:0 3px 0 rgba(0,0,0,.15);}
+
+/* --- 트랙 안내/드롭 슬롯 --- */
+.track-hint{color:#7A93A6;font-size:16px;font-weight:700;font-family:'Jua',sans-serif;pointer-events:none;}
+
+/* --- 레일 버튼 (큰 터치타깃) --- */
+.rail-btn{min-height:52px;min-width:96px;padding:8px 18px;border-radius:14px;border:none;font-family:'Jua',sans-serif;
+  font-size:17px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.2);transition:transform .1s,box-shadow .1s;touch-action:manipulation;}
+.rail-btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.2);}
+.rail-btn.rail-run{background:#43A047;}
+.rail-btn.rail-undo{background:#5C6BC0;}
+.rail-btn.rail-clear{background:#EF5350;}
+@media(max-width:560px){.rail-btn .rail-btn-tx{display:none;}.rail-btn{min-width:60px;font-size:22px;}}
+
+/* --- 가이드 패널 (WP4 §6: 캐릭터 + 말풍선 + 힌트) --- */
+.guide-panel{gap:14px;}
+.guide-char{width:150px;height:150px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.18));transition:transform .25s ease;}
+.guide-char.pop{transform:scale(1.08) translateY(-4px);}
+.guide-bubble{position:relative;background:#fff;border:3px solid var(--rail-border);border-radius:18px;padding:16px 18px;
+  font-family:'Jua',sans-serif;font-size:19px;line-height:1.35;color:#37474F;text-align:center;max-width:280px;min-height:56px;
+  box-shadow:0 4px 0 rgba(0,0,0,.08);word-break:keep-all;}
+.guide-bubble::after{content:'';position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:16px solid var(--rail-border);}
+.guide-bubble::before{content:'';position:absolute;top:-12px;left:50%;transform:translateX(-50%);z-index:1;
+  border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:14px solid #fff;}
+.guide-hint-btn{min-height:56px;min-width:150px;padding:10px 22px;border:none;border-radius:16px;background:#FFB300;color:#5D4037;
+  font-family:'Jua',sans-serif;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.2);
+  display:flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation;transition:transform .1s,box-shadow .1s;}
+.guide-hint-btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.2);}
+.guide-hint-btn:disabled{opacity:.5;cursor:default;box-shadow:0 2px 0 rgba(0,0,0,.12);transform:translateY(2px);}
+.guide-speak-btn{align-self:center;min-height:44px;min-width:44px;border:2px solid var(--rail-border);border-radius:50%;
+  background:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0;touch-action:manipulation;}
+.guide-speak-btn:active{transform:translateY(1px);}
+@media(max-width:900px){.guide-panel{flex-direction:row;flex-wrap:wrap;justify-content:center;}
+  .guide-char{width:96px;height:96px;}.guide-bubble{font-size:16px;max-width:220px;}
+  .guide-bubble::after,.guide-bubble::before{display:none;}}
+/* ===== /LOWGRADE:CSS ===== */
 .header-top{padding:8px 20px;display:flex;align-items:center;justify-content:space-between;}
 .header-top h1{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;}
 .header-center{display:flex;align-items:center;gap:10px;}
@@ -487,6 +568,8 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
         <button class="mode-tab" data-mode="pixel" onclick="confirmSwitchMode('pixel',this)">🎨 픽셀 아트</button>
         <button class="mode-tab" data-mode="maze" onclick="confirmSwitchMode('maze',this)">🚀 미로 모험</button>
         <button class="mode-tab" data-mode="studio" onclick="confirmSwitchMode('studio',this)">🎮 스튜디오</button>
+        <button class="mode-tab lg-tab" data-mode="goal" onclick="confirmSwitchMode('goal',this)">🎯 별까지 가기</button>
+        <button class="mode-tab lg-tab" data-mode="shape" onclick="confirmSwitchMode('shape',this)">🔺 도형 겹치기</button>
     </div>
 </div>
 
@@ -626,6 +709,20 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
             <button class="send-btn" id="sendBtn" onclick="sendChat()">전송</button>
         </div>
     </div>
+
+    <!-- ===== LOWGRADE:DOM ===== -->
+    <!-- 저학년 카드코딩 전용 DOM. 초기 hidden. WP1~WP4가 내부를 채움. -->
+    <div class="lowgrade-stage hidden" id="lowgradeStage">
+        <div class="goal-stage hidden" id="goalStage"></div>
+        <div class="shape-stage hidden" id="shapeStage"></div>
+    </div>
+    <div class="card-rail hidden" id="cardRail">
+        <div class="card-track" id="cardTrack"></div>
+        <div class="card-palette" id="cardPalette"></div>
+        <div class="card-rail-btns" id="cardRailBtns"></div>
+    </div>
+    <div class="guide-panel hidden" id="guidePanel"></div>
+    <!-- ===== /LOWGRADE:DOM ===== -->
 </div>
 
 <!-- Mission Modal -->
@@ -690,6 +787,28 @@ button:focus-visible,input:focus-visible{outline:3px solid #FFD166;outline-offse
             </div>
         </div>
     </div>
+    <!-- ===== LOWGRADE:CONTENT ===== -->
+    <!-- 저학년 카드코딩 타이틀 섹션 + (WP5) 안내/스토리 콘텐츠. -->
+    <div class="title-section-label">🧸 저학년 카드코딩</div>
+    <div class="title-cards title-cards-lg">
+        <div class="mode-card" onclick="enterMode('goal')">
+            <img src="/assets/vibe/planet-path.png" alt="길따라 별 행성">
+            <div class="mc-body">
+                <div class="mc-name">🎯 별까지 가기</div>
+                <div class="mc-desc">그림 카드를 놓아서<br>로버를 별까지 데려가자!</div>
+                <button class="mc-go" style="background:linear-gradient(135deg,#00897B,#26C6DA);">별 행성으로 들어가기</button>
+            </div>
+        </div>
+        <div class="mode-card" onclick="enterMode('shape')">
+            <img src="/assets/vibe/planet-shapes.png" alt="도형 나라 행성">
+            <div class="mc-body">
+                <div class="mc-name">🔺 도형 겹치기</div>
+                <div class="mc-desc">도형을 차례로 겹쳐 찍어서<br>멋진 그림을 완성하자!</div>
+                <button class="mc-go" style="background:linear-gradient(135deg,#F4511E,#FFB300);">도형 나라로 들어가기</button>
+            </div>
+        </div>
+    </div>
+    <!-- ===== /LOWGRADE:CONTENT ===== -->
     <div class="title-teacher"><a onclick="openTeacherView()">👩‍🏫 선생님</a></div>
 </div>
 
@@ -792,7 +911,9 @@ async function checkAiStatus(){
     }catch(e){aiKeyMissing=null;return;}
     if(aiKeyMissing){const b=document.getElementById('aiStatusBanner');if(b)b.classList.remove('hidden');}
 }
-let currentMode = 'turtle'; // 'turtle' | 'pixel'
+let currentMode = 'turtle'; // 'turtle' | 'pixel' | 'maze' | 'studio' | 'goal' | 'shape'
+// 저학년 카드코딩 판별 헬퍼 (goal/shape 공통 레이아웃 분기)
+function isLowgradeMode(m){return m==='goal'||m==='shape';}
 let currentMission = null;
 let chatMessages = [];
 let isProcessing = false;
@@ -926,10 +1047,20 @@ function switchMode(mode, btn) {
     btn.classList.add('active');
 
     const isTurtle = mode === 'turtle', isPixel = mode === 'pixel', isMaze = mode === 'maze', isStudio = mode === 'studio';
+    const isGoal = mode === 'goal', isShape = mode === 'shape', isLowgrade = isLowgradeMode(mode); // LOWGRADE-HOOK
     document.getElementById('appHeader').classList.toggle('pixel-mode', isPixel);
     document.getElementById('appHeader').classList.toggle('maze-mode', isMaze);
     document.getElementById('appHeader').classList.toggle('studio-mode', isStudio);
-    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : isPixel ? '🎨 바이브 코딩' : isMaze ? '🚀 바이브 코딩' : '🎮 바이브 코딩';
+    document.getElementById('appHeader').classList.toggle('goal-mode', isGoal);
+    document.getElementById('appHeader').classList.toggle('shape-mode', isShape);
+    document.getElementById('appTitle').innerHTML = isTurtle ? '🐢 바이브 코딩' : isPixel ? '🎨 바이브 코딩' : isMaze ? '🚀 바이브 코딩' : isGoal ? '🎯 별까지 가기' : isShape ? '🔺 도형 겹치기' : '🎮 바이브 코딩';
+    // LOWGRADE-HOOK: 저학년 카드코딩 레이아웃 토글 (Blockly·채팅 숨김, 무대/레일/가이드 표시)
+    document.querySelectorAll('.canvas-panel,.blockly-panel,.chat-panel,.mobile-tabs').forEach(p=>{if(p)p.classList.toggle('hidden', isLowgrade);});
+    const _ls=document.getElementById('lowgradeStage'),_cr=document.getElementById('cardRail'),_gp=document.getElementById('guidePanel');
+    if(_ls)_ls.classList.toggle('hidden', !isLowgrade);
+    if(_cr)_cr.classList.toggle('hidden', !isLowgrade);
+    if(_gp)_gp.classList.toggle('hidden', !isLowgrade);
+    if(_ls){const _gs=document.getElementById('goalStage'),_ss=document.getElementById('shapeStage');if(_gs)_gs.classList.toggle('hidden',!isGoal);if(_ss)_ss.classList.toggle('hidden',!isShape);}
     document.getElementById('turtleHeader').classList.toggle('hidden', !isTurtle);
     document.getElementById('pixelHeader').classList.toggle('hidden', !isPixel);
     document.getElementById('mazeHeader').classList.toggle('hidden', !isMaze);
@@ -942,6 +1073,17 @@ function switchMode(mode, btn) {
     document.getElementById('pixelView').classList.toggle('hidden', !isPixel);
     document.getElementById('mazeView').classList.toggle('hidden', !isMaze);
     document.getElementById('studioView').classList.toggle('hidden', !isStudio);
+
+    // LOWGRADE-HOOK: 저학년은 Blockly 툴박스 스왑을 건너뛰고, 카드 레일+가이드로 전환한다.
+    if(isLowgrade){
+        currentMission = null;
+        document.getElementById('levelBadge').textContent = '기초';
+        document.getElementById('missionBadge').textContent = '미션을 선택하세요';
+        if(isGoal)enterGoalMode(); else enterShapeMode();
+        renderGuidePanel();
+        setTimeout(() => openMissionSelector(), 300);
+        return; // Blockly·채팅 기반 리셋 로직은 실행하지 않음 (안전한 조기 반환)
+    }
 
     // Swap Blockly toolbox
     workspace.updateToolbox(isTurtle ? TURTLE_TOOLBOX : isPixel ? PIXEL_TOOLBOX : isMaze ? MAZE_TOOLBOX : STUDIO_TOOLBOX);
@@ -2882,6 +3024,12 @@ function updateDSLPreview(){
 //  RUN / RESET
 // ============================================================
 function runCode(){
+    // LOWGRADE-HOOK: 저학년은 카드트랙→DSL, Blockly workspaceToDSL 미사용
+    if(isLowgradeMode(currentMode)){
+        const dsl=cardTrackToDSL();
+        if(currentMode==='goal')runGoal(dsl); else runShape(dsl);
+        return;
+    }
     const dsl=workspaceToDSL();
     if(!dsl){addChatMsg('system','아직 블록이 없네? 블록을 끼우거나 나한테 말로 시켜 줘!');return;}
     if(currentMode!=='turtle'&&execBusy){execBusyNotice();return;} // 터틀은 자체 취소(rAF 재시작)가 있어 제외
@@ -3931,13 +4079,20 @@ let completedMaze=JSON.parse(localStorage.getItem('maze_completed')||'[]');
 let starsTurtle=JSON.parse(localStorage.getItem('turtle_stars')||'{}');
 let starsPixel=JSON.parse(localStorage.getItem('pixel_stars')||'{}');
 let starsMaze=JSON.parse(localStorage.getItem('maze_stars')||'{}');
+let completedGoal=JSON.parse(localStorage.getItem('goal_completed')||'[]');
+let completedShape=JSON.parse(localStorage.getItem('shape_completed')||'[]');
+let starsGoal=JSON.parse(localStorage.getItem('goal_stars')||'{}');
+let starsShape=JSON.parse(localStorage.getItem('shape_stars')||'{}');
 
-function getMissions(){return currentMode==='turtle'?TURTLE_MISSIONS:currentMode==='maze'?MAZE_MISSIONS:currentMode==='studio'?STUDIO_PROJECTS:PIXEL_MISSIONS;}
-function getCompleted(){return currentMode==='turtle'?completedTurtle:currentMode==='maze'?completedMaze:currentMode==='studio'?[]:completedPixel;}
-function getStars(){return currentMode==='turtle'?starsTurtle:currentMode==='maze'?starsMaze:currentMode==='studio'?{}:starsPixel;}
+// LOWGRADE-HOOK: goal/shape 분기 추가 (배열/객체는 GOAL:JS·SHAPE:JS가 채움)
+function getMissions(){if(currentMode==='goal')return GOAL_MISSIONS;if(currentMode==='shape')return SHAPE_MISSIONS;return currentMode==='turtle'?TURTLE_MISSIONS:currentMode==='maze'?MAZE_MISSIONS:currentMode==='studio'?STUDIO_PROJECTS:PIXEL_MISSIONS;}
+function getCompleted(){if(currentMode==='goal')return completedGoal;if(currentMode==='shape')return completedShape;return currentMode==='turtle'?completedTurtle:currentMode==='maze'?completedMaze:currentMode==='studio'?[]:completedPixel;}
+function getStars(){if(currentMode==='goal')return starsGoal;if(currentMode==='shape')return starsShape;return currentMode==='turtle'?starsTurtle:currentMode==='maze'?starsMaze:currentMode==='studio'?{}:starsPixel;}
 function saveCompleted(id){
     if(currentMode==='studio')return; // 스튜디오는 완료·별 저장 없음 (자유 창작)
-    if(currentMode==='turtle'){if(!completedTurtle.includes(id)){completedTurtle.push(id);localStorage.setItem('turtle_completed',JSON.stringify(completedTurtle));}}
+    if(currentMode==='goal'){if(!completedGoal.includes(id)){completedGoal.push(id);localStorage.setItem('goal_completed',JSON.stringify(completedGoal));}} // LOWGRADE-HOOK
+    else if(currentMode==='shape'){if(!completedShape.includes(id)){completedShape.push(id);localStorage.setItem('shape_completed',JSON.stringify(completedShape));}} // LOWGRADE-HOOK
+    else if(currentMode==='turtle'){if(!completedTurtle.includes(id)){completedTurtle.push(id);localStorage.setItem('turtle_completed',JSON.stringify(completedTurtle));}}
     else if(currentMode==='maze'){if(!completedMaze.includes(id)){completedMaze.push(id);localStorage.setItem('maze_completed',JSON.stringify(completedMaze));}}
     else{if(!completedPixel.includes(id)){completedPixel.push(id);localStorage.setItem('pixel_completed',JSON.stringify(completedPixel));}}
     scheduleProgressSync();
@@ -3945,17 +4100,20 @@ function saveCompleted(id){
 function saveStars(id,n){
     if(currentMode==='studio'){updateStarTotal();return;} // 스튜디오는 별 저장 없음
     const s=getStars();
-    if((s[id]||0)<n){s[id]=n;localStorage.setItem(currentMode==='turtle'?'turtle_stars':currentMode==='maze'?'maze_stars':'pixel_stars',JSON.stringify(s));}
+    // LOWGRADE-HOOK: goal/shape 별 저장 키 추가
+    const _sk=currentMode==='goal'?'goal_stars':currentMode==='shape'?'shape_stars':currentMode==='turtle'?'turtle_stars':currentMode==='maze'?'maze_stars':'pixel_stars';
+    if((s[id]||0)<n){s[id]=n;localStorage.setItem(_sk,JSON.stringify(s));}
     updateStarTotal();
     scheduleProgressSync();
 }
 function updateStarTotal(){
-    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0)+Object.values(starsMaze).reduce((a,b)=>a+b,0);
+    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0)+Object.values(starsMaze).reduce((a,b)=>a+b,0)+Object.values(starsGoal).reduce((a,b)=>a+b,0)+Object.values(starsShape).reduce((a,b)=>a+b,0); // LOWGRADE-HOOK
     const el=document.getElementById('starTotal');if(el)el.innerHTML='<img src="/assets/vibe/ui-star.png" alt="별"> '+sum;
 }
 function getChapterKey(m){return currentMode==='pixel'?pixelChapterKey(m):m.level;}
-function getChapters(){return currentMode==='turtle'?TURTLE_CHAPTERS:currentMode==='maze'?MAZE_CHAPTERS:currentMode==='studio'?STUDIO_CHAPTERS:PIXEL_CHAPTERS;}
-function getStoryData(m){return (currentMode==='turtle'?TURTLE_STORY:currentMode==='maze'?MAZE_STORY:currentMode==='studio'?STUDIO_STORY:PIXEL_STORY)[m.id]||{};}
+// LOWGRADE-HOOK: goal/shape 챕터·스토리 분기 (객체는 GOAL:JS·SHAPE:JS가 채움)
+function getChapters(){if(currentMode==='goal')return GOAL_CHAPTERS;if(currentMode==='shape')return SHAPE_CHAPTERS;return currentMode==='turtle'?TURTLE_CHAPTERS:currentMode==='maze'?MAZE_CHAPTERS:currentMode==='studio'?STUDIO_CHAPTERS:PIXEL_CHAPTERS;}
+function getStoryData(m){if(currentMode==='goal')return GOAL_STORY[m.id]||{};if(currentMode==='shape')return SHAPE_STORY[m.id]||{};return (currentMode==='turtle'?TURTLE_STORY:currentMode==='maze'?MAZE_STORY:currentMode==='studio'?STUDIO_STORY:PIXEL_STORY)[m.id]||{};}
 function isFreeMission(m){if(currentMode==='maze')return false;if(currentMode==='studio')return true;return !m.targetDSL&&!m.targetGrid;}
 function isUnlocked(m){
     if(isFreeMission(m))return true;
@@ -4001,10 +4159,11 @@ function openMissionSelector(){
 function renderWorldMap(){
     const {order,groups}=chapterGroups();
     const chapters=getChapters(),completed=getCompleted(),stars=getStars();
-    const icons=currentMode==='turtle'?MISSION_ICONS_T:currentMode==='maze'?MISSION_ICONS_M:currentMode==='studio'?MISSION_ICONS_S:MISSION_ICONS_P;
+    // LOWGRADE-HOOK: goal/shape는 전용 아이콘 맵이 아직 없어 빈 객체 폴백(월드맵은 WP5가 확장)
+    const icons=currentMode==='goal'||currentMode==='shape'?{}:currentMode==='turtle'?MISSION_ICONS_T:currentMode==='maze'?MISSION_ICONS_M:currentMode==='studio'?MISSION_ICONS_S:MISSION_ICONS_P;
     const g=document.getElementById('missionGrid');g.innerHTML='';
     document.getElementById('missionModalTitle').innerHTML=
-        currentMode==='turtle'?'🗺️ 도형 행성 대모험':currentMode==='maze'?'🗺️ 미로 유적 대탐험':currentMode==='studio'?'🎮 게임 공방':'🗺️ 픽셀 은하 구조대';
+        currentMode==='goal'?'🎯 길따라 별 행성':currentMode==='shape'?'🔺 도형 나라':currentMode==='turtle'?'🗺️ 도형 행성 대모험':currentMode==='maze'?'🗺️ 미로 유적 대탐험':currentMode==='studio'?'🎮 게임 공방':'🗺️ 픽셀 은하 구조대';
 
     // 슬롯 배열: [관문, 미션...] × 챕터 + 마지막 골인
     const slots=[];
@@ -4211,6 +4370,11 @@ function startMissionPlay(){
     document.getElementById('storyModal').classList.remove('show');
     const m=currentMission;if(!m)return;
     hintStage=0;
+    // LOWGRADE-HOOK: 저학년(goal/shape)은 Blockly/채팅 대신 카드레일+가이드로 미션 시작
+    if(isLowgradeMode(currentMode)){
+        if(currentMode==='goal')goalStartMission(m); else shapeStartMission(m);
+        return;
+    }
     clearWorkspace(true);
     chatMessages=[];document.getElementById('chatHistory').innerHTML='';
     addChatMsg('system',currentMode==='studio'?`🎮 만들기: ${m.title}`:`🎯 미션 ${m.id}: ${m.title}`);
@@ -4730,9 +4894,1135 @@ function enterMode(mode){
     }
 }
 function updateTitleStars(){
-    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0)+Object.values(starsMaze).reduce((a,b)=>a+b,0);
+    const sum=Object.values(starsTurtle).reduce((a,b)=>a+b,0)+Object.values(starsPixel).reduce((a,b)=>a+b,0)+Object.values(starsMaze).reduce((a,b)=>a+b,0)+Object.values(starsGoal).reduce((a,b)=>a+b,0)+Object.values(starsShape).reduce((a,b)=>a+b,0); // LOWGRADE-HOOK
     const el=document.getElementById('titleStarCnt');if(el)el.textContent=sum;
 }
+
+// ============================================================
+//  저학년 카드코딩 (goal/shape) — 센티넬 구역
+//  각 WP는 자기 구역 사이만 편집한다. WP0는 빈 쌍 + 계약 스텁만 심는다.
+// ============================================================
+
+// 공유 데이터 모델 (§3.2) — 모든 저학년 WP가 공유
+let cardTrack = [];        // 최상위 트랙 (배열)
+let cardPaletteCfg = [];   // 현재 모드의 팔레트 정의
+
+/* ===== CARDRAIL:JS ===== */
+// WP1: 카드 레일 서브시스템 (§3). Blockly 대체 그림카드 레일.
+//  - initCardRail(paletteCfg,opts): 모드 진입 시 팔레트/트랙 초기화 + 버튼 렌더
+//  - renderCardPalette(): #cardPalette 그림 (탭=트랙끝 추가, 드래그=팔레트→트랙)
+//  - renderCardTrack(): #cardTrack 그림 (중첩 body 재귀, 탭=제거, 드래그=순서이동)
+//  - cardTrackToDSL(): cardTrack → DSL 텍스트 (모드별 매핑)
+//  - resetCardTrack(): 트랙 비우기
+//  저학년 UX: 탭+드래그 병행, 큰 터치타깃, HTML5 DnD + 포인터/터치 폴백.
+
+let cardRailOpts = {allowRepeat:false, maxCards:20};   // 현재 모드 옵션
+let cardTrackHistory = [];                             // ⏪ 되돌리기 스택 (트랙 스냅샷)
+const CARD_REPEAT_MAX = 5, CARD_REPEAT_MIN = 1;        // repeat 카운트 범위 (§3.3)
+
+// --- 유틸: 트랙 깊은 복제(되돌리기 스냅샷용) ---
+function _cloneCardTrack(track){ return JSON.parse(JSON.stringify(track||[])); }
+function _cardCount(track){ // maxCards 판정용: 컨테이너와 body 카드 모두 셈
+  let n=0; (track||[]).forEach(c=>{ n++; if(c.body) n+=_cardCount(c.body); }); return n;
+}
+function _pushHistory(){ cardTrackHistory.push(_cloneCardTrack(cardTrack)); if(cardTrackHistory.length>50) cardTrackHistory.shift(); }
+function _paletteDef(type){ return (cardPaletteCfg||[]).find(c=>c.type===type)||null; }
+
+// --- 팔레트 카드 정의 → 트랙 인스턴스 생성 (§3.2) ---
+function _makeCardInstance(def){
+  if(!def) return null;
+  if(def.type==='repeat'){ return {type:'repeat', count:2, body:[]}; }
+  if(def.type==='stamp'){ return {type:'stamp', shape:def.shape, anchor:(def.anchor||5), color:def.color}; }
+  return {type:def.type};
+}
+
+// --- 아이콘 렌더: img 경로면 <img>, 아니면 이모지 (§7.1 대비) ---
+function _cardIconHTML(def){
+  if(!def) return '';
+  if(def.img) return `<img src="${def.img}" alt="" draggable="false">`;
+  return `<span class="card-emoji">${def.icon||'❔'}</span>`;
+}
+
+function initCardRail(paletteCfg, opts){
+  cardPaletteCfg = paletteCfg||[];
+  cardRailOpts = Object.assign({allowRepeat:false, maxCards:20}, opts||{});
+  cardTrack = [];
+  cardTrackHistory = [];
+  renderCardPalette();
+  renderCardTrack();
+  renderCardRailBtns();
+}
+
+function renderCardRailBtns(){
+  const el=document.getElementById('cardRailBtns'); if(!el) return;
+  el.innerHTML='';
+  const mk=(cls,label,title,fn)=>{
+    const b=document.createElement('button');
+    b.className='rail-btn '+cls; b.innerHTML=label; b.title=title; b.type='button';
+    b.addEventListener('click',fn);
+    return b;
+  };
+  el.appendChild(mk('rail-run','▶ <span class="rail-btn-tx">실행</span>','코드 실행',()=>{ if(typeof runCode==='function') runCode(); }));
+  el.appendChild(mk('rail-undo','⏪ <span class="rail-btn-tx">한장 빼기</span>','마지막 동작 되돌리기',undoCardTrack));
+  el.appendChild(mk('rail-clear','↺ <span class="rail-btn-tx">비우기</span>','트랙 비우기',resetCardTrack));
+}
+
+function renderCardPalette(){
+  const el=document.getElementById('cardPalette'); if(!el) return;
+  el.innerHTML='';
+  (cardPaletteCfg||[]).forEach(def=>{
+    if(def.type==='repeat' && !cardRailOpts.allowRepeat) return; // 미션 옵션으로 반복 숨김(§4.5)
+    const card=document.createElement('div');
+    card.className='vc-card pal-card'+(def.isContainer?' is-container':'');
+    card.style.setProperty('--card-c', def.color||'#607D8B');
+    card.setAttribute('role','button'); card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label', def.label||def.type);
+    card.dataset.type=def.type;
+    card.innerHTML = _cardIconHTML(def) + `<span class="card-label">${def.label||''}</span>`;
+    // 탭 = 트랙 끝에 추가 (드래그 필수 아님)
+    card.addEventListener('click',()=>addCardToTrack(def.type));
+    card.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();addCardToTrack(def.type);} });
+    // HTML5 DnD: 팔레트→트랙 드래그
+    card.draggable=true;
+    card.addEventListener('dragstart',e=>{
+      _dragData={source:'palette', type:def.type};
+      e.dataTransfer.effectAllowed='copy';
+      try{ e.dataTransfer.setData('text/plain', def.type); }catch(_){}
+    });
+    card.addEventListener('dragend',()=>{ _dragData=null; _clearDropHints(); });
+    // 포인터/터치 폴백: 롱프레스 드래그 대신 탭이 이미 추가하므로 팔레트는 탭으로 충분
+    el.appendChild(card);
+  });
+}
+
+// --- 팔레트 카드를 대상 컨테이너(기본 최상위 트랙) 끝에 추가 ---
+function addCardToTrack(type, targetBody){
+  const def=_paletteDef(type); if(!def) return;
+  const target = targetBody || cardTrack;
+  if(_cardCount(cardTrack) >= (cardRailOpts.maxCards||99)){ playSfx&&playSfx('click',.6); return; }
+  const inst=_makeCardInstance(def); if(!inst) return;
+  _pushHistory();
+  target.push(inst);
+  playSfx&&playSfx('click');
+  renderCardTrack();
+}
+
+// --- 트랙 카드 렌더 (중첩 body 재귀) ---
+function renderCardTrack(){
+  const el=document.getElementById('cardTrack'); if(!el) return;
+  el.innerHTML='';
+  el.classList.toggle('is-empty', cardTrack.length===0);
+  if(cardTrack.length===0){
+    const ph=document.createElement('div');
+    ph.className='track-hint';
+    ph.textContent='카드를 여기에 놓아요';
+    el.appendChild(ph);
+  }
+  _renderCardList(cardTrack, el, [], false);
+  // 최상위 트랙 자체를 드롭 타깃으로 (끝에 붙이기)
+  _wireDropZone(el, cardTrack, false);
+}
+
+// path: 트랙 내 위치 경로 (재귀), inRepeat: repeat body 내부 여부(중첩 제한용)
+function _renderCardList(list, container, path, inRepeat){
+  list.forEach((card,i)=>{
+    const def=_paletteDef(card.type) || {type:card.type};
+    const node=document.createElement('div');
+    node.className='vc-card track-card'+(card.type==='repeat'?' is-repeat':'');
+    node.style.setProperty('--card-c', def.color||_shapeColor(card)||'#607D8B');
+    node.dataset.path=path.concat(i).join('.');
+    node.setAttribute('role','button'); node.setAttribute('tabindex','0');
+
+    if(card.type==='repeat'){
+      // 카운트 스테퍼 (−/＋, 1~5)
+      const head=document.createElement('div'); head.className='repeat-head';
+      const minus=document.createElement('button'); minus.type='button'; minus.className='rep-step'; minus.textContent='−';
+      const cnt=document.createElement('span'); cnt.className='rep-count'; cnt.textContent=card.count;
+      const plus=document.createElement('button'); plus.type='button'; plus.className='rep-step'; plus.textContent='＋';
+      minus.addEventListener('click',e=>{e.stopPropagation(); _stepRepeat(card,-1);});
+      plus.addEventListener('click',e=>{e.stopPropagation(); _stepRepeat(card,+1);});
+      const icon=document.createElement('span'); icon.className='card-emoji'; icon.innerHTML=(def.img?`<img src="${def.img}" alt="">`:(def.icon||'🔁'));
+      head.appendChild(minus); head.appendChild(cnt); head.appendChild(plus);
+      node.appendChild(icon);
+      node.appendChild(head);
+      // 내부 점선 드롭존
+      const body=document.createElement('div'); body.className='repeat-body';
+      if(card.body.length===0){ const dz=document.createElement('div'); dz.className='drop-slot'; dz.textContent='＋'; body.appendChild(dz); }
+      // 중첩 1단계까지만: repeat 안에서는 repeat 팔레트 카드 무시(addCardToTrack에서 처리)
+      _renderCardList(card.body, body, path.concat(i,'body'), true);
+      node.appendChild(body);
+      _wireDropZone(body, card.body, true);
+    }else{
+      node.appendChild((()=>{ const w=document.createElement('span'); w.innerHTML=_cardIconHTML(def); return w.firstChild||w; })());
+      if(def.label){ const lb=document.createElement('span'); lb.className='card-label'; lb.textContent=def.label; node.appendChild(lb); }
+      // shape 카드: 앵커/색 요약 배지 (WP3가 편집 컨트롤 확장 가능)
+      if(card.type==='stamp'){
+        const badge=document.createElement('span'); badge.className='stamp-badge';
+        badge.textContent = (card.anchor||5);
+        node.appendChild(badge);
+      }
+    }
+
+    // 탭 = 제거 (확인 없이, ⏪ 되돌리기 제공)
+    node.addEventListener('click',e=>{
+      if(e.target.closest('.rep-step')||e.target.closest('.repeat-body')) return; // 스테퍼/내부는 제외
+      _removeCardAtPath(node.dataset.path);
+    });
+    node.addEventListener('keydown',e=>{ if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();_removeCardAtPath(node.dataset.path);} });
+
+    // 드래그 = 순서 이동 (HTML5 DnD)
+    node.draggable=true;
+    node.addEventListener('dragstart',e=>{
+      e.stopPropagation();
+      _dragData={source:'track', path:node.dataset.path};
+      e.dataTransfer.effectAllowed='move';
+      try{ e.dataTransfer.setData('text/plain', node.dataset.path); }catch(_){}
+      setTimeout(()=>node.classList.add('dragging'),0);
+    });
+    node.addEventListener('dragend',()=>{ node.classList.remove('dragging'); _dragData=null; _clearDropHints(); });
+
+    // 포인터/터치 폴백 (드래그 미지원 환경): 롱프레스로 이동 모드
+    _wireTouchDrag(node);
+
+    container.appendChild(node);
+  });
+}
+
+function _shapeColor(card){ return card&&card.color; }
+
+function _stepRepeat(card, delta){
+  const nv=Math.max(CARD_REPEAT_MIN,Math.min(CARD_REPEAT_MAX,(card.count||1)+delta));
+  if(nv===card.count) return;
+  _pushHistory();
+  card.count=nv;
+  playSfx&&playSfx('click');
+  renderCardTrack();
+}
+
+// --- path 문자열("0.body.1")로 트랙에서 카드 위치 찾기 ---
+function _resolvePath(pathStr){
+  // 반환: {parent: 배열, index: number}
+  const parts=String(pathStr).split('.');
+  let arr=cardTrack;
+  for(let k=0;k<parts.length;k++){
+    const p=parts[k];
+    if(p==='body'){ arr=arr.body; continue; } // (사용 안됨: body는 인덱스 다음에 처리)
+    const idx=parseInt(p,10);
+    if(k===parts.length-1) return {parent:arr, index:idx};
+    // 다음이 'body'면 컨테이너 진입
+    if(parts[k+1]==='body'){ arr=arr[idx].body; k++; }
+    else arr=arr[idx];
+  }
+  return null;
+}
+
+function _removeCardAtPath(pathStr){
+  const loc=_resolvePath(pathStr); if(!loc) return;
+  _pushHistory();
+  loc.parent.splice(loc.index,1);
+  playSfx&&playSfx('click',.7);
+  renderCardTrack();
+}
+
+// --- 드롭존 배선: 컨테이너 위에 드롭 시 끝에(또는 근처에) 삽입 ---
+function _wireDropZone(container, list, isRepeatBody){
+  container.addEventListener('dragover',e=>{ e.preventDefault(); e.stopPropagation(); if(e.dataTransfer)e.dataTransfer.dropEffect=(_dragData&&_dragData.source==='track')?'move':'copy'; container.classList.add('drop-hint'); });
+  container.addEventListener('dragleave',e=>{ if(e.target===container) container.classList.remove('drop-hint'); });
+  container.addEventListener('drop',e=>{
+    e.preventDefault(); e.stopPropagation();
+    container.classList.remove('drop-hint');
+    _handleDrop(list, isRepeatBody, e);
+  });
+}
+
+function _handleDrop(list, isRepeatBody, e){
+  if(!_dragData) return;
+  // 삽입 위치: 드롭 지점에서 가장 가까운 카드 앞/뒤
+  const insertIdx = _dropIndex(e, list);
+  if(_dragData.source==='palette'){
+    const def=_paletteDef(_dragData.type); if(!def) return;
+    if(isRepeatBody && def.type==='repeat') return; // 중첩 1단계 제한: repeat 안에 repeat 금지
+    if(_cardCount(cardTrack) >= (cardRailOpts.maxCards||99)) return;
+    const inst=_makeCardInstance(def); if(!inst) return;
+    _pushHistory();
+    list.splice(insertIdx,0,inst);
+    playSfx&&playSfx('click');
+    renderCardTrack();
+  }else if(_dragData.source==='track'){
+    const loc=_resolvePath(_dragData.path); if(!loc) return;
+    const moving=loc.parent[loc.index];
+    // repeat를 다른 repeat body로 옮기는 것 금지(중첩 1단계)
+    if(isRepeatBody && moving.type==='repeat') return;
+    _pushHistory();
+    loc.parent.splice(loc.index,1);
+    // 같은 배열에서 앞쪽 제거 시 인덱스 보정
+    let idx=insertIdx;
+    if(loc.parent===list && loc.index<insertIdx) idx--;
+    list.splice(Math.max(0,idx),0,moving);
+    playSfx&&playSfx('click');
+    renderCardTrack();
+  }
+}
+
+// 드롭 지점의 삽입 인덱스 (자식 카드들의 중앙 x 기준)
+function _dropIndex(e, list){
+  const container=e.currentTarget;
+  const cards=[...container.children].filter(c=>c.classList&&c.classList.contains('vc-card'));
+  for(let i=0;i<cards.length;i++){
+    const r=cards[i].getBoundingClientRect();
+    if(e.clientX < r.left + r.width/2) return i;
+  }
+  return list.length;
+}
+
+let _dragData=null;
+function _clearDropHints(){ document.querySelectorAll('.drop-hint').forEach(el=>el.classList.remove('drop-hint')); }
+
+// --- 포인터/터치 드래그 폴백 (HTML5 DnD 미동작 터치 환경) ---
+function _wireTouchDrag(node){
+  let startX=0,startY=0,longTimer=null,dragging=false,ghost=null,moved=false;
+  node.addEventListener('touchstart',ev=>{
+    if(ev.touches.length!==1) return;
+    const t=ev.touches[0]; startX=t.clientX; startY=t.clientY; moved=false;
+    longTimer=setTimeout(()=>{ dragging=true; node.classList.add('dragging');
+      _dragData={source:'track', path:node.dataset.path};
+      if(navigator.vibrate)navigator.vibrate(10);
+    },260);
+  },{passive:true});
+  node.addEventListener('touchmove',ev=>{
+    const t=ev.touches[0]; if(!t) return;
+    if(Math.abs(t.clientX-startX)>8||Math.abs(t.clientY-startY)>8) moved=true;
+    if(!dragging) return;
+    ev.preventDefault();
+    // 드롭 대상 하이라이트
+    _clearDropHints();
+    const el=document.elementFromPoint(t.clientX,t.clientY);
+    const zone=el&&(el.closest('.repeat-body')||el.closest('#cardTrack'));
+    if(zone) zone.classList.add('drop-hint');
+  },{passive:false});
+  node.addEventListener('touchend',ev=>{
+    clearTimeout(longTimer);
+    if(dragging){
+      const t=(ev.changedTouches&&ev.changedTouches[0]);
+      const el=t&&document.elementFromPoint(t.clientX,t.clientY);
+      const bodyZone=el&&el.closest('.repeat-body');
+      const trackZone=el&&el.closest('#cardTrack');
+      _clearDropHints();
+      const loc=_resolvePath(_dragData.path);
+      if(loc){
+        const moving=loc.parent[loc.index];
+        let targetList=null, isRepeatBody=false;
+        if(bodyZone){ // repeat body로: 해당 repeat의 body 배열 찾기
+          const repNode=bodyZone.closest('.track-card.is-repeat');
+          const rl=repNode&&_resolvePath(repNode.dataset.path);
+          if(rl){ targetList=rl.parent[rl.index].body; isRepeatBody=true; }
+        }else if(trackZone){ targetList=cardTrack; }
+        if(targetList && !(isRepeatBody&&moving.type==='repeat')){
+          _pushHistory();
+          loc.parent.splice(loc.index,1);
+          targetList.push(moving);
+          playSfx&&playSfx('click');
+        }
+      }
+      renderCardTrack();
+    }else if(!moved){
+      // 짧은 탭 = 제거 (click 이벤트가 안 오는 터치 환경 대비. click도 걸려있으면 이중 방지)
+      // click 핸들러가 정상 동작하는 환경에서는 여기서 아무것도 안 함(dragging=false && !moved 이지만 click이 처리)
+    }
+    dragging=false; node.classList.remove('dragging'); _dragData=null;
+  });
+}
+
+function undoCardTrack(){
+  if(cardTrackHistory.length===0){ playSfx&&playSfx('click',.6); return; }
+  cardTrack = cardTrackHistory.pop();
+  playSfx&&playSfx('click',.8);
+  renderCardTrack();
+}
+
+function resetCardTrack(){
+  if(cardTrack.length){ _pushHistory(); }
+  cardTrack=[];
+  playSfx&&playSfx('click',.7);
+  renderCardTrack();
+}
+
+// --- cardTrack → DSL (§3.4). 모드별 매핑 ---
+const _GOAL_DSL_MAP = {move:'MOVE', turnL:'TURN_LEFT', turnR:'TURN_RIGHT'};
+function cardTrackToDSL(){
+  if(currentMode==='shape') return _shapeTrackToDSL(cardTrack);
+  return _goalTrackToDSL(cardTrack, 0);
+}
+function _goalTrackToDSL(list, depth){
+  const pad='  '.repeat(depth);
+  const lines=[];
+  (list||[]).forEach(card=>{
+    if(card.type==='repeat'){
+      lines.push(`${pad}REPEAT ${card.count||1} {`);
+      lines.push(_goalTrackToDSL(card.body||[], depth+1));
+      lines.push(`${pad}}`);
+    }else if(_GOAL_DSL_MAP[card.type]){
+      lines.push(pad+_GOAL_DSL_MAP[card.type]);
+    }
+  });
+  return lines.filter(l=>l!=='').join('\n');
+}
+function _shapeTrackToDSL(list){
+  const lines=[];
+  (list||[]).forEach(card=>{
+    if(card.type==='stamp'){
+      lines.push(`STAMP ${card.shape} ${card.anchor||5} ${card.color||'#FFFFFF'}`);
+    }
+  });
+  return lines.join('\n');
+}
+/* ===== /CARDRAIL:JS ===== */
+
+/* ===== GOAL:JS ===== */
+// WP2 §4: goal 엔진(미로 엔진 재사용 A안) + GOAL_MISSIONS 12개 + 챕터·스토리.
+// 격자 ASCII(#벽 S시작 G목표 .바닥, startDir 기본 up). 캐릭터=rover-top.png를 heading으로 rotate.
+// G 도달 즉시 성공. par 기반 별(§4.4), 저장 goal_completed/goal_stars.
+// 재사용: parseMazeDSL(MOVE/TURN_LEFT/TURN_RIGHT/REPEAT), MAZE_DELTA/TURN 테이블, mazeApplyCmd, mazeFlatten.
+const GOAL_PALETTE=[
+  {type:'move',  icon:'⬆', label:'앞으로',    color:'#43A047'},
+  {type:'turnL', icon:'↺', label:'왼쪽돌기',  color:'#1E88E5'},
+  {type:'turnR', icon:'↻', label:'오른쪽돌기',color:'#1E88E5'},
+  {type:'repeat',icon:'🔁',label:'반복',      color:'#FB8C00', hasCount:true, isContainer:true},
+];
+
+// ── 챕터(행성) ── 순차의 길(1~6) → 반복의 길(7~12). level 필드가 챕터 키.
+const GOAL_CHAPTERS={
+  '순차의 길':{emoji:'🐾',img:'planet-path',name:'순차의 길',story:'카드를 놓은 순서 그대로 로버가 움직여! 한 걸음씩 차례차례 별까지 데려다 주자.'},
+  '반복의 길':{emoji:'🔁',img:'planet-path',name:'반복의 길',story:'같은 걸음이 자꾸 나올 땐 반복 카드 하나로 묶으면 돼! 긴 길도 짧은 카드로 갈 수 있어.'}
+};
+
+// ── 미션 12개(§4.3 표): 1~6 순차/회전, 7~12 반복 램프. 각 맵은 해가 존재하고 par는 최적 카드 수(손시뮬 검증).
+// map=위→아래 행 ASCII, startDir 기본 up. solution/par는 채점·검증용(엔진은 solution 안 씀).
+const GOAL_MISSIONS=[
+  {id:1,title:'곧게 가기',level:'순차의 길',levelColor:'#00897B',startDir:'up',par:3,
+   map:['#G#','#.#','#S#'],
+   description:'로버를 별(⭐)까지 데려다 주세요!',hint:'별까지 몇 칸인지 손가락으로 세어 봐. 앞으로 카드를 그만큼!',
+   solution:'MOVE\nMOVE'},
+  {id:2,title:'조금 더',level:'순차의 길',levelColor:'#00897B',startDir:'up',par:4,
+   map:['#G#','#.#','#.#','#S#'],
+   description:'로버를 별(⭐)까지 데려다 주세요!',hint:'이번엔 한 칸 더 멀어! 앞으로 카드를 세 장 놓아 볼까?',
+   solution:'MOVE\nMOVE\nMOVE'},
+  {id:3,title:'오른쪽으로',level:'순차의 길',levelColor:'#00897B',startDir:'up',par:5,
+   map:['####','#..G','#S##'],
+   description:'로버를 별(⭐)까지 데려다 주세요!',hint:'로버는 지금 위를 보고 있어. 한 칸 간 다음 오른쪽으로 돌아 봐!',
+   solution:'MOVE\nTURN_RIGHT\nMOVE\nMOVE'},
+  {id:4,title:'왼쪽으로',level:'순차의 길',levelColor:'#00897B',startDir:'up',par:5,
+   map:['####','G..#','##S#'],
+   description:'로버를 별(⭐)까지 데려다 주세요!',hint:'이번엔 반대쪽! 한 칸 간 다음 왼쪽으로 돌아 볼까?',
+   solution:'MOVE\nTURN_LEFT\nMOVE\nMOVE'},
+  {id:5,title:'계단 1',level:'순차의 길',levelColor:'#00897B',startDir:'up',par:7,
+   map:['#G##','#..#','##.#','##S#'],
+   description:'로버를 별(⭐)까지 데려다 주세요!',hint:'길이 계단처럼 꺾여 있어. 올라가다 왼쪽으로 돌고 다시 위로!',
+   solution:'MOVE\nMOVE\nTURN_LEFT\nMOVE\nTURN_RIGHT\nMOVE'},
+  {id:6,title:'계단 2',level:'순차의 길',levelColor:'#00897B',startDir:'up',par:8,
+   map:['##G#','##.#','#..#','#.##','#S##'],
+   description:'로버를 별(⭐)까지 데려다 주세요!',hint:'더 긴 계단이야! 앞으로·돌기·앞으로를 잘 섞어 봐.',
+   solution:'MOVE\nMOVE\nTURN_RIGHT\nMOVE\nTURN_LEFT\nMOVE\nMOVE'},
+  {id:7,title:'똑같이 세 번',level:'반복의 길',levelColor:'#FB8C00',startDir:'up',par:4,
+   map:['#G#','#.#','#.#','#.#','#.#','#.#','#S#'],
+   description:'반복 카드로 짧게! 로버를 별까지!',hint:'앞으로가 여섯 번? 반복🔁 카드 안에 앞으로 두 장을 넣고 3번 반복해 봐!',
+   solution:'REPEAT 3 {\nMOVE\nMOVE\n}'},
+  {id:8,title:'네모 돌기',level:'반복의 길',levelColor:'#FB8C00',startDir:'up',par:5,
+   map:['####','#..G','#.##','#S##'],
+   description:'반복 카드로 모퉁이를 돌아 별까지!',hint:'앞으로·앞으로·오른쪽돌기를 한 묶음으로 두 번 반복하면 별에 닿아!',
+   solution:'REPEAT 2 {\nMOVE\nMOVE\nTURN_RIGHT\n}'},
+  {id:9,title:'긴 복도 반복',level:'반복의 길',levelColor:'#FB8C00',startDir:'up',par:4,
+   map:['#G#','#.#','#.#','#.#','#.#','#.#','#.#','#.#','#S#'],
+   description:'아주 긴 복도! 반복으로 짧게!',hint:'복도가 여덟 칸이야. 앞으로 두 장을 4번 반복하면 딱 맞아!',
+   solution:'REPEAT 4 {\nMOVE\nMOVE\n}'},
+  {id:10,title:'반복+꺾기',level:'반복의 길',levelColor:'#FB8C00',startDir:'up',par:7,
+   map:['###G','##..','#..#','..##','S###'],
+   description:'꺾이는 계단을 반복으로!',hint:'앞으로·오른쪽돌기·앞으로·왼쪽돌기가 세 번 반복돼. 마지막에 한 칸 더!',
+   solution:'REPEAT 3 {\nMOVE\nTURN_RIGHT\nMOVE\nTURN_LEFT\n}\nMOVE'},
+  {id:11,title:'도전 미로',level:'반복의 길',levelColor:'#FB8C00',startDir:'up',par:13,
+   map:['##G###','#..###','#.####','#....#','####.#','####S#'],
+   description:'배운 걸 모두 써서 별까지!',hint:'천천히 한 칸씩! 벽을 피해 꺾이는 길을 따라가 봐.',
+   solution:'MOVE\nMOVE\nTURN_LEFT\nMOVE\nMOVE\nMOVE\nTURN_RIGHT\nMOVE\nMOVE\nTURN_RIGHT\nMOVE\nTURN_LEFT\nMOVE'},
+  {id:12,title:'자유 도전',level:'반복의 길',levelColor:'#FB8C00',startDir:'up',par:13,
+   map:['###G###','##..###','##.####','#..####','#.#####','#.#####','#S#####'],
+   description:'마지막 도전! 별까지 데려가면 로버 박사!',hint:'꺾이는 곳마다 어느 쪽으로 돌지 생각하며 한 걸음씩!',
+   solution:'MOVE\nMOVE\nMOVE\nTURN_RIGHT\nMOVE\nTURN_LEFT\nMOVE\nMOVE\nTURN_RIGHT\nMOVE\nTURN_LEFT\nMOVE'},
+];
+
+// ── 스토리/가이드 텍스트(미션 id 키). story=인트로 모달, intro/hint/success=가이드 패널(WP4 setGuide), ct=성공 정리.
+const GOAL_STORY={
+  1:{story:'로버가 별을 찾아 첫 출발! 앞으로 카드를 놓으면 로버가 그만큼 걸어가.',intro:'앞으로 카드를 놓아서 별까지 데려가 줘!',hint:'별까지 두 칸이야. 앞으로 카드 두 장!',success:'우와! 별에 도착했어! 🌟',ct:'순차: 카드를 놓은 순서 그대로, 한 장씩 차례대로 실행돼요!'},
+  2:{story:'이번엔 별이 조금 더 멀리 있어! 몇 칸인지 세어 볼까?',intro:'앞으로 카드를 몇 장 놓아야 할까?',hint:'세 칸! 앞으로 카드 세 장을 놓아 봐.',success:'정확해! 칸을 잘 셌구나! 🎉',ct:'순차: 목표까지의 거리를 세어 딱 맞게 카드를 놓아요.'},
+  3:{story:'길이 오른쪽으로 꺾여 있어! 로버는 지금 위쪽을 보고 서 있지.',intro:'앞으로 간 다음, 오른쪽으로 돌아 볼까?',hint:'앞으로 → 오른쪽돌기 → 앞으로 → 앞으로!',success:'멋져! 방향을 잘 바꿨어! 🚀',ct:'순차: "가기"와 "돌기"의 순서가 바뀌면 도착 위치가 달라져요.'},
+  4:{story:'이번엔 왼쪽으로 꺾인 길이야! 어느 손 쪽으로 돌아야 할까?',intro:'앞으로 간 다음, 왼쪽으로 돌아 보자!',hint:'앞으로 → 왼쪽돌기 → 앞으로 → 앞으로!',success:'좋아! 왼쪽 오른쪽을 잘 아는구나! ✨',ct:'순차: 돌기 카드는 로버가 보는 방향을 90도 바꿔요.'},
+  5:{story:'계단처럼 생긴 길이야! 올라가다 꺾고 또 올라가야 해.',intro:'앞으로와 돌기를 번갈아 놓아 계단을 올라가 줘!',hint:'앞으로 두 번 → 왼쪽돌기 → 앞으로 → 오른쪽돌기 → 앞으로!',success:'계단을 다 올라왔어! 대단해! 🌟',ct:'순차: 길이 꺾일 때마다 돌기 카드를 넣어 방향을 맞춰요.'},
+  6:{story:'더 긴 계단이야! 앞으로와 돌기를 잘 섞어야 별에 닿아.',intro:'천천히 한 칸씩, 계단을 따라 올라가 보자!',hint:'앞으로 두 번 → 오른쪽돌기 → 앞으로 → 왼쪽돌기 → 앞으로 두 번!',success:'긴 계단도 척척! 정말 잘했어! 🎉',ct:'순차: 여러 카드를 순서대로 이으면 복잡한 길도 갈 수 있어요.'},
+  7:{story:'복도가 길다! 그런데 "앞으로"를 여섯 번이나 놓기는 힘들어. 반복🔁 카드를 써 볼까?',intro:'반복 카드 안에 앞으로 두 장을 넣고 3번 반복해 봐!',hint:'반복 3 { 앞으로 앞으로 } — 카드 세 장으로 여섯 칸을!',success:'반복의 힘! 짧은 카드로 멀리 갔어! 🔁',ct:'반복: 같은 걸음이 이어질 땐 반복 카드로 묶으면 카드가 짧아져요!'},
+  8:{story:'모퉁이를 돌아가는 길이야! 앞으로와 돌기를 한 묶음으로 반복해 보자.',intro:'앞으로·앞으로·오른쪽돌기를 두 번 반복해 봐!',hint:'반복 2 { 앞으로 앞으로 오른쪽돌기 }',success:'모퉁이를 반복으로 돌았어! 똑똑해! 🚀',ct:'반복: 묶음 안에 카드가 여러 개 들어가도 괜찮아요.'},
+  9:{story:'아주 긴 복도야! 반복 카드가 없으면 손이 아플 걸? 몇 번 반복하면 될까?',intro:'앞으로 두 장을 몇 번 반복해야 여덟 칸일까?',hint:'반복 4 { 앞으로 앞으로 } — 2 곱하기 4는 8!',success:'긴 복도를 단숨에! 반복 박사! 🌟',ct:'반복: 반복 횟수를 바꾸면 걸음 수도 함께 늘고 줄어요.'},
+  10:{story:'꺾이는 계단이 반복돼! 어떤 묶음이 되풀이되는지 눈으로 찾아봐.',intro:'앞으로·오른쪽돌기·앞으로·왼쪽돌기를 세 번 반복!',hint:'반복 3 { 앞으로 오른쪽돌기 앞으로 왼쪽돌기 } 그리고 마지막에 앞으로!',success:'반복 속 규칙을 찾아냈어! 진짜 멋져! ✨',ct:'반복: 반복되는 묶음(패턴)을 찾는 눈이 코딩의 힘이에요!'},
+  11:{story:'배운 걸 모두 모아 도전! 벽을 피해 꺾이는 길을 따라 별까지 가 줘.',intro:'천천히 한 칸씩, 벽을 피해 별까지!',hint:'급하지 않아. 로버가 어디를 보는지 보며 한 카드씩 놓아 봐.',success:'도전 미로 성공! 넌 로버 대장이야! 🏆',ct:'종합: 순차와 반복을 함께 쓰면 어떤 길도 풀 수 있어요.'},
+  12:{story:'마지막 도전이야! 여길 통과하면 로버 박사 배지를 받아.',intro:'꺾이는 곳마다 어느 쪽으로 돌지 생각하며 한 걸음씩!',hint:'막히면 로버가 보는 방향부터 확인! 그다음 돌기 카드를 골라 봐.',success:'축하해! 넌 진짜 로버 박사야! 🏆🌟',ct:'종합: 여기까지 온 너는 순서와 반복을 모두 이해한 거야!'}
+};
+
+// ── goal 엔진 상태(미로 스키마 재사용, 보석 없음) ──
+let goalState=null;         // {map,rows,cols,sr,sc,startDir,r,c,dir,steps}
+let goalRunning=false;
+let goalReached=false;      // 마지막 실행에서 G 도달 여부
+const goalRoverImg=new Image();
+goalRoverImg.src='/assets/vibe/rover-top.png';
+let goalRoverLoaded=false;
+goalRoverImg.onload=()=>{ goalRoverLoaded=true; if(currentMode==='goal')drawGoalBoard(); };
+const GOAL_HEADING={up:-Math.PI/2,right:0,down:Math.PI/2,left:Math.PI}; // rover-top은 앞이 위(↑) → up=-90°
+
+function enterGoalMode(){
+  goalState=null;
+  initCardRail(GOAL_PALETTE,{allowRepeat:true,maxCards:20});
+  renderGoalStage();
+}
+
+// 미션 진입 시 호출(WP5가 startMissionPlay의 goal 분기에서 부름). 반복 카드는 미션 7부터만 노출(§4.5).
+function goalStartMission(m){
+  const mission=m||currentMission;
+  if(!mission)return;
+  initCardRail(GOAL_PALETTE,{allowRepeat:mission.id>=7, maxCards:20});
+  initGoalStage(mission);
+  if(typeof setGuide==='function')setGuide(mission,'hello');
+}
+
+function initGoalStage(m){
+  const mission=m||currentMission;
+  if(!mission||!mission.map){ goalState=null; renderGoalStage(); return; }
+  const map=mission.map.map(row=>row.split(''));
+  let sr=0,sc=0;
+  map.forEach((row,r)=>row.forEach((ch,c)=>{ if(ch==='S'){sr=r;sc=c;} }));
+  const dir=mission.startDir||'up';
+  goalState={map,rows:map.length,cols:(map[0]||'').length,sr,sc,startDir:dir,r:sr,c:sc,dir,steps:0};
+  goalReached=false;
+  renderGoalStage();
+}
+
+function resetGoal(){
+  const S=goalState;if(!S)return;
+  S.r=S.sr;S.c=S.sc;S.dir=S.startDir;S.steps=0;goalReached=false;
+  drawGoalBoard();
+}
+
+// 무대 = 캔버스 격자. 셀 크기는 보드가 화면에 맞도록 계산. 로버는 heading으로 rotate.
+function renderGoalStage(){
+  const host=document.getElementById('goalStage');
+  if(!host)return;
+  if(!goalState){ host.innerHTML='<div style="font-family:\'Jua\',sans-serif;font-size:20px;color:#00897B;text-align:center;padding:20px;">🎯 미션을 고르면 별길이 나타나요!</div>'; return; }
+  if(!host.querySelector('#goalCanvas')){
+    host.innerHTML='<canvas id="goalCanvas" style="border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.15);background:#E0F7FA;max-width:100%;"></canvas>';
+  }
+  drawGoalBoard();
+}
+
+function goalCellPx(){
+  const S=goalState;if(!S)return 56;
+  const host=document.getElementById('goalStage');
+  const availW=Math.max((host?host.clientWidth:360)-24,180);
+  const availH=Math.max((host?host.clientHeight:360)-24,180);
+  const cs=Math.floor(Math.min(availW/S.cols, availH/S.rows, 84));
+  return Math.max(34,cs);
+}
+
+function drawGoalBoard(){
+  const S=goalState;const cv=document.getElementById('goalCanvas');
+  if(!S||!cv)return;
+  const cs=goalCellPx();
+  cv.width=S.cols*cs;cv.height=S.rows*cs;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  for(let r=0;r<S.rows;r++)for(let c=0;c<S.cols;c++){
+    const ch=(S.map[r]&&S.map[r][c])||'#';
+    const x=c*cs,y=r*cs;
+    if(ch==='#'){ // 벽=수풀 블록
+      ctx.fillStyle='#2E7D32';roundRect(ctx,x+2,y+2,cs-4,cs-4,8);ctx.fill();
+      ctx.fillStyle='#43A047';roundRect(ctx,x+5,y+5,cs-14,cs-14,6);ctx.fill();
+    }else{
+      ctx.fillStyle='#B2EBF2';roundRect(ctx,x+2,y+2,cs-4,cs-4,8);ctx.fill(); // 바닥 타일
+      ctx.strokeStyle='#80DEEA';ctx.lineWidth=2;roundRect(ctx,x+2,y+2,cs-4,cs-4,8);ctx.stroke();
+      if(ch==='G'){ // 목표=반짝 별
+        drawGoalStar(ctx,x+cs/2,y+cs/2,cs*0.32);
+      }else if(ch==='S'){ // 시작 발판
+        ctx.fillStyle='rgba(0,137,123,.18)';ctx.beginPath();ctx.arc(x+cs/2,y+cs/2,cs*0.34,0,Math.PI*2);ctx.fill();
+      }
+    }
+  }
+  // 로버
+  const rx=S.c*cs+cs/2, ry=S.r*cs+cs/2, sz=cs*0.82;
+  ctx.save();ctx.translate(rx,ry);ctx.rotate(GOAL_HEADING[S.dir]||0);
+  if(goalRoverLoaded){ ctx.drawImage(goalRoverImg,-sz/2,-sz/2,sz,sz); }
+  else{ // 에셋 로드 전 폴백: 앞(위)이 분명한 간단 도형
+    ctx.fillStyle='#26C6DA';roundRect(ctx,-sz*0.35,-sz*0.35,sz*0.7,sz*0.7,8);ctx.fill();
+    ctx.fillStyle='#FFD166';ctx.beginPath();ctx.arc(0,-sz*0.28,sz*0.12,0,Math.PI*2);ctx.fill(); // 헤드라이트(앞)
+  }
+  ctx.restore();
+}
+
+function drawGoalStar(ctx,cx,cy,r){
+  ctx.save();ctx.beginPath();
+  for(let i=0;i<5;i++){
+    const a=-Math.PI/2+i*2*Math.PI/5;
+    ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+    const a2=a+Math.PI/5;
+    ctx.lineTo(cx+Math.cos(a2)*r*0.45,cy+Math.sin(a2)*r*0.45);
+  }
+  ctx.closePath();ctx.fillStyle='#FFD166';ctx.fill();
+  ctx.strokeStyle='#F9A825';ctx.lineWidth=2;ctx.stroke();ctx.restore();
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+
+// 카드트랙 DSL(MOVE/TURN/REPEAT) 실행 → 로버 애니메이션. G 도달 즉시 성공.
+async function runGoal(dsl){
+  const mission=currentMission;
+  if(!mission){ if(typeof setGuide==='function')setGuide(null,'hint'); return; }
+  if(!goalState||goalState.r!==goalState.sr||goalState.c!==goalState.sc)initGoalStage(mission);
+  if(goalRunning||execBusy){ return; }
+  const cmds=parseMazeDSL(dsl);
+  const flat=mazeFlatten(cmds);
+  if(!flat.length){ playSfx('fail'); showFeedback(false,'카드가 없어요!','아래 카드판에 카드를 놓고 다시 ▶ 실행을 눌러 봐!',0); return; }
+  const cardCount=_goalCountCards(cmds);
+  resetGoal();
+  goalRunning=true;execBusy=true;playSfx('run');
+  const S=goalState;
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  let result=null;
+  try{
+    for(const c of flat){
+      const a=mazeApplyCmd(S,c);
+      if(a.res==='bump'){ result='bump'; drawGoalBoard(); playSfx('fail'); await sleep(300); break; }
+      if(a.res==='moved'||a.res==='goal'){ drawGoalBoard(); await sleep(340); if(a.res==='goal'){result='goal';break;} }
+      else if(a.res==='turned'){ drawGoalBoard(); await sleep(240); }
+    }
+  }finally{ goalRunning=false;execBusy=false; }
+  goalReached=(result==='goal');
+  if(result==='goal'){ checkGoalMission(true,cardCount); }
+  else if(result==='bump'){ playSfx('fail'); showFeedback(false,'앗! 부딪혔어요 🌳','로버가 멈춘 곳 바로 앞 카드를 다시 보고 도전해 봐!',0); if(typeof setGuide==='function')setGuide(mission,'hint'); }
+  else{ playSfx('fail'); showFeedback(false,'조금 더 가야 해요','별에 아직 못 닿았어. 카드를 더 놓거나 방향을 바꿔 볼까?',0); if(typeof setGuide==='function')setGuide(mission,'hint'); }
+}
+
+// 카드 수 = 최상위 카드 인스턴스 수(REPEAT는 1장 + 내부 카드). par 채점용.
+function _goalCountCards(list){ let n=0; for(const c of (list||[])){ n++; if(c.type==='REPEAT')n+=_goalCountCards(c.body); } return n; }
+
+// §4.4 채점: reached면 성공. 별 = cards≤par→3, ≤par+2→2, 그 외 1.
+function checkGoalMission(reached, cardCount){
+  const m=currentMission;if(!m)return;
+  if(!reached){ showFeedback(false,'다시 도전!','별에 닿지 못했어. 카드를 다시 살펴보고 도전해 봐!',0); return; }
+  const par=m.par||cardCount||1;
+  const stars=cardCount<=par?3:cardCount<=par+2?2:1;
+  saveCompleted(m.id);saveStars(m.id,stars);confetti();
+  if(typeof setGuide==='function')setGuide(m,'success');
+  const sd=(typeof GOAL_STORY!=='undefined'&&GOAL_STORY[m.id])||{};
+  const extra=stars<3?` (카드 ${cardCount}장 — ${par}장까지 줄이면 별 3개!)`:'';
+  showFeedback(true,'🎉 별에 도착!',starComment(stars)+extra,stars);
+}
+/* ===== /GOAL:JS ===== */
+
+/* ===== SHAPE:JS ===== */
+// WP3 §5: 도형 스탬프 캔버스 엔진 + SHAPE_MISSIONS 12개(쉬움8+어려움4) + 챕터·스토리.
+//  무대=정사각 캔버스(360). 3×3 앵커(1..9, 5=중앙). STAMP 목록을 순서대로 그림 → 나중 도형이 앞을 덮음.
+//  채점: 학생/목표를 오프스크린 렌더 → 40×40 다운샘플 셀 대표색 일치율. 쉬움≥98 / 어려움≥92 성공.
+//  DSL: `STAMP <shape> <anchor> <color>` (CARDRAIL의 _shapeTrackToDSL이 생성).
+const SHAPE_PALETTE=[
+  {type:'stamp', shape:'rhombus', icon:'🔷', label:'마름모',   color:'#1E88E5'},
+  {type:'stamp', shape:'rect',    icon:'⬛', label:'네모',     color:'#8D6E63'},
+  {type:'stamp', shape:'tri',     icon:'🔺', label:'세모',     color:'#E53935'},
+  {type:'stamp', shape:'circle',  icon:'⭕', label:'동그라미', color:'#FDD835'},
+];
+
+// ── 캔버스/앵커 기본값 ──
+const SHAPE_CANVAS=360;                 // 학생 무대 캔버스 한 변(px)
+const SHAPE_SIZE_PX={L:150,M:112,S:74}; // size 토큰 → 지름/한변(px)
+function _shapeSizePx(size){ if(typeof size==='number')return size; return SHAPE_SIZE_PX[size]||SHAPE_SIZE_PX.M; }
+
+// 앵커 1..9 → 캔버스 픽셀 좌표(3×3 셀 중심). 5=중앙.
+function anchorXY(anchor, canvasSize){
+  const cs=canvasSize||SHAPE_CANVAS;
+  const a=Math.max(1,Math.min(9,parseInt(anchor,10)||5));
+  const col=(a-1)%3, row=Math.floor((a-1)/3);
+  const step=cs/3;
+  return { x:step*col+step/2, y:step*row+step/2 };
+}
+
+// 도형 하나를 앵커 중심으로 그림. shape∈rhombus|rect|tri|circle. size='L'|'M'|'S'|숫자.
+function drawShape(ctx, shape, anchor, color, size){
+  const cs=(ctx.canvas&&ctx.canvas.width)||SHAPE_CANVAS;
+  const {x,y}=anchorXY(anchor, cs);
+  const d=_shapeSizePx(size), h=d/2;
+  ctx.save();
+  ctx.fillStyle=color||'#FFFFFF';
+  ctx.strokeStyle='rgba(0,0,0,.28)';
+  ctx.lineWidth=Math.max(2, d*0.02);
+  ctx.beginPath();
+  if(shape==='circle'){
+    ctx.arc(x,y,h,0,Math.PI*2);
+  }else if(shape==='rect'){
+    ctx.rect(x-h,y-h,d,d);
+  }else if(shape==='tri'){        // 위 꼭짓점 정삼각(지붕 느낌)
+    ctx.moveTo(x, y-h);
+    ctx.lineTo(x+h, y+h);
+    ctx.lineTo(x-h, y+h);
+    ctx.closePath();
+  }else{                          // rhombus (마름모)
+    ctx.moveTo(x, y-h);
+    ctx.lineTo(x+h, y);
+    ctx.lineTo(x, y+h);
+    ctx.lineTo(x-h, y);
+    ctx.closePath();
+  }
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+// 스탬프 목록을 순서대로 그림(나중 것이 앞을 덮음).
+function renderShapeCanvas(stampList, ctx){
+  (stampList||[]).forEach(s=>drawShape(ctx, s.shape, s.anchor, s.color, s.size));
+}
+
+// ── 배경 에셋(§5, 배경/틀만 PNG, 도형은 캔버스 코드) ──
+const shapeBgImg=new Image(); shapeBgImg.src='/assets/vibe/shape-canvas-bg.png'; let shapeBgLoaded=false;
+shapeBgImg.onload=()=>{ shapeBgLoaded=true; if(currentMode==='shape')renderShapeStage(); };
+const shapeFrameImg=new Image(); shapeFrameImg.src='/assets/vibe/shape-target-frame.png'; let shapeFrameLoaded=false;
+shapeFrameImg.onload=()=>{ shapeFrameLoaded=true; if(currentMode==='shape')renderShapeTarget(); };
+
+let shapeLastStamps=[];   // 마지막 실행에서 그린 스탬프(재렌더용)
+let shapeLastMatch=0;     // 마지막 일치율(%)
+
+// 학생 캔버스 + 목표 미니뷰 골격을 그린다.
+function renderShapeStage(){
+  const host=document.getElementById('shapeStage'); if(!host)return;
+  if(!host.querySelector('#shapeCanvas')){
+    host.innerHTML=
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:10px;">'+
+        '<div id="shapeTargetWrap" style="align-self:flex-end;"></div>'+
+        '<canvas id="shapeCanvas" width="'+SHAPE_CANVAS+'" height="'+SHAPE_CANVAS+'" '+
+          'style="border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.18);background:#FFF7ED;max-width:100%;width:'+SHAPE_CANVAS+'px;"></canvas>'+
+        '<div id="shapeMatchMeter" style="font-family:\'Jua\',sans-serif;font-size:16px;color:#F4511E;min-height:22px;"></div>'+
+      '</div>';
+  }
+  _drawShapeStudent(shapeLastStamps);
+  renderShapeTarget();
+  _updateShapeMeter();
+}
+
+// 학생 캔버스에 배경 + 스탬프 렌더
+function _drawShapeStudent(stamps){
+  const cv=document.getElementById('shapeCanvas'); if(!cv)return;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(shapeBgLoaded) ctx.drawImage(shapeBgImg,0,0,cv.width,cv.height);
+  else { ctx.fillStyle='#FFF7ED'; ctx.fillRect(0,0,cv.width,cv.height); }
+  renderShapeCanvas(stamps, ctx);
+}
+
+// 목표 미니뷰: 목표 시퀀스를 작은 캔버스에 렌더 + shape-target-frame.png로 액자
+function renderShapeTarget(){
+  const wrap=document.getElementById('shapeTargetWrap'); if(!wrap)return;
+  const m=currentMission;
+  const MINI=132;
+  if(!m||!m.target){ wrap.innerHTML=''; return; }
+  if(!wrap.querySelector('#shapeTargetCanvas')){
+    wrap.innerHTML=
+      '<div style="position:relative;width:'+MINI+'px;">'+
+        '<div style="font-family:\'Jua\',sans-serif;font-size:13px;color:#F4511E;text-align:center;margin-bottom:2px;">🎯 목표 그림</div>'+
+        '<canvas id="shapeTargetCanvas" width="'+MINI+'" height="'+MINI+'" style="border-radius:12px;background:#FFF7ED;width:'+MINI+'px;display:block;"></canvas>'+
+        '<img id="shapeTargetFrame" src="/assets/vibe/shape-target-frame.png" alt="" '+
+          'style="position:absolute;left:0;top:19px;width:'+MINI+'px;height:'+MINI+'px;pointer-events:none;">'+
+      '</div>';
+  }
+  const cv=wrap.querySelector('#shapeTargetCanvas'); const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#FFF7ED'; ctx.fillRect(0,0,cv.width,cv.height);
+  // 목표는 미니 크기에 맞춰 축소 렌더
+  const scale=MINI/SHAPE_CANVAS;
+  (m.target||[]).forEach(s=>{
+    const {x,y}=anchorXY(s.anchor, SHAPE_CANVAS);
+    _drawShapeScaled(ctx, s.shape, x*scale, y*scale, _shapeSizePx(s.size)*scale, s.color);
+  });
+}
+// (미니뷰용) 임의 중심/크기로 도형 그림
+function _drawShapeScaled(ctx, shape, x, y, d, color){
+  const h=d/2;
+  ctx.save(); ctx.fillStyle=color||'#FFFFFF'; ctx.strokeStyle='rgba(0,0,0,.28)'; ctx.lineWidth=Math.max(1,d*0.02);
+  ctx.beginPath();
+  if(shape==='circle') ctx.arc(x,y,h,0,Math.PI*2);
+  else if(shape==='rect') ctx.rect(x-h,y-h,d,d);
+  else if(shape==='tri'){ ctx.moveTo(x,y-h); ctx.lineTo(x+h,y+h); ctx.lineTo(x-h,y+h); ctx.closePath(); }
+  else { ctx.moveTo(x,y-h); ctx.lineTo(x+h,y); ctx.lineTo(x,y+h); ctx.lineTo(x-h,y); ctx.closePath(); }
+  ctx.fill(); ctx.stroke(); ctx.restore();
+}
+
+// ── 오프스크린 렌더 + 다운샘플 비교(§5.4) ──
+function _renderOffscreen(stampList){
+  const cv=(typeof OffscreenCanvas!=='undefined')?new OffscreenCanvas(SHAPE_CANVAS,SHAPE_CANVAS)
+           :Object.assign(document.createElement('canvas'),{width:SHAPE_CANVAS,height:SHAPE_CANVAS});
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#FFF7ED'; ctx.fillRect(0,0,SHAPE_CANVAS,SHAPE_CANVAS);  // 배경 이미지 대신 균일 배경(비교 안정)
+  renderShapeCanvas(stampList, ctx);
+  return ctx.getImageData(0,0,SHAPE_CANVAS,SHAPE_CANVAS).data;
+}
+// 40×40 격자로 다운샘플 → 각 셀 중심 픽셀 색을 양자화해 비교
+function compareShapeCanvas(studentList, targetList){
+  const N=40, cell=SHAPE_CANVAS/N;
+  const a=_renderOffscreen(studentList), b=_renderOffscreen(targetList);
+  const idxAt=(gx,gy)=>{ const px=Math.floor(gx*cell+cell/2), py=Math.floor(gy*cell+cell/2); return (py*SHAPE_CANVAS+px)*4; };
+  const q=v=>Math.round(v/48); // 색 양자화(≈5단계) → 미세 안티앨리어싱 차이 무시
+  let same=0;
+  for(let gy=0;gy<N;gy++)for(let gx=0;gx<N;gx++){
+    const i=idxAt(gx,gy);
+    if(q(a[i])===q(b[i]) && q(a[i+1])===q(b[i+1]) && q(a[i+2])===q(b[i+2])) same++;
+  }
+  return Math.round(same/(N*N)*1000)/10; // 0.1% 단위
+}
+
+// DSL(STAMP shape anchor color) → 스탬프 목록. hard/easy 공통.
+function parseShapeDSL(dsl){
+  const out=[];
+  String(dsl||'').split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t)return;
+    const p=t.split(/\s+/);
+    if(p[0]!=='STAMP'||p.length<4)return;
+    out.push({shape:p[1], anchor:parseInt(p[2],10)||5, color:p[3]});
+  });
+  return out;
+}
+
+// ── 미션 진입(WP5가 startMissionPlay에서 호출) ──
+function enterShapeMode(){
+  shapeLastStamps=[]; shapeLastMatch=0;
+  initCardRail(SHAPE_PALETTE,{});
+  renderShapeStage();
+}
+// 미션별 초기화: 쉬움=미션 cards(섞인 세트)로 팔레트, 어려움=SHAPE_PALETTE(도형 선택).
+function shapeStartMission(m){
+  const mission=m||currentMission; if(!mission)return;
+  shapeLastStamps=[]; shapeLastMatch=0;
+  if(mission.difficulty==='easy' && mission.cards){
+    // 쉬움: 각 카드가 shape/anchor/color 고정. 재배열 전용 팔레트.
+    const pal=mission.cards.map((c,i)=>({
+      type:'stamp', shape:c.shape, anchor:c.anchor, color:c.color, size:c.size,
+      icon:_shapeIcon(c.shape), label:_shapeLabel(c.shape), _fixed:true, _cardIdx:i
+    }));
+    initCardRail(pal, {maxCards:mission.cards.length});
+  }else{
+    // 어려움: 도형 4종 팔레트에서 자유 배치(앵커/색은 트랙 카드에서 편집).
+    initCardRail(SHAPE_PALETTE, {maxCards:12});
+    _wireShapeHardEditing();
+  }
+  renderShapeStage();
+  if(typeof setGuide==='function')setGuide(mission,'hello');
+}
+
+// ── 어려움 미션: 트랙의 스탬프 카드에 앵커(3×3)·색 편집 컨트롤 부착 ──
+// CARDRAIL을 건드리지 않고, #cardTrack에 캡처 단계 리스너를 걸어 배지 탭 시 편집 팝업을 연다.
+const SHAPE_EDIT_COLORS=['#E53935','#1E88E5','#FDD835','#43A047','#8D6E63','#FFFFFF','#90A4AE','#FB8C00'];
+let _shapeEditWired=false;
+function _wireShapeHardEditing(){
+  if(_shapeEditWired)return; _shapeEditWired=true;
+  const track=document.getElementById('cardTrack'); if(!track)return;
+  // 캡처 단계: 배지 탭이 카드 삭제(node click)로 이어지기 전에 가로채 편집기를 연다.
+  track.addEventListener('click',e=>{
+    if(currentMode!=='shape'||!currentMission||currentMission.difficulty!=='hard')return;
+    const badge=e.target.closest('.stamp-badge');
+    if(!badge)return;
+    e.stopPropagation(); e.preventDefault();
+    const node=badge.closest('.track-card'); if(!node)return;
+    const loc=(typeof _resolvePath==='function')&&_resolvePath(node.dataset.path);
+    if(!loc)return;
+    const card=loc.parent[loc.index]; if(!card||card.type!=='stamp')return;
+    _openShapeEditor(node, card);
+  },true);
+}
+
+let _shapeEditPop=null;
+function _closeShapeEditor(){ if(_shapeEditPop){ _shapeEditPop.remove(); _shapeEditPop=null; document.removeEventListener('click',_shapeEditOutside,true); } }
+function _shapeEditOutside(e){ if(_shapeEditPop && !_shapeEditPop.contains(e.target) && !e.target.closest('.stamp-badge')) _closeShapeEditor(); }
+function _openShapeEditor(node, card){
+  _closeShapeEditor();
+  const pop=document.createElement('div'); pop.className='shape-edit-pop';
+  pop.style.cssText='position:fixed;z-index:9999;background:#fff;border:2px solid #F4511E;border-radius:14px;'
+    +'box-shadow:0 8px 24px rgba(0,0,0,.25);padding:10px;font-family:\'Jua\',sans-serif;';
+  // 앵커 3×3
+  let grid='<div style="font-size:12px;color:#F4511E;margin-bottom:4px;">위치</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,34px);grid-gap:4px;margin-bottom:8px;">';
+  for(let a=1;a<=9;a++){
+    const on=(card.anchor||5)===a;
+    grid+='<button type="button" data-anchor="'+a+'" style="width:34px;height:34px;border-radius:8px;border:2px solid '+(on?'#F4511E':'#ddd')+';background:'+(on?'#FFE0B2':'#fff')+';cursor:pointer;">•</button>';
+  }
+  grid+='</div>';
+  // 색
+  let colors='<div style="font-size:12px;color:#F4511E;margin-bottom:4px;">색</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,30px);grid-gap:5px;">';
+  SHAPE_EDIT_COLORS.forEach(c=>{
+    const on=(card.color||'').toUpperCase()===c.toUpperCase();
+    colors+='<button type="button" data-color="'+c+'" style="width:30px;height:30px;border-radius:50%;border:3px solid '+(on?'#F4511E':'#eee')+';background:'+c+';cursor:pointer;"></button>';
+  });
+  colors+='</div>';
+  pop.innerHTML=grid+colors;
+  document.body.appendChild(pop);
+  const r=node.getBoundingClientRect();
+  pop.style.left=Math.max(8,Math.min(window.innerWidth-pop.offsetWidth-8, r.left))+'px';
+  pop.style.top=Math.max(8, r.top-pop.offsetHeight-8)+'px';
+  pop.addEventListener('click',e=>{
+    const ab=e.target.closest('[data-anchor]'), cb=e.target.closest('[data-color]');
+    if(ab){ card.anchor=parseInt(ab.dataset.anchor,10); }
+    else if(cb){ card.color=cb.dataset.color; }
+    else return;
+    playSfx&&playSfx('click');
+    renderCardTrack();
+    _closeShapeEditor();
+    // 실시간 미리보기 갱신
+    shapeLastStamps=_shapeTrackToDSL?parseShapeDSL(_shapeTrackToDSL(cardTrack)):shapeLastStamps;
+    _drawShapeStudent(shapeLastStamps);
+  });
+  _shapeEditPop=pop;
+  setTimeout(()=>document.addEventListener('click',_shapeEditOutside,true),0);
+}
+function _shapeIcon(s){ return s==='rhombus'?'🔷':s==='rect'?'⬛':s==='tri'?'🔺':'⭕'; }
+function _shapeLabel(s){ return s==='rhombus'?'마름모':s==='rect'?'네모':s==='tri'?'세모':'동그라미'; }
+
+// 카드트랙 DSL 실행 → 학생 캔버스 렌더 → 채점.
+function runShape(dsl){
+  const m=currentMission;
+  const stamps=parseShapeDSL(dsl);
+  shapeLastStamps=stamps;
+  _drawShapeStudent(stamps);
+  if(!m){ return; }
+  if(!stamps.length){ playSfx&&playSfx('fail'); showFeedback(false,'카드가 없어요!','아래 카드판에 도형 카드를 놓고 다시 ▶ 실행을 눌러 봐!',0); if(typeof setGuide==='function')setGuide(m,'hint'); return; }
+  playSfx&&playSfx('run');
+  checkShapeMission();
+}
+
+// §5.4 채점: 학생 vs 목표 일치율. 쉬움≥98 / 어려움≥92 성공. 1회 성공 ⭐⭐⭐.
+function checkShapeMission(){
+  const m=currentMission; if(!m)return;
+  const match=compareShapeCanvas(shapeLastStamps, m.target||[]);
+  shapeLastMatch=match;
+  _updateShapeMeter();
+  const threshold=(m.difficulty==='easy')?98:92;
+  if(match>=threshold){
+    // 별: 1회(첫 실행) 성공 3개, 그 외 정확도 기반
+    const tries=(shapeTryCount[m.id]||0);
+    const stars=tries===0?3:(match>=(threshold+ (threshold===98?1.5:5)))?3:match>=threshold?2:1;
+    saveCompleted(m.id); saveStars(m.id, Math.max(1,stars)); confetti();
+    if(typeof setGuide==='function')setGuide(m,'success');
+    showFeedback(true,'🎉 그림 완성!',starComment(Math.max(1,stars))+` (일치율 ${match}%)`,Math.max(1,stars));
+  }else{
+    shapeTryCount[m.id]=(shapeTryCount[m.id]||0)+1;
+    playSfx&&playSfx('fail');
+    showFeedback(false,'조금 달라요','일치율 '+match+'%! 도형을 놓는 순서를 바꿔 보거나 빠진 도형이 없는지 살펴봐. 나중에 찍은 도형이 앞을 덮어!',0);
+    if(typeof setGuide==='function')setGuide(m,'hint');
+  }
+}
+let shapeTryCount={}; // 미션별 실패 시도 수(별 채점용)
+
+// 일치율 미터 갱신(선택 피드백)
+function _updateShapeMeter(){
+  const el=document.getElementById('shapeMatchMeter'); if(!el)return;
+  el.textContent = shapeLastStamps.length ? ('일치율: '+shapeLastMatch+'%') : '';
+}
+function _shapeMeterReset(){ shapeLastMatch=0; _updateShapeMeter(); }
+
+// ── 챕터(행성) & 스토리 ──
+// level 필드가 챕터 키(getChapterKey). 순서배열의 나라(1~8, easy) → 도형 마법사의 나라(9~12, hard).
+const SHAPE_CHAPTERS={
+  '순서의 나라':{emoji:'🔺',img:'planet-shapes',name:'순서의 나라',story:'도형을 찍는 순서를 바꾸면 그림이 달라져! 카드를 알맞은 순서로 놓아 멋진 그림을 만들자.'},
+  '도형 마법사':{emoji:'✨',img:'planet-shapes',name:'도형 마법사',story:'이제 직접 도형을 골라 놓아 볼 차례! 어떤 도형을 어디에 먼저 찍을지 스스로 정해 보자.'}
+};
+
+const SHAPE_STORY={
+  1:{story:'네모 몸통 위에 세모 지붕을 얹으면 집이 돼! 그런데 순서를 바꾸면 지붕이 숨어 버려.',intro:'네모를 먼저, 그 위에 세모를 찍어 집을 만들어 봐!',hint:'네모(몸통) → 세모(지붕) 순서! 세모를 먼저 찍으면 네모가 지붕을 덮어 버려.',success:'우와! 예쁜 집이 완성됐어! 🏠'},
+  2:{story:'큰 빨강 원 위에 작은 흰 원을 겹치면 과녁! 순서를 바꾸면 흰 원이 사라져.',intro:'큰 빨강 원을 먼저, 작은 흰 원을 나중에!',hint:'빨강 원(큰 것) → 흰 원(작은 것) 순서. 흰 원을 먼저 찍으면 빨강이 덮어 버려!',success:'멋진 과녁이 됐어! 🎯'},
+  3:{story:'갈색 기둥 위에 초록 잎을 얹으면 나무! 순서를 바꾸면 기둥이 잎을 덮어.',intro:'갈색 기둥을 먼저, 초록 잎을 나중에 겹쳐 봐!',hint:'네모(기둥) → 세모(잎) 순서. 잎이 기둥보다 앞에 있어야 나무 같아!',success:'초록 나무가 자랐어! 🌳'},
+  4:{story:'몸통 위에 지붕, 그 위에 문까지! 문은 반드시 맨 마지막에 찍어야 보여.',intro:'몸통 → 지붕 → 문 순서로 집을 완성해 봐!',hint:'큰 네모(몸통) → 세모(지붕) → 파랑 네모(문). 문은 맨 마지막에!',success:'문이 달린 집이 완성! 🚪'},
+  5:{story:'노랑 얼굴을 먼저 그리고 그 위에 눈을 찍어! 얼굴을 나중에 찍으면 눈이 사라져.',intro:'노랑 얼굴을 먼저, 그 위에 눈 두 개를 찍어 봐!',hint:'노랑 큰 원(얼굴) → 갈색 작은 원들(눈). 얼굴을 나중에 찍으면 눈이 가려져!',success:'웃는 얼굴이 됐어! 😊'},
+  6:{story:'빨강 사과에 초록 잎과 갈색 꼭지를 달아! 사과를 먼저 그려야 해.',intro:'빨강 원(사과)을 먼저, 잎과 꼭지를 나중에!',hint:'빨강 원(사과) → 초록 세모(잎) → 갈색 네모(꼭지) 순서!',success:'맛있는 사과가 됐어! 🍎'},
+  7:{story:'네모 몸통에 세모 머리와 불꽃을 겹쳐 로켓을! 몸통이 맨 먼저야.',intro:'몸통 → 머리 → 불꽃 순서로 로켓을 쏘아 올려!',hint:'가운데 네모(몸통) → 가운데 세모(머리) → 아래 세모(불꽃) 순서!',success:'로켓 발사! 🚀'},
+  8:{story:'기둥·꽃잎·꽃술을 차례로 겹쳐 꽃을 피워! 꽃술이 맨 위에 있어야 예뻐.',intro:'초록 기둥 → 빨강 꽃잎 → 노랑 꽃술 순서로 겹쳐 봐!',hint:'초록 네모(기둥) → 빨강 마름모(꽃잎) → 노랑 원(꽃술, 맨 위)!',success:'예쁜 꽃이 피었어! 🌸'},
+  9:{story:'이제 도형을 직접 골라 볼 차례! 목표 그림을 보고 집을 만들어 봐.',intro:'팔레트에서 도형을 골라 목표와 똑같이 집을 지어 봐!',hint:'네모를 가운데(5)에 갈색으로, 세모를 가운데(5)에 빨강으로. 네모 먼저!',success:'스스로 집을 지었어! 대단해! 🏠'},
+  10:{story:'도형을 골라 과녁을 만들어 보자! 어떤 도형과 색이 필요할까?',intro:'동그라미를 골라 과녁을 만들어 봐!',hint:'큰 빨강 동그라미를 먼저, 작은 흰 동그라미를 같은 자리에 나중에!',success:'네가 만든 과녁이야! 🎯'},
+  11:{story:'배운 걸 모두 써서 로켓을 만들어! 도형·위치·색·순서 모두 스스로.',intro:'도형을 골라 목표 로켓과 똑같이 만들어 봐!',hint:'몸통 네모 → 머리 세모 → 불꽃 세모. 위치와 색을 목표와 맞춰 봐!',success:'멋진 로켓 완성! 넌 도형 마법사야! 🚀'},
+  12:{story:'마지막 도전! 목표 꽃을 보고 네 힘으로 완성해 줘.',intro:'목표 그림을 잘 보고, 도형을 골라 똑같이 만들어 봐!',hint:'기둥(네모) → 큰 꽃잎 → 작은 꽃잎 → 가운데 꽃술 순서! 어떤 게 맨 아래(먼저)인지 찾아봐.',success:'축하해! 넌 진짜 도형 마법사야! ✨🏆'}
+};
+
+// ── 미션 12개(쉬움8: cards 재배열 / 어려움4: target만) ──
+// target = 정답 스탬프 시퀀스(순서=겹침 순서). easy는 cards(섞인 동일 세트)를 함께 제공.
+const _SH={ // 자주 쓰는 색
+  brown:'#8D6E63', red:'#E53935', blue:'#1E88E5', yellow:'#FDD835', green:'#43A047', white:'#FFFFFF', gray:'#90A4AE', orange:'#FB8C00'
+};
+// 설계 원칙: 각 미션은 서로 다른 색의 도형이 크게 겹치도록 배치 → 순서를 바꾸면 나중 도형이
+// 앞을 덮어 그림이 눈에 띄게 달라진다(겹침 민감). 겹치는 도형은 같은/이웃 앵커에 L·M 크기로 둔다.
+const SHAPE_MISSIONS=[
+  // 1 집: 갈색 네모 몸통 → 빨강 세모 지붕(같은 자리에 겹침). 지붕을 먼저 찍으면 몸통이 덮음.
+  {id:1,title:'집 짓기',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'네모 몸통 위에 세모 지붕을 얹어 집을 만들어요!',hint:'네모(몸통)를 먼저, 세모(지붕)를 나중에!',
+   target:[{shape:'rect',anchor:5,color:_SH.brown,size:'L'},{shape:'tri',anchor:5,color:_SH.red,size:'L'}],
+   cards:[{shape:'tri',anchor:5,color:_SH.red,size:'L'},{shape:'rect',anchor:5,color:_SH.brown,size:'L'}]},
+  // 2 표적: 큰 빨강 원 → 작은 흰 원(같은 자리). 순서 바뀌면 흰 원이 빨강에 덮여 사라짐.
+  {id:2,title:'과녁',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'큰 빨강 원 위에 작은 흰 원을 겹쳐 과녁을 만들어요!',hint:'큰 빨강 원을 먼저, 작은 흰 원을 나중에!',
+   target:[{shape:'circle',anchor:5,color:_SH.red,size:'L'},{shape:'circle',anchor:5,color:_SH.white,size:'M'}],
+   cards:[{shape:'circle',anchor:5,color:_SH.white,size:'M'},{shape:'circle',anchor:5,color:_SH.red,size:'L'}]},
+  // 3 나무: 초록 세모 잎(위) → 갈색 네모 기둥(아래, 잎과 겹침). 기둥을 먼저면 잎이 덮음.
+  {id:3,title:'나무',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'갈색 기둥 위에 초록 잎을 겹쳐 나무를 만들어요!',hint:'갈색 네모(기둥)를 먼저, 초록 세모(잎)를 나중에!',
+   target:[{shape:'rect',anchor:8,color:_SH.brown,size:'L'},{shape:'tri',anchor:5,color:_SH.green,size:'L'}],
+   cards:[{shape:'tri',anchor:5,color:_SH.green,size:'L'},{shape:'rect',anchor:8,color:_SH.brown,size:'L'}]},
+  // 4 문 달린 집: 몸통 → 지붕 → 파랑 문(모두 가운데에 겹침). 문은 반드시 맨 마지막.
+  {id:4,title:'문 달린 집',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'집에 문을 달아요! 겹치는 순서를 잘 지켜요.',hint:'몸통 → 지붕 → 문! 문은 맨 마지막!',
+   target:[{shape:'rect',anchor:5,color:_SH.brown,size:'L'},{shape:'tri',anchor:5,color:_SH.red,size:'L'},{shape:'rect',anchor:8,color:_SH.blue,size:'M'}],
+   cards:[{shape:'tri',anchor:5,color:_SH.red,size:'L'},{shape:'rect',anchor:8,color:_SH.blue,size:'M'},{shape:'rect',anchor:5,color:_SH.brown,size:'L'}]},
+  // 5 웃는 얼굴: 노랑 큰 원(얼굴) → 갈색 눈 두 개(얼굴 위에 겹침). 얼굴을 나중에면 눈이 덮임.
+  {id:5,title:'웃는 얼굴',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'노랑 얼굴 위에 눈을 찍어 표정을 만들어요!',hint:'노랑 얼굴을 먼저, 눈 두 개를 나중에!',
+   target:[{shape:'circle',anchor:5,color:_SH.yellow,size:'L'},{shape:'circle',anchor:5,color:_SH.brown,size:'S'},{shape:'circle',anchor:2,color:_SH.brown,size:'S'}],
+   cards:[{shape:'circle',anchor:5,color:_SH.brown,size:'S'},{shape:'circle',anchor:2,color:_SH.brown,size:'S'},{shape:'circle',anchor:5,color:_SH.yellow,size:'L'}]},
+  // 6 사과: 빨강 큰 원 → 초록 세모 잎(원 위쪽에 겹침) → 갈색 꼭지. 순서 바뀌면 잎·꼭지 사라짐.
+  {id:6,title:'사과',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'빨강 사과에 초록 잎과 꼭지를 달아요!',hint:'빨강 원(사과) → 초록 세모(잎) → 갈색 네모(꼭지) 순서!',
+   target:[{shape:'circle',anchor:5,color:_SH.red,size:'L'},{shape:'tri',anchor:2,color:_SH.green,size:'M'},{shape:'rect',anchor:2,color:_SH.brown,size:'S'}],
+   cards:[{shape:'rect',anchor:2,color:_SH.brown,size:'S'},{shape:'tri',anchor:2,color:_SH.green,size:'M'},{shape:'circle',anchor:5,color:_SH.red,size:'L'}]},
+  // 7 로켓: 파랑 네모 몸통 → 빨강 세모 머리(몸통 위 겹침) → 주황 세모 불꽃(몸통 아래 겹침).
+  {id:7,title:'로켓',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'네모 몸통에 세모 머리와 불꽃을 겹쳐 로켓을!',hint:'몸통 → 머리 → 불꽃 순서로 겹쳐요!',
+   target:[{shape:'rect',anchor:5,color:_SH.blue,size:'L'},{shape:'tri',anchor:5,color:_SH.red,size:'M'},{shape:'tri',anchor:8,color:_SH.orange,size:'M'}],
+   cards:[{shape:'tri',anchor:8,color:_SH.orange,size:'M'},{shape:'tri',anchor:5,color:_SH.red,size:'M'},{shape:'rect',anchor:5,color:_SH.blue,size:'L'}]},
+  // 8 꽃: 초록 기둥 → 빨강 꽃잎 네 장(가운데 겹침) → 노랑 꽃술(맨 위). 순서 바뀌면 꽃술 덮임.
+  {id:8,title:'꽃',level:'순서의 나라',levelColor:'#F4511E',difficulty:'easy',
+   description:'기둥·꽃잎·꽃술을 차례로 겹쳐 꽃을 피워요!',hint:'초록 기둥 → 빨강 꽃잎 넉 장 → 노랑 꽃술(맨 위)!',
+   target:[{shape:'rect',anchor:8,color:_SH.green,size:'S'},{shape:'rhombus',anchor:5,color:_SH.red,size:'L'},{shape:'rhombus',anchor:5,color:_SH.red,size:'M'},{shape:'circle',anchor:5,color:_SH.yellow,size:'S'}],
+   cards:[{shape:'circle',anchor:5,color:_SH.yellow,size:'S'},{shape:'rhombus',anchor:5,color:_SH.red,size:'M'},{shape:'rect',anchor:8,color:_SH.green,size:'S'},{shape:'rhombus',anchor:5,color:_SH.red,size:'L'}]},
+  // ── 어려움(9~12): target만 제공, 학생이 도형·위치·색·순서 구성(팔레트=도형 4종) ──
+  {id:9,title:'집을 직접',level:'도형 마법사',levelColor:'#F57C00',difficulty:'hard',
+   description:'도형을 골라 목표와 똑같은 집을 지어요!',hint:'네모(가운데,갈색) 먼저, 세모(가운데,빨강)를 나중에!',
+   target:[{shape:'rect',anchor:5,color:_SH.brown,size:'L'},{shape:'tri',anchor:5,color:_SH.red,size:'L'}]},
+  {id:10,title:'과녁 직접',level:'도형 마법사',levelColor:'#F57C00',difficulty:'hard',
+   description:'도형을 골라 과녁을 만들어요!',hint:'큰 빨강 원 먼저, 작은 흰 원을 나중에(같은 자리)!',
+   target:[{shape:'circle',anchor:5,color:_SH.red,size:'L'},{shape:'circle',anchor:5,color:_SH.white,size:'M'}]},
+  {id:11,title:'로켓 직접',level:'도형 마법사',levelColor:'#F57C00',difficulty:'hard',
+   description:'도형을 골라 로켓을 완성해요!',hint:'몸통(네모,파랑) → 머리(세모,빨강) → 불꽃(세모,주황)!',
+   target:[{shape:'rect',anchor:5,color:_SH.blue,size:'L'},{shape:'tri',anchor:5,color:_SH.red,size:'M'},{shape:'tri',anchor:8,color:_SH.orange,size:'M'}]},
+  {id:12,title:'꽃 마법사',level:'도형 마법사',levelColor:'#F57C00',difficulty:'hard',
+   description:'마지막 도전! 목표 꽃을 스스로 완성해요!',hint:'기둥 → 큰 꽃잎 → 작은 꽃잎 → 가운데 꽃술 순서!',
+   target:[{shape:'rect',anchor:8,color:_SH.green,size:'S'},{shape:'rhombus',anchor:5,color:_SH.red,size:'L'},{shape:'rhombus',anchor:5,color:_SH.red,size:'M'},{shape:'circle',anchor:5,color:_SH.yellow,size:'S'}]},
+];
+/* ===== /SHAPE:JS ===== */
+
+/* ===== GUIDE:JS ===== */
+// WP4 §6: 가이드 패널 — 캐릭터 그림 + 한 줄 말풍선 + 💡힌트 버튼 + 선택적 TTS.
+// AI 채팅(Groq/sendChat) 경로는 이 모드에서 완전 비활성. 안내는 미션에 하드코딩된 정적 한 줄만.
+// 미션별 안내/힌트는 GOAL_STORY / SHAPE_STORY (미션 id 키, {intro, hint}) — WP2/WP3가 채움.
+// (GOAL_STORY/SHAPE_STORY 객체 선언은 GOAL:JS/SHAPE:JS 구역에 있고, 여기서는 접근만 함.)
+
+// 캐릭터 에셋: goal=우주 로버(PNG), shape=토토(SVG). 상태별 표정 스왑.
+const GUIDE_CHARS = {
+  goal:  { hello:'/assets/vibe/rover-hello.png', hint:'/assets/vibe/rover-hint.png', success:'/assets/vibe/rover-success.png', alt:'우주 로버' },
+  shape: { hello:'/assets/vibe/toto-hello.svg',  hint:'/assets/vibe/toto-think.svg', success:'/assets/vibe/toto-success.svg', alt:'토토' },
+};
+let _guideState = 'hello';      // 'hello' | 'hint' | 'success'
+let _guideText = '';            // 현재 말풍선 텍스트 (TTS 대상)
+let _guideHintUsed = false;     // 이번 미션에서 힌트를 이미 눌렀는지
+
+// 현재 모드의 스토리 객체에서 미션별 {intro, hint} 안내를 읽는다.
+function _guideStory(mission){
+  if(!mission) return {};
+  const store = currentMode==='goal' ? (typeof GOAL_STORY!=='undefined'?GOAL_STORY:{})
+              : currentMode==='shape' ? (typeof SHAPE_STORY!=='undefined'?SHAPE_STORY:{})
+              : {};
+  return store[mission.id] || {};
+}
+
+function _guideCharSrc(state){
+  const set = GUIDE_CHARS[currentMode] || GUIDE_CHARS.shape;
+  return set[state] || set.hello;
+}
+
+// 패널 골격을 그린다 (모드 진입 시 switchMode에서 호출). 미션 진입 전 기본 인사.
+function renderGuidePanel(){
+  const el = document.getElementById('guidePanel'); if(!el) return;
+  if(!isLowgradeMode(currentMode)){ el.innerHTML=''; return; }
+  const set = GUIDE_CHARS[currentMode] || GUIDE_CHARS.shape;
+  _guideState='hello'; _guideHintUsed=false;
+  _guideText = currentMode==='goal' ? '별까지 카드를 놓아 로버를 보내 줘!' : '도형을 차례로 겹쳐 멋진 그림을 만들자!';
+  el.innerHTML =
+    '<img id="guideChar" class="guide-char" src="'+_guideCharSrc('hello')+'" alt="'+set.alt+'">'+
+    '<div id="guideBubble" class="guide-bubble">'+_esc(_guideText)+'</div>'+
+    '<button id="guideHintBtn" class="guide-hint-btn" onclick="guideHint()">💡 힌트</button>'+
+    '<button class="guide-speak-btn" title="다시 읽어주기" onclick="speakGuide()">🔊</button>';
+  speakGuide();
+}
+
+// 미션/상태에 맞춰 캐릭터·말풍선을 갱신하는 공개 접근 함수 (WP5가 미션 진입/성공 시 호출).
+//  mission: 현재 미션 객체(없으면 기본 인사), state: 'hello'|'hint'|'success'
+function setGuide(mission, state){
+  state = state || 'hello';
+  const el = document.getElementById('guidePanel');
+  if(!el || !el.querySelector('#guideBubble')) renderGuidePanel();
+  const sd = _guideStory(mission);
+  let text;
+  if(state==='hint')       text = sd.hint  || '카드를 하나씩 순서대로 놓아 보자!';
+  else if(state==='success') text = sd.success || '와! 성공했어! 정말 잘했어! 🎉';
+  else { state='hello'; _guideHintUsed=false; text = sd.intro || sd.story || (mission&&mission.title ? mission.title : '카드를 놓아서 미션을 해결해 보자!'); }
+  _guideState = state;
+  _setBubble(text);
+  _setChar(state);
+  // 새 미션 인사 때 힌트 버튼 다시 활성화
+  const hb = document.getElementById('guideHintBtn');
+  if(hb){ hb.disabled = false; }
+}
+
+// 💡힌트 버튼: 정적 힌트 텍스트를 말풍선에 띄우고 캐릭터를 hint 표정으로.
+function guideHint(){
+  if(typeof playSfx==='function') playSfx('pop');
+  _guideHintUsed = true;
+  setGuide(currentMission, 'hint');
+  const hb = document.getElementById('guideHintBtn');
+  if(hb) hb.disabled = true; // 한 미션당 정적 힌트는 한 종류 — 재요청 방지(되돌리기 아님)
+}
+
+// 임의 텍스트를 말풍선에 표시 (WP0 호환 유지: 간단 메시지 경로).
+function showGuide(text){
+  if(!document.getElementById('guideBubble')) renderGuidePanel();
+  _setBubble(text||'');
+}
+
+function _setBubble(text){
+  _guideText = text||'';
+  const b = document.getElementById('guideBubble');
+  if(b) b.innerHTML = _esc(_guideText);
+  speakGuide();
+}
+function _setChar(state){
+  const img = document.getElementById('guideChar');
+  if(!img) return;
+  img.src = _guideCharSrc(state);
+  img.classList.remove('pop'); void img.offsetWidth; img.classList.add('pop');
+}
+function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// 선택적 TTS: speechSynthesis ko-KR. vibe_muted(sfxMuted) 존중, 미지원 브라우저는 조용히 무시.
+function speakGuide(){
+  try{
+    if(typeof sfxMuted!=='undefined' && sfxMuted) return;          // 음소거 존중
+    if(!('speechSynthesis' in window)) return;                     // 미지원 무시
+    const txt = (_guideText||'').replace(/<[^>]+>/g,' ').replace(/[\u{1F000}-\u{1FFFF}☀-➿]/gu,' ').trim();
+    if(!txt) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang='ko-KR'; u.rate=0.95; u.pitch=1.05;
+    window.speechSynthesis.speak(u);
+  }catch(e){ /* 조용히 무시 */ }
+}
+/* ===== /GUIDE:JS ===== */
 
 window.addEventListener('load',()=>{
     if(!window.Blockly)return; // CDN 실패 시 안내 화면은 head의 폴백 스크립트가 처리
