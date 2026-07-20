@@ -1636,7 +1636,9 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
             <button class="admin-only btn btn-primary" onclick="plOpenSetup()">⚙️ 방학 순찰 세팅</button>
-            <button class="admin-only btn btn-secondary" onclick="plOpenSign('batch')">🖊️ 일괄 확인 서명</button>
+            <button id="plBatchBtn" class="admin-only btn btn-secondary" onclick="plOpenSign('batch')">🖊️ 일괄 확인 서명</button>
+            <button class="btn btn-secondary" onclick="plExportReport()">📄 점검일지 출력</button>
+            <button class="admin-only btn btn-secondary" onclick="plResetRecords()" style="color:#c92a2a;">🧹 기록 초기화</button>
         </div>
         <div id="plHeaderCard"></div>
         <div id="plDayList"></div>
@@ -3309,6 +3311,14 @@ function plFmtDate(iso){
     return `${d.getMonth()+1}. ${d.getDate()}.(${PL_WD[d.getDay()]})`;
 }
 function plCanEdit(day){ return isAdmin||(!!plMyName()&&plMyName()===day.name); }
+// 본인 식별한 사람이 교장/교감이면 "교장 홍길동" 형식 라벨, 아니면 ''
+function plBossLabel(){
+    const me=plMyName(); if(!me) return '';
+    const s=plAllStaff().find(x=>x.name===me&&/교장|교감/.test(x.position||''));
+    return s?`${(s.position||'').includes('교장')?'교장':'교감'} ${s.name}`:'';
+}
+// 확인 서명 권한: 관리 모드 또는 교장/교감 본인 식별
+function plCanConfirm(){ return isAdmin||!!plBossLabel(); }
 function plRoundStatus(day,ri){
     const items=(patrolLog.config&&patrolLog.config.checkItems)||[];
     const r=(day.rounds||{})[ri];
@@ -3330,6 +3340,9 @@ function renderPatrol(){
     if(me) document.getElementById('plWhoami').innerHTML=`👤 <b>${me}</b> 선생님`;
     const dl=document.getElementById('plStaffDatalist');
     if(dl) dl.innerHTML=plAllStaff().map(s=>`<option value="${s.name}">`).join('');
+    // 교장/교감 본인 식별 시 일괄 확인 서명 버튼을 관리 모드 없이도 노출 (인라인 스타일이 .admin-only보다 우선)
+    const bb=document.getElementById('plBatchBtn');
+    if(bb) bb.style.display=(!isAdmin&&plBossLabel())?'inline-flex':'';
     const cfg=patrolLog.config;
     const head=document.getElementById('plHeaderCard');
     const list=document.getElementById('plDayList');
@@ -3429,9 +3442,9 @@ function plDayDetail(iso){
     if(day.confirm&&day.confirm.img){
         html+=`<div style="display:flex;align-items:center;gap:8px;"><b style="font-size:13px;">${day.confirm.name||''}</b><img src="${day.confirm.img}" alt="확인자 서명" style="height:52px;"></div>
         <div style="font-size:11px;color:var(--text-light);">${day.confirm.at?new Date(day.confirm.at).toLocaleString('ko-KR'):''}</div>`;
-        if(isAdmin) html+=`<button class="btn btn-secondary" onclick="plOpenSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;">다시 서명</button>
+        if(plCanConfirm()) html+=`<button class="btn btn-secondary" onclick="plOpenSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;">다시 서명</button>
         <button class="btn btn-secondary" onclick="plDeleteSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;color:#c92a2a;">삭제</button>`;
-    } else if(isAdmin){
+    } else if(plCanConfirm()){
         html+=`<button class="btn btn-primary" onclick="plOpenSign('confirm','${iso}')" style="font-size:12px;padding:8px 14px;">확인 서명</button>`;
     } else {
         html+=`<div style="font-size:12px;color:#adb5bd;">확인 전</div>`;
@@ -3551,7 +3564,7 @@ function plBatchTargets(){
     });
 }
 function plOpenSign(mode,iso,ri){
-    if(mode!=='patrol'&&!isAdmin){ showToast('확인 서명은 관리 모드에서만 가능합니다','error'); return; }
+    if(mode!=='patrol'&&!plCanConfirm()){ showToast('확인 서명은 교장·교감 선생님(본인 식별) 또는 관리 모드에서 가능합니다','error'); return; }
     if(mode==='patrol'){
         const day=patrolLog.days[iso];
         if(!day||!plCanEdit(day)){ showToast('본인 순찰일만 서명할 수 있습니다','error'); return; }
@@ -3570,7 +3583,7 @@ function plOpenSign(mode,iso,ri){
             ?`순찰 기록이 있고 아직 확인 전인 ${plBatchTargets().length}일에 한 번에 서명합니다.`
             :`${plFmtDate(iso)} 순찰 기록을 확인했음을 서명합니다.`;
         nameWrap.style.display='block';
-        document.getElementById('plSignName').value=localStorage.getItem('airoom_pl_confirmer')||'';
+        document.getElementById('plSignName').value=plBossLabel()||localStorage.getItem('airoom_pl_confirmer')||'';
         const bosses=plAllStaff().filter(s=>/교장|교감/.test(s.position||''));
         document.getElementById('plSignNameChips').innerHTML=bosses.map(b=>{
             const label=`${(b.position||'').includes('교장')?'교장':'교감'} ${b.name}`;
@@ -3655,7 +3668,7 @@ async function plDeleteSign(mode,iso,ri){
         if(!confirm(`${plFmtDate(iso)} ${tLabel} 순찰 서명을 삭제할까요?`)) return;
         delete r.sign;
     } else {
-        if(!isAdmin){ showToast('확인 서명 삭제는 관리 모드에서만 가능합니다','error'); return; }
+        if(!plCanConfirm()){ showToast('확인 서명 삭제는 교장·교감 선생님 또는 관리 모드에서 가능합니다','error'); return; }
         if(!day.confirm) return;
         if(!confirm(`${plFmtDate(iso)} 확인자 서명을 삭제할까요?`)) return;
         delete day.confirm;
@@ -3663,6 +3676,119 @@ async function plDeleteSign(mode,iso,ri){
     renderPatrol();
     await plSaveDay(iso);
     showToast('서명 삭제됨','success');
+}
+// ===== 순찰 기록 초기화 (관리 모드) — 일정·순찰자 배정은 유지, 체크·메모·서명 전부 삭제 =====
+async function plResetRecords(){
+    if(!isAdmin){ showToast('기록 초기화는 관리 모드에서만 가능합니다','error'); return; }
+    const cfg=patrolLog.config;
+    const isos=Object.keys(patrolLog.days||{});
+    if(!cfg||!isos.length){ showToast('초기화할 순찰 기록이 없습니다','error'); return; }
+    if(!confirm(`전체 ${isos.length}일의 순찰 기록(이상 여부 체크·메모·순찰자 서명·확인자 서명)을 모두 삭제합니다.\n순찰 일정과 순찰자 배정은 그대로 유지됩니다.\n계속할까요?`)) return;
+    if(!confirm('삭제된 서명은 되돌릴 수 없습니다. 정말 초기화할까요?')) return;
+    const days={};
+    isos.forEach(iso=>{
+        const d=patrolLog.days[iso];
+        days[iso]={date:iso,name:d.name||'',staffId:d.staffId||null,rounds:{}};
+    });
+    const r=await api('POST','/api/patrol-log/setup',{config:cfg,days});
+    if(r&&r.success){
+        patrolLog={config:cfg,days};
+        plExpandedDate=null;
+        renderPatrol();
+        showToast('순찰 기록이 모두 초기화되었습니다','success');
+    } else showToast('초기화 실패 — '+(r&&r.error?r.error:'서버 응답 없음'),'error');
+}
+// ===== 일별 점검일지 출력 — 공문서형 HTML, 하루 1장 (기록 있는 날만) =====
+function plEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function plHasRecord(day){
+    if(day.confirm&&day.confirm.img) return true;
+    return Object.values(day.rounds||{}).some(r=>r&&(r.status||(r.memo&&r.memo.trim())||(r.sign&&r.sign.img)||(Array.isArray(r.items)&&r.items.some(v=>v))));
+}
+function plReportPage(iso){
+    const day=patrolLog.days[iso];
+    const cfg=patrolLog.config;
+    const times=cfg.times||[];
+    const d=new Date(iso+'T00:00:00');
+    const dateFull=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${PL_WD[d.getDay()]}요일`;
+    const dateShort=`${d.getFullYear()}년  ${d.getMonth()+1}월  ${d.getDate()}일`;
+    const stTxtMap={ok:'이상 없음',issue:'이상 있음',partial:'점검 중',none:'―'};
+    const rows=times.map((t,ri)=>{
+        const r=(day.rounds||{})[ri]||{};
+        const st=plRoundStatus(day,ri);
+        const sign=(r.sign&&r.sign.img)?`<img src="${r.sign.img}" style="height:36px;vertical-align:middle;">`:'';
+        return `<tr><td>${ri+1}회</td><td>${plEsc(t)}</td><td${st==='issue'?' style="font-weight:700;"':''}>${stTxtMap[st]}</td><td style="text-align:left;padding-left:8px;">${plEsc((r.memo||'').trim())}</td><td>${sign}</td></tr>`;
+    }).join('');
+    const doneTimes=times.filter((t,ri)=>plRoundStatus(day,ri)!=='none');
+    const issues=times.map((t,ri)=>({t,memo:(((day.rounds||{})[ri]||{}).memo||'').trim(),st:plRoundStatus(day,ri)})).filter(x=>x.st==='issue');
+    const narr=`위 순찰자는 ${dateFull} ${doneTimes.length?doneTimes.join(', ')+' 총 '+doneTimes.length+'회에 걸쳐 ':''}${cfg.route?plEsc(cfg.route)+' 동선을 따라 ':''}교내를 순찰하고, ${cfg.focus?plEsc(cfg.focus)+' 등 ':''}순찰 확인 사항을 점검함.`;
+    let result;
+    if(!doneTimes.length) result='당일 점검 기록이 없음.';
+    else if(!issues.length) result='점검 결과, 전 회차 모두 이상이 없음을 확인함.';
+    else result=`점검 결과, ${issues.map(x=>`${plEsc(x.t)} 순찰 중 ${x.memo?'"'+plEsc(x.memo)+'"':'특이사항'}`).join(', ')}을(를) 확인하고 필요한 조치를 취함.`;
+    const conf=day.confirm||{};
+    let lastSign=null;
+    times.forEach((t,ri)=>{ const r=(day.rounds||{})[ri]; if(r&&r.sign&&r.sign.img) lastSign=r.sign.img; });
+    return `<div class="page">
+        <div class="doc-no">백암초등학교</div>
+        <h1>교 내 순 찰 일 지</h1>
+        <table class="tbl info">
+            <tr><th style="width:20%;">순찰 일자</th><td style="width:40%;">${dateFull}</td><th style="width:14%;">순찰자</th><td>${plEsc(day.name||'')}</td></tr>
+            <tr><th>순찰 동선</th><td colspan="3">${plEsc(cfg.route||'')}</td></tr>
+            <tr><th>순찰 관점</th><td colspan="3">${plEsc(cfg.focus||'')}</td></tr>
+        </table>
+        <div class="sec">1. 순찰 확인 사항</div>
+        <ol class="items">${(cfg.checkItems||[]).map(t=>`<li>${plEsc(t)}</li>`).join('')}</ol>
+        <div class="sec">2. 회차별 점검 결과</div>
+        <table class="tbl rounds">
+            <tr><th style="width:10%;">회차</th><th style="width:15%;">순찰 시각</th><th style="width:16%;">점검 결과</th><th>특이사항</th><th style="width:20%;">순찰자 서명</th></tr>
+            ${rows}
+        </table>
+        <div class="sec">3. 점검 내용</div>
+        <p class="narr">${narr}<br>${result}</p>
+        <p class="attest">위와 같이 교내를 순찰·점검하였음을 확인함.</p>
+        <p class="dateline">${dateShort}</p>
+        <table class="tbl signs">
+            <tr><th style="width:20%;">순 찰 자</th><td style="width:42%;">${plEsc(day.name||'')}</td><td class="simg">${lastSign?`<img src="${lastSign}">`:'(서명)'}</td></tr>
+            <tr><th>확 인 자</th><td>${plEsc(conf.name||'')}</td><td class="simg">${conf.img?`<img src="${conf.img}">`:'(서명)'}</td></tr>
+        </table>
+        <p class="school-foot">백 암 초 등 학 교</p>
+    </div>`;
+}
+function plExportReport(){
+    const cfg=patrolLog.config;
+    if(!cfg){ showToast('순찰 일정이 세팅되지 않았습니다','error'); return; }
+    const all=Object.keys(patrolLog.days||{}).sort();
+    const dates=all.filter(iso=>plHasRecord(patrolLog.days[iso]));
+    if(!dates.length){ showToast('점검 기록이 있는 날이 아직 없습니다','error'); return; }
+    const skipped=all.length-dates.length;
+    const html=`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>교내 순찰 일지 (${cfg.startDate} ~ ${cfg.endDate})</title><style>
+        @page{size:A4;margin:14mm 13mm}
+        *{box-sizing:border-box}
+        body{font-family:'Batang','바탕','Noto Serif KR',serif;color:#111;margin:0;background:#495057}
+        .page{width:210mm;background:#fff;margin:12px auto;padding:16mm 14mm;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+        h1{text-align:center;font-size:30px;letter-spacing:10px;margin:6px 0 18px;font-weight:700}
+        .doc-no{font-size:12px;color:#333}
+        .tbl{width:100%;border-collapse:collapse;font-size:13px}
+        .tbl th,.tbl td{border:1.2px solid #222;padding:7px 6px;text-align:center;vertical-align:middle}
+        .tbl th{background:#f1f3f5;font-weight:700;letter-spacing:1px}
+        .sec{font-weight:700;font-size:14px;margin:16px 0 6px}
+        .items{margin:0 0 4px 22px;padding:0;font-size:13px;line-height:1.9}
+        .narr{font-size:13.5px;line-height:2;text-indent:8px;margin:4px 0 0}
+        .attest{text-align:center;font-size:15px;letter-spacing:2px;margin:22px 0 10px}
+        .dateline{text-align:center;font-size:14px;letter-spacing:3px;margin:0 0 16px}
+        .signs .simg{height:52px;width:38%}
+        .signs .simg img{height:44px;vertical-align:middle}
+        .school-foot{text-align:center;font-size:20px;font-weight:700;letter-spacing:14px;margin:18px 0 0}
+        .toolbar{position:sticky;top:0;background:#212529;color:#fff;padding:10px 16px;font-size:13px;display:flex;align-items:center;gap:12px;z-index:9;font-family:sans-serif}
+        .toolbar button{padding:6px 16px;font-size:13px;cursor:pointer;border-radius:6px;border:0;background:#4dabf7;color:#fff;font-weight:700}
+        @media print{body{background:#fff}.no-print{display:none}.page{width:auto;margin:0;padding:0;box-shadow:none;page-break-after:always}.page:last-of-type{page-break-after:auto}}
+    </style></head><body>
+    <div class="toolbar no-print"><b>교내 순찰 일지</b> · ${cfg.startDate} ~ ${cfg.endDate} · 총 ${dates.length}장${skipped?` (기록 없는 ${skipped}일 제외)`:''}<button onclick="window.print()">🖨️ 인쇄</button></div>
+    ${dates.map(plReportPage).join('')}
+    </body></html>`;
+    const w=window.open('','_blank');
+    if(!w){ showToast('팝업이 차단되었습니다. 브라우저에서 팝업을 허용해 주세요','error'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
 }
 
 async function clLoad(){
