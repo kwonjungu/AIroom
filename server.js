@@ -382,6 +382,7 @@ const KV_KEYS = {
     'checklist-posts.json': 'checklist-posts',
     'checklist-extra-staff.json': 'checklist-extra-staff',
     'winter-schedule.json': 'winter-schedule',
+    'patrol-log.json': 'patrol-log',
     'bap-managers.json': 'bap-managers',
     'bap-bosses.json': 'bap-bosses',
     'bap2-managers.json': 'bap2-managers',
@@ -476,6 +477,7 @@ const DATA_ROUTES = [
     { path: 'checklist-posts', file: 'checklist-posts.json', fallback: [] },
     { path: 'checklist-extra-staff', file: 'checklist-extra-staff.json', fallback: [] },
     { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
+    { path: 'patrol-log', file: 'patrol-log.json', fallback: { config: null, days: {} } },
     // vibe-progress GET은 vibecoding 학생 기기(비로그인)도 조회 필요 → requireAuthOrVibe
     { path: 'vibe-progress', file: 'vibe-progress.json', fallback: [], auth: requireAuthOrVibe }
 ];
@@ -971,6 +973,43 @@ app.post('/api/winter-schedule/setup', requireAuth, async (req, res) => {
         await writeData('winter-schedule.json', newConfig);
         res.json({ success: true, config: newConfig.config });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== 순찰일지 (방학 교내 순찰) =====
+// 하루 항목 저장 (PATCH) — 분산 락으로 read-modify-write 직렬화
+app.patch('/api/patrol-log/days/:date', requireAuth, async (req, res) => {
+    try {
+        const { date } = req.params;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: '잘못된 날짜 형식' });
+        await withRedisLock('data:patrol-log', async () => {
+            const pl = (await readData('patrol-log.json')) || { config: null, days: {} };
+            if (!pl.days) pl.days = {};
+            pl.days[date] = {
+                ...(req.body || {}),
+                date,
+                updatedAt: new Date().toISOString()
+            };
+            await writeData('patrol-log.json', pl);
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+
+// 순찰 세팅 — config + days 전체 교체. 이 요청은 기존 순찰 기록을 모두 삭제한다.
+app.post('/api/patrol-log/setup', requireAuth, async (req, res) => {
+    try {
+        const { config, days } = req.body || {};
+        if (!config || !config.startDate || !config.endDate) {
+            return res.status(400).json({ error: '시작일과 종료일을 모두 지정해야 합니다.' });
+        }
+        await withRedisLock('data:patrol-log', async () => {
+            await writeData('patrol-log.json', {
+                config: { ...config, setAt: new Date().toISOString() },
+                days: (days && typeof days === 'object') ? days : {}
+            });
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 
 // ===== 공휴일 조회 (date.nager.at + 대체공휴일 + 추가 임시공휴일) =====
@@ -2191,6 +2230,7 @@ const POSTING_DATA = {
     'checklist-posts': { file: 'checklist-posts.json', fallback: [] },
     'checklist-extra-staff': { file: 'checklist-extra-staff.json', fallback: [] },
     'winter-schedule': { file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
+    'patrol-log': { file: 'patrol-log.json', fallback: { config: null, days: {} } },
     'vibe-progress': { file: 'vibe-progress.json', fallback: [] },
 };
 Object.entries(POSTING_DATA).forEach(([p, { file, fallback }]) => {

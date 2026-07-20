@@ -1385,6 +1385,79 @@
     </div>
 
     <!-- ===== 확인대장 PAGE ===== -->
+    <!-- ===== 순찰일지 PAGE ===== -->
+    <div class="page" id="page-patrol">
+        <div style="text-align:center;margin-bottom:12px;">
+            <h2 style="font-size:22px;font-weight:800;margin:0;">🌙 순찰일지</h2>
+            <p style="font-size:13px;color:var(--text-light);margin:4px 0 0;">방학 중 교내 순찰 — 점검 사항을 확인하고 이상 여부 체크 후 서명하세요.</p>
+        </div>
+        <div id="plIdentityBar" style="display:none;padding:14px;background:#fff9db;border-radius:10px;margin-bottom:14px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;">먼저 본인 이름을 입력해주세요</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="plNameInput" placeholder="예: 권준구" list="plStaffDatalist"
+                    style="flex:1;min-width:200px;padding:10px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
+                <datalist id="plStaffDatalist"></datalist>
+                <button class="btn btn-primary" onclick="plSaveIdentity()" style="padding:10px 16px;">확인</button>
+            </div>
+        </div>
+        <div id="plWhoamiBar" style="display:none;align-items:center;gap:8px;margin-bottom:14px;">
+            <span id="plWhoami" style="padding:6px 10px;border-radius:8px;background:var(--border);font-size:13px;"></span>
+            <button class="btn btn-secondary" onclick="plChangeName()" style="font-size:12px;padding:6px 10px;">이름 변경</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+            <button class="admin-only btn btn-primary" onclick="plOpenSetup()">⚙️ 방학 순찰 세팅</button>
+            <button class="admin-only btn btn-secondary" onclick="plOpenSign('batch')">🖊️ 일괄 확인 서명</button>
+        </div>
+        <div id="plHeaderCard"></div>
+        <div id="plDayList"></div>
+    </div>
+
+    <!-- 순찰 세팅 모달 -->
+    <div class="modal-overlay" id="plSetupModal"><div class="modal" style="max-width:600px;">
+        <div class="modal-header"><h2>⚙️ 방학 순찰 세팅</h2><button class="btn-close" onclick="closeModal('plSetupModal')">✕</button></div>
+        <div class="modal-body">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:140px;"><label>시작일 *</label><input type="date" id="plSetStart"></div>
+                <div class="form-group" style="flex:1;min-width:140px;"><label>종료일 *</label><input type="date" id="plSetEnd"></div>
+            </div>
+            <div class="form-group"><label>순찰 요일</label>
+                <div id="plSetWeekdays" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            </div>
+            <div class="form-group"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="plSetSkipHolidays" checked style="width:auto;"> 공휴일 자동 제외</label></div>
+            <div class="form-group"><label>순찰 시간 (쉼표 구분)</label><input type="text" id="plSetTimes" placeholder="8:50, 12:50, 15:00"></div>
+            <div class="form-group"><label>순찰 동선</label><input type="text" id="plSetRoute"></div>
+            <div class="form-group"><label>순찰 관점</label><input type="text" id="plSetFocus"></div>
+            <div class="form-group"><label>순찰 확인 사항 (한 줄에 하나)</label><textarea id="plSetItems" rows="7" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;font-size:13px;"></textarea></div>
+            <div class="form-group"><label>안내 문구</label><input type="text" id="plSetNotice"></div>
+            <div class="form-group"><label>순찰자 순번 (쉼표 구분 — 순서대로 순찰일에 자동 배정)</label>
+                <textarea id="plSetRotation" rows="2" placeholder="예: 황혜원, 설미선, 황의순, 이선미" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;resize:vertical;font-size:13px;"></textarea>
+                <div style="font-size:11px;color:var(--text-light);margin-top:4px;">세팅 후 목록에서 날짜별 순찰자를 개별 변경할 수 있습니다.</div>
+            </div>
+            <div id="plSetWarn" style="display:none;background:#fff3f3;border:1px solid #ffc9c9;color:#c92a2a;border-radius:8px;padding:10px;font-size:13px;font-weight:600;margin-bottom:10px;">⚠️ 다시 세팅하면 기존 순찰 기록(체크·서명)이 모두 삭제됩니다!</div>
+            <button class="btn btn-primary" onclick="plSubmitSetup()" style="width:100%;">순찰 일정 생성</button>
+        </div>
+    </div></div>
+
+    <!-- 순찰 서명 모달 -->
+    <div class="modal-overlay" id="plSignModal"><div class="modal" style="max-width:520px;">
+        <div class="modal-header"><h2 id="plSignTitle">✍️ 서명하기</h2><button class="btn-close" onclick="closeModal('plSignModal')">✕</button></div>
+        <div class="modal-body">
+            <div id="plSignDesc" style="font-size:13px;color:var(--text-light);margin-bottom:10px;"></div>
+            <div id="plSignNameWrap" class="form-group" style="display:none;"><label>확인자 (직위+성명)</label>
+                <input type="text" id="plSignName" placeholder="예: 교감 조성균">
+                <div id="plSignNameChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;"></div>
+            </div>
+            <div style="border:2px dashed var(--border);border-radius:10px;background:#fff;position:relative;">
+                <canvas id="plSignCanvas" width="480" height="180" style="width:100%;height:auto;display:block;border-radius:10px;touch-action:none;cursor:crosshair;"></canvas>
+                <span id="plSignHint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:14px;pointer-events:none;">마우스나 손가락으로 서명하세요</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="btn btn-secondary" onclick="plSignClear()" style="flex:1;">지우기</button>
+                <button class="btn btn-primary" onclick="plSignSave()" style="flex:2;">서명 저장</button>
+            </div>
+        </div>
+    </div></div>
+
     <div class="page" id="page-checklist">
         <div style="text-align:center;margin-bottom:12px;">
             <h2 style="font-size:22px;font-weight:800;margin:0;">✅ 확인대장</h2>
@@ -1794,7 +1867,8 @@ const DEFAULT_TABS=[
     {id:'tdist',title:'교사 배포',icon:'📤',type:'builtin',order:11},
     {id:'ailab',title:'AI 실험실',icon:'🤖',type:'builtin',order:12},
     {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13},
-    {id:'checklist',title:'확인대장',icon:'✅',type:'builtin',order:14}
+    {id:'checklist',title:'확인대장',icon:'✅',type:'builtin',order:14},
+    {id:'patrol',title:'순찰일지',icon:'🌙',type:'builtin',order:15}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -2252,6 +2326,7 @@ function switchPage(p,btn){
     if(p==='translator')initTranslator();
     if(p==='winter-schedule'){wsLoad().then(()=>renderWinterSchedule()).catch(()=>{});}
     if(p==='checklist'){clLoad().then(()=>renderChecklist()).catch(()=>renderChecklist());}
+    if(p==='patrol'){plLoad().then(()=>renderPatrol()).catch(()=>renderPatrol());}
 }
 
 // ===== SCHEDULE =====
@@ -3164,6 +3239,383 @@ const CL_COLORS = [
     { bg:'#FFF3E0', border:'#FFB74D' }, // 주황
     { bg:'#FFFFFF', border:'#E0E0E0' }, // 회색/흰색
 ];
+// ===== 순찰일지 (방학 교내 순찰) =====
+let patrolLog={config:null,days:{}};
+let plExpandedDate=null;
+let plSignCtx2=null,plSignDrawing=false,plSignDirty=false,plSignMode=null,plSignDate=null;
+const PL_WD=['일','월','화','수','목','금','토'];
+const PL_DEFAULT_ITEMS=[
+    '교무실 포함 모든 교실 내부 상태',
+    '모든 교실(강사대기실 포함) 잠금 상태',
+    '유리창 잠금 상태',
+    '운동장 배수로 상태',
+    '하우스 근처 창고 잠김 상태',
+    '하우스 한 바퀴 돌고 잠김 상태',
+    '(겨울) 화장실·급식실·교무실 세면대 물 틀어 수돗물 내려 동파 여부 확인'
+];
+async function plLoad(){
+    const [d,extra]=await Promise.all([
+        api('GET','/api/patrol-log'),
+        (checklistExtraStaff&&checklistExtraStaff.length)?Promise.resolve(null):api('GET','/api/checklist-extra-staff')
+    ]);
+    if(d&&typeof d==='object'&&!d.error) patrolLog={config:d.config||null,days:d.days||{}};
+    if(Array.isArray(extra)) checklistExtraStaff=extra;
+}
+function plAllStaff(){ return (typeof clAllStaff==='function')?clAllStaff():(staff||[]); }
+function plMyName(){ return localStorage.getItem('airoom_ws_name')||null; }
+function plSaveIdentity(){
+    const n=(document.getElementById('plNameInput').value||'').trim();
+    const match=plAllStaff().find(s=>s.name===n);
+    if(!match){ showToast(`"${n}" 은 명부에 없습니다`,'error'); return; }
+    if(typeof wsMyStaffId!=='undefined'){ wsMyStaffId=match.id; wsMyName=match.name; }
+    localStorage.setItem('airoom_ws_staffId',match.id);
+    localStorage.setItem('airoom_ws_name',match.name);
+    showToast(`${match.name} 선생님으로 식별됨`,'success');
+    renderPatrol();
+}
+function plChangeName(){
+    if(typeof wsMyStaffId!=='undefined'){ wsMyStaffId=null; wsMyName=null; }
+    localStorage.removeItem('airoom_ws_staffId');
+    localStorage.removeItem('airoom_ws_name');
+    renderPatrol();
+}
+function plFmtDate(iso){
+    const d=new Date(iso+'T00:00:00');
+    return `${d.getMonth()+1}. ${d.getDate()}.(${PL_WD[d.getDay()]})`;
+}
+function plCanEdit(day){ return isAdmin||(!!plMyName()&&plMyName()===day.name); }
+function plRoundStatus(day,ri){
+    const items=(patrolLog.config&&patrolLog.config.checkItems)||[];
+    const r=(day.rounds||{})[ri];
+    if(!r||!Array.isArray(r.items)||r.items.every(v=>!v)) return 'none';
+    if(r.items.some(v=>v===2)) return 'issue';
+    if(items.length&&r.items.filter(v=>v===1).length>=items.length) return 'ok';
+    return 'partial';
+}
+function renderPatrol(){
+    const idBar=document.getElementById('plIdentityBar');
+    if(!idBar) return;
+    const me=plMyName();
+    idBar.style.display=me?'none':'block';
+    document.getElementById('plWhoamiBar').style.display=me?'flex':'none';
+    if(me) document.getElementById('plWhoami').innerHTML=`👤 <b>${me}</b> 선생님`;
+    const dl=document.getElementById('plStaffDatalist');
+    if(dl) dl.innerHTML=plAllStaff().map(s=>`<option value="${s.name}">`).join('');
+    const cfg=patrolLog.config;
+    const head=document.getElementById('plHeaderCard');
+    const list=document.getElementById('plDayList');
+    if(!cfg){
+        head.innerHTML='';
+        list.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-light);"><p style="font-size:36px;margin-bottom:8px;">🌙</p><p>아직 순찰 일정이 세팅되지 않았습니다.</p><p style="font-size:12px;margin-top:4px;">관리 모드에서 "방학 순찰 세팅"을 실행하세요.</p></div>';
+        return;
+    }
+    const items=cfg.checkItems||[];
+    head.innerHTML=`<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:14px;">
+        <div style="font-weight:800;font-size:15px;margin-bottom:6px;">🗓️ ${cfg.startDate} ~ ${cfg.endDate} <span style="font-weight:600;font-size:12px;color:var(--text-light);">(순찰시간: ${(cfg.times||[]).join(' / ')})</span></div>
+        ${cfg.route?`<div style="font-size:13px;margin-bottom:2px;">🚶 순찰 동선: <b>${cfg.route}</b></div>`:''}
+        ${cfg.focus?`<div style="font-size:13px;margin-bottom:8px;">👀 순찰 관점: <b>${cfg.focus}</b></div>`:''}
+        <div style="border:2px solid #2d3748;border-radius:10px;padding:12px 14px;background:#fffdf5;">
+            <div style="font-weight:800;color:#c92a2a;text-align:center;margin-bottom:8px;">&lt;순찰 확인 사항&gt;</div>
+            <ol style="margin:0 0 0 20px;padding:0;font-size:13px;line-height:1.8;font-weight:600;">${items.map(t=>`<li>${t}</li>`).join('')}</ol>
+            ${cfg.notice?`<div style="color:#c92a2a;font-weight:700;font-size:12px;margin-top:8px;text-align:center;">${cfg.notice}</div>`:''}
+        </div>
+    </div>`;
+    const dates=Object.keys(patrolLog.days||{}).sort();
+    list.innerHTML=dates.length?dates.map(iso=>plDayCard(iso)).join(''):'<div style="text-align:center;padding:30px;color:var(--text-light);">순찰일이 없습니다.</div>';
+}
+function plDayCard(iso){
+    const day=patrolLog.days[iso];
+    const cfg=patrolLog.config;
+    const expanded=plExpandedDate===iso;
+    const mine=!!plMyName()&&plMyName()===day.name;
+    const chips=(cfg.times||[]).map((t,ri)=>{
+        const st=plRoundStatus(day,ri);
+        const m={none:['#f1f3f5','#868e96','–'],partial:['#fff3bf','#e67700','점검중'],ok:['#d3f9d8','#2b8a3e','이상없음'],issue:['#ffe3e3','#c92a2a','이상있음']}[st];
+        return `<span style="background:${m[0]};color:${m[1]};padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;">${t} ${m[2]}</span>`;
+    }).join('');
+    const signBadge=day.sign&&day.sign.img?`<span style="color:#2b8a3e;font-weight:700;font-size:12px;white-space:nowrap;">✍️ 서명완료</span>`:`<span style="color:#adb5bd;font-size:12px;white-space:nowrap;">서명 전</span>`;
+    const confBadge=day.confirm&&day.confirm.img?`<span style="color:#1971c2;font-weight:700;font-size:12px;white-space:nowrap;">🖊️ ${day.confirm.name||'확인'}</span>`:`<span style="color:#adb5bd;font-size:12px;white-space:nowrap;">확인 전</span>`;
+    return `<div style="background:var(--card-bg);border:1px solid ${mine?'var(--primary)':'var(--border)'};border-radius:var(--radius-sm);box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden;">
+        <div onclick="plToggleDay('${iso}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;flex-wrap:wrap;">
+            <b style="font-size:14px;min-width:74px;">${plFmtDate(iso)}</b>
+            <span style="font-weight:700;font-size:13px;${mine?'color:var(--primary);':''}">${day.name||'미배정'}${mine?' (나)':''}</span>
+            <span style="display:flex;gap:4px;flex-wrap:wrap;">${chips}</span>
+            <span style="margin-left:auto;display:flex;gap:10px;align-items:center;">${signBadge}${confBadge}<span style="color:var(--text-light);">${expanded?'▲':'▼'}</span></span>
+        </div>
+        ${expanded?plDayDetail(iso):''}
+    </div>`;
+}
+function plDayDetail(iso){
+    const day=patrolLog.days[iso];
+    const cfg=patrolLog.config;
+    const items=cfg.checkItems||[];
+    const canEdit=plCanEdit(day);
+    let html=`<div style="border-top:1px solid var(--border);padding:12px 14px;background:#fafbfc;">`;
+    if(isAdmin){
+        const opts=['<option value="">(미배정)</option>'].concat(plAllStaff().map(s=>`<option value="${s.name}"${s.name===day.name?' selected':''}>${s.name}</option>`)).join('');
+        html+=`<div style="margin-bottom:10px;font-size:13px;">순찰자 변경: <select onchange="plSetDayStaff('${iso}',this.value)" style="padding:6px;border:1px solid var(--border);border-radius:6px;">${opts}</select></div>`;
+    }
+    if(!canEdit) html+=`<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">👀 ${day.name||'담당'} 선생님의 순찰일입니다. 본인 순찰일만 체크할 수 있어요.</div>`;
+    (cfg.times||[]).forEach((t,ri)=>{
+        const r=(day.rounds||{})[ri]||{items:[],memo:''};
+        html+=`<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                <b style="font-size:13px;">🕐 ${t} 순찰</b>
+                ${canEdit?`<button class="btn btn-secondary" onclick="plAllOk('${iso}',${ri})" style="font-size:11px;padding:4px 10px;">✓ 모두 이상없음</button>`:''}
+                ${r.at?`<span style="font-size:11px;color:var(--text-light);">기록: ${new Date(r.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px;">`;
+        items.forEach((it,ii)=>{
+            const v=(r.items||[])[ii]||0;
+            const style=v===1?'background:#d3f9d8;color:#2b8a3e;border-color:#8ce99a;':v===2?'background:#ffe3e3;color:#c92a2a;border-color:#ffa8a8;':'background:#f8f9fa;color:#868e96;border-color:var(--border);';
+            const mark=v===1?'✓':v===2?'⚠':'○';
+            html+=`<button ${canEdit?`onclick="plToggleItem('${iso}',${ri},${ii})"`:''} style="display:flex;align-items:center;gap:6px;text-align:left;font-size:12px;font-weight:600;padding:6px 8px;border:1px solid;border-radius:8px;cursor:${canEdit?'pointer':'default'};${style}"><span style="font-weight:800;">${mark}</span> ${ii+1}. ${it}</button>`;
+        });
+        html+=`</div>`;
+        if(canEdit||(r.memo&&r.memo.trim())) html+=`<input type="text" value="${(r.memo||'').replace(/"/g,'&quot;')}" placeholder="메모 (이상 내용, 조치 사항 등)" ${canEdit?`onchange="plSetMemo('${iso}',${ri},this.value)"`:'readonly'} style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:12px;">`;
+        html+=`</div>`;
+    });
+    html+=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">`;
+    html+=`<div style="flex:1;min-width:220px;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">✍️ 순찰자 서명 (${day.name||'-'})</div>`;
+    if(day.sign&&day.sign.img){
+        html+=`<img src="${day.sign.img}" alt="순찰자 서명" style="height:52px;display:block;">
+        <div style="font-size:11px;color:var(--text-light);">${day.sign.at?new Date(day.sign.at).toLocaleString('ko-KR'):''}</div>`;
+        if(canEdit) html+=`<button class="btn btn-secondary" onclick="plOpenSign('patrol','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;">다시 서명</button>`;
+    } else if(canEdit){
+        html+=`<button class="btn btn-primary" onclick="plOpenSign('patrol','${iso}')" style="font-size:12px;padding:8px 14px;">서명하기</button>`;
+    } else {
+        html+=`<div style="font-size:12px;color:#adb5bd;">서명 전</div>`;
+    }
+    html+=`</div>`;
+    html+=`<div style="flex:1;min-width:220px;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">🖊️ 확인자 (교감/교장)</div>`;
+    if(day.confirm&&day.confirm.img){
+        html+=`<div style="display:flex;align-items:center;gap:8px;"><b style="font-size:13px;">${day.confirm.name||''}</b><img src="${day.confirm.img}" alt="확인자 서명" style="height:52px;"></div>
+        <div style="font-size:11px;color:var(--text-light);">${day.confirm.at?new Date(day.confirm.at).toLocaleString('ko-KR'):''}</div>`;
+        if(isAdmin) html+=`<button class="btn btn-secondary" onclick="plOpenSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;">다시 서명</button>`;
+    } else if(isAdmin){
+        html+=`<button class="btn btn-primary" onclick="plOpenSign('confirm','${iso}')" style="font-size:12px;padding:8px 14px;">확인 서명</button>`;
+    } else {
+        html+=`<div style="font-size:12px;color:#adb5bd;">확인 전</div>`;
+    }
+    html+=`</div></div></div>`;
+    return html;
+}
+function plToggleDay(iso){ plExpandedDate=plExpandedDate===iso?null:iso; renderPatrol(); }
+function plEnsureRound(day,ri){
+    if(!day.rounds) day.rounds={};
+    const n=((patrolLog.config||{}).checkItems||[]).length;
+    if(!day.rounds[ri]) day.rounds[ri]={items:new Array(n).fill(0),memo:''};
+    const r=day.rounds[ri];
+    if(!Array.isArray(r.items)) r.items=new Array(n).fill(0);
+    while(r.items.length<n) r.items.push(0);
+    return r;
+}
+function plToggleItem(iso,ri,ii){
+    const day=patrolLog.days[iso]; if(!day||!plCanEdit(day)) return;
+    const r=plEnsureRound(day,ri);
+    r.items[ii]=r.items[ii]===1?2:r.items[ii]===2?0:1;
+    r.at=new Date().toISOString();
+    renderPatrol(); plSaveDay(iso);
+}
+function plAllOk(iso,ri){
+    const day=patrolLog.days[iso]; if(!day||!plCanEdit(day)) return;
+    const r=plEnsureRound(day,ri);
+    r.items=r.items.map(()=>1); r.at=new Date().toISOString();
+    renderPatrol(); plSaveDay(iso);
+}
+function plSetMemo(iso,ri,val){
+    const day=patrolLog.days[iso]; if(!day||!plCanEdit(day)) return;
+    const r=plEnsureRound(day,ri); r.memo=val; r.at=r.at||new Date().toISOString();
+    plSaveDay(iso);
+}
+function plSetDayStaff(iso,name){
+    if(!isAdmin) return;
+    const day=patrolLog.days[iso]; if(!day) return;
+    const m=plAllStaff().find(s=>s.name===name);
+    day.name=name; day.staffId=m?m.id:null;
+    renderPatrol(); plSaveDay(iso);
+}
+async function plSaveDay(iso){
+    const r=await api('PATCH','/api/patrol-log/days/'+iso,patrolLog.days[iso]);
+    if(!r||!r.success) showToast('저장 실패 — '+(r&&r.error?r.error:'서버 응답 없음'),'error');
+}
+function plOpenSetup(){
+    if(!isAdmin){ showToast('관리 모드에서만 세팅할 수 있습니다','error'); return; }
+    const cfg=patrolLog.config||{};
+    document.getElementById('plSetStart').value=cfg.startDate||'';
+    document.getElementById('plSetEnd').value=cfg.endDate||'';
+    document.getElementById('plSetTimes').value=(cfg.times||['8:50','12:50','15:00']).join(', ');
+    document.getElementById('plSetRoute').value=cfg.route!==undefined?cfg.route:'1층→2층→3층→체육관→식당 및 씨름장';
+    document.getElementById('plSetFocus').value=cfg.focus!==undefined?cfg.focus:'학생 안전, 문단속, 냉·난방기 점검';
+    document.getElementById('plSetItems').value=(cfg.checkItems||PL_DEFAULT_ITEMS).join('\n');
+    document.getElementById('plSetNotice').value=cfg.notice!==undefined?cfg.notice:'※ 필요시 백암초 행정실로 연락(☎ 031-333-1320)';
+    document.getElementById('plSetRotation').value=(cfg.rotation||[]).join(', ');
+    document.getElementById('plSetSkipHolidays').checked=cfg.skipHolidays!==false;
+    const selected=cfg.weekdays||[2,5];
+    document.getElementById('plSetWeekdays').innerHTML=[1,2,3,4,5].map(d=>`<label style="display:flex;align-items:center;gap:4px;font-size:13px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;"><input type="checkbox" class="pl-wd" value="${d}"${selected.includes(d)?' checked':''} style="width:auto;">${PL_WD[d]}</label>`).join('');
+    document.getElementById('plSetWarn').style.display=(patrolLog.config&&Object.keys(patrolLog.days||{}).length)?'block':'none';
+    document.getElementById('plSetupModal').classList.add('active');
+}
+async function plSubmitSetup(){
+    const startDate=document.getElementById('plSetStart').value;
+    const endDate=document.getElementById('plSetEnd').value;
+    if(!startDate||!endDate||startDate>endDate){ showToast('기간을 올바르게 입력하세요','error'); return; }
+    const weekdays=[...document.querySelectorAll('#plSetWeekdays .pl-wd:checked')].map(c=>parseInt(c.value,10));
+    if(!weekdays.length){ showToast('순찰 요일을 선택하세요','error'); return; }
+    const times=document.getElementById('plSetTimes').value.split(',').map(s=>s.trim()).filter(Boolean);
+    if(!times.length){ showToast('순찰 시간을 입력하세요','error'); return; }
+    const checkItems=document.getElementById('plSetItems').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if(!checkItems.length){ showToast('순찰 확인 사항을 입력하세요','error'); return; }
+    const rotation=document.getElementById('plSetRotation').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const skipHolidays=document.getElementById('plSetSkipHolidays').checked;
+    if(patrolLog.config&&Object.keys(patrolLog.days||{}).length){
+        if(!confirm('다시 세팅하면 기존 순찰 기록(체크·서명)이 모두 삭제됩니다.\n계속할까요?')) return;
+    }
+    let holidays=[];
+    if(skipHolidays){
+        try{
+            const years=[...new Set([parseInt(startDate.slice(0,4),10),parseInt(endDate.slice(0,4),10)])];
+            for(const y of years){
+                const h=await api('GET','/api/winter-schedule/holidays?year='+y);
+                if(Array.isArray(h)) holidays.push(...h);
+            }
+        }catch(e){ showToast('공휴일 조회 실패 — 공휴일 제외 없이 진행합니다','error'); }
+    }
+    const holidaySet=new Set(holidays.map(h=>h.date));
+    const dates=[];
+    const d=new Date(startDate+'T00:00:00');
+    const end=new Date(endDate+'T00:00:00');
+    while(d<=end){
+        const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if(weekdays.includes(d.getDay())&&!(skipHolidays&&holidaySet.has(iso))) dates.push(iso);
+        d.setDate(d.getDate()+1);
+    }
+    if(!dates.length){ showToast('조건에 맞는 순찰일이 없습니다','error'); return; }
+    const all=plAllStaff();
+    const days={};
+    dates.forEach((iso,i)=>{
+        const name=rotation.length?rotation[i%rotation.length]:'';
+        const m=all.find(s=>s.name===name);
+        days[iso]={date:iso,name,staffId:m?m.id:null,rounds:{}};
+    });
+    const config={startDate,endDate,weekdays,times,
+        route:document.getElementById('plSetRoute').value.trim(),
+        focus:document.getElementById('plSetFocus').value.trim(),
+        checkItems,notice:document.getElementById('plSetNotice').value.trim(),
+        rotation,skipHolidays,
+        holidays:holidays.filter(h=>h.date>=startDate&&h.date<=endDate)};
+    const r=await api('POST','/api/patrol-log/setup',{config,days});
+    if(r&&r.success){
+        patrolLog={config,days};
+        plExpandedDate=null;
+        showToast(`순찰일 ${dates.length}일 생성 완료`,'success');
+        closeModal('plSetupModal');
+        renderPatrol();
+    } else showToast('세팅 실패 — '+(r&&r.error?r.error:'서버 응답 없음'),'error');
+}
+function plBatchTargets(){
+    return Object.keys(patrolLog.days||{}).sort().filter(iso=>{
+        const day=patrolLog.days[iso];
+        if(day.confirm&&day.confirm.img) return false;
+        return !!(day.sign||Object.values(day.rounds||{}).some(r=>Array.isArray(r.items)&&r.items.some(v=>v)));
+    });
+}
+function plOpenSign(mode,iso){
+    if(mode!=='patrol'&&!isAdmin){ showToast('확인 서명은 관리 모드에서만 가능합니다','error'); return; }
+    if(mode==='patrol'){
+        const day=patrolLog.days[iso];
+        if(!day||!plCanEdit(day)){ showToast('본인 순찰일만 서명할 수 있습니다','error'); return; }
+    }
+    if(mode==='batch'&&!plBatchTargets().length){ showToast('일괄 서명할 날이 없습니다 (순찰 기록이 있고 확인 전인 날 대상)','error'); return; }
+    plSignMode=mode; plSignDate=iso||null;
+    const nameWrap=document.getElementById('plSignNameWrap');
+    if(mode==='patrol'){
+        document.getElementById('plSignTitle').textContent='✍️ 순찰자 서명';
+        document.getElementById('plSignDesc').textContent=`${plFmtDate(iso)} · ${patrolLog.days[iso].name} — 순찰을 마쳤음을 서명으로 확인합니다.`;
+        nameWrap.style.display='none';
+    } else {
+        document.getElementById('plSignTitle').textContent=mode==='batch'?'🖊️ 확인자 일괄 서명':'🖊️ 확인자 서명';
+        document.getElementById('plSignDesc').textContent=mode==='batch'
+            ?`순찰 기록이 있고 아직 확인 전인 ${plBatchTargets().length}일에 한 번에 서명합니다.`
+            :`${plFmtDate(iso)} 순찰 기록을 확인했음을 서명합니다.`;
+        nameWrap.style.display='block';
+        document.getElementById('plSignName').value=localStorage.getItem('airoom_pl_confirmer')||'';
+        const bosses=plAllStaff().filter(s=>/교장|교감/.test(s.position||''));
+        document.getElementById('plSignNameChips').innerHTML=bosses.map(b=>{
+            const label=`${(b.position||'').includes('교장')?'교장':'교감'} ${b.name}`;
+            return `<button class="btn btn-secondary" onclick="document.getElementById('plSignName').value='${label}'" style="font-size:11px;padding:4px 10px;">${label}</button>`;
+        }).join('');
+    }
+    document.getElementById('plSignModal').classList.add('active');
+    setTimeout(plSignInit,60);
+}
+function plSignInit(){
+    const cv=document.getElementById('plSignCanvas');
+    const ctx=cv.getContext('2d');
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1b1f3b';
+    plSignCtx2=ctx; plSignDirty=false; plSignDrawing=false;
+    document.getElementById('plSignHint').style.display='flex';
+    if(!cv._plBound){
+        cv._plBound=true;
+        const pos=e=>{
+            const r=cv.getBoundingClientRect();
+            return {x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height};
+        };
+        cv.addEventListener('pointerdown',e=>{
+            e.preventDefault(); cv.setPointerCapture(e.pointerId);
+            plSignDrawing=true; plSignDirty=true;
+            document.getElementById('plSignHint').style.display='none';
+            const p=pos(e); plSignCtx2.beginPath(); plSignCtx2.moveTo(p.x,p.y); plSignCtx2.lineTo(p.x+0.1,p.y+0.1); plSignCtx2.stroke();
+        });
+        cv.addEventListener('pointermove',e=>{
+            if(!plSignDrawing) return;
+            const p=pos(e); plSignCtx2.lineTo(p.x,p.y); plSignCtx2.stroke();
+        });
+        const up=()=>{ plSignDrawing=false; };
+        cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+    }
+}
+function plSignClear(){
+    const cv=document.getElementById('plSignCanvas');
+    if(plSignCtx2) plSignCtx2.clearRect(0,0,cv.width,cv.height);
+    plSignDirty=false;
+    document.getElementById('plSignHint').style.display='flex';
+}
+function plSignImage(){
+    const cv=document.getElementById('plSignCanvas');
+    const out=document.createElement('canvas');
+    out.width=240; out.height=90;
+    out.getContext('2d').drawImage(cv,0,0,out.width,out.height);
+    return out.toDataURL('image/png');
+}
+async function plSignSave(){
+    if(!plSignDirty){ showToast('먼저 서명을 그려주세요','error'); return; }
+    const img=plSignImage();
+    const now=new Date().toISOString();
+    if(plSignMode==='patrol'){
+        const day=patrolLog.days[plSignDate];
+        day.sign={img,at:now,name:day.name};
+        closeModal('plSignModal'); renderPatrol();
+        await plSaveDay(plSignDate);
+        showToast('순찰자 서명 저장됨','success');
+    } else {
+        const name=(document.getElementById('plSignName').value||'').trim();
+        if(!name){ showToast('확인자 직위·성명을 입력하세요','error'); return; }
+        localStorage.setItem('airoom_pl_confirmer',name);
+        const targets=plSignMode==='batch'?plBatchTargets():[plSignDate];
+        closeModal('plSignModal');
+        for(const iso of targets){
+            patrolLog.days[iso].confirm={img,name,at:now};
+            await plSaveDay(iso);
+        }
+        renderPatrol();
+        showToast(plSignMode==='batch'?`${targets.length}일 일괄 확인 서명 완료`:'확인자 서명 저장됨','success');
+    }
+}
+
 async function clLoad(){
     const [posts, extra] = await Promise.all([
         api('GET','/api/checklist-posts'),
