@@ -1682,6 +1682,7 @@
                 <span id="plSignHint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:14px;pointer-events:none;">마우스나 손가락으로 서명하세요</span>
             </div>
             <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="btn btn-secondary" onclick="closeModal('plSignModal')" style="flex:1;">취소</button>
                 <button class="btn btn-secondary" onclick="plSignClear()" style="flex:1;">지우기</button>
                 <button class="btn btn-primary" onclick="plSignSave()" style="flex:2;">서명 저장</button>
             </div>
@@ -3411,7 +3412,8 @@ function plDayDetail(iso){
         if(rs&&rs.img){
             html+=`<img src="${rs.img}" alt="순찰자 서명" style="height:40px;">
             <span style="font-size:11px;color:var(--text-light);">${rs.at?new Date(rs.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}</span>`;
-            if(canEdit) html+=`<button class="btn btn-secondary" onclick="plOpenSign('patrol','${iso}',${ri})" style="font-size:11px;padding:4px 10px;">다시 서명</button>`;
+            if(canEdit) html+=`<button class="btn btn-secondary" onclick="plOpenSign('patrol','${iso}',${ri})" style="font-size:11px;padding:4px 10px;">다시 서명</button>
+            <button class="btn btn-secondary" onclick="plDeleteSign('patrol','${iso}',${ri})" style="font-size:11px;padding:4px 10px;color:#c92a2a;">삭제</button>`;
         } else if(canEdit){
             html+=`<button class="btn btn-primary" onclick="plOpenSign('patrol','${iso}',${ri})" style="font-size:11px;padding:5px 12px;">서명하기</button>`;
         } else {
@@ -3427,7 +3429,8 @@ function plDayDetail(iso){
     if(day.confirm&&day.confirm.img){
         html+=`<div style="display:flex;align-items:center;gap:8px;"><b style="font-size:13px;">${day.confirm.name||''}</b><img src="${day.confirm.img}" alt="확인자 서명" style="height:52px;"></div>
         <div style="font-size:11px;color:var(--text-light);">${day.confirm.at?new Date(day.confirm.at).toLocaleString('ko-KR'):''}</div>`;
-        if(isAdmin) html+=`<button class="btn btn-secondary" onclick="plOpenSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;">다시 서명</button>`;
+        if(isAdmin) html+=`<button class="btn btn-secondary" onclick="plOpenSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;">다시 서명</button>
+        <button class="btn btn-secondary" onclick="plDeleteSign('confirm','${iso}')" style="font-size:11px;padding:4px 10px;margin-top:4px;color:#c92a2a;">삭제</button>`;
     } else if(isAdmin){
         html+=`<button class="btn btn-primary" onclick="plOpenSign('confirm','${iso}')" style="font-size:12px;padding:8px 14px;">확인 서명</button>`;
     } else {
@@ -3641,6 +3644,25 @@ async function plSignSave(){
         renderPatrol();
         showToast(plSignMode==='batch'?`${targets.length}일 일괄 확인 서명 완료`:'확인자 서명 저장됨','success');
     }
+}
+async function plDeleteSign(mode,iso,ri){
+    const day=patrolLog.days[iso]; if(!day) return;
+    if(mode==='patrol'){
+        if(!plCanEdit(day)){ showToast('본인 순찰일 서명만 삭제할 수 있습니다','error'); return; }
+        const r=(day.rounds||{})[ri];
+        if(!r||!r.sign) return;
+        const tLabel=((patrolLog.config||{}).times||[])[ri]||'';
+        if(!confirm(`${plFmtDate(iso)} ${tLabel} 순찰 서명을 삭제할까요?`)) return;
+        delete r.sign;
+    } else {
+        if(!isAdmin){ showToast('확인 서명 삭제는 관리 모드에서만 가능합니다','error'); return; }
+        if(!day.confirm) return;
+        if(!confirm(`${plFmtDate(iso)} 확인자 서명을 삭제할까요?`)) return;
+        delete day.confirm;
+    }
+    renderPatrol();
+    await plSaveDay(iso);
+    showToast('서명 삭제됨','success');
 }
 
 async function clLoad(){
