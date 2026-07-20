@@ -246,6 +246,22 @@ setInterval(() => {
     }
 }, 10 * 60 * 1000); // 10분마다 정리
 
+// GitHub Pages 미러(kwonjungu.github.io/AIroom)에서 이 서버의 API를 쓸 수 있게 CORS 허용
+const CORS_ORIGINS = new Set(['https://kwonjungu.github.io']);
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && CORS_ORIGINS.has(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Auth-Token,X-Vibe-Client');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        if (req.method === 'OPTIONS') return res.sendStatus(204);
+    }
+    next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/defaults', express.static(path.join(__dirname, 'defaults')));
