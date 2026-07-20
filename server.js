@@ -459,6 +459,29 @@ async function writeData(filename, data) {
 }
 
 // ===== API 라우트 =====
+// 순찰일지 GET — 저장값이 빈 껍데기(config 없음 + days 없음)면 defaults로 자가 복구.
+// defaults에 학기 세팅을 실어 배포해도, 배포 전에 탭을 연 사용자가 Redis에 빈 값을
+// 먼저 심으면 defaults가 영영 무시되는 race 대응. (DATA_ROUTES보다 먼저 등록해야 매치됨)
+app.get('/api/patrol-log', requireAuth, async (req, res) => {
+    try {
+        let data = await readData('patrol-log.json');
+        const isEmpty = !data || (!data.config && (!data.days || Object.keys(data.days).length === 0));
+        if (isEmpty) {
+            try {
+                const seed = JSON.parse(fs.readFileSync(path.join(__dirname, 'defaults', 'patrol-log.json'), 'utf-8'));
+                if (seed && seed.config) {
+                    await writeData('patrol-log.json', seed);
+                    data = seed;
+                }
+            } catch (_) {}
+        }
+        res.json(data || { config: null, days: {} });
+    } catch (e) {
+        console.error('GET /api/patrol-log 실패:', e.message);
+        res.status(500).json({ error: '데이터 로딩 실패', _fallback: true });
+    }
+});
+
 // 각 데이터 타입: GET(읽기), POST(전체 저장)
 const DATA_ROUTES = [
     { path: 'links', file: 'links.json', fallback: [] },
