@@ -3385,25 +3385,29 @@ function plDayDetail(iso){
         html+=`<div style="margin-bottom:10px;font-size:13px;">순찰자 변경: <select onchange="plSetDayStaff('${iso}',this.value)" style="padding:6px;border:1px solid var(--border);border-radius:6px;">${opts}</select></div>`;
     }
     if(!canEdit) html+=`<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">👀 ${day.name||'담당'} 선생님의 순찰일입니다. 본인 순찰일만 체크할 수 있어요.</div>`;
+    // 회차(하루 3회)를 반응형 그리드로 — 넓은 화면 1행 3열, 좁은 화면 자동 줄바꿈
+    html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin-bottom:8px;">`;
     (cfg.times||[]).forEach((t,ri)=>{
         const r=(day.rounds||{})[ri]||{memo:''};
         const st=plRoundStatus(day,ri);
-        html+=`<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;">
+        html+=`<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff;display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <b style="font-size:13px;">🕐 ${t} 순찰</b>`;
+                <b style="font-size:13px;">🕐 ${t} 순찰</b>
+                ${r.at?`<span style="font-size:11px;color:var(--text-light);margin-left:auto;">${new Date(r.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
+            </div>`;
         if(canEdit){
-            html+=`<button onclick="plSetRoundStatus('${iso}',${ri},'ok')" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;border:1px solid ${st==='ok'?'#8ce99a;background:#d3f9d8;color:#2b8a3e;':'var(--border);background:#f8f9fa;color:#868e96;'}">✓ 이상없음</button>
-            <button onclick="plSetRoundStatus('${iso}',${ri},'issue')" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;border:1px solid ${st==='issue'?'#ffa8a8;background:#ffe3e3;color:#c92a2a;':'var(--border);background:#f8f9fa;color:#868e96;'}">⚠ 이상있음</button>`;
+            html+=`<div style="display:flex;gap:6px;">
+                <button onclick="plSetRoundStatus('${iso}',${ri},'ok')" style="flex:1;font-size:12px;font-weight:700;padding:6px 0;border-radius:8px;cursor:pointer;border:1px solid ${st==='ok'?'#8ce99a;background:#d3f9d8;color:#2b8a3e;':'var(--border);background:#f8f9fa;color:#868e96;'}">✓ 이상없음</button>
+                <button onclick="plSetRoundStatus('${iso}',${ri},'issue')" style="flex:1;font-size:12px;font-weight:700;padding:6px 0;border-radius:8px;cursor:pointer;border:1px solid ${st==='issue'?'#ffa8a8;background:#ffe3e3;color:#c92a2a;':'var(--border);background:#f8f9fa;color:#868e96;'}">⚠ 이상있음</button>
+            </div>`;
         } else {
             const m={none:['#f1f3f5','#868e96','점검 전'],partial:['#fff3bf','#e67700','점검중'],ok:['#d3f9d8','#2b8a3e','✓ 이상없음'],issue:['#ffe3e3','#c92a2a','⚠ 이상있음']}[st];
-            html+=`<span style="background:${m[0]};color:${m[1]};padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">${m[2]}</span>`;
+            html+=`<span style="background:${m[0]};color:${m[1]};padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;align-self:flex-start;">${m[2]}</span>`;
         }
-        html+=`${r.at?`<span style="font-size:11px;color:var(--text-light);">기록: ${new Date(r.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
-            </div>`;
-        if(canEdit||(r.memo&&r.memo.trim())) html+=`<input type="text" value="${(r.memo||'').replace(/"/g,'&quot;')}" placeholder="메모 (이상 내용, 조치 사항 등)" ${canEdit?`onchange="plSetMemo('${iso}',${ri},this.value)"`:'readonly'} style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:12px;">`;
+        if(canEdit||(r.memo&&r.memo.trim())) html+=`<input type="text" value="${(r.memo||'').replace(/"/g,'&quot;')}" placeholder="메모 (이상 내용 등)" ${canEdit?`onchange="plSetMemo('${iso}',${ri},this.value)"`:'readonly'} style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:12px;">`;
         const rs=r.sign;
-        html+=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
-            <span style="font-size:12px;font-weight:700;">✍️ 순찰자 서명</span>`;
+        html+=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:8px;border-top:1px dashed var(--border);margin-top:auto;">
+            <span style="font-size:12px;font-weight:700;">✍️ 서명</span>`;
         if(rs&&rs.img){
             html+=`<img src="${rs.img}" alt="순찰자 서명" style="height:40px;">
             <span style="font-size:11px;color:var(--text-light);">${rs.at?new Date(rs.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}</span>`;
@@ -3416,6 +3420,7 @@ function plDayDetail(iso){
         html+=`</div>`;
         html+=`</div>`;
     });
+    html+=`</div>`;
     html+=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">`;
     html+=`<div style="flex:1;min-width:220px;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fff;">
         <div style="font-size:12px;font-weight:700;margin-bottom:6px;">🖊️ 확인자 (교감/교장)</div>`;
