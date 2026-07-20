@@ -3293,7 +3293,11 @@ function plCanEdit(day){ return isAdmin||(!!plMyName()&&plMyName()===day.name); 
 function plRoundStatus(day,ri){
     const items=(patrolLog.config&&patrolLog.config.checkItems)||[];
     const r=(day.rounds||{})[ri];
-    if(!r||!Array.isArray(r.items)||r.items.every(v=>!v)) return 'none';
+    if(!r) return 'none';
+    if(r.status==='issue') return 'issue';
+    if(r.status==='ok') return 'ok';
+    // 구 스키마(항목별 체크 items 배열) 읽기 호환
+    if(!Array.isArray(r.items)||r.items.every(v=>!v)) return 'none';
     if(r.items.some(v=>v===2)) return 'issue';
     if(items.length&&r.items.filter(v=>v===1).length>=items.length) return 'ok';
     return 'partial';
@@ -3356,7 +3360,6 @@ function plDayCard(iso){
 function plDayDetail(iso){
     const day=patrolLog.days[iso];
     const cfg=patrolLog.config;
-    const items=cfg.checkItems||[];
     const canEdit=plCanEdit(day);
     let html=`<div style="border-top:1px solid var(--border);padding:12px 14px;background:#fafbfc;">`;
     if(isAdmin){
@@ -3365,21 +3368,20 @@ function plDayDetail(iso){
     }
     if(!canEdit) html+=`<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;">👀 ${day.name||'담당'} 선생님의 순찰일입니다. 본인 순찰일만 체크할 수 있어요.</div>`;
     (cfg.times||[]).forEach((t,ri)=>{
-        const r=(day.rounds||{})[ri]||{items:[],memo:''};
+        const r=(day.rounds||{})[ri]||{memo:''};
+        const st=plRoundStatus(day,ri);
         html+=`<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-                <b style="font-size:13px;">🕐 ${t} 순찰</b>
-                ${canEdit?`<button class="btn btn-secondary" onclick="plAllOk('${iso}',${ri})" style="font-size:11px;padding:4px 10px;">✓ 모두 이상없음</button>`:''}
-                ${r.at?`<span style="font-size:11px;color:var(--text-light);">기록: ${new Date(r.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px;">`;
-        items.forEach((it,ii)=>{
-            const v=(r.items||[])[ii]||0;
-            const style=v===1?'background:#d3f9d8;color:#2b8a3e;border-color:#8ce99a;':v===2?'background:#ffe3e3;color:#c92a2a;border-color:#ffa8a8;':'background:#f8f9fa;color:#868e96;border-color:var(--border);';
-            const mark=v===1?'✓':v===2?'⚠':'○';
-            html+=`<button ${canEdit?`onclick="plToggleItem('${iso}',${ri},${ii})"`:''} style="display:flex;align-items:center;gap:6px;text-align:left;font-size:12px;font-weight:600;padding:6px 8px;border:1px solid;border-radius:8px;cursor:${canEdit?'pointer':'default'};${style}"><span style="font-weight:800;">${mark}</span> ${ii+1}. ${it}</button>`;
-        });
-        html+=`</div>`;
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <b style="font-size:13px;">🕐 ${t} 순찰</b>`;
+        if(canEdit){
+            html+=`<button onclick="plSetRoundStatus('${iso}',${ri},'ok')" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;border:1px solid ${st==='ok'?'#8ce99a;background:#d3f9d8;color:#2b8a3e;':'var(--border);background:#f8f9fa;color:#868e96;'}">✓ 이상없음</button>
+            <button onclick="plSetRoundStatus('${iso}',${ri},'issue')" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;border:1px solid ${st==='issue'?'#ffa8a8;background:#ffe3e3;color:#c92a2a;':'var(--border);background:#f8f9fa;color:#868e96;'}">⚠ 이상있음</button>`;
+        } else {
+            const m={none:['#f1f3f5','#868e96','점검 전'],partial:['#fff3bf','#e67700','점검중'],ok:['#d3f9d8','#2b8a3e','✓ 이상없음'],issue:['#ffe3e3','#c92a2a','⚠ 이상있음']}[st];
+            html+=`<span style="background:${m[0]};color:${m[1]};padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">${m[2]}</span>`;
+        }
+        html+=`${r.at?`<span style="font-size:11px;color:var(--text-light);">기록: ${new Date(r.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
+            </div>`;
         if(canEdit||(r.memo&&r.memo.trim())) html+=`<input type="text" value="${(r.memo||'').replace(/"/g,'&quot;')}" placeholder="메모 (이상 내용, 조치 사항 등)" ${canEdit?`onchange="plSetMemo('${iso}',${ri},this.value)"`:'readonly'} style="width:100%;margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:12px;">`;
         const rs=r.sign;
         html+=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
@@ -3414,24 +3416,15 @@ function plDayDetail(iso){
 function plToggleDay(iso){ plExpandedDate=plExpandedDate===iso?null:iso; renderPatrol(); }
 function plEnsureRound(day,ri){
     if(!day.rounds) day.rounds={};
-    const n=((patrolLog.config||{}).checkItems||[]).length;
-    if(!day.rounds[ri]) day.rounds[ri]={items:new Array(n).fill(0),memo:''};
-    const r=day.rounds[ri];
-    if(!Array.isArray(r.items)) r.items=new Array(n).fill(0);
-    while(r.items.length<n) r.items.push(0);
-    return r;
+    if(!day.rounds[ri]) day.rounds[ri]={status:null,memo:''};
+    return day.rounds[ri];
 }
-function plToggleItem(iso,ri,ii){
+function plSetRoundStatus(iso,ri,st){
     const day=patrolLog.days[iso]; if(!day||!plCanEdit(day)) return;
     const r=plEnsureRound(day,ri);
-    r.items[ii]=r.items[ii]===1?2:r.items[ii]===2?0:1;
-    r.at=new Date().toISOString();
-    renderPatrol(); plSaveDay(iso);
-}
-function plAllOk(iso,ri){
-    const day=patrolLog.days[iso]; if(!day||!plCanEdit(day)) return;
-    const r=plEnsureRound(day,ri);
-    r.items=r.items.map(()=>1); r.at=new Date().toISOString();
+    r.status=r.status===st?null:st; // 같은 버튼 다시 누르면 해제
+    delete r.items; // 구 항목별 체크는 일괄 체크로 대체
+    r.at=r.status?new Date().toISOString():null;
     renderPatrol(); plSaveDay(iso);
 }
 function plSetMemo(iso,ri,val){
@@ -3528,7 +3521,7 @@ function plBatchTargets(){
     return Object.keys(patrolLog.days||{}).sort().filter(iso=>{
         const day=patrolLog.days[iso];
         if(day.confirm&&day.confirm.img) return false;
-        return !!(day.sign||Object.values(day.rounds||{}).some(r=>(r.sign&&r.sign.img)||(Array.isArray(r.items)&&r.items.some(v=>v))));
+        return !!(day.sign||Object.values(day.rounds||{}).some(r=>(r.sign&&r.sign.img)||r.status||(Array.isArray(r.items)&&r.items.some(v=>v))));
     });
 }
 function plOpenSign(mode,iso,ri){
