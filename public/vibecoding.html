@@ -1042,6 +1042,7 @@ function confirmSwitchMode(mode, btn) {
 function switchMode(mode, btn) {
     if (mode === currentMode) return;
     stopStudioGame(); // 스튜디오 게임 루프·타이머 정리 (다른 모드 진입 시 유령 타이머 방지)
+    cancelPixelRun(); // 진행 중인 픽셀 BLINK/WAIT 실행 중단 (새 실행 시작점들이 플래그를 다시 해제함)
     currentMode = mode;
     document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
@@ -1486,7 +1487,7 @@ function showTurtleDemo(){
 
 function showPixelDemo(){
     if(!currentMission||!currentMission.targetGrid){addChatMsg('system','먼저 🗺️ 모험 지도에서 미션을 골라 줘!');return;}
-    clearPixelGrid();
+    cancelPixelRun();clearPixelGrid(); // 시연 시작 전 진행 중이던 프로그램 중단 (시연 step 루프는 setTimeout 기반이라 플래그와 무관)
     const tg=currentMission.targetGrid;
     // Animate: light up one pixel at a time
     const cells=[];
@@ -1592,7 +1593,9 @@ function renderTargetMini(){
     }
 }
 
-function clearPixelGrid(){pixelAnimCancel=true;for(let y=0;y<pixelGridSize;y++)for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=null;renderPixelGrid();}
+function clearPixelGrid(){for(let y=0;y<pixelGridSize;y++)for(let x=0;x<pixelGridSize;x++)pixelGrid[y][x]=null;renderPixelGrid();}
+
+function cancelPixelRun(){pixelAnimCancel=true;} // 진행 중인 BLINK/WAIT 등 비동기 실행 중단용 (지우기·시연 시작 시 호출)
 
 function setGridSize(s,btn){pixelGridSize=s;document.querySelectorAll('.grid-opt').forEach(b=>b.classList.remove('active'));btn.classList.add('active');initPixelGrid();}
 
@@ -1604,7 +1607,8 @@ function initPalette(){
 
 function showPixelIcon(name){
     const icon=PIXEL_ICONS[name?.toUpperCase()];
-    if(!icon||pixelGridSize!==5)return;
+    if(!icon){addChatMsg('system','앗, 그 이름의 아이콘은 아직 없어! HEART, SMILEY 같은 이름으로 다시 말해 볼래? 🤖');return;}
+    if(pixelGridSize!==5){addChatMsg('system','아이콘은 5×5 화면에서만 보여줄 수 있어! 지금은 좌표로 직접 그려 볼까? 🤖');return;}
     for(let y=0;y<5;y++)for(let x=0;x<5;x++)pixelGrid[y][x]=icon[y][x]?pixelColor:null;
     renderPixelGrid();
 }
@@ -1615,6 +1619,7 @@ function pressButton(b){
     if(!pixelEventHandlers[b])return;
     if(execBusy){execBusyNotice();return;}
     execBusy=true;
+    pixelAnimCancel=false; // 지우기로 중단된 뒤에도 버튼 핸들러는 새 실행으로 시작
     executePixelCommands(pixelEventHandlers[b]).finally(()=>execBusy=false);
 }
 function releaseButton(b){heldButtons.delete(b);}
@@ -1623,6 +1628,7 @@ function triggerShake(){
     if(!pixelEventHandlers.SHAKE)return;
     if(execBusy){execBusyNotice();return;}
     execBusy=true;
+    pixelAnimCancel=false; // 지우기로 중단된 뒤에도 흔들기 핸들러는 새 실행으로 시작
     executePixelCommands(pixelEventHandlers.SHAKE).finally(()=>execBusy=false);
 }
 
@@ -1642,6 +1648,7 @@ async function executePixelCommands(commands){
             case'FILL_COL':{const x=ix(cmd.x);if(x>=0&&x<pixelGridSize){for(let y=0;y<pixelGridSize;y++)pixelGrid[y][x]=cmd.color;renderPixelGrid();}break;}
             case'CLEAR_ALL':clearPixelGrid();break;
             case'RECT':{
+                if(![cmd.x1,cmd.y1,cmd.x2,cmd.y2].every(Number.isFinite))break; // 미치환 변수(NaN) 방어
                 const x1=Math.max(0,Math.min(ix(cmd.x1),ix(cmd.x2))),x2=Math.min(pixelGridSize-1,Math.max(ix(cmd.x1),ix(cmd.x2)));
                 const y1=Math.max(0,Math.min(iy(cmd.y1),iy(cmd.y2))),y2=Math.min(pixelGridSize-1,Math.max(iy(cmd.y1),iy(cmd.y2)));
                 for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)pixelGrid[y][x]=cmd.color;
@@ -1653,6 +1660,7 @@ async function executePixelCommands(commands){
                     if(pixelAnimCancel)return;
                     pixelGrid[y][x]=pixelColor;renderPixelGrid();
                     await new Promise(rs=>setTimeout(rs,200));
+                    if(r===cmd.count-1)break; // 마지막엔 켜진 채로 끝내기 (채점 시 불이익 방지)
                     pixelGrid[y][x]=null;renderPixelGrid();
                     await new Promise(rs=>setTimeout(rs,200));
                 }break;}
@@ -1676,9 +1684,9 @@ async function executePixelCommands(commands){
 
 function resolvePixelVar(commands,varName,value){
     return commands.map(cmd=>{const c={...cmd};
-    if(c.x!==undefined&&String(c.x)===varName)c.x=value;
-    if(c.y!==undefined&&String(c.y)===varName)c.y=value;
+    for(const k of['x','y','x1','y1','x2','y2'])if(c[k]!==undefined&&String(c[k])===varName)c[k]=value;
     if(c.body)c.body=resolvePixelVar(c.body,varName,value);
+    if(c.elseBody)c.elseBody=resolvePixelVar(c.elseBody,varName,value);
     return c;});
 }
 
@@ -2260,46 +2268,61 @@ function parseTurtleDSL(text,forBlocks){
     return forBlocks?cmds:resolveCalls(cmds);
 }
 
+// 토큰 기반 파서(parseMazeDSL 방식): AI가 명령을 한 줄에 붙여 보내도('REPEAT 3 { LED_ON 1 1 }') 정상 해석
+// 좌표에는 숫자 또는 변수명 허용(변수는 string 그대로 AST에 넣고 실행 시 resolvePixelVar가 치환)
+// 색상은 #RGB/#RRGGBB 모두 허용, #RGB는 #RRGGBB로 정규화
 function parsePixelDSL(text,forBlocks){
     if(!text?.trim())return[];
-    const lines=text.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//'));
+    const cleaned=text.split('\n').filter(l=>!l.trim().startsWith('//')).join(' ');
+    const toks=cleaned.replace(/([{}])/g,' $1 ').split(/\s+/).filter(t=>t);
+    const KEYWORDS=new Set(['LED_ON','LED_OFF','LED_COLOR','LED_TOGGLE','FILL_ALL','FILL_ROW','FILL_COL','CLEAR_ALL','RECT','BLINK','SHOW_ICON','WAIT','REPEAT','FOR','DEF','CALL','ON_BUTTON_A','ON_BUTTON_B','ON_SHAKE','ON_START','IF','ELSE','BUTTON_A','BUTTON_B']);
+    const isNum=t=>/^\d+$/.test(t||'');
+    const isVar=t=>!!t&&!KEYWORDS.has(t)&&/^[A-Za-z가-힣_][A-Za-z가-힣0-9_]*$/.test(t);
+    const isCoord=t=>isNum(t)||isVar(t);
+    const coord=t=>isNum(t)?+t:t;
+    const isColor=t=>/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(t||'');
+    const normColor=t=>t.length===4?('#'+t[1]+t[1]+t[2]+t[2]+t[3]+t[3]):t;
     let i=0;
+    function skipBrace(){if(toks[i]==='{')i++;}
+    function takeColor(def){if(isColor(toks[i])){const c=normColor(toks[i]);i++;return c;}return def;}
     function parseBlock(){
         const cmds=[];
-        while(i<lines.length){
-            const line=lines[i];
-            if(line==='}'){i++;return cmds;}
-            let m;
-            m=line.match(/^REPEAT\s+(\d+)\s*\{?$/);
-            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'REPEAT',count:Math.min(parseInt(m[1]),100),body:parseBlock()});continue;}
-            m=line.match(/^DEF\s+(\S+)\s*\{?$/);
-            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'DEF',name:m[1],body:parseBlock()});continue;}
-            m=line.match(/^CALL\s+(\S+)$/);
-            if(m){cmds.push({type:'CALL',name:m[1]});i++;continue;}
-            m=line.match(/^RECT\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*(#[0-9A-Fa-f]{6})?$/);
-            if(m){cmds.push({type:'RECT',x1:+m[1],y1:+m[2],x2:+m[3],y2:+m[4],color:m[5]||'#ffffff'});i++;continue;}
-            m=line.match(/^BLINK\s+(\d+)\s+(\d+)\s+(\d+)$/);
-            if(m){cmds.push({type:'BLINK',x:+m[1],y:+m[2],count:Math.min(+m[3],20)});i++;continue;}
-            m=line.match(/^ON_(BUTTON_A|BUTTON_B|SHAKE|START)\s*\{?$/);
-            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;cmds.push({type:'ON_'+m[1],body:parseBlock()});continue;}
-            m=line.match(/^IF\s+(BUTTON_A|BUTTON_B)\s*\{?$/);
-            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;const body=parseBlock();let elseBody=null;
-                if(i<lines.length&&lines[i].match(/^ELSE\s*\{?$/)){i++;if(i<lines.length&&lines[i]==='{')i++;elseBody=parseBlock();}
-                cmds.push({type:'IF',condition:m[1],body,elseBody});continue;}
-            if(line.match(/^ELSE\s*\{?$/)){i++;continue;}
-            m=line.match(/^FOR\s+(\w+)\s+(\d+)\s+(\d+)\s*\{?$/);
-            if(m){i++;if(!line.endsWith('{')&&i<lines.length&&lines[i]==='{')i++;const ffrom=parseInt(m[2]);let fto=parseInt(m[3]);if(fto-ffrom>100)fto=ffrom+100;cmds.push({type:'FOR',var:m[1],from:ffrom,to:fto,body:parseBlock()});continue;}
-            m=line.match(/^LED_ON\s+(\d+)\s+(\d+)$/);if(m){cmds.push({type:'LED_ON',x:+m[1],y:+m[2]});i++;continue;}
-            m=line.match(/^LED_OFF\s+(\d+)\s+(\d+)$/);if(m){cmds.push({type:'LED_OFF',x:+m[1],y:+m[2]});i++;continue;}
-            m=line.match(/^LED_COLOR\s+(\d+)\s+(\d+)\s+(#[0-9A-Fa-f]{6})$/);if(m){cmds.push({type:'LED_COLOR',x:+m[1],y:+m[2],color:m[3]});i++;continue;}
-            m=line.match(/^LED_TOGGLE\s+(\d+)\s+(\d+)$/);if(m){cmds.push({type:'LED_TOGGLE',x:+m[1],y:+m[2]});i++;continue;}
-            m=line.match(/^FILL_ALL\s*(#[0-9A-Fa-f]{3,6})?$/);if(m){cmds.push({type:'FILL_ALL',color:m[1]||'#ffffff'});i++;continue;}
-            m=line.match(/^FILL_ROW\s+(\d+)\s*(#[0-9A-Fa-f]{3,6})?$/);if(m){cmds.push({type:'FILL_ROW',y:+m[1],color:m[2]||'#ffffff'});i++;continue;}
-            m=line.match(/^FILL_COL\s+(\d+)\s*(#[0-9A-Fa-f]{3,6})?$/);if(m){cmds.push({type:'FILL_COL',x:+m[1],color:m[2]||'#ffffff'});i++;continue;}
-            if(line==='CLEAR_ALL'){cmds.push({type:'CLEAR_ALL'});i++;continue;}
-            m=line.match(/^WAIT\s+(\d+)$/);if(m){cmds.push({type:'WAIT',ms:+m[1]});i++;continue;}
-            m=line.match(/^SHOW_ICON\s+(\w+)$/);if(m){cmds.push({type:'SHOW_ICON',name:m[1]});i++;continue;}
-            i++;
+        while(i<toks.length){
+            const t=toks[i];
+            if(t==='}'){i++;return cmds;}
+            if((t==='LED_ON'||t==='LED_OFF'||t==='LED_TOGGLE')&&isCoord(toks[i+1])&&isCoord(toks[i+2])){
+                cmds.push({type:t,x:coord(toks[i+1]),y:coord(toks[i+2])});i+=3;continue;}
+            if(t==='LED_COLOR'&&isCoord(toks[i+1])&&isCoord(toks[i+2])&&isColor(toks[i+3])){
+                cmds.push({type:'LED_COLOR',x:coord(toks[i+1]),y:coord(toks[i+2]),color:normColor(toks[i+3])});i+=4;continue;}
+            if(t==='FILL_ALL'){i++;cmds.push({type:'FILL_ALL',color:takeColor('#ffffff')});continue;}
+            if(t==='FILL_ROW'&&isCoord(toks[i+1])){const y=coord(toks[i+1]);i+=2;cmds.push({type:'FILL_ROW',y,color:takeColor('#ffffff')});continue;}
+            if(t==='FILL_COL'&&isCoord(toks[i+1])){const x=coord(toks[i+1]);i+=2;cmds.push({type:'FILL_COL',x,color:takeColor('#ffffff')});continue;}
+            if(t==='CLEAR_ALL'){cmds.push({type:'CLEAR_ALL'});i++;continue;}
+            if(t==='RECT'&&isCoord(toks[i+1])&&isCoord(toks[i+2])&&isCoord(toks[i+3])&&isCoord(toks[i+4])){
+                const x1=coord(toks[i+1]),y1=coord(toks[i+2]),x2=coord(toks[i+3]),y2=coord(toks[i+4]);i+=5;
+                cmds.push({type:'RECT',x1,y1,x2,y2,color:takeColor('#ffffff')});continue;}
+            if(t==='BLINK'&&isCoord(toks[i+1])&&isCoord(toks[i+2])&&isNum(toks[i+3])){
+                cmds.push({type:'BLINK',x:coord(toks[i+1]),y:coord(toks[i+2]),count:Math.min(+toks[i+3],20)});i+=4;continue;}
+            if(t==='WAIT'&&isNum(toks[i+1])){cmds.push({type:'WAIT',ms:+toks[i+1]});i+=2;continue;}
+            if(t==='SHOW_ICON'&&/^[\w가-힣]+$/.test(toks[i+1]||'')){cmds.push({type:'SHOW_ICON',name:toks[i+1]});i+=2;continue;}
+            if(t==='REPEAT'&&isNum(toks[i+1])){
+                const n=Math.min(parseInt(toks[i+1]),100);i+=2;skipBrace();
+                cmds.push({type:'REPEAT',count:n,body:parseBlock()});continue;}
+            if(t==='FOR'&&isVar(toks[i+1])&&isNum(toks[i+2])&&isNum(toks[i+3])){
+                const v=toks[i+1],ffrom=parseInt(toks[i+2]);let fto=parseInt(toks[i+3]);if(fto-ffrom>100)fto=ffrom+100;
+                i+=4;skipBrace();cmds.push({type:'FOR',var:v,from:ffrom,to:fto,body:parseBlock()});continue;}
+            if(t==='DEF'&&toks[i+1]&&toks[i+1]!=='{'&&toks[i+1]!=='}'){
+                const name=toks[i+1];i+=2;skipBrace();cmds.push({type:'DEF',name,body:parseBlock()});continue;}
+            if(t==='CALL'&&toks[i+1]&&toks[i+1]!=='{'&&toks[i+1]!=='}'){cmds.push({type:'CALL',name:toks[i+1]});i+=2;continue;}
+            if(t==='ON_BUTTON_A'||t==='ON_BUTTON_B'||t==='ON_SHAKE'||t==='ON_START'){
+                i++;skipBrace();cmds.push({type:t,body:parseBlock()});continue;}
+            if(t==='IF'&&(toks[i+1]==='BUTTON_A'||toks[i+1]==='BUTTON_B')){
+                const cond=toks[i+1];i+=2;skipBrace();
+                const body=parseBlock();let elseBody=null;
+                if(toks[i]==='ELSE'){i++;skipBrace();elseBody=parseBlock();}
+                cmds.push({type:'IF',condition:cond,body,elseBody});continue;}
+            if(t==='ELSE'){i++;skipBrace();parseBlock();continue;} // 고아 ELSE 무시
+            i++; // 모르는 토큰(한국어 설명 등) 건너뛰기
         }
         return cmds;
     }
@@ -3057,7 +3080,7 @@ function resetView(){
     if(currentMode==='turtle')resetTurtle();
     else if(currentMode==='maze')resetMaze();
     else if(currentMode==='studio')resetStudio();
-    else clearPixelGrid();
+    else{cancelPixelRun();clearPixelGrid();} // 지우기 = 진행 중인 픽셀 실행도 중단
 }
 
 // 내 작품 PNG 저장 (자유 창작 모드 결과물 공유용)
@@ -3187,6 +3210,12 @@ const PIXEL_PROMPT=`너는 초등학생과 함께 LED 전광판을 고치는 로
    미션 중이라면 "직접 좌표로 그려보면 더 멋질걸? 하트 맨 위 두 점은 어디에 있을까?"라고 먼저 한 번 유도해.
 4. 좌표는 (x, y): x는 가로(1부터 오른쪽으로), y는 세로(1부터 아래로). 첫 칸이 (1,1)이야.
 5. 항상 반말로 다정하게, 2문장 이내로 짧게 말해.
+
+좌표 예시 (주의: y는 아래로 갈수록 커져! 수학 그래프처럼 위로 커진다고 착각하면 안 돼):
+- "맨 윗줄을 켜줘" (5x5) → FILL_ROW 1
+- "맨 아랫줄을 켜줘" (5x5) → FILL_ROW 5
+- "왼쪽 아래 구석에 불 켜줘" (5x5) → LED_ON 1 5
+- "대각선 그려줘" (5x5) → FOR i 1 5 { LED_ON i i }
 
 사용 가능한 명령어:
 LED_ON x y, LED_OFF x y, LED_COLOR x y #hex, LED_TOGGLE x y,
