@@ -55,6 +55,8 @@
     .viewer-head { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
     .viewer-head .subject { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
     .viewer-head .meta { font-size: 12px; color: #64748b; line-height: 1.7; }
+    .att-btn { display: inline-block; margin: 4px 6px 0 0; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .att-btn:hover { background: #e0e7ff; }
     .viewer-actions { display: flex; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; }
     .viewer-actions button { border: 1px solid #e2e8f0; background: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; color: #475569; }
     .viewer-actions button:hover { background: #f1f5f9; }
@@ -136,6 +138,7 @@
             </div>
             <div class="viewer-actions">
                 <button onclick="closeViewer()">✕ 닫기</button>
+                <button onclick="downloadEml()">📥 원문 저장(.eml)</button>
                 <button class="danger" onclick="deleteCurrent()">🗑 삭제</button>
             </div>
             <div class="link-bar" id="vLinks"></div>
@@ -150,6 +153,7 @@
 // mail.tm은 데이터센터 IP를 차단하므로 브라우저가 직접 호출한다 (CORS 전면 허용됨).
 // 서버(/api/mail/*)는 비밀번호 게이트와 계정 명부 저장만 담당.
 const MAILTM = 'https://api.mail.tm';
+const RETENTION_DAYS = 30; // 수신 후 이 일수가 지난 메일은 자동 삭제
 let mailKey = localStorage.getItem('mail_key') || '';
 let selected = null;      // 선택된 계정 name
 let currentMsg = null;    // 열람 중 메시지 id
@@ -344,7 +348,18 @@ async function loadMessages(manual) {
     if (manual) btn.innerHTML = '<span class="spin">🔄</span> 확인 중…';
     try {
         const token = await tmToken(address);
-        const messages = hydraList(await tm('/messages?page=1', { token }));
+        let messages = hydraList(await tm('/messages?page=1', { token }));
+        // 보관기간(RETENTION_DAYS) 지난 메일 자동 삭제
+        const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
+        const expired = messages.filter(m => new Date(m.createdAt).getTime() < cutoff);
+        if (expired.length) {
+            for (const m of expired) {
+                await tm('/messages/' + m.id, { method: 'DELETE', token }).catch(() => {});
+                await new Promise(r => setTimeout(r, 250));
+            }
+            toast('보관기간(' + RETENTION_DAYS + '일) 지난 메일 ' + expired.length + '통을 자동 삭제했습니다.');
+            messages = messages.filter(m => !expired.includes(m));
+        }
         const list = document.getElementById('msgList');
         document.getElementById('msgCount').textContent = messages.length + '통';
         if (!messages.length) {
@@ -387,7 +402,13 @@ async function openMessage(id) {
         metaEl.appendChild(document.createTextNode('받은시각: ' + new Date(m.createdAt).toLocaleString('ko-KR')));
         if (m.attachments && m.attachments.length) {
             metaEl.appendChild(document.createElement('br'));
-            metaEl.appendChild(document.createTextNode('📎 첨부 ' + m.attachments.length + '개 (이 메일함에서는 첨부 다운로드 미지원)'));
+            m.attachments.forEach(att => {
+                const btn = document.createElement('button');
+                btn.className = 'att-btn';
+                btn.textContent = '📎 ' + (att.filename || '첨부파일') + ' (' + Math.max(1, Math.round((att.size || 0) / 1024)) + 'KB)';
+                btn.onclick = () => downloadAttachment(att);
+                metaEl.appendChild(btn);
+            });
         }
         const frame = document.getElementById('mailFrame');
         // 링크는 새 탭으로, 스크립트는 sandbox로 차단
@@ -452,6 +473,38 @@ function closeViewer() {
     document.getElementById('mailFrame').srcdoc = '';
     document.getElementById('vLinks').classList.remove('show');
     currentMsg = null;
+}
+
+async function downloadBlob(url, token, filename) {
+    const r = await fetch(MAILTM + url, { headers: { Authorization: 'Bearer ' + token } });
+    if (!r.ok) throw new Error('다운로드 실패 (' + r.status + ')');
+    const blob = await r.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
+}
+
+async function downloadAttachment(att) {
+    try {
+        const token = await tmToken(selectedAddress());
+        await downloadBlob(att.downloadUrl, token, att.filename || 'attachment');
+        toast('첨부파일 다운로드: ' + (att.filename || ''));
+    } catch (e) { toast(e.message); }
+}
+
+async function downloadEml() {
+    if (!currentMsg) return;
+    try {
+        const token = await tmToken(selectedAddress());
+        const name = (document.getElementById('vSubject').textContent || 'mail').replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+        await downloadBlob('/messages/' + encodeURIComponent(currentMsg) + '/download', token, name + '.eml');
+        toast('원문 저장 완료');
+    } catch (e) { toast(e.message); }
 }
 
 async function deleteCurrent() {
