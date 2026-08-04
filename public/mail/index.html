@@ -92,6 +92,7 @@
     <h1>📮 백암 가상 메일함</h1>
     <span class="domain-badge" id="domainBadge">도메인 확인 중…</span>
     <span class="spacer"></span>
+    <button onclick="copyCsv()">📋 계정 CSV 복사</button>
     <button onclick="loadAccounts()">계정 새로고침</button>
     <button onclick="logout()">잠그기</button>
 </header>
@@ -313,6 +314,14 @@ async function selectAccount(name) {
 function copyAddr() {
     const addr = document.getElementById('curAddr').textContent;
     navigator.clipboard.writeText(addr).then(() => toast('주소 복사됨: ' + addr));
+}
+
+function copyCsv() {
+    const created = accountsCache.filter(a => a.address);
+    if (!created.length) { toast('생성된 계정이 없습니다.'); return; }
+    const csv = '계정,주소,비밀번호\n' +
+        created.map(a => a.name + ',' + a.address + ',' + mailKey).join('\n');
+    navigator.clipboard.writeText(csv).then(() => toast('계정 ' + created.length + '개를 CSV로 복사했습니다.'));
 }
 
 function selectedAddress() {
