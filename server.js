@@ -2349,8 +2349,10 @@ app.post('/api/mail/accounts/:name', mailAuth, async (req, res) => {
     const { name } = req.params;
     if (!MAIL_NAME_RE.test(name)) return res.status(400).json({ error: 'backam01~backam99 형식만 가능합니다.' });
     const address = String((req.body || {}).address || '').trim().toLowerCase();
+    const localPart = address.split('@')[0] || '';
     const domainPart = address.split('@')[1] || '';
-    if (!address.startsWith(name + '@') || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(domainPart)) {
+    // mail.tm은 삭제된 주소 재등록을 막으므로, 죽은 번호는 접미사 붙인 주소(backam01a 등)로 재발급해 연결한다
+    if (!new RegExp('^' + name + '[a-z]?$').test(localPart) || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(domainPart)) {
         return res.status(400).json({ error: '주소 형식이 올바르지 않습니다.' });
     }
     try {
