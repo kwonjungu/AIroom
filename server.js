@@ -2312,7 +2312,7 @@ app.get(/^\/posting(\/.*)?$/, (req, res) => {
 // 브라우저가 직접 수행한다 (api.mail.tm은 CORS 전면 허용). 서버는 두 가지만 담당:
 //   1) 비밀번호 게이트  2) 계정 명부(backam01~99 ↔ 실제 발급 주소) 저장 — 어느 기기에서 열어도 동일 명부.
 // 계정 비밀번호와 페이지 접근 키는 동일 (env MAIL_PAGE_PASSWORD로 교체 가능).
-const MAIL_KEY = process.env.MAIL_PAGE_PASSWORD || 'qordka1320!';
+const MAIL_KEY = process.env.MAIL_PAGE_PASSWORD || 'a12345678';
 const MAIL_NAME_RE = /^backam(0[1-9]|[1-9][0-9])$/;
 
 function mailAuth(req, res, next) {
