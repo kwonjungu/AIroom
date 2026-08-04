@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>백암 가상 메일함</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f0f4f8; color: #1e293b; min-height: 100vh; }
+    header { background: #1e3a8a; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header .domain-badge { font-size: 12px; background: rgba(255,255,255,.15); padding: 4px 10px; border-radius: 99px; }
+    header .spacer { flex: 1; }
+    header button { background: rgba(255,255,255,.15); color: #fff; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    header button:hover { background: rgba(255,255,255,.28); }
+
+    .layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 16px; max-width: 1300px; margin: 0 auto; }
+    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+    .card { background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(15,23,42,.06); overflow: hidden; }
+    .card h2 { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #334155; display: flex; align-items: center; gap: 8px; }
+    .card h2 .count { margin-left: auto; font-size: 12px; color: #64748b; font-weight: 400; }
+
+    /* 계정 그리드 */
+    .acct-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; padding: 12px; max-height: 420px; overflow-y: auto; }
+    .acct-chip { border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 2px; text-align: center; font-size: 12px; cursor: pointer; background: #f8fafc; color: #94a3b8; transition: all .12s; }
+    .acct-chip:hover { border-color: #93c5fd; color: #1d4ed8; }
+    .acct-chip.created { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; font-weight: 600; }
+    .acct-chip.selected { background: #1e3a8a; color: #fff; border-color: #1e3a8a; font-weight: 700; }
+    .acct-help { padding: 0 14px 12px; font-size: 12px; color: #64748b; line-height: 1.6; }
+
+    /* 현재 주소 바 */
+    .addr-bar { display: none; align-items: center; gap: 8px; padding: 12px 16px; background: #eff6ff; border-bottom: 1px solid #dbeafe; flex-wrap: wrap; }
+    .addr-bar.show { display: flex; }
+    .addr-bar .addr { font-weight: 700; color: #1e40af; font-size: 14px; word-break: break-all; }
+    .addr-bar button { border: 1px solid #bfdbfe; background: #fff; color: #1d4ed8; padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    .addr-bar button:hover { background: #dbeafe; }
+
+    /* 메일 목록 */
+    .msg-list { max-height: 500px; overflow-y: auto; }
+    .msg-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+    .msg-item:hover { background: #f8fafc; }
+    .msg-item .line1 { display: flex; gap: 8px; align-items: baseline; }
+    .msg-item .from { font-size: 13px; color: #475569; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .msg-item .date { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+    .msg-item .subject { font-size: 14px; color: #334155; }
+    .msg-item.unread .subject, .msg-item.unread .from { font-weight: 700; color: #0f172a; }
+    .msg-item .intro { font-size: 12px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { padding: 40px 16px; text-align: center; color: #94a3b8; font-size: 13px; line-height: 1.8; }
+
+    /* 메일 뷰어 */
+    #viewer { display: none; }
+    #viewer.show { display: block; }
+    .viewer-head { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
+    .viewer-head .subject { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .viewer-head .meta { font-size: 12px; color: #64748b; line-height: 1.7; }
+    .viewer-actions { display: flex; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; }
+    .viewer-actions button { border: 1px solid #e2e8f0; background: #fff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; color: #475569; }
+    .viewer-actions button:hover { background: #f1f5f9; }
+    .viewer-actions .danger { color: #dc2626; border-color: #fecaca; }
+    #mailFrame { width: 100%; height: 560px; border: none; background: #fff; }
+
+    /* 로그인 게이트 */
+    #gate { position: fixed; inset: 0; background: #1e3a8a; display: flex; align-items: center; justify-content: center; z-index: 50; }
+    #gate .box { background: #fff; border-radius: 16px; padding: 32px; width: 320px; text-align: center; }
+    #gate h1 { font-size: 18px; margin-bottom: 6px; }
+    #gate p { font-size: 13px; color: #64748b; margin-bottom: 18px; }
+    #gate input { width: 100%; padding: 11px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
+    #gate button { width: 100%; padding: 11px; background: #1e3a8a; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    #gate .err { color: #dc2626; font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 60; }
+    #toast.show { opacity: .95; }
+    .spin { display: inline-block; animation: sp 1s linear infinite; }
+    @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="gate">
+    <div class="box">
+        <h1>📮 백암 가상 메일함</h1>
+        <p>메일함 비밀번호를 입력하세요</p>
+        <input type="password" id="gatePw" placeholder="비밀번호" autofocus>
+        <button onclick="gateLogin()">열기</button>
+        <div class="err" id="gateErr"></div>
+    </div>
+</div>
+
+<header>
+    <h1>📮 백암 가상 메일함</h1>
+    <span class="domain-badge" id="domainBadge">도메인 확인 중…</span>
+    <span class="spacer"></span>
+    <button onclick="loadAccounts()">계정 새로고침</button>
+    <button onclick="logout()">잠그기</button>
+</header>
+
+<div class="layout">
+    <div>
+        <div class="card">
+            <h2>가상 계정 <span class="count" id="acctCount"></span></h2>
+            <div class="acct-grid" id="acctGrid"></div>
+            <div class="acct-help">
+                파란 칸 = 이미 생성된 계정.<br>
+                회색 칸을 누르면 그 번호로 실제 수신 가능한 계정을 새로 만듭니다.<br>
+                모든 계정의 비밀번호는 메일함 비밀번호와 동일합니다.
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <div class="addr-bar" id="addrBar">
+                <span class="addr" id="curAddr"></span>
+                <button onclick="copyAddr()">📋 주소 복사</button>
+                <button onclick="loadMessages(true)" id="refreshBtn">🔄 새 메일 확인</button>
+            </div>
+            <h2>받은 메일함 <span class="count" id="msgCount"></span></h2>
+            <div class="msg-list" id="msgList">
+                <div class="empty">왼쪽에서 계정을 선택하세요.<br>외부 사이트 가입 시 위 주소를 입력하면<br>인증 메일이 여기로 도착합니다.</div>
+            </div>
+        </div>
+
+        <div class="card" id="viewer" style="margin-top:16px">
+            <div class="viewer-head">
+                <div class="subject" id="vSubject"></div>
+                <div class="meta" id="vMeta"></div>
+            </div>
+            <div class="viewer-actions">
+                <button onclick="closeViewer()">✕ 닫기</button>
+                <button class="danger" onclick="deleteCurrent()">🗑 삭제</button>
+            </div>
+            <iframe id="mailFrame" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let mailKey = localStorage.getItem('mail_key') || '';
+let selected = null;      // 선택된 계정 name
+let currentMsg = null;    // 열람 중 메시지 id
+let pollTimer = null;
+let accountsCache = [];
+
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function api(method, path, body) {
+    const r = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Mail-Key': mailKey },
+        body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 401) { logout(); throw new Error(data.error || '인증 필요'); }
+    if (!r.ok) throw new Error(data.error || ('오류 ' + r.status));
+    return data;
+}
+
+// ===== 로그인 게이트 =====
+async function gateLogin() {
+    const pw = document.getElementById('gatePw').value;
+    const err = document.getElementById('gateErr');
+    err.textContent = '';
+    try {
+        const r = await fetch('/api/mail/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw })
+        });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || '비밀번호가 올바르지 않습니다.'); }
+        mailKey = pw;
+        localStorage.setItem('mail_key', pw);
+        document.getElementById('gate').style.display = 'none';
+        loadAccounts();
+    } catch (e) { err.textContent = e.message; }
+}
+document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') gateLogin(); });
+
+function logout() {
+    localStorage.removeItem('mail_key');
+    mailKey = '';
+    if (pollTimer) clearInterval(pollTimer);
+    document.getElementById('gate').style.display = 'flex';
+}
+
+// ===== 계정 =====
+async function loadAccounts() {
+    try {
+        const data = await api('GET', '/api/mail/accounts');
+        accountsCache = data.accounts;
+        document.getElementById('domainBadge').textContent = data.domain ? ('현재 발급 도메인: @' + data.domain) : '도메인 조회 실패';
+        renderAccounts();
+    } catch (e) { toast(e.message); }
+}
+
+function renderAccounts() {
+    const grid = document.getElementById('acctGrid');
+    grid.innerHTML = '';
+    let created = 0;
+    accountsCache.forEach(a => {
+        if (a.address) created++;
+        const chip = document.createElement('div');
+        chip.className = 'acct-chip' + (a.address ? ' created' : '') + (selected === a.name ? ' selected' : '');
+        chip.textContent = a.name.replace('backam', '');
+        chip.title = a.address || (a.name + ' — 클릭하면 생성');
+        chip.onclick = () => selectAccount(a.name);
+        grid.appendChild(chip);
+    });
+    document.getElementById('acctCount').textContent = created + ' / 99 생성됨';
+}
+
+async function selectAccount(name) {
+    const acc = accountsCache.find(a => a.name === name);
+    if (!acc.address) {
+        if (!confirm(name + ' 계정을 새로 만들까요?\n(실제 수신 가능한 메일 주소가 발급됩니다)')) return;
+        try {
+            toast('계정 생성 중…');
+            const r = await api('POST', '/api/mail/accounts/' + name);
+            acc.address = r.account.address;
+            toast('생성 완료: ' + r.account.address);
+        } catch (e) { toast(e.message); return; }
+    }
+    selected = name;
+    currentMsg = null;
+    closeViewer();
+    renderAccounts();
+    document.getElementById('addrBar').classList.add('show');
+    document.getElementById('curAddr').textContent = acc.address;
+    loadMessages(true);
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => loadMessages(false), 15000);
+}
+
+function copyAddr() {
+    const addr = document.getElementById('curAddr').textContent;
+    navigator.clipboard.writeText(addr).then(() => toast('주소 복사됨: ' + addr));
+}
+
+// ===== 메일 =====
+async function loadMessages(manual) {
+    if (!selected) return;
+    const btn = document.getElementById('refreshBtn');
+    if (manual) btn.innerHTML = '<span class="spin">🔄</span> 확인 중…';
+    try {
+        const data = await api('GET', '/api/mail/accounts/' + selected + '/messages');
+        const list = document.getElementById('msgList');
+        document.getElementById('msgCount').textContent = data.messages.length + '통';
+        if (!data.messages.length) {
+            list.innerHTML = '<div class="empty">아직 도착한 메일이 없습니다.<br>15초마다 자동으로 확인합니다.</div>';
+        } else {
+            list.innerHTML = '';
+            data.messages.forEach(m => {
+                const el = document.createElement('div');
+                el.className = 'msg-item' + (m.seen ? '' : ' unread');
+                const d = new Date(m.createdAt);
+                el.innerHTML =
+                    '<div class="line1"><span class="from"></span><span class="date">' +
+                    d.toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) +
+                    '</span></div><div class="subject"></div><div class="intro"></div>';
+                el.querySelector('.from').textContent = (m.from && (m.from.name || m.from.address)) || '(발신자 없음)';
+                el.querySelector('.subject').textContent = m.subject || '(제목 없음)';
+                el.querySelector('.intro').textContent = m.intro || '';
+                el.onclick = () => openMessage(m.id);
+                list.appendChild(el);
+            });
+        }
+    } catch (e) { if (manual) toast(e.message); }
+    if (manual) btn.innerHTML = '🔄 새 메일 확인';
+}
+
+async function openMessage(id) {
+    try {
+        const m = await api('GET', '/api/mail/accounts/' + selected + '/messages/' + id);
+        currentMsg = id;
+        document.getElementById('vSubject').textContent = m.subject || '(제목 없음)';
+        const from = (m.from && ((m.from.name ? m.from.name + ' ' : '') + '<' + m.from.address + '>')) || '';
+        let meta = '보낸사람: ' + from + '<br>받은시각: ' + new Date(m.createdAt).toLocaleString('ko-KR');
+        if (m.attachments && m.attachments.length) meta += '<br>📎 첨부 ' + m.attachments.length + '개 (이 메일함에서는 첨부 다운로드 미지원)';
+        document.getElementById('vMeta').innerHTML = meta;
+        const frame = document.getElementById('mailFrame');
+        // 링크는 새 탭으로, 스크립트는 sandbox로 차단
+        const base = '<base target="_blank"><meta charset="utf-8">';
+        if (m.html) {
+            frame.srcdoc = base + m.html;
+        } else {
+            frame.srcdoc = base + '<pre style="white-space:pre-wrap;font-family:sans-serif;padding:16px">' +
+                (m.text || '(내용 없음)').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>') + '</pre>';
+        }
+        document.getElementById('viewer').classList.add('show');
+        document.getElementById('viewer').scrollIntoView({ behavior: 'smooth' });
+        loadMessages(false); // 읽음 표시 갱신
+    } catch (e) { toast(e.message); }
+}
+
+function closeViewer() {
+    document.getElementById('viewer').classList.remove('show');
+    document.getElementById('mailFrame').srcdoc = '';
+    currentMsg = null;
+}
+
+async function deleteCurrent() {
+    if (!currentMsg || !confirm('이 메일을 삭제할까요?')) return;
+    try {
+        await api('DELETE', '/api/mail/accounts/' + selected + '/messages/' + currentMsg);
+        closeViewer();
+        loadMessages(true);
+        toast('삭제되었습니다.');
+    } catch (e) { toast(e.message); }
+}
+
+// ===== 시작 =====
+(async function init() {
+    if (mailKey) {
+        try {
+            const r = await fetch('/api/mail/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: mailKey })
+            });
+            if (r.ok) {
+                document.getElementById('gate').style.display = 'none';
+                loadAccounts();
+                return;
+            }
+        } catch (e) {}
+        localStorage.removeItem('mail_key');
+        mailKey = '';
+    }
+})();
+</script>
+</body>
+</html>

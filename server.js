@@ -405,7 +405,8 @@ const KV_KEYS = {
     'bap2-bosses.json': 'bap2-bosses',
     'bap3-managers.json': 'bap3-managers',
     'bap3-bosses.json': 'bap3-bosses',
-    'vibe-progress.json': 'vibe-progress'
+    'vibe-progress.json': 'vibe-progress',
+    'mail-accounts.json': 'mail-accounts'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -2304,6 +2305,177 @@ app.use('/api/posting', (req, res) => {
 // /posting 및 모든 서브패스 → 메인 SPA (index.html) 서빙. 프론트가 경로 보고 데모 모드 활성화.
 app.get(/^\/posting(\/.*)?$/, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ===== 가상 메일함 (/mail) — mail.tm 공개 API 프록시 =====
+// 도메인 미보유 상태에서 실제 수신 가능한 임시 메일 계정(backam01~backam99)을 제공.
+// 계정 비밀번호와 페이지 접근 키는 동일 (env MAIL_PAGE_PASSWORD로 교체 가능).
+const MAILTM_API = 'https://api.mail.tm';
+const MAIL_KEY = process.env.MAIL_PAGE_PASSWORD || 'qordka1320!';
+const MAIL_NAME_RE = /^backam(0[1-9]|[1-9][0-9])$/;
+const mailTokenCache = new Map(); // address → { token, at }
+
+function mailAuth(req, res, next) {
+    if ((req.headers['x-mail-key'] || '') !== MAIL_KEY) {
+        return res.status(401).json({ error: '메일함 비밀번호가 올바르지 않습니다.' });
+    }
+    next();
+}
+
+async function mailtm(pathname, { method = 'GET', body, token, contentType } = {}) {
+    const headers = { 'Accept': 'application/json' };
+    if (body) headers['Content-Type'] = contentType || 'application/json';
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const opts = { method, headers, body: body ? JSON.stringify(body) : undefined };
+    let r = await fetch(MAILTM_API + pathname, opts);
+    if (r.status === 429) { // rate limit(8req/s) — 잠시 후 1회 재시도
+        await new Promise(rs => setTimeout(rs, 1200));
+        r = await fetch(MAILTM_API + pathname, opts);
+    }
+    if (r.status === 204) return null;
+    const text = await r.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) {}
+    if (!r.ok) {
+        const err = new Error((data && (data.message || data['hydra:description'] || data.detail)) || ('mail.tm 오류 ' + r.status));
+        err.status = r.status;
+        throw err;
+    }
+    return data;
+}
+
+function hydraList(data) {
+    return (data && (data['hydra:member'] || data.member)) || (Array.isArray(data) ? data : []);
+}
+
+async function mailtmActiveDomain() {
+    const list = hydraList(await mailtm('/domains?page=1'));
+    const active = list.find(d => d.isActive && !d.isPrivate) || list[0];
+    if (!active) throw new Error('mail.tm 도메인 목록을 가져오지 못했습니다.');
+    return active.domain;
+}
+
+async function mailtmToken(account, allowRecreate = true) {
+    const cached = mailTokenCache.get(account.address);
+    if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.token;
+    try {
+        const r = await mailtm('/token', { method: 'POST', body: { address: account.address, password: account.password } });
+        mailTokenCache.set(account.address, { token: r.token, at: Date.now() });
+        return r.token;
+    } catch (e) {
+        // 장기 미사용 등으로 mail.tm에서 계정이 사라진 경우 같은 주소로 재생성 시도
+        if (allowRecreate && (e.status === 401 || e.status === 404)) {
+            await mailtm('/accounts', { method: 'POST', body: { address: account.address, password: account.password } });
+            return mailtmToken(account, false);
+        }
+        throw e;
+    }
+}
+
+async function getMailAccount(name) {
+    if (!MAIL_NAME_RE.test(name)) return null;
+    const store = (await readData('mail-accounts.json')) || {};
+    return store[name] || null;
+}
+
+// 페이지 진입용 비밀번호 확인
+app.post('/api/mail/login', rateLimit(10, 60000), (req, res) => {
+    if (((req.body || {}).password || '') !== MAIL_KEY) {
+        return res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
+    }
+    res.json({ success: true });
+});
+
+// 계정 로스터: backam01~99 + 생성 여부 + 현재 발급 도메인
+app.get('/api/mail/accounts', mailAuth, async (req, res) => {
+    try {
+        const store = (await readData('mail-accounts.json')) || {};
+        let domain = null;
+        try { domain = await mailtmActiveDomain(); } catch (e) {}
+        const accounts = [];
+        for (let i = 1; i <= 99; i++) {
+            const name = 'backam' + String(i).padStart(2, '0');
+            const acc = store[name];
+            accounts.push({ name, address: acc ? acc.address : null, createdAt: acc ? acc.createdAt : null });
+        }
+        res.json({ domain, accounts });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 계정 생성 — mail.tm에 실제 계정을 만든다 (이미 있으면 그대로 반환)
+app.post('/api/mail/accounts/:name', mailAuth, async (req, res) => {
+    const { name } = req.params;
+    if (!MAIL_NAME_RE.test(name)) return res.status(400).json({ error: 'backam01~backam99 형식만 가능합니다.' });
+    try {
+        const store = (await readData('mail-accounts.json')) || {};
+        if (store[name]) return res.json({ success: true, account: { name, address: store[name].address } });
+        const domain = await mailtmActiveDomain();
+        const address = `${name}@${domain}`;
+        let created;
+        try {
+            created = await mailtm('/accounts', { method: 'POST', body: { address, password: MAIL_KEY } });
+        } catch (e) {
+            if (e.status === 422) {
+                // 주소가 이미 존재 — 우리 비밀번호로 로그인되면 우리 계정으로 간주
+                try {
+                    await mailtm('/token', { method: 'POST', body: { address, password: MAIL_KEY } });
+                    created = { id: null, address };
+                } catch (e2) {
+                    return res.status(409).json({ error: `${address}는 이미 다른 사용자가 선점했습니다. 다른 번호를 사용하세요.` });
+                }
+            } else throw e;
+        }
+        store[name] = { address, password: MAIL_KEY, id: (created && created.id) || null, createdAt: new Date().toISOString() };
+        await writeData('mail-accounts.json', store);
+        res.json({ success: true, account: { name, address } });
+    } catch (e) { res.status(e.status === 429 ? 429 : 500).json({ error: e.message }); }
+});
+
+// 받은 메일 목록
+app.get('/api/mail/accounts/:name/messages', mailAuth, async (req, res) => {
+    try {
+        const acc = await getMailAccount(req.params.name);
+        if (!acc) return res.status(404).json({ error: '아직 생성되지 않은 계정입니다. 먼저 계정을 만드세요.' });
+        const token = await mailtmToken(acc);
+        const list = hydraList(await mailtm('/messages?page=1', { token }));
+        res.json({
+            address: acc.address,
+            messages: list.map(m => ({
+                id: m.id, from: m.from, subject: m.subject, intro: m.intro,
+                seen: m.seen, createdAt: m.createdAt, hasAttachments: m.hasAttachments
+            }))
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 메일 본문 (열람 시 읽음 처리)
+app.get('/api/mail/accounts/:name/messages/:id', mailAuth, async (req, res) => {
+    try {
+        const acc = await getMailAccount(req.params.name);
+        if (!acc) return res.status(404).json({ error: '아직 생성되지 않은 계정입니다.' });
+        const token = await mailtmToken(acc);
+        const m = await mailtm('/messages/' + encodeURIComponent(req.params.id), { token });
+        if (m && !m.seen) {
+            mailtm('/messages/' + m.id, { method: 'PATCH', token, body: { seen: true }, contentType: 'application/merge-patch+json' }).catch(() => {});
+        }
+        res.json({
+            id: m.id, from: m.from, to: m.to, subject: m.subject, createdAt: m.createdAt,
+            text: m.text || '',
+            html: Array.isArray(m.html) ? m.html.join('') : (m.html || ''),
+            attachments: (m.attachments || []).map(a => ({ filename: a.filename, size: a.size }))
+        });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// 메일 삭제
+app.delete('/api/mail/accounts/:name/messages/:id', mailAuth, async (req, res) => {
+    try {
+        const acc = await getMailAccount(req.params.name);
+        if (!acc) return res.status(404).json({ error: '아직 생성되지 않은 계정입니다.' });
+        const token = await mailtmToken(acc);
+        await mailtm('/messages/' + encodeURIComponent(req.params.id), { method: 'DELETE', token });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // 메인 페이지
