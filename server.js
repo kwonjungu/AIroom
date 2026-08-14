@@ -5,6 +5,9 @@ const crypto = require('crypto');
 
 const app = express();
 const IS_VERCEL = !!process.env.VERCEL;
+// Vercel 프록시 뒤에서 req.ip가 실제 클라이언트 IP(x-forwarded-for)가 되도록 함.
+// 미설정 시 전 방문자가 프록시 내부 IP 하나로 묶여 레이트리밋 버킷을 공유하게 됨 (전면 429 마비 사고).
+app.set('trust proxy', true);
 const LOCAL_DATA_DIR = path.join(__dirname, 'data');
 // Upstash 직접 or Vercel 마켓플레이스(KV_REST_API_*) 둘 다 지원
 // .env 파일 로드 (있으면)
@@ -112,15 +115,17 @@ async function requireAdmin(req, res, next) {
 }
 
 // Rate limiting (간단 구현)
-const rateLimits = new Map(); // ip → { count, resetAt }
+const rateLimits = new Map(); // "경로|ip" → { count, resetAt }
 function rateLimit(maxRequests, windowMs) {
     return (req, res, next) => {
         const ip = req.ip || req.connection.remoteAddress;
+        // 경로별 버킷 분리 — /api/mail/login 폭주가 /api/auth/login(본관 로그인)까지 잠그지 않도록
+        const key = req.path + '|' + ip;
         const now = Date.now();
-        let entry = rateLimits.get(ip);
+        let entry = rateLimits.get(key);
         if (!entry || now > entry.resetAt) {
             entry = { count: 0, resetAt: now + windowMs };
-            rateLimits.set(ip, entry);
+            rateLimits.set(key, entry);
         }
         entry.count++;
         if (entry.count > maxRequests) {
@@ -2322,8 +2327,8 @@ function mailAuth(req, res, next) {
     next();
 }
 
-// 페이지 진입용 비밀번호 확인
-app.post('/api/mail/login', rateLimit(10, 60000), (req, res) => {
+// 페이지 진입용 비밀번호 확인 — 학급 전체가 학교 NAT(공인 IP 1개) 뒤에서 동시 접속하므로 한도 넉넉히
+app.post('/api/mail/login', rateLimit(60, 60000), (req, res) => {
     if (((req.body || {}).password || '') !== MAIL_KEY) {
         return res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
     }

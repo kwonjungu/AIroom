@@ -188,8 +188,10 @@ async function tm(pathname, { method = 'GET', body, token, contentType } = {}) {
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const opts = { method, headers, body: body ? JSON.stringify(body) : undefined };
     let r = await fetch(MAILTM + pathname, opts);
-    if (r.status === 429) { // 초당 8회 제한 — 잠시 후 1회 재시도
-        await new Promise(rs => setTimeout(rs, 1200));
+    // mail.tm은 IP당 초당 8회 제한 — 학급 전체가 학교 공인 IP 하나를 공유하므로
+    // 동시 접속 버스트에서 429가 반복됨. 점증 지연 + 무작위 지터로 재시도 시점을 분산.
+    for (let i = 0; i < 3 && r.status === 429; i++) {
+        await new Promise(rs => setTimeout(rs, (i + 1) * 1500 + Math.random() * 1500));
         r = await fetch(MAILTM + pathname, opts);
     }
     if (r.status === 204) return null;
@@ -208,11 +210,21 @@ function hydraList(data) {
     return (data && (data['hydra:member'] || data.member)) || (Array.isArray(data) ? data : []);
 }
 
+// 발급 도메인은 자주 안 바뀌므로 캐시 — 학급 인원수만큼 /domains를 중복 호출하지 않도록
 async function tmActiveDomain() {
-    const list = hydraList(await tm('/domains?page=1'));
-    const active = list.find(d => d.isActive && !d.isPrivate) || list[0];
-    if (!active) throw new Error('mail.tm 도메인 목록을 가져오지 못했습니다.');
-    return active.domain;
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem('tm_domain') || 'null'); } catch (e) {}
+    if (cached && cached.domain && Date.now() - cached.at < 10 * 60 * 1000) return cached.domain;
+    try {
+        const list = hydraList(await tm('/domains?page=1'));
+        const active = list.find(d => d.isActive && !d.isPrivate) || list[0];
+        if (!active) throw new Error('mail.tm 도메인 목록을 가져오지 못했습니다.');
+        localStorage.setItem('tm_domain', JSON.stringify({ domain: active.domain, at: Date.now() }));
+        return active.domain;
+    } catch (e) {
+        if (cached && cached.domain) return cached.domain; // 조회 실패 시 만료된 캐시라도 사용
+        throw e;
+    }
 }
 
 async function tmToken(address, allowRecreate) {
@@ -319,7 +331,8 @@ async function selectAccount(name) {
     document.getElementById('curAddr').textContent = acc.address;
     loadMessages(true);
     if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(() => loadMessages(false), 15000);
+    // 폴링 주기에 지터를 줘서 학급 전체의 요청이 같은 순간에 몰리지 않게 함
+    pollTimer = setInterval(() => loadMessages(false), 15000 + Math.floor(Math.random() * 10000));
 }
 
 function copyAddr() {
@@ -520,7 +533,8 @@ async function deleteCurrent() {
 
 // ===== 시작 =====
 (async function init() {
-    if (mailKey) {
+    if (!mailKey) return;
+    for (let i = 0; i < 3; i++) {
         try {
             const r = await fetch('/api/mail/login', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -531,10 +545,17 @@ async function deleteCurrent() {
                 loadAccounts();
                 return;
             }
-        } catch (e) {}
-        localStorage.removeItem('mail_key');
-        mailKey = '';
+            if (r.status === 429) { // 동시 접속 폭주 — 저장된 키는 유효할 수 있으니 지우지 말고 재시도
+                await new Promise(rs => setTimeout(rs, 2000 + Math.random() * 3000));
+                continue;
+            }
+            // 401 등 — 키가 실제로 틀림. 지우고 게이트에서 다시 입력받음.
+            localStorage.removeItem('mail_key');
+            mailKey = '';
+            return;
+        } catch (e) { return; } // 네트워크 오류 — 키 보존, 게이트에서 수동 재시도
     }
+    // 재시도 소진(계속 429) — 키 보존, 게이트에서 수동 재시도
 })();
 </script>
 </body>
