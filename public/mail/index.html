@@ -150,9 +150,11 @@
 <div id="toast"></div>
 
 <script>
-// mail.tm은 데이터센터 IP를 차단하므로 브라우저가 직접 호출한다 (CORS 전면 허용됨).
+// 메일 API는 데이터센터 IP를 차단하므로 브라우저가 직접 호출한다.
 // 서버(/api/mail/*)는 비밀번호 게이트와 계정 명부 저장만 담당.
-const MAILTM = 'https://api.mail.tm';
+// 2026-08: mail.tm이 자사 오리진 외 CORS를 막아 자매 서비스 mail.gw(동일 API, CORS *)로 전환.
+// 기존 mail.tm 도메인 주소는 브라우저에서 더 못 쓰므로 선택 시 같은 번호로 재발급한다.
+const MAILTM = 'https://api.mail.gw';
 const RETENTION_DAYS = 30; // 수신 후 이 일수가 지난 메일은 자동 삭제
 let mailKey = localStorage.getItem('mail_key') || '';
 let selected = null;      // 선택된 계정 name
@@ -181,7 +183,7 @@ async function api(method, path, body) {
     return data;
 }
 
-// ----- mail.tm API (브라우저 직접 호출) -----
+// ----- mail.gw API (브라우저 직접 호출) -----
 async function tm(pathname, { method = 'GET', body, token, contentType } = {}) {
     const headers = { 'Accept': 'application/json' };
     if (body) headers['Content-Type'] = contentType || 'application/json';
@@ -199,7 +201,7 @@ async function tm(pathname, { method = 'GET', body, token, contentType } = {}) {
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch (e) {}
     if (!r.ok) {
-        const err = new Error((data && (data.message || data['hydra:description'] || data.detail)) || ('mail.tm 오류 ' + r.status));
+        const err = new Error((data && (data.message || data['hydra:description'] || data.detail)) || ('메일 서버 오류 ' + r.status));
         err.status = r.status;
         throw err;
     }
@@ -211,15 +213,16 @@ function hydraList(data) {
 }
 
 // 발급 도메인은 자주 안 바뀌므로 캐시 — 학급 인원수만큼 /domains를 중복 호출하지 않도록
+// (키에 gw를 넣어 mail.tm 시절 캐시와 분리)
 async function tmActiveDomain() {
     let cached = null;
-    try { cached = JSON.parse(localStorage.getItem('tm_domain') || 'null'); } catch (e) {}
+    try { cached = JSON.parse(localStorage.getItem('tmgw_domain') || 'null'); } catch (e) {}
     if (cached && cached.domain && Date.now() - cached.at < 10 * 60 * 1000) return cached.domain;
     try {
         const list = hydraList(await tm('/domains?page=1'));
         const active = list.find(d => d.isActive && !d.isPrivate) || list[0];
-        if (!active) throw new Error('mail.tm 도메인 목록을 가져오지 못했습니다.');
-        localStorage.setItem('tm_domain', JSON.stringify({ domain: active.domain, at: Date.now() }));
+        if (!active) throw new Error('메일 도메인 목록을 가져오지 못했습니다.');
+        localStorage.setItem('tmgw_domain', JSON.stringify({ domain: active.domain, at: Date.now() }));
         return active.domain;
     } catch (e) {
         if (cached && cached.domain) return cached.domain; // 조회 실패 시 만료된 캐시라도 사용
@@ -235,7 +238,7 @@ async function tmToken(address, allowRecreate) {
         tmTokens.set(address, { token: r.token, at: Date.now() });
         return r.token;
     } catch (e) {
-        // 장기 미사용 등으로 mail.tm에서 계정이 사라진 경우 같은 주소로 재생성 시도
+        // 장기 미사용 등으로 메일 서비스에서 계정이 사라진 경우 같은 주소로 재생성 시도
         if (allowRecreate !== false && (e.status === 401 || e.status === 404)) {
             await tm('/accounts', { method: 'POST', body: { address, password: mailKey } });
             return tmToken(address, false);
@@ -301,6 +304,35 @@ function renderAccounts() {
     document.getElementById('acctCount').textContent = created + ' / 99 생성됨';
 }
 
+// mail.tm 시절 발급된 주소는 mail.gw에서 로그인 불가 — 같은 번호로 새 주소를 발급해 명부 갱신
+async function ensureUsableAddress(acc) {
+    try { await tmToken(acc.address); return true; } // 로그인되면 (사라진 계정 재생성 포함) 그대로 사용
+    catch (e) {
+        if (e.status !== 400 && e.status !== 422) throw e; // 429·네트워크 등은 재발급 사유가 아님
+    }
+    const domain = await tmActiveDomain();
+    if (!confirm(acc.name + '의 기존 주소(' + acc.address + ')는 메일 서비스 변경으로 더 이상 쓸 수 없습니다.\n같은 번호로 새 주소를 발급할까요? (기존 수신 메일은 사라집니다)')) return false;
+    for (const suf of ['', 'a', 'b', 'c', 'd', 'e']) {
+        const address = acc.name + suf + '@' + domain;
+        try {
+            try {
+                await tm('/accounts', { method: 'POST', body: { address, password: mailKey } });
+            } catch (e2) {
+                if (e2.status !== 422) throw e2;
+                await tmToken(address, false); // 이미 존재 — 우리 비밀번호로 열리면 우리 계정
+            }
+            const r = await api('POST', '/api/mail/accounts/' + acc.name, { address });
+            acc.address = r.account.address;
+            toast('새 주소 발급: ' + acc.address);
+            return true;
+        } catch (e3) {
+            if (e3.status === 429) throw e3; // 레이트리밋이면 다음 접미사를 시도해도 소용없음
+        }
+    }
+    toast('주소 재발급에 실패했습니다. 잠시 후 다시 시도하세요.');
+    return false;
+}
+
 async function selectAccount(name) {
     const acc = accountsCache.find(a => a.name === name);
     if (!acc.address) {
@@ -322,6 +354,9 @@ async function selectAccount(name) {
             acc.address = r.account.address;
             toast('생성 완료: ' + acc.address);
         } catch (e) { toast(e.message); return; }
+    } else {
+        try { if (!(await ensureUsableAddress(acc))) return; }
+        catch (e) { toast(e.message); return; }
     }
     selected = name;
     currentMsg = null;

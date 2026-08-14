@@ -2312,9 +2312,10 @@ app.get(/^\/posting(\/.*)?$/, (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ===== 가상 메일함 (/mail) — mail.tm 기반 =====
-// mail.tm이 데이터센터(Vercel) IP의 API 호출을 차단하므로, mail.tm 통신(계정 생성/수신함 조회)은
-// 브라우저가 직접 수행한다 (api.mail.tm은 CORS 전면 허용). 서버는 두 가지만 담당:
+// ===== 가상 메일함 (/mail) — mail.gw 기반 =====
+// (2026-08: mail.tm이 자사 오리진 외 CORS를 막아 동일 API의 자매 서비스 mail.gw로 전환)
+// 메일 API가 데이터센터(Vercel) IP의 호출을 차단하므로, 계정 생성/수신함 조회는
+// 브라우저가 직접 수행한다 (api.mail.gw는 CORS 전면 허용). 서버는 두 가지만 담당:
 //   1) 비밀번호 게이트  2) 계정 명부(backam01~99 ↔ 실제 발급 주소) 저장 — 어느 기기에서 열어도 동일 명부.
 // 계정 비밀번호와 페이지 접근 키는 동일 (env MAIL_PAGE_PASSWORD로 교체 가능).
 const MAIL_KEY = process.env.MAIL_PAGE_PASSWORD || 'a12345678';
