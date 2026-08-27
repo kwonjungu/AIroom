@@ -411,7 +411,12 @@ const KV_KEYS = {
     'bap3-managers.json': 'bap3-managers',
     'bap3-bosses.json': 'bap3-bosses',
     'vibe-progress.json': 'vibe-progress',
-    'mail-accounts.json': 'mail-accounts'
+    'mail-accounts.json': 'mail-accounts',
+    'rental-items.json': 'rental-items',
+    'rental-loans.json': 'rental-loans',
+    'rental-schools.json': 'rental-schools',
+    'rental-settings.json': 'rental-settings',
+    'rental-audit.json': 'rental-audit'
 };
 
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
@@ -2240,6 +2245,16 @@ app.post('/api/admin/change-codes', requireAdmin, async (req, res) => {
 app.get('/api/admin/audit-log', requireAdmin, async (req, res) => {
     const log = await readData('audit-log.json') || [];
     res.json(log.slice(-100)); // 최근 100건
+});
+
+// ===== 교구 대여소 (/rental) =====
+// 타 학교 교직원도 쓰므로 메인 접근코드와 분리된 독립 페이지 (초안: 완전 개방)
+require('./lib/rental')(app, {
+    readData, writeData, redis, IS_VERCEL,
+    hashPassword, verifyPassword, generateToken
+});
+app.get(['/rental', '/rental/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'rental.html'));
 });
 
 // 관리자 페이지 서빙

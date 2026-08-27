@@ -107,6 +107,8 @@
         .main-tab{padding:11px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-light);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;border-radius:10px 10px 0 0;white-space:nowrap;flex-shrink:0;}
         .main-tab:hover{color:var(--primary);background:var(--primary-light);}
         .main-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-light);}
+        .main-tab.tab-link{text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+        .tab-link-arrow{font-size:10px;opacity:.55;}
 
         /* Pages */
         .page{display:none;max-width:960px;margin:0 auto;padding:20px 24px 50px;}
@@ -2065,7 +2067,9 @@ const DEFAULT_TABS=[
     {id:'ailab',title:'AI 실험실',icon:'🤖',type:'builtin',order:12},
     {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13},
     {id:'checklist',title:'확인대장',icon:'✅',type:'builtin',order:14},
-    {id:'patrol',title:'순찰일지',icon:'🌙',type:'builtin',order:15}
+    {id:'patrol',title:'순찰일지',icon:'🌙',type:'builtin',order:15},
+    // 링크 탭: 페이지를 그리지 않고 /rental 로 바로 이동 (GitHub Pages 미러에서도 열리게 절대 URL)
+    {id:'rental',title:'교구 대여소',icon:'📦',type:'link',order:16,href:'https://a-iroom.vercel.app/rental'}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -2523,6 +2527,9 @@ async function loadWeatherAlert(){
 }
 
 function switchPage(p,btn){
+    // 링크 탭(교구 대여소 등)은 페이지가 없으므로 바로 이동시킨다. 가드 없으면 본문이 백지가 됨.
+    const _lt=(tabsConfig||[]).find(t=>t.id===p);
+    if(_lt&&_lt.type==='link'&&_lt.href){location.href=_lt.href;return;}
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.main-tab').forEach(x=>x.classList.remove('active'));
     const page=document.getElementById('page-'+p);
@@ -5800,7 +5807,11 @@ function renderTabs(){
         if(idx>0) html+=`<button class="tab-move-btn" onclick="event.stopPropagation();moveTab('${tab.id}',-1)" title="왼쪽">◀</button>`;
         if(idx<sorted.length-1) html+=`<button class="tab-move-btn" onclick="event.stopPropagation();moveTab('${tab.id}',1)" title="오른쪽">▶</button>`;
         html+=`</div>`;
-        html+=`<button class="main-tab${isActive?' active':''}" onclick="switchPage('${tab.id}',this)">${tab.icon} ${esc(tab.title)}</button>`;
+        if(tab.type==='link'&&tab.href){
+            html+=`<a class="main-tab tab-link" href="${esc(tab.href)}" rel="noopener">${tab.icon} ${esc(tab.title)} <span class="tab-link-arrow">↗</span></a>`;
+        }else{
+            html+=`<button class="main-tab${isActive?' active':''}" onclick="switchPage('${tab.id}',this)">${tab.icon} ${esc(tab.title)}</button>`;
+        }
         if(isCustom) html+=`<button class="tab-delete-btn custom-only" onclick="event.stopPropagation();confirmDeleteTab('${tab.id}')" title="탭 삭제">✕</button>`;
         html+=`</div>`;
     });

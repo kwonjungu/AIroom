@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>교구 대여소 — 소규모 학교 연계</title>
+<meta name="description" content="소규모 학교가 함께 쓰는 교구 대여소. 학교·이름·직만 적으면 빌리고 올릴 수 있습니다.">
+<style>
+/* ===== DESIGN.md (Apple) 토큰 ===== */
+:root{
+  --primary:#0066cc; --primary-focus:#0071e3; --primary-on-dark:#2997ff;
+  --ink:#1d1d1f; --body-on-dark:#ffffff; --body-muted:#cccccc;
+  --ink-80:#333333; --ink-48:#7a7a7a;
+  --divider-soft:#f0f0f0; --hairline:#e0e0e0;
+  --canvas:#ffffff; --parchment:#f5f5f7; --pearl:#fafafc;
+  --tile-1:#272729; --tile-2:#2a2a2c; --tile-3:#252527; --black:#000000;
+  --chip:rgba(210,210,215,.64);
+  --r-sm:8px; --r-md:11px; --r-lg:18px; --r-pill:9999px;
+  --s-xxs:4px; --s-xs:8px; --s-sm:12px; --s-md:17px; --s-lg:24px; --s-xl:32px; --s-xxl:48px; --s-section:80px;
+  --shadow-product:rgba(0,0,0,.22) 3px 5px 30px 0;
+  --font-display:"SF Pro Display",-apple-system,BlinkMacSystemFont,system-ui,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font-text:"SF Pro Text",-apple-system,BlinkMacSystemFont,system-ui,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  /* 상태색 — Apple 시스템 컬러에서 파생 (DESIGN.md 확장) */
+  --st-wait-bg:rgba(255,149,0,.14);   --st-wait-fg:#a15c00;
+  --st-appr-bg:rgba(175,82,222,.12);  --st-appr-fg:#7d3fa8;
+  --st-out-bg:rgba(0,102,204,.12);    --st-out-fg:#0055aa;
+  --st-back-bg:rgba(88,86,214,.12);   --st-back-fg:#4b49b8;
+  --st-done-bg:rgba(52,199,89,.14);   --st-done-fg:#248a3d;
+  --st-off-bg:rgba(0,0,0,.06);        --st-off-fg:#7a7a7a;
+  --st-late-bg:rgba(255,59,48,.12);   --st-late-fg:#d70015;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--canvas); color:var(--ink);
+  font-family:var(--font-text); font-size:17px; font-weight:400; line-height:1.47; letter-spacing:-.374px;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block}
+button{font-family:inherit}
+a{color:var(--primary);text-decoration:none}
+
+/* ===== global-nav ===== */
+.global-nav{
+  position:sticky; top:0; z-index:60; height:44px; background:var(--black); color:var(--body-on-dark);
+  display:flex; align-items:center; gap:20px; padding:0 20px;
+}
+.global-nav a,.global-nav span{font-size:12px;line-height:1;letter-spacing:-.12px;color:var(--body-on-dark);opacity:.88}
+.global-nav a:hover{opacity:1}
+.global-nav .gn-spacer{flex:1}
+.global-nav .gn-me{
+  display:inline-flex;align-items:center;gap:6px;background:transparent;border:0;cursor:pointer;
+  color:var(--body-on-dark);font-size:12px;letter-spacing:-.12px;padding:6px 0;
+}
+.global-nav .gn-me b{font-weight:600}
+
+/* ===== sub-nav (frosted) ===== */
+.sub-nav{
+  position:sticky; top:44px; z-index:55; height:52px;
+  background:rgba(245,245,247,.8); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid rgba(0,0,0,.08);
+  display:flex; align-items:center; gap:var(--s-lg); padding:0 22px;
+}
+.sub-nav .sn-title{font-family:var(--font-display);font-size:21px;font-weight:600;line-height:1.19;letter-spacing:.231px;white-space:nowrap}
+.sub-nav .sn-links{display:flex;gap:var(--s-lg);margin-left:auto;align-items:center}
+.sn-link{
+  background:none;border:0;cursor:pointer;padding:8px 0;
+  font-size:14px;font-weight:400;line-height:1.29;letter-spacing:-.224px;color:var(--ink-80);
+}
+.sn-link.active{color:var(--ink);font-weight:600}
+
+/* ===== 버튼 ===== */
+.btn-primary{
+  background:var(--primary); color:#fff; border:0; border-radius:var(--r-pill);
+  padding:11px 22px; font-size:17px; line-height:1.24; letter-spacing:-.374px; cursor:pointer;
+  transition:transform .12s ease;
+}
+.btn-primary:active{transform:scale(.95)}
+.btn-primary:focus-visible{outline:2px solid var(--primary-focus);outline-offset:2px}
+.btn-primary[disabled]{background:var(--divider-soft);color:var(--ink-48);cursor:not-allowed}
+.btn-ghost{
+  background:transparent;color:var(--primary);border:1px solid var(--primary);border-radius:var(--r-pill);
+  padding:11px 22px;font-size:17px;letter-spacing:-.374px;cursor:pointer;transition:transform .12s ease;
+}
+.btn-ghost:active{transform:scale(.95)}
+.btn-sm{padding:8px 16px;font-size:14px;letter-spacing:-.224px}
+.btn-pearl{
+  background:var(--pearl);color:var(--ink-80);border:1px solid var(--divider-soft);border-radius:var(--r-md);
+  padding:8px 14px;font-size:14px;letter-spacing:-.224px;cursor:pointer;transition:transform .12s ease;
+}
+.btn-pearl:active{transform:scale(.95)}
+.btn-quiet{background:none;border:0;color:var(--primary);font-size:14px;letter-spacing:-.224px;cursor:pointer;padding:8px 4px}
+.btn-danger{background:none;border:0;color:var(--st-late-fg);font-size:14px;letter-spacing:-.224px;cursor:pointer;padding:8px 4px}
+
+/* ===== 레이아웃 ===== */
+main{min-height:60vh;padding-bottom:96px}
+.wrap{max-width:1440px;margin:0 auto;padding:0 22px}
+.wrap-narrow{max-width:820px;margin:0 auto;padding:0 22px}
+.tile{padding:var(--s-xxl) 0}
+.tile-parchment{background:var(--parchment)}
+.tile-dark{background:var(--tile-1);color:var(--body-on-dark)}
+.tile-dark a{color:var(--primary-on-dark)}
+h1.hero{font-family:var(--font-display);font-size:40px;font-weight:600;line-height:1.1;letter-spacing:0;margin:0 0 8px}
+p.lead{font-family:var(--font-display);font-size:21px;font-weight:400;line-height:1.3;letter-spacing:.196px;color:var(--ink-80);margin:0}
+h2.sec{font-family:var(--font-display);font-size:28px;font-weight:600;line-height:1.14;letter-spacing:0;margin:0 0 var(--s-lg)}
+.muted{color:var(--ink-48)}
+.fine{font-size:12px;letter-spacing:-.12px;line-height:1.4;color:var(--ink-48)}
+
+/* ===== 필터 줄 ===== */
+.filters{display:flex;flex-wrap:wrap;gap:var(--s-sm);align-items:center;margin:var(--s-lg) 0}
+.search{
+  flex:1 1 260px; min-width:220px; height:44px; display:flex; align-items:center; gap:10px;
+  background:var(--canvas); border:1px solid rgba(0,0,0,.08); border-radius:var(--r-pill); padding:0 20px;
+}
+.search input{border:0;outline:0;flex:1;font-family:inherit;font-size:17px;letter-spacing:-.374px;color:var(--ink);background:transparent}
+.chip{
+  background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-pill);
+  padding:9px 16px;font-size:14px;letter-spacing:-.224px;color:var(--ink-80);cursor:pointer;transition:transform .12s ease;
+}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;letter-spacing:-.224px;color:var(--ink-80);cursor:pointer}
+
+/* ===== 카드 그리드 ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(276px,1fr));gap:20px}
+.card{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-lg);padding:var(--s-lg);display:flex;flex-direction:column;gap:var(--s-sm)}
+.card .thumb{
+  aspect-ratio:1/1;background:var(--parchment);border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.card .thumb img{width:100%;height:100%;object-fit:contain;padding:18px;filter:drop-shadow(var(--shadow-product))}
+.card .thumb .emoji{font-size:64px;line-height:1}
+.card h3{font-size:17px;font-weight:600;line-height:1.24;letter-spacing:-.374px;margin:0}
+.card .sub{font-size:14px;letter-spacing:-.224px;color:var(--ink-48);margin:0}
+.card .foot{margin-top:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card .owner-tools{display:flex;gap:2px;margin-left:auto}
+
+/* ===== 배지 ===== */
+.badge{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-pill);padding:5px 11px;font-size:13px;font-weight:600;letter-spacing:-.08px}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-wait{background:var(--st-wait-bg);color:var(--st-wait-fg)}
+.b-appr{background:var(--st-appr-bg);color:var(--st-appr-fg)}
+.b-out{background:var(--st-out-bg);color:var(--st-out-fg)}
+.b-back{background:var(--st-back-bg);color:var(--st-back-fg)}
+.b-done{background:var(--st-done-bg);color:var(--st-done-fg)}
+.b-off{background:var(--st-off-bg);color:var(--st-off-fg)}
+.b-late{background:var(--st-late-bg);color:var(--st-late-fg)}
+
+/* ===== 목록 행 ===== */
+.row{display:flex;gap:var(--s-md);align-items:flex-start;padding:var(--s-md) 0;border-bottom:1px solid var(--divider-soft)}
+.row:last-child{border-bottom:0}
+.row .r-emoji{font-size:32px;line-height:1.2;width:44px;text-align:center;flex:0 0 44px}
+.row .r-body{flex:1;min-width:0}
+.row .r-title{font-size:17px;font-weight:600;letter-spacing:-.374px;margin:0 0 2px}
+.row .r-meta{font-size:14px;letter-spacing:-.224px;color:var(--ink-48);margin:0}
+.row .r-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.queue-line{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid rgba(255,255,255,.12);font-size:14px;letter-spacing:-.224px}
+.tile-dark .queue-line{color:var(--body-muted)}
+
+/* ===== 폼 ===== */
+.field{margin-bottom:var(--s-lg)}
+.field label{display:block;font-size:14px;font-weight:600;letter-spacing:-.224px;color:var(--ink);margin-bottom:8px}
+.field .hint{font-size:12px;letter-spacing:-.12px;color:var(--ink-48);margin-top:6px}
+.input,select.input,textarea.input{
+  width:100%;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-md);
+  padding:12px 16px;font-family:inherit;font-size:17px;letter-spacing:-.374px;color:var(--ink);outline:0;
+}
+.input:focus{border-color:var(--primary-focus);box-shadow:0 0 0 3px rgba(0,113,227,.18)}
+textarea.input{min-height:88px;resize:vertical;line-height:1.47}
+.stepper{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--hairline);border-radius:var(--r-pill);padding:4px}
+.stepper button{width:36px;height:36px;border-radius:50%;border:0;background:var(--parchment);font-size:19px;color:var(--ink);cursor:pointer}
+.stepper button:active{transform:scale(.95)}
+.stepper .val{min-width:44px;text-align:center;font-size:17px;font-weight:600}
+.radio-row{display:flex;gap:8px;flex-wrap:wrap}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-sm)}
+.emoji-pick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.emoji-pick button{width:40px;height:40px;border-radius:var(--r-sm);border:1px solid var(--hairline);background:#fff;font-size:20px;cursor:pointer}
+.emoji-pick button.on{border-color:var(--primary);box-shadow:0 0 0 2px rgba(0,102,204,.2)}
+
+/* ===== 모달 ===== */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{
+  background:var(--canvas);border-radius:var(--r-lg);max-width:520px;width:100%;max-height:88vh;overflow:auto;
+  padding:var(--s-xl);box-shadow:0 20px 60px rgba(0,0,0,.28);
+}
+.modal h3{font-family:var(--font-display);font-size:24px;font-weight:600;line-height:1.2;letter-spacing:0;margin:0 0 6px}
+.modal .m-sub{font-size:14px;letter-spacing:-.224px;color:var(--ink-48);margin:0 0 var(--s-lg)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:var(--s-lg);flex-wrap:wrap}
+
+/* ===== 토스트 ===== */
+#toast{position:fixed;left:50%;bottom:104px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  background:rgba(29,29,31,.94);color:#fff;border-radius:var(--r-pill);padding:12px 22px;
+  font-size:14px;letter-spacing:-.224px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:tin .25s ease;
+}
+.toast.err{background:rgba(215,0,21,.95)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ===== 알림 배너 ===== */
+.banner{background:var(--tile-1);color:#fff;padding:14px 22px;display:flex;gap:12px;align-items:center;font-size:14px;letter-spacing:-.224px}
+.banner b{font-weight:600}
+.banner .btn-primary{margin-left:auto}
+
+/* ===== 빈 화면 ===== */
+.empty{text-align:center;padding:var(--s-section) 20px;color:var(--ink-48)}
+.empty .e-emoji{font-size:44px;margin-bottom:12px}
+.empty p{margin:0 0 var(--s-lg);font-size:17px;letter-spacing:-.374px}
+
+/* ===== 하단 탭바 (모바일) ===== */
+.tabbar{display:none}
+footer.foot{background:var(--parchment);padding:var(--s-xxl) 0;margin-top:var(--s-xxl)}
+footer.foot .fl{display:flex;gap:var(--s-lg);flex-wrap:wrap;font-size:14px;letter-spacing:-.224px}
+
+@media (max-width:834px){
+  .sub-nav .sn-links{display:none}
+  .wrap,.wrap-narrow{padding:0 18px}
+  h1.hero{font-size:34px}
+  .two-col{grid-template-columns:1fr}
+  main{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  .tabbar{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:70;
+    background:rgba(245,245,247,.86); backdrop-filter:saturate(180%) blur(20px); -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-top:1px solid rgba(0,0,0,.08); padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar button{
+    flex:1;background:none;border:0;padding:9px 0 8px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:10px;letter-spacing:-.08px;color:var(--ink-48);min-height:52px;
+  }
+  .tabbar button .t-ico{font-size:20px;line-height:1}
+  .tabbar button.active{color:var(--primary);font-weight:600}
+  #toast{bottom:88px}
+}
+@media (max-width:480px){
+  h1.hero{font-size:28px}
+  .grid{grid-template-columns:1fr 1fr;gap:12px}
+  .card{padding:14px}
+  .card .thumb .emoji{font-size:44px}
+  .card h3{font-size:15px}
+  .btn-primary,.btn-ghost{padding:10px 18px;font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<header class="global-nav">
+    <a href="/" title="AIroom 교무실로">􀆊 AIroom</a>
+    <span class="muted" style="color:#8e8e93">교구 대여소</span>
+    <span class="gn-spacer"></span>
+    <button class="gn-me" id="gnMe" onclick="openIdentity()">신원 확인 중…</button>
+</header>
+
+<div class="sub-nav">
+    <div class="sn-title" id="snTitle">교구 대여소</div>
+    <nav class="sn-links">
+        <button class="sn-link" data-view="browse" onclick="go('browse')">둘러보기</button>
+        <button class="sn-link" data-view="mine" onclick="go('mine')">내 대여</button>
+        <button class="sn-link" data-view="status" onclick="go('status')">전체 현황</button>
+        <button class="btn-primary btn-sm" onclick="go('add')">교구 올리기</button>
+    </nav>
+</div>
+
+<div id="bannerRoot"></div>
+<main id="main"></main>
+
+<footer class="foot">
+    <div class="wrap">
+        <div class="fl">
+            <a href="/">AIroom 교무실</a>
+            <a href="/api/rental/export.csv">대여 이력 내려받기 (CSV)</a>
+            <a href="#" onclick="event.preventDefault();openIdentity()">내 신원 바꾸기</a>
+        </div>
+        <p class="fine" style="margin-top:16px">
+            누구나 올리고 빌릴 수 있는 초안 버전입니다. 별도 비밀번호가 없으니 신청·승인 시 학교와 이름을 정확히 적어 주세요.
+        </p>
+    </div>
+</footer>
+
+<nav class="tabbar">
+    <button data-view="browse" onclick="go('browse')"><span class="t-ico">􀎞</span>둘러보기</button>
+    <button data-view="mine" onclick="go('mine')"><span class="t-ico">􀉩</span>내 대여</button>
+    <button data-view="add" onclick="go('add')"><span class="t-ico">􀁍</span>올리기</button>
+    <button data-view="status" onclick="go('status')"><span class="t-ico">􀋲</span>현황</button>
+</nav>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   교구 대여소 — 초안(완전 개방판)
+   설계: RENTAL_DESIGN.md / 디자인 토큰: DESIGN.md (Apple)
+   ========================================================= */
+
+// ===== 주소 정리 (/rental.html → /rental) =====
+if (location.pathname.endsWith('/rental.html')) history.replaceState(null, '', '/rental');
+
+// ===== 전역 상태 =====
+let S = { items: [], loans: [], schools: [], settings: {}, serverDate: '' };
+let ME = null;
+let view = 'browse';
+let filterCat = 'all', filterText = '', onlyAvailable = false;
+let addDraft = { emoji: '📦', photo: '', qty: 1 };
+
+const OCCUPYING = ['approved', 'out', 'return_requested'];
+const LABEL = {
+    requested: '대기 중', approved: '승인됨 · 아직 안 가져감', out: '대여 중',
+    return_requested: '반납 확인 대기', returned: '반납 완료', rejected: '반려됨', canceled: '취소함'
+};
+const BADGE = {
+    requested: 'b-wait', approved: 'b-appr', out: 'b-out',
+    return_requested: 'b-back', returned: 'b-done', rejected: 'b-off', canceled: 'b-off'
+};
+const QUICK_EMOJI = ['📦','📽️','🔬','⚽','🎹','🎨','💻','🔭','🎤','🧪','📷','🥁','🎪','🧩'];
+
+// ===== 유틸 =====
+function esc(t){ const d=document.createElement('div'); d.textContent = t==null?'':t; return d.innerHTML; }
+function $(id){ return document.getElementById(id); }
+function toast(msg, err){
+    const t=document.createElement('div'); t.className='toast'+(err?' err':''); t.textContent=msg;
+    $('toast').appendChild(t); setTimeout(()=>t.remove(), 2600);
+}
+function fmtD(iso){ if(!iso) return ''; const p=iso.split('-'); return Number(p[1])+'월 '+Number(p[2])+'일'; }
+function daysBetween(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }
+function todayStr(){ return S.serverDate || new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
+function addDays(iso,n){ return new Date(Date.parse(iso+'T00:00:00Z')+n*86400000).toISOString().slice(0,10); }
+function shortSchool(s){ return (s||'').replace(/등학교$/,'').replace(/학교$/,''); }
+
+async function api(method, url, body){
+    const opt = { method, headers: {} };
+    if (body){ opt.headers['Content-Type']='application/json'; opt.body = JSON.stringify(body); }
+    const r = await fetch(url, opt);
+    let j = {};
+    try { j = await r.json(); } catch(e){}
+    if (!r.ok) throw new Error(j.error || '처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    return j;
+}
+
+// ===== 도메인 계산 (서버와 같은 규칙) =====
+function itemOf(id){ return S.items.find(i=>i.id===id); }
+function availableOf(item){
+    if(!item) return 0;
+    const used = S.loans.filter(l=>l.itemId===item.id && OCCUPYING.includes(l.status))
+                        .reduce((s,l)=>s+l.qty,0);
+    return Math.max(0, item.total - used);
+}
+function queueOf(itemId){
+    return S.loans.filter(l=>l.itemId===itemId && l.status==='requested').sort((a,b)=>a.seq-b.seq);
+}
+function activeOf(itemId){
+    return S.loans.filter(l=>l.itemId===itemId && OCCUPYING.includes(l.status)).sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
+}
+// 대기열 각 건이 언제쯤 가능한지 (날짜는 문자열 비교만)
+function computeEtas(item){
+    let free = availableOf(item);
+    const releases = activeOf(item.id).map(l=>({date:l.wantTo, qty:l.qty}));
+    releases.sort((a,b)=>a.date.localeCompare(b.date));
+    const out = {};
+    const today = todayStr();
+    for (const l of queueOf(item.id)){
+        let cursor = today;
+        while (free < l.qty && releases.length){
+            const r = releases.shift();
+            free += r.qty;
+            if (r.date > cursor) cursor = r.date;
+        }
+        if (free < l.qty){ out[l.id] = null; continue; }
+        free -= l.qty;
+        out[l.id] = cursor;
+        releases.push({date:l.wantTo, qty:l.qty});
+        releases.sort((a,b)=>a.date.localeCompare(b.date));
+    }
+    return out;
+}
+function isMine(l){ return ME && l.borrower.school===ME.school && l.borrower.name===ME.name; }
+function isOwner(item){ return ME && item && item.owner.school===ME.school; }
+function lateDays(l){
+    if(!['approved','out'].includes(l.status)) return 0;
+    const d = daysBetween(l.wantTo, todayStr());
+    return d>0 ? d : 0;
+}
+function statusText(l){
+    if (l.status==='requested'){
+        const q = queueOf(l.itemId);
+        const idx = q.findIndex(x=>x.id===l.id);
+        if (l.readyAt) return '내 차례 · 승인 기다리는 중';
+        return idx===0 ? '승인 기다리는 중' : '대기 중 · '+(idx+1)+'번째';
+    }
+    if (l.status==='out') return '대여 중 · '+fmtD(l.wantTo)+'까지';
+    return LABEL[l.status] || l.status;
+}
+
+// ===== 신원 =====
+function loadIdentity(){
+    try { ME = JSON.parse(localStorage.getItem('rental_identity')||'null'); } catch(e){ ME = null; }
+    renderMe();
+}
+function renderMe(){
+    $('gnMe').innerHTML = ME
+        ? '<b>'+esc(shortSchool(ME.school))+'</b> · '+esc(ME.name)+' · '+esc(ME.role)+' &nbsp;바꾸기'
+        : '학교·이름 입력하기';
+}
+function openIdentity(force){
+    const roles = (S.settings.roles && S.settings.roles.length ? S.settings.roles
+        : ['교사','교감','교장','교육실무사','늘봄·돌봄','영양(교)사','행정실','기타']);
+    const schools = S.schools.map(s=>s.name);
+    const cur = ME || { school:'', name:'', role:'교사' };
+    openModal(`
+      <h3>누가 쓰고 있나요?</h3>
+      <p class="m-sub">한 번만 적어 두면 다음부터는 그대로 씁니다. 비밀번호는 없습니다.</p>
+      <div class="field">
+        <label for="idSchool">학교</label>
+        <input class="input" id="idSchool" list="schoolList" placeholder="예: 백암초등학교" value="${esc(cur.school)}" autocomplete="off">
+        <datalist id="schoolList">${schools.map(s=>'<option value="'+esc(s)+'">').join('')}</datalist>
+        <div class="hint">목록에 없으면 그냥 적으면 됩니다. 적은 학교는 다음 사람에게도 보입니다.</div>
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label for="idName">이름</label>
+          <input class="input" id="idName" placeholder="예: 권준구" value="${esc(cur.name)}" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="idRole">직</label>
+          <select class="input" id="idRole">
+            ${roles.map(r=>'<option'+(r===cur.role?' selected':'')+'>'+esc(r)+'</option>').join('')}
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        ${force ? '' : '<button class="btn-pearl" onclick="closeModal()">취소</button>'}
+        <button class="btn-primary" onclick="saveIdentity()">저장</button>
+      </div>
+    `, !force);
+    setTimeout(()=>{ const el=$('idSchool'); if(el) el.focus(); }, 60);
+}
+async function saveIdentity(){
+    const school = $('idSchool').value.trim();
+    const name = $('idName').value.trim();
+    const role = $('idRole').value;
+    if (!school || !name) return toast('학교와 이름을 적어 주세요.', true);
+    ME = { school, name, role, savedAt: new Date().toISOString() };
+    localStorage.setItem('rental_identity', JSON.stringify(ME));
+    closeModal(); renderMe(); render();
+    if (!S.schools.find(s=>s.name===school)){
+        try { const r = await api('POST','/api/rental/schools',{name:school}); S.schools = r.schools; } catch(e){}
+    }
+}
+function requireMe(){
+    if (!ME){ openIdentity(true); return false; }
+    return true;
+}
+
+// ===== 모달 =====
+function openModal(html, closable){
+    const root = $('modalRoot');
+    root.innerHTML = '<div class="modal-back" id="modalBack"><div class="modal" role="dialog" aria-modal="true">'+html+'</div></div>';
+    if (closable !== false){
+        $('modalBack').addEventListener('click', e=>{ if(e.target.id==='modalBack') closeModal(); });
+    }
+}
+function closeModal(){ $('modalRoot').innerHTML=''; }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+// ===== 데이터 =====
+async function loadState(){
+    try {
+        const s = await api('GET','/api/rental/state');
+        S = s; render();
+    } catch(e){ toast(e.message, true); }
+}
+async function refreshFrom(res){
+    if (res.items) S.items = res.items;
+    if (res.loans) S.loans = res.loans;
+    render();
+}
+
+// ===== 화면 전환 =====
+function go(v){
+    view = v;
+    document.querySelectorAll('.sn-link,.tabbar button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.view===v);
+    });
+    window.scrollTo({top:0});
+    render();
+}
+
+// ===== 렌더 =====
+function render(){
+    document.querySelectorAll('.sn-link,.tabbar button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.view===view);
+    });
+    $('snTitle').textContent = S.settings.title || '교구 대여소';
+    renderBanner();
+    const m = $('main');
+    if (view==='browse') m.innerHTML = viewBrowse();
+    else if (view==='mine') m.innerHTML = viewMine();
+    else if (view==='add') m.innerHTML = viewAdd();
+    else m.innerHTML = viewStatus();
+    if (view==='add') syncAddDraft();
+}
+
+function renderBanner(){
+    const root = $('bannerRoot');
+    const mine = S.loans.filter(l=>isMine(l) && l.status==='requested' && l.readyAt);
+    const notice = S.settings.notice;
+    let html = '';
+    if (mine.length){
+        const it = itemOf(mine[0].itemId);
+        html += '<div class="banner">🔔 <b>내 차례예요!</b> '+esc(it?it.name:'교구')+' — 보유교 승인만 남았습니다.'
+             +  '<button class="btn-primary btn-sm" onclick="go(\'mine\')">내 대여 보기</button></div>';
+    }
+    if (notice){
+        html += '<div class="banner" style="background:var(--tile-3)">📣 '+esc(notice)+'</div>';
+    }
+    root.innerHTML = html;
+}
+
+/* ---------- ① 둘러보기 ---------- */
+function viewBrowse(){
+    const cats = S.settings.categories || [];
+    let list = S.items.filter(i=>i.active!==false);
+    if (filterCat!=='all') list = list.filter(i=>i.category===filterCat);
+    if (filterText){
+        const q = filterText.toLowerCase();
+        list = list.filter(i=>(i.name+' '+i.owner.school+' '+(i.place||'')).toLowerCase().includes(q));
+    }
+    if (onlyAvailable) list = list.filter(i=>availableOf(i)>0);
+    list.sort((a,b)=>(availableOf(b)>0)-(availableOf(a)>0) || b.createdAt.localeCompare(a.createdAt));
+
+    return `
+    <section class="tile tile-parchment">
+      <div class="wrap">
+        <h1 class="hero">${esc(S.settings.title||'소규모 학교 연계 교구 대여소')}</h1>
+        <p class="lead">가까운 학교끼리 교구를 나눠 씁니다. 학교·이름만 적으면 바로 빌릴 수 있어요.</p>
+      </div>
+    </section>
+    <section class="wrap" style="padding-top:24px">
+      <div class="filters">
+        <div class="search">
+          <span aria-hidden="true">🔎</span>
+          <input id="q" placeholder="교구 이름이나 학교로 찾기" value="${esc(filterText)}">
+        </div>
+        <button class="chip${filterCat==='all'?' on':''}" onclick="setCat('all')">전체</button>
+        ${cats.map(c=>'<button class="chip'+(filterCat===c?' on':'')+'" onclick="setCat(\''+esc(c)+'\')">'+esc(c)+'</button>').join('')}
+        <label class="toggle"><input type="checkbox" ${onlyAvailable?'checked':''} onchange="setOnlyAvail(this.checked)"> 지금 바로 빌릴 수 있는 것만</label>
+      </div>
+      ${list.length ? '<div class="grid">'+list.map(cardHtml).join('')+'</div>' : emptyHtml('아직 올라온 교구가 없어요.','➕ 올리기에서 첫 교구를 올려 보세요.','교구 올리기',"go('add')")}
+    </section>`;
+}
+function cardHtml(i){
+    const avail = availableOf(i);
+    const q = queueOf(i.id);
+    const etas = computeEtas(i);
+    let badge, cta;
+    if (avail>0){
+        badge = '<span class="badge b-done">'+(i.trackQty? i.total+'개 중 '+avail+'개 가능':'지금 가능')+'</span>';
+        cta = '<button class="btn-primary btn-sm" onclick="openRequest(\''+i.id+'\')">대여 신청</button>';
+    } else {
+        const head = q.length? etas[q[0].id] : null;
+        const when = q.length===0 ? (activeOf(i.id)[0] ? fmtD(activeOf(i.id)[0].wantTo)+' 이후' : '미정')
+                                  : (head ? fmtD(head)+'쯤' : '미정');
+        badge = '<span class="badge b-wait">대기 '+q.length+'명 · '+when+' 가능</span>';
+        cta = '<button class="btn-ghost btn-sm" onclick="openRequest(\''+i.id+'\')">대기 걸기</button>';
+    }
+    const thumb = i.hasPhoto
+        ? '<img src="/api/rental/items/'+i.id+'/photo" alt="'+esc(i.name)+'" loading="lazy">'
+        : '<span class="emoji">'+esc(i.emoji||'📦')+'</span>';
+    return `
+    <article class="card">
+      <div class="thumb">${thumb}</div>
+      <h3>${esc(i.name)}</h3>
+      <p class="sub">${esc(shortSchool(i.owner.school))}${i.place? ' · '+esc(i.place):''}</p>
+      ${badge}
+      <div class="foot">
+        ${cta}
+        ${isOwner(i) ? '<span class="owner-tools"><button class="btn-quiet" onclick="openEditItem(\''+i.id+'\')">수정</button><button class="btn-danger" onclick="delItem(\''+i.id+'\')">삭제</button></span>' : ''}
+      </div>
+    </article>`;
+}
+function setCat(c){ filterCat=c; render(); }
+function setOnlyAvail(v){ onlyAvailable=v; render(); }
+document.addEventListener('input', e=>{
+    if (e.target && e.target.id==='q'){
+        filterText = e.target.value;
+        clearTimeout(window._qt);
+        window._qt = setTimeout(()=>{ const pos=e.target.selectionStart; render();
+            const el=$('q'); if(el){ el.focus(); el.setSelectionRange(pos,pos); } }, 250);
+    }
+});
+
+/* ---------- ② 내 대여 ---------- */
+function viewMine(){
+    if (!ME) return '<section class="wrap tile">'+emptyHtml('먼저 학교와 이름을 적어 주세요.','내 신청 내역을 찾으려면 신원이 필요해요.','학교·이름 입력','openIdentity()')+'</section>';
+    const mine = S.loans.filter(isMine);
+    const live = mine.filter(l=>['requested','approved','out','return_requested'].includes(l.status)).sort((a,b)=>a.seq-b.seq);
+    const past = mine.filter(l=>['returned','rejected','canceled'].includes(l.status)).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+    return `
+    <section class="tile tile-parchment"><div class="wrap">
+      <h1 class="hero">내 대여</h1>
+      <p class="lead">${esc(shortSchool(ME.school))} · ${esc(ME.name)} · ${esc(ME.role)}</p>
+    </div></section>
+    <section class="wrap" style="padding-top:32px">
+      <h2 class="sec">진행 중</h2>
+      ${live.length ? '<div class="card" style="padding:8px 24px">'+live.map(loanRow).join('')+'</div>'
+                    : emptyHtml('진행 중인 대여가 없어요.','둘러보기에서 필요한 교구를 찾아보세요.','둘러보기',"go('browse')")}
+      ${past.length ? '<h2 class="sec" style="margin-top:48px">지난 기록</h2><div class="card" style="padding:8px 24px">'+past.slice(0,20).map(loanRow).join('')+'</div>' : ''}
+    </section>`;
+}
+function loanRow(l){
+    const i = itemOf(l.itemId);
+    const late = lateDays(l);
+    const acts = [];
+    if (l.status==='requested') acts.push(btn('취소','cancel',l.id,'quiet'));
+    if (l.status==='approved'){ acts.push(btn('수령했어요','pickup',l.id,'primary')); acts.push(btn('취소','cancel',l.id,'quiet')); }
+    if (l.status==='out') acts.push(btn('반납 신청','return-request',l.id,'primary'));
+    if (l.status==='return_requested') acts.push(btn('반납 신청 취소','return-cancel',l.id,'quiet'));
+    return `
+    <div class="row">
+      <div class="r-emoji">${esc(i?i.emoji:'📦')}</div>
+      <div class="r-body">
+        <p class="r-title">${esc(i?i.name:'(삭제된 교구)')} ${l.qty>1?'<span class="muted">'+l.qty+'개</span>':''}</p>
+        <p class="r-meta">${esc(shortSchool(i?i.owner.school:''))} · ${fmtD(l.wantFrom)}~${fmtD(l.wantTo)}</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge ${BADGE[l.status]}">${esc(statusText(l))}</span>
+          ${late? '<span class="badge b-late">연체 '+late+'일</span>':''}
+          ${l.rejectReason? '<span class="fine">사유: '+esc(l.rejectReason)+'</span>':''}
+        </div>
+      </div>
+      <div class="r-actions">${acts.join('')}</div>
+    </div>`;
+}
+function btn(label, action, id, kind){
+    const cls = kind==='primary' ? 'btn-primary btn-sm' : kind==='danger' ? 'btn-danger' : 'btn-quiet';
+    return '<button class="'+cls+'" onclick="doAction(\''+id+'\',\''+action+'\')">'+label+'</button>';
+}
+
+/* ---------- ③ 올리기 ---------- */
+function viewAdd(){
+    const cats = S.settings.categories || ['시청각','체육','과학','미술','음악','정보','행사','기타'];
+    return `
+    <section class="tile tile-parchment"><div class="wrap-narrow">
+      <h1 class="hero">교구 올리기</h1>
+      <p class="lead">우리 학교에 있는 교구를 다른 학교와 나눠 씁니다.</p>
+    </div></section>
+    <section class="wrap-narrow" style="padding-top:32px">
+      <div class="card" style="padding:32px">
+        <div class="field">
+          <label for="aName">무엇을 올리나요?</label>
+          <input class="input" id="aName" placeholder="예: 빔프로젝터(엡손 EB-970)">
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="aCat">분류</label>
+            <select class="input" id="aCat">${cats.map(c=>'<option>'+esc(c)+'</option>').join('')}</select>
+          </div>
+          <div class="field">
+            <label for="aPlace">어디서 받나요?</label>
+            <input class="input" id="aPlace" placeholder="예: 본관 2층 시청각실">
+          </div>
+        </div>
+        <div class="field">
+          <label>아이콘</label>
+          <div class="emoji-pick" id="emojiPick">
+            ${QUICK_EMOJI.map(e=>'<button type="button" onclick="pickEmoji(\''+e+'\')">'+e+'</button>').join('')}
+          </div>
+          <div class="hint">사진을 올리면 아이콘 대신 사진이 보입니다.</div>
+        </div>
+        <div class="field">
+          <label for="aPhoto">사진 (선택)</label>
+          <input type="file" id="aPhoto" accept="image/*" onchange="pickPhoto(this)">
+          <div id="photoPrev" style="margin-top:12px"></div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label>수량</label>
+            <div class="stepper">
+              <button type="button" onclick="stepQty(-1)">−</button>
+              <span class="val" id="aQtyVal">1</span>
+              <button type="button" onclick="stepQty(1)">＋</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="aMaxDays">최대 며칠까지</label>
+            <input class="input" id="aMaxDays" type="number" min="0" max="365" value="${S.settings.defaultMaxDays||14}">
+            <div class="hint">0을 넣으면 제한 없음</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="aNote">알아둘 점 (선택)</label>
+          <textarea class="input" id="aNote" placeholder="예: 삼각대·HDMI 케이블 포함. 램프 예열 5분 필요."></textarea>
+        </div>
+        <div class="field">
+          <label class="toggle"><input type="checkbox" id="aAuto"> 신청이 오면 자동으로 승인하기</label>
+          <div class="hint">체크하면 재고가 있고 순번이 1번일 때 바로 승인됩니다.</div>
+        </div>
+        <p class="fine">올리는 사람: ${ME? esc(shortSchool(ME.school))+' · '+esc(ME.name)+' · '+esc(ME.role) : '학교·이름을 먼저 입력해 주세요.'}</p>
+        <div class="modal-actions">
+          <button class="btn-primary" onclick="submitItem()">교구 올리기</button>
+        </div>
+      </div>
+    </section>`;
+}
+function syncAddDraft(){
+    $('aQtyVal').textContent = addDraft.qty;
+    document.querySelectorAll('#emojiPick button').forEach(b=>{
+        b.classList.toggle('on', b.textContent===addDraft.emoji);
+    });
+    if (addDraft.photo){
+        $('photoPrev').innerHTML = '<img src="'+addDraft.photo+'" style="width:120px;height:120px;object-fit:contain;border:1px solid var(--hairline);border-radius:var(--r-sm);padding:8px">'
+            + '<button class="btn-quiet" onclick="clearPhoto()">사진 빼기</button>';
+    }
+}
+function pickEmoji(e){ addDraft.emoji=e; syncAddDraft(); }
+function stepQty(d){ addDraft.qty = Math.max(1, Math.min(999, addDraft.qty+d)); syncAddDraft(); }
+function clearPhoto(){ addDraft.photo=''; $('photoPrev').innerHTML=''; $('aPhoto').value=''; }
+function pickPhoto(input){
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const img = new Image();
+    const rd = new FileReader();
+    rd.onload = () => { img.onload = () => {
+        const max = 800;
+        const scale = Math.min(1, max/Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        let url = c.toDataURL('image/jpeg', 0.72);
+        if (url.length > 190000) url = c.toDataURL('image/jpeg', 0.55);
+        if (url.length > 190000){ toast('사진이 너무 커요. 다른 사진을 골라 주세요.', true); return; }
+        addDraft.photo = url; syncAddDraft();
+    }; img.src = rd.result; };
+    rd.readAsDataURL(f);
+}
+async function submitItem(){
+    if (!requireMe()) return;
+    const name = $('aName').value.trim();
+    if (!name) return toast('교구 이름을 적어 주세요.', true);
+    try {
+        const r = await api('POST','/api/rental/items',{
+            name, category:$('aCat').value, emoji:addDraft.emoji, place:$('aPlace').value.trim(),
+            note:$('aNote').value.trim(), total:addDraft.qty,
+            maxDays:parseInt($('aMaxDays').value,10)||0, autoApprove:$('aAuto').checked,
+            owner:ME, actor:ME, photoDataUrl:addDraft.photo || ''
+        });
+        addDraft = { emoji:'📦', photo:'', qty:1 };
+        S.items = r.items;
+        toast('교구를 올렸어요.');
+        go('browse');
+    } catch(e){ toast(e.message, true); }
+}
+
+/* ---------- 교구 수정/삭제 ---------- */
+function openEditItem(id){
+    const i = itemOf(id); if(!i) return;
+    openModal(`
+      <h3>${esc(i.name)} 수정</h3>
+      <p class="m-sub">보유교: ${esc(i.owner.school)} · ${esc(i.owner.name)}</p>
+      <div class="field"><label for="eName">이름</label><input class="input" id="eName" value="${esc(i.name)}"></div>
+      <div class="two-col">
+        <div class="field"><label for="eTotal">총 수량</label><input class="input" id="eTotal" type="number" min="1" max="999" value="${i.total}"></div>
+        <div class="field"><label for="eMax">최대 일수</label><input class="input" id="eMax" type="number" min="0" max="365" value="${i.maxDays||0}"></div>
+      </div>
+      <div class="field"><label for="ePlace">받는 곳</label><input class="input" id="ePlace" value="${esc(i.place||'')}"></div>
+      <div class="field"><label for="eNote">알아둘 점</label><textarea class="input" id="eNote">${esc(i.note||'')}</textarea></div>
+      <div class="field"><label class="toggle"><input type="checkbox" id="eActive" ${i.active!==false?'checked':''}> 목록에 보이기</label></div>
+      <div class="modal-actions">
+        <button class="btn-pearl" onclick="closeModal()">취소</button>
+        <button class="btn-primary" onclick="saveItem('${i.id}')">저장</button>
+      </div>`);
+}
+async function saveItem(id){
+    try {
+        const r = await api('PATCH','/api/rental/items/'+id,{
+            name:$('eName').value, total:$('eTotal').value, maxDays:$('eMax').value,
+            place:$('ePlace').value, note:$('eNote').value, active:$('eActive').checked, actor:ME
+        });
+        S.items = r.items; closeModal(); toast('저장했어요.'); render();
+    } catch(e){ toast(e.message, true); }
+}
+function delItem(id){
+    const i = itemOf(id); if(!i) return;
+    openModal(`
+      <h3>'${esc(i.name)}'을 지울까요?</h3>
+      <p class="m-sub">목록에서 사라집니다. 지난 대여 기록은 남습니다.</p>
+      <div class="modal-actions">
+        <button class="btn-pearl" onclick="closeModal()">그대로 두기</button>
+        <button class="btn-primary" style="background:#d70015" onclick="delItemGo('${id}')">지우기</button>
+      </div>`);
+}
+async function delItemGo(id){
+    try {
+        const r = await api('DELETE','/api/rental/items/'+id,{actor:ME});
+        S.items = r.items; closeModal(); toast('지웠어요.'); render();
+    } catch(e){ closeModal(); toast(e.message, true); }
+}
+
+/* ---------- 대여 신청 ---------- */
+function openRequest(id){
+    if (!requireMe()) return;
+    const i = itemOf(id); if(!i) return;
+    const avail = availableOf(i);
+    const today = todayStr();
+    const from = today;
+    const to = addDays(today, Math.max(0, Math.min((i.maxDays||14)-1, 4)));
+    window._req = { itemId:id, qty:1, max:Math.max(1, i.trackQty? i.total : 1) };
+    openModal(`
+      <h3>${esc(i.name)} ${avail>0?'대여 신청':'대기 걸기'}</h3>
+      <p class="m-sub">${esc(shortSchool(i.owner.school))}${i.place?' · '+esc(i.place):''}${i.note?' · '+esc(i.note):''}</p>
+      ${avail>0 ? '' : '<div class="badge b-wait" style="margin-bottom:16px">지금은 빌려간 상태예요. 대기열에 이름을 올립니다.</div>'}
+      ${i.trackQty ? `
+      <div class="field">
+        <label>수량 <span class="muted">(지금 가능 ${avail}개 / 총 ${i.total}개)</span></label>
+        <div class="stepper">
+          <button type="button" onclick="reqQty(-1)">−</button>
+          <span class="val" id="rQty">1</span>
+          <button type="button" onclick="reqQty(1)">＋</button>
+        </div>
+      </div>` : ''}
+      <div class="two-col">
+        <div class="field"><label for="rFrom">언제부터</label><input class="input" id="rFrom" type="date" value="${from}"></div>
+        <div class="field"><label for="rTo">언제까지</label><input class="input" id="rTo" type="date" value="${to}"></div>
+      </div>
+      ${i.maxDays? '<p class="fine" style="margin-top:-12px">최대 '+i.maxDays+'일까지 빌릴 수 있어요.</p>':''}
+      <div class="field">
+        <label>받는 방법</label>
+        <div class="radio-row">
+          ${['방문','순회차량','택배','협의'].map((m,k)=>'<button type="button" class="chip'+(k===0?' on':'')+'" data-m="'+m+'" onclick="pickMethod(this)">'+m+'</button>').join('')}
+        </div>
+      </div>
+      <div class="field"><label for="rMemo">쓸 곳 (선택)</label><input class="input" id="rMemo" placeholder="예: 3학년 과학 수업"></div>
+      <div class="field"><label for="rContact">연락처 (선택)</label><input class="input" id="rContact" placeholder="010-0000-0000"></div>
+      <p class="fine">신청자: ${esc(shortSchool(ME.school))} · ${esc(ME.name)} · ${esc(ME.role)}</p>
+      <div class="modal-actions">
+        <button class="btn-pearl" onclick="closeModal()">취소</button>
+        <button class="btn-primary" onclick="submitRequest()">${avail>0?'신청하기':'대기 걸기'}</button>
+      </div>`);
+}
+function reqQty(d){
+    window._req.qty = Math.max(1, Math.min(window._req.max, window._req.qty+d));
+    $('rQty').textContent = window._req.qty;
+}
+function pickMethod(el){
+    document.querySelectorAll('[data-m]').forEach(b=>b.classList.remove('on'));
+    el.classList.add('on');
+}
+async function submitRequest(){
+    const r = window._req;
+    const sel = document.querySelector('[data-m].on');
+    try {
+        const res = await api('POST','/api/rental/loans',{
+            itemId:r.itemId, qty:r.qty, borrower:ME, actor:ME,
+            wantFrom:$('rFrom').value, wantTo:$('rTo').value,
+            method: sel? sel.dataset.m : '방문',
+            memo:$('rMemo').value, contact:$('rContact').value
+        });
+        S.loans = res.loans;
+        closeModal();
+        const i = itemOf(r.itemId);
+        const q = queueOf(r.itemId);
+        const idx = q.findIndex(x=>x.id===res.loan.id);
+        if (res.loan.status==='approved') toast('바로 승인됐어요. 받으러 가시면 됩니다.');
+        else if (idx>0){
+            const eta = computeEtas(i)[res.loan.id];
+            toast('대기 '+(idx+1)+'번째로 올렸어요.'+(eta? ' '+fmtD(eta)+'쯤 차례가 옵니다.':''));
+        } else toast('신청했어요. '+shortSchool(i.owner.school)+' 담당자가 승인하면 표시됩니다.');
+        go('mine');
+    } catch(e){ toast(e.message, true); }
+}
+
+/* ---------- ④ 전체 현황 ---------- */
+function viewStatus(){
+    const late = S.loans.filter(l=>lateDays(l)>0).sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
+    const items = S.items.filter(i=>i.active!==false)
+        .filter(i=>activeOf(i.id).length || queueOf(i.id).length);
+    return `
+    <section class="tile tile-parchment"><div class="wrap">
+      <h1 class="hero">전체 현황</h1>
+      <p class="lead">누가 무엇을 언제까지 쓰는지, 다음 차례는 누구인지 한눈에 봅니다.</p>
+    </div></section>
+    ${late.length ? `
+    <section class="tile tile-dark"><div class="wrap">
+      <h2 class="sec" style="color:#fff">연체 중 ${late.length}건</h2>
+      ${late.map(l=>{ const i=itemOf(l.itemId); return `
+        <div class="queue-line">
+          <span>${esc(i?i.emoji:'📦')}</span>
+          <b style="color:#fff">${esc(i?i.name:'')}</b>
+          <span>${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)}</span>
+          <span class="badge b-late" style="margin-left:auto">${lateDays(l)}일 지남</span>
+          ${l.contact? '<span>'+esc(l.contact)+'</span>':''}
+        </div>`; }).join('')}
+    </div></section>` : ''}
+    <section class="wrap" style="padding-top:32px">
+      ${items.length ? items.map(statusBlock).join('')
+        : emptyHtml('지금 오가는 교구가 없어요.','모든 교구가 제자리에 있습니다.','둘러보기',"go('browse')")}
+    </section>`;
+}
+function statusBlock(i){
+    const act = activeOf(i.id);
+    const q = queueOf(i.id);
+    const etas = computeEtas(i);
+    return `
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:28px">${esc(i.emoji)}</span>
+        <div>
+          <h3>${esc(i.name)}</h3>
+          <p class="sub">${esc(shortSchool(i.owner.school))} · 총 ${i.total}개 · 지금 ${availableOf(i)}개 있음</p>
+        </div>
+      </div>
+      ${act.map(l=>`
+        <div class="row" style="padding:12px 0">
+          <div class="r-body">
+            <p class="r-title">${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)} <span class="muted">${l.qty}개</span></p>
+            <p class="r-meta">${fmtD(l.wantFrom)}~${fmtD(l.wantTo)} · ${esc(l.method)}</p>
+            <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="badge ${BADGE[l.status]}">${esc(LABEL[l.status])}</span>
+              ${lateDays(l)? '<span class="badge b-late">연체 '+lateDays(l)+'일</span>':''}
+            </div>
+          </div>
+          <div class="r-actions">
+            ${l.status==='return_requested' ? btn('반납 확인','return-confirm',l.id,'primary') : ''}
+            ${l.status==='approved' ? btn('수령 확인','pickup',l.id,'quiet') : ''}
+            ${['out','return_requested','approved'].includes(l.status) ? btn('강제 반납','force-return',l.id,'danger') : ''}
+          </div>
+        </div>`).join('')}
+      ${q.map((l,idx)=>`
+        <div class="row" style="padding:12px 0">
+          <div class="r-body">
+            <p class="r-title">${idx+1}번 대기 · ${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)} <span class="muted">${l.qty}개</span></p>
+            <p class="r-meta">${fmtD(l.wantFrom)}~${fmtD(l.wantTo)} · ${etas[l.id]? fmtD(etas[l.id])+'쯤 가능' : '가능 시점 미정'}${l.memo? ' · '+esc(l.memo):''}</p>
+          </div>
+          <div class="r-actions">
+            <button class="btn-primary btn-sm" onclick="approveAsk('${l.id}',${idx})">승인</button>
+            <button class="btn-quiet" onclick="rejectAsk('${l.id}')">반려</button>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+function approveAsk(id, idx){
+    const l = S.loans.find(x=>x.id===id); if(!l) return;
+    const i = itemOf(l.itemId);
+    const avail = availableOf(i);
+    window._appr = { id, qty: Math.min(l.qty, Math.max(1, avail)), max: l.qty, override: idx>0 };
+    openModal(`
+      <h3>승인할까요?</h3>
+      <p class="m-sub">${esc(i.name)} · ${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)} · ${fmtD(l.wantFrom)}~${fmtD(l.wantTo)}</p>
+      ${avail < l.qty ? '<div class="badge b-wait" style="margin-bottom:16px">신청은 '+l.qty+'개인데 지금 '+avail+'개만 있어요. 수량을 줄여 승인하면 남은 '+(l.qty-avail)+'개는 대기열 맨 앞에 남습니다.</div>' : ''}
+      <div class="field">
+        <label>승인 수량 <span class="muted">(신청 ${l.qty}개 / 가능 ${avail}개)</span></label>
+        <div class="stepper">
+          <button type="button" onclick="apprQty(-1)">−</button>
+          <span class="val" id="aq">${window._appr.qty}</span>
+          <button type="button" onclick="apprQty(1)">＋</button>
+        </div>
+      </div>
+      ${idx>0 ? '<p class="fine">앞 순번이 있습니다. 그래도 승인하면 기록에 [먼저 승인]으로 남습니다.</p>' : ''}
+      <div class="modal-actions">
+        <button class="btn-pearl" onclick="closeModal()">취소</button>
+        <button class="btn-primary" onclick="approveGo()">${idx>0?'먼저 승인':'승인'}</button>
+      </div>`);
+}
+function apprQty(d){
+    const a = window._appr;
+    a.qty = Math.max(1, Math.min(a.max, a.qty+d));
+    $('aq').textContent = a.qty;
+}
+async function approveGo(){
+    const a = window._appr;
+    try {
+        const r = await api('POST','/api/rental/loans/'+a.id+'/approve',{qty:a.qty, override:a.override, actor:ME});
+        S.loans = r.loans; closeModal(); toast('승인했어요.'); render();
+    } catch(e){ closeModal(); toast(e.message, true); }
+}
+function rejectAsk(id){
+    openModal(`
+      <h3>반려할까요?</h3>
+      <p class="m-sub">사유는 신청한 분에게 그대로 보입니다.</p>
+      <div class="field"><label for="rjR">사유</label><input class="input" id="rjR" placeholder="예: 그 주에 본교 수업에서 사용합니다"></div>
+      <div class="modal-actions">
+        <button class="btn-pearl" onclick="closeModal()">취소</button>
+        <button class="btn-primary" onclick="rejectGo('${id}')">반려</button>
+      </div>`);
+}
+async function rejectGo(id){
+    const reason = $('rjR').value.trim();
+    if (!reason) return toast('사유를 적어 주세요.', true);
+    try {
+        const r = await api('POST','/api/rental/loans/'+id+'/reject',{reason, actor:ME});
+        S.loans = r.loans; closeModal(); toast('반려했어요.'); render();
+    } catch(e){ closeModal(); toast(e.message, true); }
+}
+
+/* ---------- 공통 액션 ---------- */
+async function doAction(id, action){
+    if (!requireMe()) return;
+    try {
+        const r = await api('POST','/api/rental/loans/'+id+'/'+action,{actor:ME});
+        S.loans = r.loans;
+        const msg = { cancel:'취소했어요.', pickup:'수령 처리했어요.', 'return-request':'반납 신청했어요. 보유교가 확인하면 끝납니다.',
+                      'return-cancel':'반납 신청을 취소했어요.', 'return-confirm':'반납을 확인했어요.', 'force-return':'강제 반납 처리했어요.' };
+        toast(msg[action] || '처리했어요.');
+        render();
+    } catch(e){ toast(e.message, true); }
+}
+
+function emptyHtml(title, sub, cta, onclick){
+    return `<div class="empty">
+      <div class="e-emoji">📦</div>
+      <p><b>${esc(title)}</b><br><span class="muted">${esc(sub)}</span></p>
+      ${cta? '<button class="btn-primary" onclick="'+onclick+'">'+esc(cta)+'</button>':''}
+    </div>`;
+}
+
+// ===== 시작 =====
+(async function(){
+    loadIdentity();
+    await loadState();
+    if (!ME) openIdentity(true);
+    setInterval(loadState, 20000);
+    window.addEventListener('focus', loadState);
+})();
+</script>
+</body>
+</html>

@@ -325,3 +325,15 @@ async function api(method, endpoint, body) {
 5. Phase 4: `lib/xlsx-export.js` — 한 번에 성공
 6. 폴백: `lib/docx-permit.js` DOCX 생성 (한글에서 HWPX 안 열릴 때 대안)
 7. 현재: HWPX 행 추가 검증 중, UI는 아직 착수 전
+
+
+---
+
+## 교구 대여소 (/rental) — 2026-08-27 초안
+
+- **무엇**: 소규모 학교끼리 교구를 나눠 쓰는 독립 페이지. 메인 SPA에는 **링크 탭**(`type:'link'`)만 두고 클릭 시 이동.
+- **설계문**: `RENTAL_DESIGN.md` (상태기계·대기열·API·함정 전부 여기)
+- **디자인 토큰**: 레포 루트 `DESIGN.md` (Apple). UI 작업 전 반드시 읽을 것.
+- **파일**: `lib/rental.js` (라우트+락+상태기계) / `public/rental.html` (단일 파일 SPA) / `defaults/rental-*.json`
+- **인증 없음(완전 개방)**. 잠그려면 RENTAL_DESIGN.md §4.2 참고.
+- **함정 3가지만 기억**: ① 쓰기는 전부 `withLock` (Redis 전체-JSON 저장이라 동시 승인 시 유실) ② `return_requested`는 재고 아님 ③ 사진은 `rental-photo:{id}` 별도 키(items 배열에 넣으면 저장 전체가 실패)

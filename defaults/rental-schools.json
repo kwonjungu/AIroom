@@ -1,0 +1,26 @@
+[
+    {
+        "id": "sc_wonsam",
+        "name": "원삼초등학교",
+        "short": "원삼초",
+        "createdAt": "2026-08-27T00:00:00.000Z"
+    },
+    {
+        "id": "sc_baekbong",
+        "name": "백봉초등학교",
+        "short": "백봉초",
+        "createdAt": "2026-08-27T00:00:00.000Z"
+    },
+    {
+        "id": "sc_jangpyeong",
+        "name": "장평초등학교",
+        "short": "장평초",
+        "createdAt": "2026-08-27T00:00:00.000Z"
+    },
+    {
+        "id": "sc_baekam",
+        "name": "백암초등학교",
+        "short": "백암초",
+        "createdAt": "2026-08-27T00:00:00.000Z"
+    }
+]
