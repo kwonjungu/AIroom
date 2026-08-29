@@ -1083,6 +1083,14 @@ const HOLIDAY_GROUPS = { 'Lunar New Year': '설날', 'Chuseok': '추석' }; // 3
 // - 전국동시선거 / 임시공휴일 등
 // 여기 추가하면 학교일정 탭과 방학근무 탭 양쪽에 자동 반영된다.
 const EXTRA_HOLIDAYS_BY_YEAR = {
+    // 과거 임시공휴일 — 정부가 별도 지정한 날. 추석·설날 대체공휴일과는 근거가 다르므로
+    // 자동 계산으로는 나오지 않는다. 지난 학사일정을 되짚어 볼 때를 위해 유지.
+    2023: [
+        { date: '2023-10-02', name: '임시공휴일' },   // 추석 대체공휴일 아님 (국무회의 별도 지정)
+    ],
+    2025: [
+        { date: '2025-01-27', name: '임시공휴일' },   // 설 연휴 전날, 국무회의 별도 지정
+    ],
     2026: [
         { date: '2026-05-01', name: '근로자의 날' },
         { date: '2026-05-04', name: '학교장 재량 휴업일' },
@@ -1118,15 +1126,23 @@ function computeHolidaysWithSubs(nagerData, year) {
         }
     }
 
-    // 3) 설날·추석 연휴: 연휴 중 토·일 겹치면 연휴 마지막 다음 평일 1일 대체
+    // 3) 설날·추석 연휴: 연휴가 "다른 공휴일"과 겹칠 때만 연휴 다음 첫 평일 1일 대체
+    //    (관공서의 공휴일에 관한 규정 제3조①). 토요일은 규정상 공휴일이 아니므로
+    //    토요일과만 겹치는 경우에는 대체공휴일이 생기지 않는다 — 2)의 단일 공휴일 규칙
+    //    (토·일 모두 대체 대상, 제3조②)과 다르므로 혼동 주의.
+    //    예) 2026 추석 9/24(목)·9/25(금)·9/26(토) → 대체공휴일 없음
+    //        2023 추석 9/28(목)~9/30(토) → 대체공휴일 없음 (정부가 10/2을 별도 임시공휴일 지정)
+    //        2025 추석 10/5(일) 포함      → 10/8(수) 대체공휴일
+    //        2017 추석 10/3 개천절과 겹침 → 10/6(금) 대체공휴일
     for (const [groupSrc, korName] of Object.entries(HOLIDAY_GROUPS)) {
         const dates = base.filter(h => h.src === groupSrc).map(h => h.date).sort();
         if (dates.length === 0) continue;
-        const overlapsWeekend = dates.some(ds => {
+        const overlapsHoliday = dates.some(ds => {
             const d = new Date(ds + 'T00:00:00Z').getUTCDay();
-            return d === 0 || d === 6;
+            if (d === 0) return true;                                  // 일요일(제2조제1호 공휴일)과 겹침
+            return base.some(h => h.date === ds && h.src !== groupSrc); // 다른 법정공휴일과 겹침
         });
-        if (overlapsWeekend) {
+        if (overlapsHoliday) {
             const last = dates[dates.length - 1];
             const sub = nextBusinessDay(last);
             all.push({ date: sub, name: `${korName} 대체공휴일`, src: 'substitute' });
