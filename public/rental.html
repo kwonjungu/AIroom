@@ -354,52 +354,275 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 
-/* ===== 로그인 게이트 ===== */
-#gate{position:fixed;inset:0;z-index:300;background:var(--parchment);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
-#gate .gcard{background:var(--canvas);border-radius:var(--r-xl);box-shadow:0 24px 68px rgba(0,0,0,.12);padding:40px 36px;width:100%;max-width:420px}
-#gate h1{font-size:27px;font-weight:600;letter-spacing:-.03em;margin:0 0 6px}
-#gate .gsub{font-size:14.5px;color:var(--ink-48);margin:0 0 28px;line-height:1.5}
-#gate .gfoot{font-size:12.5px;color:var(--ink-48);margin:20px 0 0;line-height:1.55}
+/* ══════════════════════════════════════════════════════════════
+   감사 반영분 — 아래 규칙들은 위 토큰을 덮어쓴다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  color-scheme: light;            /* 없으면 OS 다크모드에서 날짜·드롭다운·체크박스만 검게 뒤집힌다 */
+  --s-xxs:4px;
+  --ink-secondary:#6e6e73;        /* 본문 보조 텍스트. --ink-48(#7a7a7a)는 4.35:1 로 AA 미달이었다 */
+  --danger:#d70015; --danger-hover:#b8000f;
+  --focus-ring:0 0 0 4px rgba(0,113,227,.14);
+  /* 상태색: 초록은 "쓸 수 있다"에만, 끝난 일은 무채색으로 물러난다 */
+  --st-wait-bg:rgba(255,149,0,.14);   --st-wait-fg:#8a4f00;
+  --st-appr-bg:rgba(175,82,222,.12);  --st-appr-fg:#7d3fa8;
+  --st-out-bg:rgba(0,102,204,.12);    --st-out-fg:#0055aa;
+  --st-back-bg:rgba(0,150,167,.14);   --st-back-fg:#046b78;
+  --st-done-bg:rgba(52,199,89,.14);   --st-done-fg:#1a7431;
+  --st-off-bg:rgba(0,0,0,.05);
+}
 
-/* ===== 탭 배지 ===== */
+/* ── 읽는 텍스트는 전부 AA 통과 색으로 ── */
+.card .sub,.r-meta,.hint,.m-sub,.kpi .l,.empty,.foot .fl a,
+.fine,#gate .gsub,#gate .gfoot{color:var(--ink-secondary)}
+
+/* ── 배지: 대비 확보 + 파랑 3형제 분리 + 초록의 뜻 하나로 ── */
+.badge{padding:5px 10px 5px 9px;font-size:12px;font-weight:600}
+.badge::before{width:5px;height:5px}
+.b-wait{background:var(--st-wait-bg);color:var(--st-wait-fg)}
+.b-appr{background:var(--st-appr-bg);color:var(--st-appr-fg)}
+.b-out {background:var(--st-out-bg); color:var(--st-out-fg)}
+.b-back{background:var(--st-back-bg);color:var(--st-back-fg)}
+.b-ok  {background:var(--st-done-bg);color:var(--st-done-fg)}   /* 지금 빌릴 수 있음 */
+.b-done{background:var(--st-off-bg); color:var(--ink-60)}       /* 끝난 일 */
+.b-done::before{background:var(--st-done-fg)}
+.b-off {background:var(--st-off-bg); color:var(--ink-60)}
+
+/* ── 여러 줄 안내는 알약이 아니라 사각 콜아웃 ── */
+.note{
+  display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-md);
+  padding:13px 16px;margin:0 0 var(--s-lg);font-size:14.5px;line-height:1.5;letter-spacing:-.01em;
+}
+.note::before{content:"";width:3px;align-self:stretch;border-radius:2px;background:currentColor;opacity:.5;flex:0 0 auto}
+.note b{font-weight:600}
+.note-wait{background:var(--st-wait-bg);color:var(--st-wait-fg)}
+.note-late{background:rgba(255,59,48,.12);color:#a3001a}
+.note-err {background:rgba(255,59,48,.12);color:#a3001a;margin:0 0 var(--s-md)}
+.offline{background:var(--st-wait-bg);color:var(--st-wait-fg);border:0;border-radius:var(--r-md);
+  padding:13px 16px;margin:0 0 var(--s-lg);font-size:14.5px;line-height:1.55}
+
+/* ── 끊긴 망 알림 띠 ── */
+#netBar{display:none;background:var(--st-wait-bg);color:var(--st-wait-fg);
+  padding:11px 20px;font-size:14px;letter-spacing:-.01em;display:none;align-items:center;gap:12px}
+#netBar.on{display:flex}
+#netBar button{margin-left:auto}
+
+/* ── 위계: hero 56 → 블록 제목 21 ── */
+.blk > .sec{font-size:21px;line-height:1.2;letter-spacing:-.02em;font-weight:600;margin-bottom:var(--s-sm)}
+.sec-count{font-size:13px;font-weight:400;color:var(--ink-secondary);margin-left:var(--s-xs);font-variant-numeric:tabular-nums}
+.blk .sec + .hint{margin:0 0 var(--s-sm)}
+.blk{margin-bottom:var(--s-xxl)}
+.field{margin-bottom:var(--s-lg)}
+.tile{padding:clamp(36px,5.5vw,64px) 0}
+
+/* ── KPI: hero 에 자리 양보 ── */
+.kpis{gap:0;margin-top:var(--s-xl)}
+.kpi{padding:0 28px;border-left:1px solid var(--hairline)}
+.kpi:first-child{padding-left:0;border-left:0}
+.kpi .n{font-size:clamp(24px,2.6vw,30px);letter-spacing:-.02em}
+
+/* ── 카드: 썸네일 풀블리드 + 간격 차등 ── */
+.card{padding:0 0 var(--s-sm);gap:0;overflow:hidden;animation:none}
+.card .thumb{border-radius:0;margin:0 0 12px}
+.card h3{padding:0 var(--s-sm)}
+.card .sub{padding:0 var(--s-sm);margin-top:2px}
+.card .badge{margin:10px var(--s-sm) 0}
+.card .foot{padding:14px var(--s-sm) 0;margin-top:auto;gap:var(--s-xs)}
+.card > .skel{margin:0 var(--s-sm)}
+.thumb img{padding:14px}
+/* 진입 모션은 첫 그리기 한 번만. 검색할 때마다 카드가 다시 날아오면 노이즈다 */
+.grid.is-first .card{animation:fadeUp .4s cubic-bezier(.2,.8,.3,1) both}
+.grid.is-first .card:nth-child(1){animation-delay:.02s}
+.grid.is-first .card:nth-child(2){animation-delay:.05s}
+.grid.is-first .card:nth-child(3){animation-delay:.08s}
+.grid.is-first .card:nth-child(4){animation-delay:.11s}
+.grid.is-first .card:nth-child(n+5){animation-delay:.14s}
+.card-hover:hover{transform:translateY(-2px);box-shadow:none;border-color:#d0d0d6}
+.card-hover:hover .thumb img,.card-hover:hover .thumb .emoji{transform:scale(1.03)}
+
+/* ── 목록 행: 배지를 제목 위로 올려 한 줄 줄인다 ── */
+.list{padding:2px 20px}
+.row{padding:15px 0;gap:14px;align-items:flex-start}
+.r-emoji{font-size:26px;width:40px;flex:0 0 40px;margin-top:1px}
+.r-body{display:flex;flex-direction:column;min-width:0}
+.r-title{font-size:15.5px;line-height:1.35;margin:0}
+.r-meta{font-size:13px;line-height:1.45;margin:3px 0 0}
+.r-where{font-size:13.5px;line-height:1.45;margin:4px 0 0;color:var(--ink)}
+.r-where b{font-weight:600}
+.badges{order:-1;margin:0 0 5px}
+.r-actions{gap:var(--s-xs)}
+
+/* ── 버튼: 굵기 400 통일, danger 솔리드, 타깃 확보 ── */
+.btn-primary,.btn-ghost{font-weight:400;font-size:17px}
+.btn-sm{padding:8px 16px!important;font-size:14px!important;font-weight:400!important}
+.card .foot .btn-primary,.card .foot .btn-ghost{font-size:14px}
+.btn-primary.is-danger{background:var(--danger)}
+.btn-primary.is-danger:hover{background:var(--danger-hover)}
+.btn-primary.is-danger:focus-visible{outline-color:var(--danger)}
+.btn-quiet,.btn-danger{
+  background:none;border:0;font-size:14px;letter-spacing:-.01em;cursor:pointer;
+  padding:8px 12px;min-height:36px;border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background-color .16s,transform .14s cubic-bezier(.2,.8,.3,1);
+}
+.btn-quiet{color:var(--primary)}
+.btn-quiet:hover{background:rgba(0,102,204,.07)}
+.btn-quiet:active{background:rgba(0,102,204,.16);transform:scale(.95)}
+.btn-danger{color:var(--danger)}
+.btn-danger:hover{background:rgba(215,0,21,.07)}
+.btn-danger:active{background:rgba(215,0,21,.16);transform:scale(.95)}
+.owner-tools{display:flex;gap:10px;margin-left:auto}
+button[data-busy]{opacity:.55;pointer-events:none}
+
+/* ── 포커스 링: 버튼 한 종류가 아니라 전부 ── */
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--primary-focus);outline-offset:3px;
+}
+.chip:focus-visible,.tabbar button:focus-visible,.sn-link:focus-visible{outline-offset:2px}
+.input:focus-visible{outline:0}
+.search:focus-within{box-shadow:var(--focus-ring)}
+.emoji-pick button.on{box-shadow:0 0 0 3px rgba(0,102,204,.16)}
+
+/* ── 로그인: 키보드가 올라와도 위쪽이 잘리지 않게 ── */
+#gate{
+  position:fixed;inset:0;z-index:300;background:var(--parchment);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+}
+@supports (height:100dvh){ #gate{height:100dvh} }
+#gate .gcard{
+  background:var(--canvas);border-radius:var(--r-xl);box-shadow:0 24px 68px rgba(0,0,0,.12);
+  padding:var(--s-xxl) var(--s-xl);width:100%;max-width:420px;
+  margin:auto 0;   /* 안 넘치면 가운데, 넘치면 위부터 전부 스크롤된다 */
+}
+#gate h1{font-size:28px;font-weight:600;letter-spacing:-.03em;margin:0 0 var(--s-xxs)}
+#gate .gsub{font-size:14.5px;margin:0 0 var(--s-lg);line-height:1.5}
+#gate .gfoot{font-size:12.5px;margin:var(--s-md) 0 0;line-height:1.55}
+
+/* ── 모달: 88vh 대신 배경이 스크롤하게. 닫기 ✕ 추가 ── */
+.modal-back{
+  position:fixed;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(3px);z-index:100;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  animation:fadeIn .2s ease;
+}
+@supports (height:100dvh){ .modal-back{height:100dvh} }
+.modal{
+  background:var(--canvas);border-radius:var(--r-xl);max-width:520px;width:100%;
+  max-height:none;margin:auto 0;position:relative;
+  padding:32px;box-shadow:0 24px 68px rgba(0,0,0,.3);animation:popIn .3s cubic-bezier(.2,.9,.3,1);
+}
+.modal h3{padding-right:48px}
+.modal-x{
+  position:absolute;top:8px;right:8px;width:44px;height:44px;border:0;background:none;
+  border-radius:50%;font-size:26px;line-height:1;color:var(--ink-48);cursor:pointer;
+  display:grid;place-items:center;
+}
+.modal-x:hover{background:var(--divider-soft)}
+
+/* ── 탭 배지 ── */
 .tab-badge{
-  display:none;min-width:19px;height:19px;padding:0 6px;border-radius:9999px;background:#d70015;color:#fff;
-  font-size:11.5px;font-weight:700;line-height:19px;text-align:center;margin-left:6px;vertical-align:2px;
+  display:none;min-width:18px;height:18px;padding:0 5px;border-radius:var(--r-pill);
+  background:var(--danger);color:#fff;font-size:11px;font-weight:600;line-height:18px;
+  letter-spacing:0;text-align:center;font-variant-numeric:tabular-nums;margin-left:6px;vertical-align:1px;
 }
 .tab-badge.on{display:inline-block}
-.tabbar .tab-badge{position:absolute;top:3px;left:50%;margin-left:4px}
+.tab-badge.calm{background:var(--ink-48)}
 .tabbar button{position:relative}
+.tabbar .tab-badge{position:absolute;top:4px;left:calc(50% + 9px);margin:0;box-shadow:0 0 0 2px rgba(250,250,252,.96)}
+.tabbar button.active::before{content:"";position:absolute;top:0;left:24%;right:24%;height:3px;background:currentColor;border-radius:0 0 3px 3px}
 .pane[hidden]{display:none}
+.banner b{font-weight:600;font-variant-numeric:tabular-nums}
 
-/* ===== 결재/반납 ===== */
-.sec-count{font-size:14px;font-weight:500;color:var(--ink-48);margin-left:8px}
-.offline{background:#fff4e5;border:1px solid #ffd9a0;color:#7a4c00;border-radius:var(--r-md);padding:14px 18px;font-size:14px;margin:0 0 22px;line-height:1.55}
-.blk{margin-bottom:34px}
-
-/* ===== 사진 드롭존 ===== */
-.filebtn{width:100%;justify-content:center;padding:22px 18px;text-align:center;line-height:1.5}
-.filebtn .dz-sub{display:block;font-size:12.5px;color:var(--ink-48);margin-top:3px;font-weight:400}
+/* ── 파일 입력: display:none 이면 키보드로 도달할 수 없다 ── */
+.filebtn{position:relative;width:100%;justify-content:center;padding:22px 18px;text-align:center;line-height:1.5}
+.filebtn input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.filebtn .dz-sub{display:block;font-size:12.5px;color:var(--ink-secondary);margin-top:3px;font-weight:400}
 .filebtn b{font-weight:600;color:var(--ink)}
+.filebtn:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,102,204,.22)}
 .filebtn.drag{border-color:var(--primary);border-style:solid;background:rgba(0,102,204,.07)}
 .filebtn.drag b{color:var(--primary)}
+
+/* ── 날짜 입력 ── */
+input[type="date"].input{-webkit-appearance:none;appearance:none;min-height:50px;line-height:normal;background-color:var(--canvas)}
+input[type="date"].input::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type="date"].input::-webkit-calendar-picker-indicator{padding:12px;margin-right:-8px}
+
+/* ── 여백 스케일 ── */
+main{padding-bottom:var(--s-lg)}
+.foot{margin-top:var(--s-section);padding:var(--s-xxl) 0 56px}
+.draft-hint{display:none;align-items:center;gap:12px;background:var(--pearl);border-radius:var(--r-md);
+  padding:12px 16px;font-size:14px;color:var(--ink-secondary);margin-bottom:18px}
+.draft-hint.on{display:flex}
+
+/* ── 터치 기기: 최소 44px ── */
+@media (pointer:coarse){
+  .btn-sm{padding:12px 20px!important;font-size:15px!important;min-height:44px}
+  .btn-pearl,.btn-ghost,.btn-primary{min-height:44px}
+  .chip{padding:12px 18px;font-size:15px;min-height:44px;display:inline-flex;align-items:center}
+  .chiprow{gap:10px;padding:4px 0}
+  .stepper{padding:5px;gap:6px}
+  .stepper button{width:44px;height:44px;font-size:20px}
+  .stepper .val{min-width:56px;font-size:18px}
+  .emoji-pick{gap:10px}
+  .emoji-pick button{width:48px;height:48px;font-size:24px}
+  .toggle{min-height:44px;padding:4px 0;align-items:center}
+  .toggle input{width:24px;height:24px;flex:0 0 auto}
+  .filebtn{min-height:56px;font-size:16px}
+  .global-nav a,.gn-me{min-height:44px;padding:0 4px}
+  .foot .fl a{display:inline-flex;align-items:center;min-height:44px}
+  .btn-quiet,.btn-danger{min-height:44px;min-width:44px}
+}
+@media (max-width:900px){
+  main{padding-bottom:24px}
+  .foot{padding-bottom:calc(56px + 54px + env(safe-area-inset-bottom))}
+  #toast{bottom:calc(70px + 54px + env(safe-area-inset-bottom))}
+  .kpis{display:none}                 /* 첫 화면은 검색창부터 */
+  .kpi-line{display:block}
+  .card{animation:none!important}
+  .grid.is-first .card{animation:none!important}
+}
+.kpi-line{display:none;font-size:14.5px;color:var(--ink-secondary);margin-top:14px;letter-spacing:-.01em}
+@media (max-width:560px){
+  .card{padding:0 0 10px;gap:0;border-radius:var(--r-md)}
+  .card h3,.card .sub{padding:0 10px}
+  .card .badge{margin:8px 10px 0}
+  .card .foot{padding:10px 10px 0}
+  .card > .skel{margin:0 10px}
+  .card .foot .btn-primary,.card .foot .btn-ghost{width:100%;min-height:44px;padding:11px 12px!important;font-size:14px!important}
+  .card .owner-tools .btn-danger{display:none}   /* 삭제는 수정 모달 안에서만 */
+  .modal-actions{flex-direction:column-reverse;align-items:stretch;gap:10px}
+  .modal-actions>button{width:100%;min-height:48px}
+  .modal-actions .spacer{display:none}
+  .r-actions{gap:10px;width:100%}
+  .r-actions>button{min-height:44px}
+  .list{padding:2px 14px}
+  .kpi{padding:0 16px}
+}
 </style>
 </head>
 <body>
 
-<!-- ===== 로그인 ===== -->
+<!-- ═══ 로그인 ═══ -->
 <div id="gate">
   <div class="gcard">
     <h1>교구 대여소</h1>
     <p class="gsub">학교와 이름만 적으면 바로 시작합니다.<br>비밀번호는 없습니다.</p>
     <div class="field">
       <label for="gSchool">학교</label>
-      <input class="input" id="gSchool" list="schoolList" placeholder="예: 백암초등학교" autocomplete="off">
-      <datalist id="schoolList"></datalist>
+      <select class="input" id="gSchool"></select>
+      <input class="input" id="gSchoolNew" placeholder="학교 이름을 적어 주세요" hidden
+             autocomplete="organization" enterkeyhint="next" autocapitalize="off" spellcheck="false"
+             style="margin-top:10px">
+      <div class="hint">목록에서 골라 주세요. 직접 쓰면 다른 학교로 인식돼 우리 학교 신청이 안 보입니다.</div>
     </div>
     <div class="two-col">
       <div class="field">
         <label for="gName">이름</label>
-        <input class="input" id="gName" placeholder="예: 권준구" autocomplete="off">
+        <input class="input" id="gName" placeholder="예: 권준구"
+               autocomplete="name" enterkeyhint="done" autocapitalize="off" spellcheck="false">
       </div>
       <div class="field">
         <label for="gRole">직</label>
@@ -409,11 +632,11 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
     <div class="modal-actions" style="margin-top:20px">
       <button class="btn-primary btn-block" onclick="doLogin()">시작하기</button>
     </div>
-    <p class="gfoot">여기 적은 학교가 <b>결재 권한</b>의 기준입니다. 우리 학교가 올린 교구의 신청만 승인·반려할 수 있어요.</p>
+    <p class="gfoot">여기 적은 학교의 교구만 승인·반려할 수 있어요.</p>
   </div>
 </div>
 
-<!-- ===== 앱 ===== -->
+<!-- ═══ 앱 ═══ -->
 <header class="global-nav">
     <a href="/" title="AIroom 교무실로">
         <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1L1 6l5 5"/></svg>
@@ -428,36 +651,47 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
     <div class="sn-title" id="snTitle">교구 대여소</div>
     <nav class="sn-links">
         <button class="sn-link" data-tab="rent" onclick="go('rent')">대여</button>
-        <button class="sn-link" data-tab="back" onclick="go('back')">반납<span class="tab-badge" data-badge="back"></span></button>
-        <button class="sn-link" data-tab="appr" onclick="go('appr')">결재<span class="tab-badge" data-badge="appr"></span></button>
+        <button class="sn-link" data-tab="back" onclick="go('back')">반납<span class="tab-badge calm" data-badge="back"></span></button>
+        <button class="sn-link" data-tab="appr" onclick="go('appr')">승인<span class="tab-badge" data-badge="appr"></span></button>
     </nav>
 </div>
 
+<div id="netBar">
+  <span id="netMsg">인터넷이 잠깐 끊겼어요. 지금 보이는 내용은 옛것일 수 있습니다.</span>
+  <button class="btn-quiet" data-act="retry">다시 불러오기</button>
+</div>
 <div id="bannerRoot"></div>
 
 <main>
-  <!-- ── 탭 1: 대여 ── -->
+  <!-- ── 대여 ── -->
   <section class="pane" id="pane-rent">
     <section class="tile tile-parchment"><div class="wrap">
       <h1 class="hero">대여</h1>
       <p class="lead">가까운 학교끼리 교구를 나눠 씁니다. 필요한 것을 골라 신청하세요.</p>
       <div class="kpis" id="kpiRow"></div>
+      <p class="kpi-line" id="kpiLine"></p>
     </div></section>
 
     <section class="wrap" style="padding-top:32px">
       <div class="filters">
         <div class="search">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="q" placeholder="교구 이름이나 학교로 찾기" autocomplete="off" oninput="onSearch(this.value)">
+          <input id="q" type="search" enterkeyhint="search" placeholder="교구 이름이나 학교로 찾기" autocomplete="off" oninput="onSearch(this.value)">
         </div>
         <label class="toggle"><input type="checkbox" id="onlyAvail" onchange="onOnlyAvail(this.checked)"> 지금 바로 가능한 것만</label>
-        <button class="btn-primary btn-sm" style="margin-left:auto" onclick="toggleAdd()" id="addToggle">＋ 우리 학교 교구 올리기</button>
+        <button class="btn-ghost btn-sm" style="margin-left:auto" onclick="toggleAdd()" id="addToggle">＋ 우리 학교 교구 올리기</button>
       </div>
       <div class="chiprow" id="catRow" style="margin-bottom:26px"></div>
 
-      <!-- 교구 올리기 폼: 정적 DOM. 목록을 다시 그려도 이 안의 입력값은 절대 지워지지 않는다. -->
+      <div class="draft-hint" id="draftHint">
+        <span id="draftHintText"></span>
+        <button class="btn-quiet" data-act="resume-draft">이어서 쓰기</button>
+        <button class="btn-quiet" data-act="drop-draft">지우기</button>
+      </div>
+
+      <!-- 교구 올리기 폼: 정적 DOM. 목록을 다시 그려도 이 안의 입력값은 지워지지 않는다. -->
       <div class="panel" id="addPanel" hidden style="margin-bottom:30px">
-        <h2 class="sec" style="margin-top:0">우리 학교 교구 올리기</h2>
+        <h2 class="sec" style="margin-top:0;font-size:21px">우리 학교 교구 올리기</h2>
         <div class="field">
           <label for="aName">무엇을 올리나요?</label>
           <input class="input" id="aName" placeholder="예: 빔프로젝터(엡손 EB-970)">
@@ -473,6 +707,11 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
           </div>
         </div>
         <div class="field">
+          <label for="aContact">담당자 연락처 <span class="muted" style="font-weight:400">(선택)</span></label>
+          <input class="input" id="aContact" type="tel" inputmode="tel" placeholder="010-0000-0000">
+          <div class="hint">빌리러 오는 분에게 보입니다. 적어 두면 헛걸음이 줄어요.</div>
+        </div>
+        <div class="field">
           <label>아이콘</label>
           <div class="emoji-pick" id="emojiPick"></div>
           <div class="hint">사진을 올리면 아이콘 대신 사진이 보입니다.</div>
@@ -482,7 +721,7 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
           <label class="filebtn" id="photoDrop">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
             <span><b>사진 고르기</b><span class="dz-sub">여기로 끌어다 놓거나 붙여넣기(Ctrl+V)도 됩니다</span></span>
-            <input type="file" id="aPhoto" accept="image/*" onclick="pickingPhoto=true" onchange="pickPhoto(this)">
+            <input type="file" id="aPhoto" accept="image/*" onclick="armPicking()" onchange="pickPhoto(this)">
           </label>
           <div id="photoPrev" style="margin-top:12px;display:flex;align-items:center;gap:10px"></div>
         </div>
@@ -497,7 +736,7 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
           </div>
           <div class="field">
             <label for="aMaxDays">최대 며칠까지</label>
-            <input class="input" id="aMaxDays" type="number" min="0" max="365" value="14">
+            <input class="input" id="aMaxDays" type="number" inputmode="numeric" min="0" max="365" value="14">
             <div class="hint">0을 넣으면 제한 없음</div>
           </div>
         </div>
@@ -519,7 +758,7 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
     </section>
   </section>
 
-  <!-- ── 탭 2: 반납 ── -->
+  <!-- ── 반납 ── -->
   <section class="pane" id="pane-back" hidden>
     <section class="tile tile-parchment"><div class="wrap">
       <h1 class="hero">반납</h1>
@@ -528,11 +767,11 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
     <section class="wrap" style="padding-top:36px" id="backBody"></section>
   </section>
 
-  <!-- ── 탭 3: 결재 ── -->
+  <!-- ── 승인 ── -->
   <section class="pane" id="pane-appr" hidden>
     <section class="tile tile-parchment"><div class="wrap">
-      <h1 class="hero">결재</h1>
-      <p class="lead">우리 학교가 올린 교구에 들어온 신청을 승인하거나 반려합니다.</p>
+      <h1 class="hero">승인</h1>
+      <p class="lead">우리 학교가 올린 교구와, 거기 들어온 신청을 여기서 처리합니다.</p>
     </div></section>
     <section class="wrap" style="padding-top:36px" id="apprBody"></section>
   </section>
@@ -557,29 +796,29 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
         대여
     </button>
     <button data-tab="back" onclick="go('back')">
-        <span class="tab-badge" data-badge="back"></span>
+        <span class="tab-badge calm" data-badge="back"></span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
         반납
     </button>
     <button data-tab="appr" onclick="go('appr')">
         <span class="tab-badge" data-badge="appr"></span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        결재
+        승인
     </button>
 </nav>
 
 <div id="modalRoot"></div>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="false"></div>
 <script>
 /* =========================================================
-   교구 대여소 — 3탭판 (대여 / 반납 / 결재)
-   설계: RENTAL_DESIGN.md / 디자인 토큰: DESIGN.md (Apple)
+   교구 대여소 — 대여 / 반납 / 승인
+   설계: RENTAL_DESIGN.md · 디자인 토큰: DESIGN.md (Apple)
 
    렌더링 원칙 (입력값이 사라지던 버그의 근본 대책):
-   1) 폼·검색창·탭바는 정적 DOM 이다. 자바스크립트가 절대 innerHTML 로 갈아끼우지 않는다.
-   2) 다시 그리는 것은 목록 컨테이너뿐 (#kpiRow #catRow #rentGrid #backBody #apprBody #bannerRoot).
-   3) 20초 폴링은 데이터가 실제로 바뀐 경우에만 다시 그린다.
-   4) 사진 고르는 중에는(pickingPhoto) 어떤 갱신도 하지 않는다.
+   1) 폼·검색창·탭바는 정적 DOM. 자바스크립트가 innerHTML 로 갈아끼우지 않는다.
+   2) 다시 그리는 것은 목록 컨테이너뿐.
+   3) 폴링은 데이터가 실제로 바뀐 경우에만, 모달·입력 중에는 미룬다.
+   4) 사진 고르는 중에는 어떤 갱신도 하지 않는다.
    ========================================================= */
 
 if (location.pathname.endsWith('/rental.html')) history.replaceState(null, '', '/rental');
@@ -591,15 +830,21 @@ let tab = 'rent';
 let loaded = false, netFail = false, polling = false, lastSig = '';
 let filterCat = 'all', filterText = '', onlyAvailable = false;
 let addDraft = { emoji: '📦', photo: '', qty: 1 };
-let pickingPhoto = false;
-let reqCtx = null, apprCtx = null;
-let _searchT = null, _focusT = null, _pickT = null;
+let pickingPhoto = false, newSchoolConfirmed = false;
+let reqCtx = null, apprCtx = null, editDraftPhoto = '';
+let _searchT = null, _focusT = null, _pickT = null, _draftT = null, _pollT = null;
+let _scrollY = 0, _lastFocus = null, _lastSavedPhoto = null;
 
 const OCCUPYING = ['approved', 'out', 'return_requested'];
 const LIVE = ['requested', 'approved', 'out', 'return_requested'];
-const LABEL = {
-    requested: '승인 기다리는 중', approved: '승인됨 · 아직 안 가져감', out: '대여 중',
+// 같은 상태라도 빌린 쪽과 빌려준 쪽이 할 일이 다르다. 관점별로 다르게 부른다.
+const LABEL_MINE = {
+    requested: '승인 기다리는 중', approved: '가지러 가세요', out: '쓰는 중',
     return_requested: '반납 확인 기다리는 중', returned: '반납 완료', rejected: '반려됨', canceled: '취소함'
+};
+const LABEL_OWNER = {
+    requested: '승인해 주세요', approved: '가져가기 전', out: '나가 있음',
+    return_requested: '반납 확인해 주세요', returned: '반납 완료', rejected: '반려함', canceled: '취소됨'
 };
 const BADGE = {
     requested: 'b-wait', approved: 'b-appr', out: 'b-out',
@@ -608,9 +853,9 @@ const BADGE = {
 const QUICK_EMOJI = ['📦','📽️','🔬','⚽','🎹','🎨','💻','🔭','🎤','🧪','📷','🥁','🎪','🧩'];
 const DEF_CATS = ['시청각','체육','과학','미술','음악','정보','행사','기타'];
 const DEF_ROLES = ['교사','교감','교장','교육실무사','늘봄·돌봄','영양(교)사','행정실','기타'];
+const NEW_SCHOOL = '__new__';
 
 // ===== 유틸 =====
-// 텍스트·속성 양쪽에 안전하도록 따옴표까지 이스케이프한다.
 function esc(t){
     return String(t == null ? '' : t)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -620,9 +865,10 @@ function $(id){ return document.getElementById(id); }
 function toast(msg, err){
     const t = document.createElement('div');
     t.className = 'toast' + (err ? ' err' : '');
+    if (err) t.setAttribute('role','alert');
     t.textContent = msg;
     $('toast').appendChild(t);
-    setTimeout(()=>t.remove(), 2800);
+    setTimeout(()=>t.remove(), err ? 5000 : 2800);
 }
 function fmtD(iso){ if(!iso) return ''; const p=iso.split('-'); return Number(p[1])+'월 '+Number(p[2])+'일'; }
 function daysBetween(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }
@@ -630,6 +876,9 @@ function todayStr(){ return S.serverDate || new Date(Date.now()+9*3600000).toISO
 function addDays(iso,n){ return new Date(Date.parse(iso+'T00:00:00Z')+n*86400000).toISOString().slice(0,10); }
 function shortSchool(s){ return (s||'').replace(/등학교$/,'').replace(/학교$/,''); }
 function initial(n){ return (n||'').trim().slice(0,1) || '?'; }
+// 오타 하나로 다른 학교·다른 사람이 되지 않도록 비교는 정규화해서 한다.
+function normSchool(s){ return (s||'').replace(/\s+/g,'').replace(/등학교$|학교$/,''); }
+function normName(n){ return (n||'').replace(/\s+/g,''); }
 
 async function api(method, url, body){
     const opt = { method, headers: {} };
@@ -676,50 +925,115 @@ function computeEtas(item){
     }
     return out;
 }
-function isMine(l){ return !!ME && l.borrower.school===ME.school && l.borrower.name===ME.name; }
-function isOwner(item){ return !!ME && !!item && item.owner.school===ME.school; }
-// 연체는 실제로 물건이 나간 뒤(out)부터 센다. 승인만 받고 안 가져간 건 연체가 아니다.
+// 언제쯤 이 교구를 쓸 수 있나 (대기 걸 때 기본 날짜로 쓴다)
+function nextFreeDate(item){
+    if (availableOf(item) > 0) return todayStr();
+    const etas = computeEtas(item);
+    const q = queueOf(item.id);
+    if (q.length && etas[q[q.length-1].id]) return etas[q[q.length-1].id];
+    const act = activeOf(item.id);
+    return act.length ? addDays(act[0].wantTo, 1) : todayStr();
+}
+function isMine(l){ return !!ME && normSchool(l.borrower.school)===normSchool(ME.school) && normName(l.borrower.name)===normName(ME.name); }
+function isOwner(item){ return !!ME && !!item && normSchool(item.owner.school)===normSchool(ME.school); }
+// 연체는 물건이 실제로 나간 뒤부터 센다. 승인만 받고 안 가져간 건 연체가 아니다.
 function lateDays(l){
     if (l.status!=='out' && l.status!=='return_requested') return 0;
     const d = daysBetween(l.wantTo, todayStr());
     return d>0 ? d : 0;
 }
 function myItems(){ return S.items.filter(isOwner); }
-function myItemIds(){ return new Set(myItems().map(i=>i.id)); }
 function apprList(){
-    const ids = myItemIds();
+    const ids = new Set(myItems().map(i=>i.id));
     return S.loans.filter(l=>ids.has(l.itemId) && LIVE.includes(l.status));
 }
 function apprPending(){ return apprList().filter(l=>l.status==='requested' || l.status==='return_requested'); }
+function apprLate(){ return apprList().filter(l=>lateDays(l)>0); }
 function myLoans(){ return S.loans.filter(isMine); }
 function myLive(){ return myLoans().filter(l=>LIVE.includes(l.status)).sort((a,b)=>a.seq-b.seq); }
+function myTodo(){ return myLive().filter(l=>l.status==='approved' || l.status==='out'); }
+function myLate(){ return myLive().filter(l=>lateDays(l)>0); }
 
 // ===== 로그인 =====
 function fillGateOptions(){
     const roles = (S.settings.roles && S.settings.roles.length) ? S.settings.roles : DEF_ROLES;
-    const cur = ($('gRole').value) || (ME && ME.role) || '교사';
-    $('gRole').innerHTML = roles.map(r=>'<option'+(r===cur?' selected':'')+'>'+esc(r)+'</option>').join('');
-    $('schoolList').innerHTML = S.schools.map(s=>'<option value="'+esc(s.name)+'">').join('');
+    const curRole = $('gRole').value || (ME && ME.role) || '교사';
+    $('gRole').innerHTML = roles.map(r=>'<option'+(r===curRole?' selected':'')+'>'+esc(r)+'</option>').join('');
+    const curSch = $('gSchool').value || (ME && ME.school) || '';
+    $('gSchool').innerHTML =
+        '<option value="">학교를 골라 주세요</option>'
+      + S.schools.map(s=>'<option value="'+esc(s.name)+'"'+(s.name===curSch?' selected':'')+'>'+esc(s.name)+'</option>').join('')
+      + '<option value="'+NEW_SCHOOL+'"'+(curSch===NEW_SCHOOL?' selected':'')+'>＋ 목록에 없어요</option>';
+}
+function onSchoolPick(v){
+    const isNew = (v === NEW_SCHOOL);
+    $('gSchoolNew').hidden = !isNew;
+    newSchoolConfirmed = false;
+    resetLoginBtn();
+    if (isNew) setTimeout(()=>$('gSchoolNew').focus(), 40);
+}
+function resetLoginBtn(){
+    const b = document.querySelector('#gate .btn-primary');
+    if (b) b.textContent = '시작하기';
+    const w = $('gateWarn'); if (w) w.remove();
+}
+function gateWarn(html){
+    let w = $('gateWarn');
+    if (!w){
+        w = document.createElement('div');
+        w.id = 'gateWarn'; w.className = 'note note-wait';
+        $('gate').querySelector('.modal-actions').before(w);
+    }
+    w.innerHTML = '<span>'+html+'</span>';
 }
 function openIdentity(){
-    $('gSchool').value = ME ? ME.school : '';
-    $('gName').value   = ME ? ME.name : '';
     fillGateOptions();
+    if (ME){
+        const hit = S.schools.find(s=>normSchool(s.name)===normSchool(ME.school));
+        $('gSchool').value = hit ? hit.name : '';
+        $('gName').value = ME.name;
+    }
     $('gate').style.display = 'flex';
-    setTimeout(()=>{ const el=$('gSchool'); if(el) el.focus(); }, 60);
+    // 터치 기기에서 자동 포커스는 화면 절반을 키보드로 덮어 버린다
+    if (!matchMedia('(pointer:coarse)').matches) setTimeout(()=>{ const el=$('gSchool'); if(el) el.focus(); }, 60);
 }
 async function doLogin(){
-    const school = $('gSchool').value.trim();
-    const name   = $('gName').value.trim();
-    const role   = $('gRole').value;
-    if (!school || !name) return toast('학교와 이름을 적어 주세요.', true);
+    let school = $('gSchool').value;
+    if (school === NEW_SCHOOL) school = $('gSchoolNew').value.trim();
+    school = school.trim();
+    const name = $('gName').value.trim();
+    const role = $('gRole').value;
+    if (!school) return toast('학교를 골라 주세요.', true);
+    if (!name)   return toast('이름을 적어 주세요.', true);
+
+    // 이미 있는 학교의 다른 표기라면 조용히 정식 이름으로 맞춰 준다
+    const hit = S.schools.find(s=>normSchool(s.name)===normSchool(school));
+    if (hit) school = hit.name;
+    else if (!newSchoolConfirmed){
+        gateWarn('<b>‘'+esc(school)+'’</b>는 목록에 없는 학교예요. 오타면 위에서 다시 골라 주세요.<br>새 학교가 맞으면 아래 버튼을 한 번 더 누르세요.');
+        const b = document.querySelector('#gate .btn-primary');
+        if (b) b.textContent = '네, 새 학교로 시작하기';
+        newSchoolConfirmed = true;
+        return;
+    }
+
     ME = { school, name, role, savedAt: new Date().toISOString() };
     try { localStorage.setItem('rental_identity', JSON.stringify(ME)); } catch(e){}
     $('gate').style.display = 'none';
-    renderMe();
-    paint();
+    resetLoginBtn();
+    renderMe(); paint();
     if (!S.schools.find(s=>s.name===school)){
         try { const r = await api('POST','/api/rental/schools',{name:school}); S.schools = r.schools; fillGateOptions(); } catch(e){}
+    }
+}
+// 예전에 "백암초"로 저장해 둔 기기를 정식 이름으로 올려 준다 (승인 권한이 살아나야 하므로)
+function canonIdentity(){
+    if (!ME) return;
+    const hit = S.schools.find(s=>normSchool(s.name)===normSchool(ME.school));
+    if (hit && hit.name !== ME.school){
+        ME.school = hit.name;
+        try { localStorage.setItem('rental_identity', JSON.stringify(ME)); } catch(e){}
+        renderMe();
     }
 }
 function renderMe(){
@@ -730,12 +1044,55 @@ function renderMe(){
 
 // ===== 모달 =====
 function openModal(html){
-    $('modalRoot').innerHTML = '<div class="modal-back" id="modalBack"><div class="modal" role="dialog" aria-modal="true">'+html+'</div></div>';
+    _lastFocus = document.activeElement;
+    _scrollY = window.scrollY;
+    $('modalRoot').innerHTML =
+        '<div class="modal-back" id="modalBack">'
+      + '<div class="modal" role="dialog" aria-modal="true" tabindex="-1">'
+      + '<button class="modal-x" data-act="close" aria-label="닫기">×</button>'
+      + '<div id="modalErr"></div>' + html + '</div></div>';
     $('modalBack').addEventListener('click', e=>{ if(e.target.id==='modalBack') closeModal(); });
-    document.body.style.overflow = 'hidden';
+
+    // iOS 는 body{overflow:hidden} 만으로 배경 스크롤이 멈추지 않는다
+    const b = document.body.style;
+    b.position='fixed'; b.top=(-_scrollY)+'px'; b.left='0'; b.right='0'; b.width='100%'; b.overflow='hidden';
+
+    const box = $('modalRoot').querySelector('.modal');
+    setTimeout(()=>{
+        const first = box.querySelector('input,select,textarea');
+        (matchMedia('(pointer:coarse)').matches || !first ? box : first).focus();
+    }, 30);
+    box.addEventListener('keydown', e=>{                       // 포커스 트랩
+        if (e.key !== 'Tab') return;
+        const f = [...box.querySelectorAll('button,input,select,textarea,a[href]')]
+                    .filter(el=>!el.disabled && el.offsetParent !== null);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length-1];
+        if (e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    });
+    box.addEventListener('focusin', e=>{                       // 키보드에 입력칸이 가리지 않게
+        if (e.target.matches('input,textarea,select'))
+            setTimeout(()=>e.target.scrollIntoView({block:'center', behavior:'smooth'}), 280);
+    });
 }
-function closeModal(){ $('modalRoot').innerHTML=''; document.body.style.overflow=''; }
+function closeModal(){
+    if (!$('modalRoot').firstChild) return;
+    $('modalRoot').innerHTML='';
+    const b = document.body.style;
+    b.position=''; b.top=''; b.left=''; b.right=''; b.width=''; b.overflow='';
+    window.scrollTo(0, _scrollY);
+    if (_lastFocus && _lastFocus.isConnected) _lastFocus.focus();
+    _lastFocus = null;
+}
 function modalOpen(){ return !!$('modalRoot').firstChild; }
+// 모달 안에서 난 오류로 모달을 닫아 버리면 "승인된 줄 알고" 나가게 된다. 열어 둔 채 안에 보여 준다.
+function modalErr(msg){
+    const e = $('modalErr');
+    if (!e) return toast(msg, true);
+    e.innerHTML = '<div class="note note-err"><span>'+esc(msg)+'</span></div>';
+    e.scrollIntoView({block:'nearest', behavior:'smooth'});
+}
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 window.addEventListener('scroll', ()=>{
     const n=$('subNav'); if(n) n.classList.toggle('scrolled', window.scrollY>10);
@@ -748,63 +1105,90 @@ async function loadState(){
     try {
         const s = await api('GET','/api/rental/state');
         S = s; loaded = true; netFail = false;
+        canonIdentity();
         const sig = JSON.stringify([s.items, s.loans, s.settings, s.schools]);
-        if (sig !== lastSig){ lastSig = sig; fillGateOptions(); paint(); }
+        if (sig !== lastSig){
+            // 모달을 쓰는 중이거나 폼에 타자 치는 중이면 갈아엎지 않고 다음 주기로 미룬다
+            const busy = modalOpen() || (document.activeElement && document.activeElement.closest
+                          && document.activeElement.closest('#addPanel'));
+            if (!busy){ lastSig = sig; fillGateOptions(); paint(); }
+        }
     } catch(e){
         netFail = true;
         if (!loaded) paint();
-    } finally { polling = false; }
+    } finally { polling = false; paintNetBar(); }
+}
+function paintNetBar(){ $('netBar').classList.toggle('on', netFail && loaded); }
+// 화면이 꺼진 폰에서까지 20초마다 부르지 않는다.
+function schedulePoll(){
+    clearTimeout(_pollT);
+    if (document.hidden) return;
+    const gap = netFail ? 60000 : (modalOpen() ? 45000 : 20000);
+    _pollT = setTimeout(async ()=>{ await loadState(); schedulePoll(); }, gap);
 }
 
 // ===== 탭 =====
 function go(t){
     tab = t;
     ['rent','back','appr'].forEach(k=>{ $('pane-'+k).hidden = (k!==t); });
-    document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+    document.querySelectorAll('[data-tab]').forEach(b=>{
+        const on = b.dataset.tab===t;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-current', on ? 'page' : 'false');
+    });
     window.scrollTo({top:0, behavior:'instant'});
     paint();
 }
 
-// ===== 그리기 (정적 폼은 건드리지 않는다) =====
+// ===== 그리기 =====
 function paint(){
     $('snTitle').textContent = S.settings.title || '교구 대여소';
-    paintBadges();
-    paintBanner();
+    paintBadges(); paintBanner(); paintNetBar();
     if (tab==='rent'){ paintKpi(); paintCats(); paintGrid(); }
     else if (tab==='back') paintBack();
     else paintAppr();
 }
 function paintBadges(){
-    const n = { back: myLive().length, appr: apprPending().length };
+    const n = { back: myTodo().length, appr: apprPending().length + apprLate().length };
+    const NAME = { back:'반납', appr:'승인' };
     document.querySelectorAll('[data-badge]').forEach(el=>{
         const c = n[el.dataset.badge] || 0;
         el.textContent = c > 99 ? '99+' : c;
         el.classList.toggle('on', c > 0);
-        el.style.background = el.dataset.badge==='appr' ? '#d70015' : 'var(--ink-48)';
+        el.setAttribute('aria-hidden','true');
+        const btn = el.closest('[data-tab]');
+        if (btn) btn.setAttribute('aria-label', NAME[el.dataset.badge] + (c ? ', 확인할 것 '+c+'건' : ''));
     });
 }
 function paintBanner(){
     const root = $('bannerRoot');
     let html = '';
     if (ME){
+        const late = myLate();
+        if (late.length){
+            const it = itemOf(late[0].itemId);
+            html += '<div class="banner" style="background:#a3001a">⏰ <span><b>'+esc(it?it.name:'교구')+'</b> 반납일이 '
+                 +  lateDays(late[0])+'일 지났어요. '+esc(it?shortSchool(it.owner.school):'')+'에 돌려주세요.</span>'
+                 +  '<button class="btn-primary btn-sm" data-act="tab-back">반납하기</button></div>';
+        }
         const ready = myLoans().filter(l=>l.status==='requested' && l.readyAt);
         if (ready.length){
             const it = itemOf(ready[0].itemId);
-            html += '<div class="banner">🔔 <span><b>내 차례예요!</b> '+esc(it?it.name:'교구')+' — 보유교 승인만 남았습니다.</span>'
-                 +  '<button class="btn-primary btn-sm" data-act="tab-back">확인</button></div>';
+            html += '<div class="banner">🔔 <span><b>앞사람이 반납했어요.</b> '+esc(it?it.name:'교구')+', '
+                 +  esc(it?shortSchool(it.owner.school):'')+'에 승인 요청이 올라갔습니다.</span>'
+                 +  '<button class="btn-primary btn-sm" data-act="tab-back">내 신청 보기</button></div>';
         }
         const p = apprPending().length;
         if (p && tab!=='appr'){
-            html += '<div class="banner banner-notice">📮 <span>결재할 것이 <b>'+p+'건</b> 있습니다.</span>'
-                 +  '<button class="btn-primary btn-sm" data-act="tab-appr">결재하러 가기</button></div>';
+            html += '<div class="banner banner-notice">📮 <span>다른 학교에서 빌려 달라는 신청이 <b>'+p+'건</b> 왔어요.</span>'
+                 +  '<button class="btn-primary btn-sm" data-act="tab-appr">보러 가기</button></div>';
         }
     }
     if (S.settings.notice) html += '<div class="banner banner-notice">📣 '+esc(S.settings.notice)+'</div>';
     root.innerHTML = html;
 }
 function offlineHtml(){
-    return '<div class="offline"><b>서버에 연결하지 못했어요.</b><br>'
-         + '이 화면은 서버가 있는 주소(<code>/rental</code>)에서만 동작합니다. 잠시 후 새로고침해 주세요.</div>';
+    return '<div class="offline"><b>서버에 연결하지 못했어요.</b><br>잠시 뒤 다시 열어 주세요.</div>';
 }
 
 /* ---------- 탭 1: 대여 ---------- */
@@ -815,7 +1199,8 @@ function paintKpi(){
     const waiting = S.loans.filter(l=>l.status==='requested').length;
     $('kpiRow').innerHTML =
         kpi(totalQty,'올라온 교구') + kpi(availQty,'지금 빌릴 수 있음') +
-        kpi(waiting,'대기 중인 신청') + kpi(S.schools.length,'함께 쓰는 학교');
+        kpi(waiting,'처리를 기다리는 신청') + kpi(S.schools.length,'함께 쓰는 학교');
+    $('kpiLine').textContent = '교구 '+totalQty+'개 중 지금 '+availQty+'개 가능 · 학교 '+S.schools.length+'곳';
 }
 function kpi(n,l){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
 function paintCats(){
@@ -839,20 +1224,31 @@ function paintGrid(){
     g.innerHTML = list.length ? '<div class="grid">'+list.map(cardHtml).join('')+'</div>'
         : all.length ? emptyHtml('찾는 교구가 없어요.','다른 낱말로 찾거나 분류를 바꿔 보세요.','전체 보기','reset')
         : emptyHtml('아직 올라온 교구가 없어요.','첫 교구를 올려 다른 학교와 나눠 보세요.','교구 올리기','openadd');
+    const grid = g.querySelector('.grid');
+    if (grid && !g.dataset.first){ grid.classList.add('is-first'); g.dataset.first = '1'; }
 }
 function skeletonGrid(){
     let s='<div class="grid">';
-    for(let i=0;i<8;i++) s+='<div class="card"><div class="thumb skel" style="border-radius:11px"></div>'
-        +'<div class="skel" style="height:16px;width:76%"></div><div class="skel" style="height:12px;width:50%"></div>'
-        +'<div class="skel" style="height:26px;width:60%;border-radius:9999px"></div></div>';
+    for(let i=0;i<8;i++) s+='<div class="card"><div class="thumb skel"></div>'
+        +'<div class="skel" style="height:16px;width:76%"></div><div class="skel" style="height:12px;width:50%;margin-top:8px"></div>'
+        +'<div class="skel" style="height:26px;width:60%;border-radius:9999px;margin-top:10px"></div></div>';
     return s+'</div>';
+}
+function skeletonList(n){
+    let s = '<div class="list">';
+    for(let i=0;i<n;i++) s += '<div class="row">'
+        + '<span class="skel" style="width:46px;height:46px;flex:0 0 46px;border-radius:12px"></span>'
+        + '<div class="r-body"><div class="skel" style="height:15px;width:58%;margin-bottom:9px"></div>'
+        + '<div class="skel" style="height:12px;width:82%;margin-bottom:11px"></div>'
+        + '<div class="skel" style="height:24px;width:120px;border-radius:9999px"></div></div></div>';
+    return s + '</div>';
 }
 function cardHtml(i){
     const avail = availableOf(i);
     const q = queueOf(i.id);
     let badge, cta;
     if (avail>0){
-        badge = '<span class="badge b-done">'+(i.trackQty? i.total+'개 중 '+avail+'개 가능':'지금 가능')+'</span>';
+        badge = '<span class="badge b-ok">'+(i.trackQty? i.total+'개 중 '+avail+'개 가능':'지금 가능')+'</span>';
         cta = '<button class="btn-primary btn-sm" data-act="req" data-id="'+i.id+'">대여 신청</button>';
     } else {
         const etas = computeEtas(i);
@@ -879,7 +1275,6 @@ function cardHtml(i){
 function onSearch(v){
     filterText = v;
     clearTimeout(_searchT);
-    // 검색창은 정적 DOM 이라 다시 그려도 커서가 튀지 않는다. 목록만 갱신한다.
     _searchT = setTimeout(paintGrid, 200);
 }
 function onOnlyAvail(v){ onlyAvailable = v; paintGrid(); }
@@ -891,13 +1286,13 @@ function resetFilter(){
 }
 
 /* ---------- 교구 올리기 (정적 폼) ---------- */
-const DRAFT_FIELDS = ['aName','aCat','aPlace','aMaxDays','aNote'];
+const DRAFT_FIELDS = ['aName','aCat','aPlace','aContact','aMaxDays','aNote'];
 function toggleAdd(force){
     const p = $('addPanel');
     const open = (force === undefined) ? p.hidden : force;
     p.hidden = !open;
     $('addToggle').textContent = open ? '올리기 접기' : '＋ 우리 학교 교구 올리기';
-    if (open) p.scrollIntoView({behavior:'smooth', block:'start'});
+    if (open){ $('draftHint').classList.remove('on'); p.scrollIntoView({behavior:'smooth', block:'start'}); }
 }
 function initAddForm(){
     const cats = (S.settings.categories && S.settings.categories.length) ? S.settings.categories : DEF_CATS;
@@ -921,30 +1316,50 @@ function syncAddDraft(){
 function pickEmoji(e){ addDraft.emoji=e; syncAddDraft(); saveDraft(); }
 function stepQty(d){ addDraft.qty = Math.max(1, Math.min(999, addDraft.qty+d)); syncAddDraft(); saveDraft(); }
 function clearPhoto(){ addDraft.photo=''; $('aPhoto').value=''; syncAddDraft(); saveDraft(); }
-function pickPhoto(input){
+
+// 파일 선택창을 여는 순간 켜고, 취소하고 돌아오지 않아도 45초 뒤엔 반드시 풀린다.
+// (이 플래그가 켜진 채 남으면 화면 갱신이 통째로 멈춘다)
+function armPicking(){
+    pickingPhoto = true;
     clearTimeout(_pickT);
+    _pickT = setTimeout(()=>{ pickingPhoto = false; }, 45000);
+}
+// 저사양 폰에서 12MP 를 한 번에 줄이면 메모리 실패·계단 현상이 난다. 절반씩 내려간다.
+function shrinkToCanvas(img, max){
+    let src = img, sw = img.width, sh = img.height;
+    while (Math.max(sw, sh) > max*2){
+        const t = document.createElement('canvas');
+        t.width = sw = Math.round(sw/2); t.height = sh = Math.round(sh/2);
+        t.getContext('2d').drawImage(src, 0, 0, sw, sh);
+        src = t;
+    }
+    const s = Math.min(1, max/Math.max(sw, sh));
+    const c = document.createElement('canvas');
+    c.width = Math.round(sw*s); c.height = Math.round(sh*s);
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    return c;
+}
+function pickPhoto(input){
     const f = input.files && input.files[0];
-    if (!f){ pickingPhoto = false; return; }
+    if (!f){ clearTimeout(_pickT); pickingPhoto = false; return; }
     handlePhotoFile(f);
 }
 // 끌어다 놓기 · 붙여넣기 · 파일 고르기가 모두 여기로 모인다.
 function handlePhotoFile(f){
-    if (!f || f.type.indexOf('image/') !== 0){ pickingPhoto = false; return toast('이미지 파일만 올릴 수 있어요.', true); }
-    const img = new Image();
-    const rd = new FileReader();
-    const done = () => { pickingPhoto = false; };
-    rd.onerror = done;
-    img.onerror = () => { done(); toast('사진을 읽지 못했어요.', true); };
+    const done = () => { clearTimeout(_pickT); pickingPhoto = false; };
+    if (!f || f.type.indexOf('image/') !== 0){ done(); return toast('이미지 파일만 올릴 수 있어요.', true); }
+    $('photoPrev').innerHTML = '<div class="skel" style="width:104px;height:104px;border-radius:11px"></div>'
+                             + '<span class="hint">사진 줄이는 중…</span>';
+    const img = new Image(), rd = new FileReader();
+    rd.onerror = () => { done(); syncAddDraft(); toast('사진을 읽지 못했어요.', true); };
+    img.onerror = () => { done(); syncAddDraft();
+        toast('이 사진 형식은 못 읽어요. 아이폰이면 설정 → 카메라 → 포맷을 “높은 호환성”으로 바꿔 보세요.', true); };
     rd.onload = () => { img.onload = () => {
         try {
-            const max = 800;
-            const scale = Math.min(1, max/Math.max(img.width, img.height));
-            const c = document.createElement('canvas');
-            c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
-            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            const c = shrinkToCanvas(img, 800);
             let url = c.toDataURL('image/jpeg', 0.72);
             if (url.length > 190000) url = c.toDataURL('image/jpeg', 0.55);
-            if (url.length > 190000){ toast('사진이 너무 커요. 다른 사진을 골라 주세요.', true); return; }
+            if (url.length > 190000){ syncAddDraft(); toast('사진이 너무 커요. 다른 사진을 골라 주세요.', true); return; }
             addDraft.photo = url; syncAddDraft(); saveDraft();
         } finally { done(); }
     }; img.src = rd.result; };
@@ -968,44 +1383,54 @@ function initPhotoDrop(){
     ['dragover','drop'].forEach(ev => document.addEventListener(ev, e=>{
         if (!dz.contains(e.target)) e.preventDefault();
     }));
-    // 폼이 펼쳐져 있을 때만 붙여넣기를 받는다.
     document.addEventListener('paste', e=>{
         if ($('addPanel').hidden || modalOpen()) return;
-        const it = [...(e.clipboardData ? e.clipboardData.items : [])].find(x=>x.type.startsWith('image/'));
+        const it = [...(e.clipboardData ? e.clipboardData.items : [])].find(x=>x.type.indexOf('image/')===0);
         if (it){ e.preventDefault(); handlePhotoFile(it.getAsFile()); }
     });
 }
-// 작성 중이던 내용은 새로고침해도 남는다.
-let _draftT = null;
-function saveDraft(){
-    clearTimeout(_draftT);
-    _draftT = setTimeout(saveDraftNow, 300);
-}
+// 작성 중이던 내용은 새로고침해도 남는다. 사진은 따로 저장해 타자칠 때마다 190KB 를 쓰지 않는다.
+function saveDraft(){ clearTimeout(_draftT); _draftT = setTimeout(saveDraftNow, 300); }
 function saveDraftNow(){
     try {
-        const d = { emoji: addDraft.emoji, photo: addDraft.photo, qty: addDraft.qty, auto: $('aAuto').checked };
+        const d = { emoji: addDraft.emoji, qty: addDraft.qty, auto: $('aAuto').checked };
         DRAFT_FIELDS.forEach(k=>{ d[k] = $(k).value; });
         localStorage.setItem('rental_draft', JSON.stringify(d));
+        if (addDraft.photo !== _lastSavedPhoto){
+            _lastSavedPhoto = addDraft.photo;
+            if (addDraft.photo) localStorage.setItem('rental_draft_photo', addDraft.photo);
+            else localStorage.removeItem('rental_draft_photo');
+        }
     } catch(e){}
 }
 function loadDraft(){
     let d = null;
     try { d = JSON.parse(localStorage.getItem('rental_draft')||'null'); } catch(e){}
-    if (!d) return;
+    let photo = '';
+    try { photo = localStorage.getItem('rental_draft_photo') || ''; } catch(e){}
+    if (!d && !photo) return;
+    d = d || {};
     addDraft.emoji = d.emoji || '📦';
-    addDraft.photo = d.photo || '';
+    addDraft.photo = photo;
     addDraft.qty   = d.qty || 1;
+    _lastSavedPhoto = photo;
     DRAFT_FIELDS.forEach(k=>{ if (d[k] != null) $(k).value = d[k]; });
     $('aAuto').checked = !!d.auto;
-    if (d.aName || d.photo) toggleAdd(true);
+    // 폼을 자동으로 펼치면 대여 탭 첫 화면이 매번 폼으로 덮인다. 한 줄만 남긴다.
+    if (d.aName || photo){
+        $('draftHintText').textContent = '작성하던 교구' + (d.aName ? ' ‘'+d.aName+'’' : '') + '가 있어요.';
+        $('draftHint').classList.add('on');
+    }
 }
 function clearDraft(){
     addDraft = { emoji:'📦', photo:'', qty:1 };
+    _lastSavedPhoto = null;
     DRAFT_FIELDS.forEach(k=>{ $(k).value = ''; });
     $('aMaxDays').value = S.settings.defaultMaxDays || 14;
     $('aAuto').checked = false;
     $('aPhoto').value = '';
-    try { localStorage.removeItem('rental_draft'); } catch(e){}
+    $('draftHint').classList.remove('on');
+    try { localStorage.removeItem('rental_draft'); localStorage.removeItem('rental_draft_photo'); } catch(e){}
     initAddForm();
 }
 async function submitItem(){
@@ -1017,13 +1442,12 @@ async function submitItem(){
     try {
         const r = await api('POST','/api/rental/items',{
             name, category:$('aCat').value, emoji:addDraft.emoji, place:$('aPlace').value.trim(),
-            note:$('aNote').value.trim(), total:addDraft.qty,
+            ownerContact:$('aContact').value.trim(), note:$('aNote').value.trim(), total:addDraft.qty,
             maxDays:parseInt($('aMaxDays').value,10)||0, autoApprove:$('aAuto').checked,
             owner:ME, actor:ME, photoDataUrl:addDraft.photo || ''
         });
         S.items = r.items; lastSig = '';
-        clearDraft();
-        toggleAdd(false);
+        clearDraft(); toggleAdd(false);
         toast('교구를 올렸어요.');
         paint();
     } catch(e){ toast(e.message, true); }
@@ -1033,74 +1457,75 @@ async function submitItem(){
 /* ---------- 교구 수정/삭제 ---------- */
 function openEditItem(id){
     const i = itemOf(id); if(!i) return;
+    editDraftPhoto = '';
     openModal(
       '<h3>'+esc(i.name)+'</h3>'
     + '<p class="m-sub">보유교: '+esc(i.owner.school)+' · '+esc(i.owner.name)+'</p>'
     + '<div class="field"><label for="eName">이름</label><input class="input" id="eName" value="'+esc(i.name)+'"></div>'
     + '<div class="two-col">'
-    + '<div class="field"><label for="eTotal">총 수량</label><input class="input" id="eTotal" type="number" min="1" max="999" value="'+i.total+'"></div>'
-    + '<div class="field"><label for="eMax">최대 일수</label><input class="input" id="eMax" type="number" min="0" max="365" value="'+(i.maxDays||0)+'"></div>'
+    + '<div class="field"><label for="eTotal">총 수량</label><input class="input" id="eTotal" type="number" inputmode="numeric" min="1" max="999" value="'+i.total+'"></div>'
+    + '<div class="field"><label for="eMax">최대 일수</label><input class="input" id="eMax" type="number" inputmode="numeric" min="0" max="365" value="'+(i.maxDays||0)+'"></div>'
     + '</div>'
     + '<div class="field"><label for="ePlace">받는 곳</label><input class="input" id="ePlace" value="'+esc(i.place||'')+'"></div>'
+    + '<div class="field"><label for="eContact">담당자 연락처</label><input class="input" id="eContact" type="tel" inputmode="tel" placeholder="010-0000-0000" value="'+esc(i.ownerContact||'')+'"></div>'
     + '<div class="field"><label for="eNote">알아둘 점</label><textarea class="input" id="eNote">'+esc(i.note||'')+'</textarea></div>'
     + '<div class="field"><label class="toggle"><input type="checkbox" id="eAuto" '+(i.autoApprove?'checked':'')+'> 신청이 오면 자동 승인</label></div>'
     + '<div class="field"><label class="toggle"><input type="checkbox" id="eActive" '+(i.active!==false?'checked':'')+'> 목록에 보이기</label></div>'
     + '<div class="field"><label>사진 바꾸기 <span class="muted" style="font-weight:400">(선택)</span></label>'
-    + '<label class="filebtn">사진 고르기<input type="file" id="ePhoto" accept="image/*" onclick="pickingPhoto=true" onchange="editPhoto(this)"></label>'
+    + '<label class="filebtn"><b>사진 고르기</b><input type="file" id="ePhoto" accept="image/*" onclick="armPicking()" onchange="editPhoto(this)"></label>'
     + '<div id="ePhotoPrev" style="margin-top:10px"></div></div>'
     + '<div class="modal-actions">'
+    + '<button class="btn-danger" data-act="del" data-id="'+i.id+'">이 교구 지우기</button>'
+    + '<span class="spacer" style="flex:1"></span>'
     + '<button class="btn-pearl" data-act="close">취소</button>'
     + '<button class="btn-primary" data-act="save-item" data-id="'+i.id+'">저장</button></div>');
-    editDraftPhoto = '';
 }
-let editDraftPhoto = '';
 function editPhoto(input){
+    const done = () => { clearTimeout(_pickT); pickingPhoto = false; };
     const f = input.files && input.files[0];
-    if (!f){ pickingPhoto = false; return; }
+    if (!f){ done(); return; }
     const img = new Image(), rd = new FileReader();
+    rd.onerror = () => { done(); toast('사진을 읽지 못했어요.', true); };
+    img.onerror = () => { done(); toast('이 사진 형식은 못 읽어요.', true); };
     rd.onload = () => { img.onload = () => {
         try {
-            const scale = Math.min(1, 800/Math.max(img.width, img.height));
-            const c = document.createElement('canvas');
-            c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
-            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            const c = shrinkToCanvas(img, 800);
             let url = c.toDataURL('image/jpeg', 0.72);
             if (url.length > 190000) url = c.toDataURL('image/jpeg', 0.55);
             if (url.length > 190000){ toast('사진이 너무 커요.', true); return; }
             editDraftPhoto = url;
             const p = $('ePhotoPrev');
             if (p) p.innerHTML = '<img src="'+url+'" style="width:96px;height:96px;object-fit:contain;border:1px solid var(--hairline);border-radius:10px;padding:6px">';
-        } finally { pickingPhoto = false; }
+        } finally { done(); }
     }; img.src = rd.result; };
-    rd.onerror = ()=>{ pickingPhoto = false; };
     rd.readAsDataURL(f);
 }
 async function saveItem(id){
     try {
         const body = {
             name:$('eName').value, total:$('eTotal').value, maxDays:$('eMax').value,
-            place:$('ePlace').value, note:$('eNote').value,
+            place:$('ePlace').value, ownerContact:$('eContact').value, note:$('eNote').value,
             autoApprove:$('eAuto').checked, active:$('eActive').checked, actor:ME
         };
         if (editDraftPhoto) body.photoDataUrl = editDraftPhoto;
         const r = await api('PATCH','/api/rental/items/'+id, body);
         S.items = r.items; lastSig = ''; editDraftPhoto = '';
         closeModal(); toast('저장했어요.'); paint();
-    } catch(e){ toast(e.message, true); }
+    } catch(e){ modalErr(e.message); }
 }
 function delItem(id){
     const i = itemOf(id); if(!i) return;
     openModal(
-      '<h3>' + esc(i.name) + '을(를) 지울까요?</h3>'
+      '<h3>‘' + esc(i.name) + '’을(를) 지울까요?</h3>'
     + '<p class="m-sub">목록에서 사라집니다. 지난 대여 기록은 남습니다.</p>'
     + '<div class="modal-actions"><button class="btn-pearl" data-act="close">그대로 두기</button>'
-    + '<button class="btn-primary" style="background:#d70015" data-act="del-go" data-id="'+i.id+'">지우기</button></div>');
+    + '<button class="btn-primary is-danger" data-act="del-go" data-id="'+i.id+'">지우기</button></div>');
 }
 async function delItemGo(id){
     try {
         const r = await api('DELETE','/api/rental/items/'+id,{actor:ME});
         S.items = r.items; lastSig = ''; closeModal(); toast('지웠어요.'); paint();
-    } catch(e){ closeModal(); toast(e.message, true); }
+    } catch(e){ modalErr(e.message); }
 }
 
 /* ---------- 대여 신청 ---------- */
@@ -1109,30 +1534,42 @@ function openRequest(id){
     const i = itemOf(id); if(!i) return;
     const avail = availableOf(i);
     const today = todayStr();
+    // 대기 거는 경우 오늘 날짜로 두면 승인되는 순간 이미 지난 기간이 되어 곧장 연체가 된다.
+    const from = avail>0 ? today : nextFreeDate(i);
     const span = i.maxDays > 0 ? Math.min(i.maxDays - 1, 4) : 4;
-    const to = addDays(today, Math.max(0, span));
-    reqCtx = { itemId:id, qty:1, max: Math.max(1, i.trackQty ? i.total : 1) };
+    const to = addDays(from, Math.max(0, span));
+    const maxTo = addDays(today, 365);
+    reqCtx = { itemId:id, qty:1, max: Math.max(1, i.trackQty ? i.total : 1), maxDays: i.maxDays||0 };
     openModal(
       '<h3>'+esc(i.name)+'</h3>'
     + '<p class="m-sub">'+esc(shortSchool(i.owner.school))+(i.place?' · '+esc(i.place):'')+(i.note?'<br>'+esc(i.note):'')+'</p>'
-    + (avail>0 ? '' : '<div class="badge b-wait" style="margin-bottom:20px">지금은 빌려간 상태예요. 대기열에 이름을 올립니다.</div>')
+    + (avail>0 ? '' : '<div class="note note-wait"><span>지금은 나가 있어요. <b>'+fmtD(from)+'</b>쯤 돌아옵니다. 그 뒤 날짜로 채워 뒀어요.</span></div>')
     + (i.trackQty ?
         '<div class="field"><label>수량 <span class="muted" style="font-weight:400">(지금 가능 '+avail+'개 / 총 '+i.total+'개)</span></label>'
-      + '<div class="stepper"><button type="button" data-act="rq" data-id="-1">−</button>'
+      + '<div class="stepper"><button type="button" data-act="rq" data-id="-1" aria-label="줄이기">−</button>'
       + '<span class="val" id="rQty">1</span>'
-      + '<button type="button" data-act="rq" data-id="1">＋</button></div></div>' : '')
+      + '<button type="button" data-act="rq" data-id="1" aria-label="늘리기">＋</button></div></div>' : '')
     + '<div class="two-col">'
-    + '<div class="field"><label for="rFrom">언제부터</label><input class="input" id="rFrom" type="date" value="'+today+'"></div>'
-    + '<div class="field"><label for="rTo">언제까지</label><input class="input" id="rTo" type="date" value="'+to+'"></div></div>'
-    + (i.maxDays? '<p class="hint" style="margin:-14px 0 22px">최대 '+i.maxDays+'일까지 빌릴 수 있어요.</p>':'')
+    + '<div class="field"><label for="rFrom">언제부터</label><input class="input" id="rFrom" type="date" value="'+from+'" min="'+today+'" max="'+maxTo+'"></div>'
+    + '<div class="field"><label for="rTo">언제까지</label><input class="input" id="rTo" type="date" value="'+to+'" min="'+from+'" max="'+maxTo+'"></div></div>'
+    + (i.maxDays? '<p class="hint" style="margin:0 0 20px">최대 '+i.maxDays+'일까지 빌릴 수 있어요.</p>':'')
     + '<div class="field"><label>받는 방법</label><div class="radio-row" id="mRow">'
     + ['방문','순회차량','택배','협의'].map((m,k)=>'<button type="button" class="chip'+(k===0?' on':'')+'" data-act="method" data-id="'+m+'">'+m+'</button>').join('')
     + '</div></div>'
     + '<div class="field"><label for="rMemo">쓸 곳 <span class="muted" style="font-weight:400">(선택)</span></label><input class="input" id="rMemo" placeholder="예: 3학년 과학 수업"></div>'
-    + '<div class="field"><label for="rContact">연락처 <span class="muted" style="font-weight:400">(선택)</span></label><input class="input" id="rContact" placeholder="010-0000-0000"></div>'
+    + '<div class="field"><label for="rContact">내 연락처 <span class="muted" style="font-weight:400">(선택)</span></label>'
+    + '<input class="input" id="rContact" type="tel" inputmode="tel" autocomplete="tel" enterkeyhint="done" placeholder="010-0000-0000"></div>'
     + '<p class="fine" style="margin-top:22px">신청자: '+esc(shortSchool(ME.school))+' · '+esc(ME.name)+' · '+esc(ME.role)+'</p>'
     + '<div class="modal-actions"><button class="btn-pearl" data-act="close">취소</button>'
     + '<button class="btn-primary" data-act="req-go">'+(avail>0?'신청하기':'대기 걸기')+'</button></div>');
+
+    // 시작일을 바꾸면 종료일 범위도 따라 움직인다 (휠 피커로 달을 잘못 넘기는 것 방지)
+    $('rFrom').addEventListener('change', ()=>{
+        const f = $('rFrom').value || today, t2 = $('rTo');
+        t2.min = f;
+        if (reqCtx.maxDays > 0) t2.max = addDays(f, reqCtx.maxDays-1);
+        if (t2.value < f) t2.value = f;
+    });
 }
 function reqQty(d){
     if (!reqCtx) return;
@@ -1164,14 +1601,14 @@ async function submitRequest(){
         else toast('신청했어요. 보유교가 승인하면 반납 탭에 나타납니다.');
         reqCtx = null;
         go('back');
-    } catch(e){ toast(e.message, true); }
+    } catch(e){ modalErr(e.message); }
 }
 
 /* ---------- 탭 2: 반납 ---------- */
 function paintBack(){
     const b = $('backBody');
     if (!ME){ b.innerHTML = emptyHtml('먼저 로그인해 주세요.','학교와 이름이 있어야 내 내역을 찾을 수 있어요.','로그인','login'); return; }
-    if (!loaded && netFail){ b.innerHTML = offlineHtml(); return; }
+    if (!loaded){ b.innerHTML = netFail ? offlineHtml() : skeletonList(3); return; }
 
     const live = myLive();
     const get  = live.filter(l=>l.status==='approved');
@@ -1182,18 +1619,18 @@ function paintBack(){
                           .sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')).slice(0,20);
 
     let h = '';
-    if (get.length)  h += block('받으러 가세요', get, '승인이 났습니다. 받은 뒤 아래 버튼을 눌러 주세요.');
-    if (has.length)  h += block('쓰는 중', has, '다 쓰면 반납 신청을 눌러 주세요.');
+    if (get.length)  h += block('받으러 가세요', get, '받으신 뒤 아래 버튼을 눌러 주세요.');
+    if (has.length)  h += block('쓰는 중', has, '다 쓰셨으면 원래 자리에 갖다 놓고 반납 신청을 눌러 주세요.');
     if (wait.length) h += block('반납 확인 기다리는 중', wait, '보유교가 확인하면 끝납니다.');
     if (que.length)  h += block('승인 기다리는 중', que, '보유교가 승인하면 알려 드립니다.');
     if (!h) h = emptyHtml('지금 빌린 교구가 없어요.','대여 탭에서 필요한 교구를 찾아보세요.','대여하러 가기','tab-rent');
-    if (past.length) h += '<h2 class="sec" style="margin-top:52px">지난 기록</h2><div class="list">'+past.map(loanRow).join('')+'</div>';
+    if (past.length) h += '<div class="blk"><h2 class="sec">지난 기록<span class="sec-count">'+past.length+'건</span></h2>'
+                        + '<div class="list">'+past.map(loanRow).join('')+'</div></div>';
     b.innerHTML = h;
 }
 function block(title, rows, sub){
-    return '<div class="blk"><h2 class="sec" style="margin-top:0">'+esc(title)
-        + '<span class="sec-count">'+rows.length+'건</span></h2>'
-        + (sub? '<p class="hint" style="margin:-10px 0 14px">'+esc(sub)+'</p>':'')
+    return '<div class="blk"><h2 class="sec">'+esc(title)+'<span class="sec-count">'+rows.length+'건</span></h2>'
+        + (sub? '<p class="hint">'+esc(sub)+'</p>':'')
         + '<div class="list">'+rows.map(loanRow).join('')+'</div></div>';
 }
 function loanRow(l){
@@ -1206,6 +1643,16 @@ function loanRow(l){
     if (l.status==='out')              acts.push(btn('반납 신청','return-request',l.id,'primary'));
     if (l.status==='return_requested') acts.push(btn('반납 신청 취소','return-cancel',l.id,'quiet'));
 
+    // 어디로 가야 하는지가 제일 위에 온다 — 이게 없어서 "그냥 전화하지"가 된다
+    let where = '';
+    if (i && ['approved','out','return_requested'].includes(l.status)){
+        const bits = [];
+        if (i.place) bits.push(esc(i.place));
+        bits.push(esc(i.owner.name)+' '+esc(i.owner.role||'선생님'));
+        if (i.ownerContact) bits.push('<a href="tel:'+esc(i.ownerContact.replace(/[^0-9+]/g,''))+'">'+esc(i.ownerContact)+'</a>');
+        where = '<p class="r-where"><b>'+(l.status==='approved'?'받는 곳':'돌려줄 곳')+':</b> '
+              + esc(shortSchool(i.owner.school))+' '+bits.join(' · ')+'</p>';
+    }
     let sub = fmtD(l.wantFrom)+'~'+fmtD(l.wantTo)+' · '+esc(l.method)+' · '+l.qty+'개';
     if (l.status==='requested'){
         const q = queueOf(l.itemId);
@@ -1218,10 +1665,10 @@ function loanRow(l){
     return '<div class="row">'
         + '<span class="r-emoji">'+esc(i?i.emoji:'📦')+'</span>'
         + '<div class="r-body">'
-        + '<p class="r-title">'+esc(i?i.name:'(삭제된 교구)')+' <span class="muted" style="font-weight:400">'+esc(i?shortSchool(i.owner.school):'')+'</span></p>'
-        + '<p class="r-meta">'+sub+'</p>'
-        + '<div class="badges"><span class="badge '+BADGE[l.status]+'">'+esc(LABEL[l.status]||l.status)+'</span>'
+        + '<div class="badges"><span class="badge '+BADGE[l.status]+'">'+esc(LABEL_MINE[l.status]||l.status)+'</span>'
         + (late? '<span class="badge b-late">'+late+'일 지남</span>':'')+'</div>'
+        + '<p class="r-title">'+esc(i?i.name:'(삭제된 교구)')+'</p>'
+        + '<p class="r-meta">'+sub+'</p>' + where
         + '</div><div class="r-actions">'+acts.join('')+'</div></div>';
 }
 function btn(label, action, id, kind){
@@ -1229,37 +1676,44 @@ function btn(label, action, id, kind){
     return '<button class="'+cls+'" data-act="do" data-do="'+action+'" data-id="'+id+'">'+esc(label)+'</button>';
 }
 
-/* ---------- 탭 3: 결재 ---------- */
+/* ---------- 탭 3: 승인 ---------- */
 function paintAppr(){
     const b = $('apprBody');
-    if (!ME){ b.innerHTML = emptyHtml('먼저 로그인해 주세요.','학교 이름이 결재 권한의 기준입니다.','로그인','login'); return; }
-    if (!loaded && netFail){ b.innerHTML = offlineHtml(); return; }
-    if (!myItems().length){
-        b.innerHTML = emptyHtml(esc(shortSchool(ME.school))+'가 올린 교구가 없어요.',
-            '교구를 올리면 다른 학교의 신청이 여기로 들어옵니다.','교구 올리기','openadd');
-        return;
-    }
+    if (!ME){ b.innerHTML = emptyHtml('먼저 로그인해 주세요.','학교 이름이 승인 권한의 기준입니다.','로그인','login'); return; }
+    if (!loaded){ b.innerHTML = netFail ? offlineHtml() : skeletonList(3); return; }
+
+    const mine = myItems();
     const all = apprList();
+    const late = all.filter(l=>lateDays(l)>0).sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
     const req  = all.filter(l=>l.status==='requested').sort((a,b)=>a.seq-b.seq);
-    const back = all.filter(l=>l.status==='return_requested');
-    const outs = all.filter(l=>l.status==='approved' || l.status==='out')
+    const back = all.filter(l=>l.status==='return_requested' && !lateDays(l));
+    const outs = all.filter(l=>(l.status==='approved' || l.status==='out') && !lateDays(l))
                     .sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
 
     let h = '';
-    if (req.length)  h += apprBlock('승인 기다리는 신청', req, '먼저 신청한 순서대로 보여 줍니다.');
-    if (back.length) h += apprBlock('반납 확인 요청', back, '물건을 받으셨으면 확인을 눌러 주세요.');
-    if (!req.length && !back.length){
-        h += '<div class="empty" style="padding:52px 20px"><div class="e-emoji">✅</div>'
-          +  '<p class="e-t">지금 결재할 것이 없습니다.</p>'
-          +  '<p class="e-s">새 신청이 들어오면 결재 탭에 빨간 숫자로 알려 드려요.</p></div>';
+    // 연체는 무엇보다 위에 온다. "승인할 것 없습니다" 밑에 숨으면 시스템이 거짓말을 하는 셈이다.
+    if (late.length) h += apprBlock('돌아올 때가 지났어요', late, '먼저 연락해 주세요.');
+    if (req.length)  h += apprBlock('빌려줄까요?', req, '먼저 신청한 순서대로 보여 줍니다.');
+    if (back.length) h += apprBlock('돌려받으셨나요?', back, '물건을 받으셨으면 확인을 눌러 주세요.');
+    if (!late.length && !req.length && !back.length){
+        h += '<div class="empty" style="padding:44px 20px"><div class="e-emoji">✅</div>'
+          +  '<p class="e-t">새로 들어온 신청은 없습니다.</p>'
+          +  '<p class="e-s">신청이 오면 승인 탭에 빨간 숫자로 알려 드려요.</p></div>';
     }
     if (outs.length) h += apprBlock('나가 있는 교구', outs, '아직 돌아오지 않은 것들입니다.');
+
+    // 우리 학교가 올린 교구 — 여기 없으면 승인 탭이 텅 빈 것처럼 보인다
+    h += '<div class="blk"><h2 class="sec">우리 학교 교구<span class="sec-count">'+mine.length+'개</span></h2>';
+    h += mine.length
+        ? '<div class="grid">'+mine.map(cardHtml).join('')+'</div>'
+        : emptyHtml(esc(shortSchool(ME.school))+'가 올린 교구가 아직 없어요.',
+                    '교구를 올리면 다른 학교의 신청이 여기로 들어옵니다.','교구 올리기','openadd');
+    h += '</div>';
     b.innerHTML = h;
 }
 function apprBlock(title, rows, sub){
-    return '<div class="blk"><h2 class="sec" style="margin-top:0">'+esc(title)
-        + '<span class="sec-count">'+rows.length+'건</span></h2>'
-        + (sub? '<p class="hint" style="margin:-10px 0 14px">'+esc(sub)+'</p>':'')
+    return '<div class="blk"><h2 class="sec">'+esc(title)+'<span class="sec-count">'+rows.length+'건</span></h2>'
+        + (sub? '<p class="hint">'+esc(sub)+'</p>':'')
         + '<div class="list">'+rows.map(apprRow).join('')+'</div></div>';
 }
 function apprRow(l){
@@ -1273,26 +1727,30 @@ function apprRow(l){
         acts.push('<button class="btn-quiet" data-act="reject" data-id="'+l.id+'">반려</button>');
     }
     if (l.status==='return_requested') acts.push(btn('반납 확인','return-confirm',l.id,'primary'));
-    if (l.status==='approved')         acts.push(btn('수령 확인','pickup',l.id,'quiet'));
-    if (OCCUPYING.includes(l.status))  acts.push(btn('강제 반납','force-return',l.id,'danger'));
+    if (l.status==='approved')         acts.push(btn('받았음 확인','pickup',l.id,'quiet'));
+    // 강제 반납은 되돌릴 수 없다. 아직 안 가져갔거나 연체된 건에만, 그것도 확인을 받고 실행한다.
+    if (l.status==='approved' || late)
+        acts.push('<button class="btn-danger" data-act="force-ask" data-id="'+l.id+'">분실·연체 정리</button>');
 
     let sub = esc(shortSchool(l.borrower.school))+' '+esc(l.borrower.name)
             + (l.borrower.role? ' ('+esc(l.borrower.role)+')':'')
             + ' · '+l.qty+'개 · '+fmtD(l.wantFrom)+'~'+fmtD(l.wantTo)+' · '+esc(l.method);
     if (l.memo) sub += ' · '+esc(l.memo);
-    if (l.contact) sub += ' · '+esc(l.contact);
     if (l.status==='requested'){
         const q = queueOf(l.itemId);
         const idx = q.findIndex(x=>x.id===l.id);
         if (idx>0) sub += ' · 대기 '+(idx+1)+'번째';
     }
+    const tel = l.contact
+        ? '<p class="r-where"><b>연락처:</b> <a href="tel:'+esc(l.contact.replace(/[^0-9+]/g,''))+'">'+esc(l.contact)+'</a></p>' : '';
+
     return '<div class="row">'
         + '<span class="r-emoji">'+esc(i?i.emoji:'📦')+'</span>'
         + '<div class="r-body">'
-        + '<p class="r-title">'+esc(i?i.name:'(삭제된 교구)')+'</p>'
-        + '<p class="r-meta">'+sub+'</p>'
-        + '<div class="badges"><span class="badge '+BADGE[l.status]+'">'+esc(LABEL[l.status]||l.status)+'</span>'
+        + '<div class="badges"><span class="badge '+BADGE[l.status]+'">'+esc(LABEL_OWNER[l.status]||l.status)+'</span>'
         + (late? '<span class="badge b-late">연체 '+late+'일</span>':'')+'</div>'
+        + '<p class="r-title">'+esc(i?i.name:'(삭제된 교구)')+'</p>'
+        + '<p class="r-meta">'+sub+'</p>' + tel
         + '</div><div class="r-actions">'+acts.join('')+'</div></div>';
 }
 function approveAsk(id, idx){
@@ -1304,11 +1762,12 @@ function approveAsk(id, idx){
       '<h3>승인할까요?</h3>'
     + '<p class="m-sub">'+esc(i?i.name:'')+' · '+esc(shortSchool(l.borrower.school))+' '+esc(l.borrower.name)
     + ' · '+fmtD(l.wantFrom)+'~'+fmtD(l.wantTo)+'</p>'
-    + (avail < l.qty ? '<div class="badge b-wait" style="margin-bottom:20px">신청은 '+l.qty+'개인데 지금 '+avail+'개만 있어요. 수량을 줄여 승인하면 남은 '+(l.qty-avail)+'개는 대기열 맨 앞에 남습니다.</div>' : '')
+    + (l.wantTo < todayStr() ? '<div class="note note-late"><span>신청 기간이 <b>이미 지났어요.</b> 승인하면 곧장 연체로 잡힙니다. 신청자에게 날짜를 다시 받으세요.</span></div>' : '')
+    + (avail < l.qty ? '<div class="note note-wait"><span>신청은 '+l.qty+'개인데 지금 '+avail+'개만 있어요. 수량을 줄여 승인하면 남은 '+(l.qty-avail)+'개는 대기열 맨 앞에 남습니다.</span></div>' : '')
     + '<div class="field"><label>승인 수량 <span class="muted" style="font-weight:400">(신청 '+l.qty+'개 / 가능 '+avail+'개)</span></label>'
-    + '<div class="stepper"><button type="button" data-act="aq" data-id="-1">−</button>'
+    + '<div class="stepper"><button type="button" data-act="aq" data-id="-1" aria-label="줄이기">−</button>'
     + '<span class="val" id="aq">'+apprCtx.qty+'</span>'
-    + '<button type="button" data-act="aq" data-id="1">＋</button></div></div>'
+    + '<button type="button" data-act="aq" data-id="1" aria-label="늘리기">＋</button></div></div>'
     + (idx>0 ? '<p class="hint">앞 순번이 있습니다. 그래도 승인하면 기록에 [먼저 승인]으로 남습니다.</p>' : '')
     + '<div class="modal-actions"><button class="btn-pearl" data-act="close">취소</button>'
     + '<button class="btn-primary" data-act="approve-go">'+(idx>0?'먼저 승인':'승인')+'</button></div>');
@@ -1324,7 +1783,7 @@ async function approveGo(){
         const r = await api('POST','/api/rental/loans/'+apprCtx.id+'/approve',{qty:apprCtx.qty, override:apprCtx.override, actor:ME});
         S.loans = r.loans; lastSig = ''; apprCtx = null;
         closeModal(); toast('승인했어요.'); paint();
-    } catch(e){ closeModal(); toast(e.message, true); }
+    } catch(e){ modalErr(e.message); }
 }
 function rejectAsk(id){
     apprCtx = { id };
@@ -1338,27 +1797,39 @@ function rejectAsk(id){
 async function rejectGo(){
     if (!apprCtx) return closeModal();
     const reason = $('rjR').value.trim();
-    if (!reason) return toast('사유를 적어 주세요.', true);
+    if (!reason) return modalErr('사유를 적어 주세요.');
     try {
         const r = await api('POST','/api/rental/loans/'+apprCtx.id+'/reject',{reason, actor:ME});
         S.loans = r.loans; lastSig = ''; apprCtx = null;
         closeModal(); toast('반려했어요.'); paint();
-    } catch(e){ closeModal(); toast(e.message, true); }
+    } catch(e){ modalErr(e.message); }
+}
+function forceAsk(id){
+    const l = S.loans.find(x=>x.id===id); if(!l) return;
+    const i = itemOf(l.itemId);
+    openModal(
+      '<h3>‘'+esc(i?i.name:'교구')+'’을(를) 정리할까요?</h3>'
+    + '<p class="m-sub">'+esc(shortSchool(l.borrower.school))+' '+esc(l.borrower.name)+' · '+l.qty+'개</p>'
+    + '<div class="note note-late"><span><b>물건이 실제로 돌아오지 않았어도 기록은 반납 완료가 됩니다.</b> '
+    + '되돌릴 수 없고, 재고가 풀려 다음 분이 바로 빌려 갈 수 있게 됩니다. 분실이나 장기 연체를 정리할 때만 쓰세요.</span></div>'
+    + '<div class="modal-actions"><button class="btn-pearl" data-act="close">그대로 두기</button>'
+    + '<button class="btn-primary is-danger" data-act="do" data-do="force-return" data-id="'+id+'" data-close="1">정리하기</button></div>');
 }
 
 /* ---------- 공통 액션 ---------- */
-async function doAction(id, action){
+async function doAction(id, action, alsoClose){
     if (!ME) return openIdentity();
     try {
         const r = await api('POST','/api/rental/loans/'+id+'/'+action,{actor:ME});
         S.loans = r.loans; lastSig = '';
+        if (alsoClose) closeModal();
         const msg = { cancel:'취소했어요.', pickup:'수령 처리했어요.',
                       'return-request':'반납 신청했어요. 보유교가 확인하면 끝납니다.',
                       'return-cancel':'반납 신청을 취소했어요.', 'return-confirm':'반납을 확인했어요.',
-                      'force-return':'강제 반납 처리했어요.' };
+                      'force-return':'정리했어요.' };
         toast(msg[action] || '처리했어요.');
         paint();
-    } catch(e){ toast(e.message, true); }
+    } catch(e){ if (modalOpen()) modalErr(e.message); else toast(e.message, true); }
 }
 function emptyHtml(title, sub, cta, act){
     return '<div class="empty"><div class="e-emoji">📦</div>'
@@ -1367,11 +1838,24 @@ function emptyHtml(title, sub, cta, act){
         + '</div>';
 }
 
-/* ---------- 클릭 위임 (onclick 문자열에 사용자 입력을 끼워 넣지 않는다) ---------- */
+/* ---------- 클릭 위임 ---------- */
+// onclick 문자열에 사용자 입력을 끼워 넣지 않는다. 그리고 느린 망에서의 연타를 막는다.
+const NET_ACTS = ['do','req-go','approve-go','reject-go','save-item','del-go'];
 document.addEventListener('click', e=>{
     const b = e.target.closest('[data-act]');
     if (!b) return;
+    if (b.dataset.busy){ e.preventDefault(); return; }
     const a = b.dataset.act, id = b.dataset.id;
+    if (NET_ACTS.includes(a)){
+        b.dataset.busy='1'; b.disabled = true;
+        b.dataset.label = b.textContent; b.textContent = '처리 중…';
+        setTimeout(()=>{
+            if (b.isConnected){
+                delete b.dataset.busy; b.disabled = false;
+                if (b.dataset.label) b.textContent = b.dataset.label;
+            }
+        }, 6000);
+    }
     switch(a){
         case 'cat':          setCat(id); break;
         case 'reset':        resetFilter(); break;
@@ -1388,22 +1872,30 @@ document.addEventListener('click', e=>{
         case 'approve-go':   approveGo(); break;
         case 'reject':       rejectAsk(id); break;
         case 'reject-go':    rejectGo(); break;
-        case 'do':           doAction(id, b.dataset.do); break;
+        case 'force-ask':    forceAsk(id); break;
+        case 'do':           doAction(id, b.dataset.do, b.dataset.close==='1'); break;
         case 'emoji':        pickEmoji(id); break;
         case 'clearphoto':   clearPhoto(); break;
         case 'close':        closeModal(); break;
         case 'openadd':      go('rent'); toggleAdd(true); break;
         case 'login':        openIdentity(); break;
+        case 'retry':        loadState(); break;
+        case 'resume-draft': toggleAdd(true); break;
+        case 'drop-draft':   clearDraft(); break;
         case 'tab-rent':     go('rent'); break;
         case 'tab-back':     go('back'); break;
         case 'tab-appr':     go('appr'); break;
     }
 });
-// 폼에 뭔가 적을 때마다 초안을 저장한다 (새로고침·기기 잠금에도 살아남게)
 document.addEventListener('input', e=>{
     if (e.target.closest && e.target.closest('#addPanel')) saveDraft();
 });
+$('gSchool').addEventListener('change', e=>onSchoolPick(e.target.value));
 $('gate').addEventListener('keydown', e=>{ if (e.key==='Enter') doLogin(); });
+$('gate').addEventListener('focusin', e=>{
+    if (matchMedia('(pointer:coarse)').matches)
+        setTimeout(()=>e.target.scrollIntoView({block:'center', behavior:'smooth'}), 280);
+});
 
 // ===== 시작 =====
 (async function(){
@@ -1414,20 +1906,20 @@ $('gate').addEventListener('keydown', e=>{ if (e.key==='Enter') doLogin(); });
     loadDraft();
     go('rent');
     if (ME) $('gate').style.display = 'none';
-    else { fillGateOptions(); }
+    else fillGateOptions();
 
     await loadState();
     initAddForm();
     if (!ME) openIdentity();
 
-    setInterval(loadState, 20000);
-    // 파일 선택창에서 돌아온 focus 로는 절대 갱신하지 않는다 (사진 넣으면 초기화되던 원인).
+    schedulePoll();
+    document.addEventListener('visibilitychange', ()=>{
+        if (document.hidden) clearTimeout(_pollT);
+        else { loadState(); schedulePoll(); }
+    });
+    // 파일 선택창에서 돌아온 focus 로는 갱신하지 않는다 (사진 넣으면 초기화되던 원인).
     window.addEventListener('focus', ()=>{
-        if (pickingPhoto){
-            clearTimeout(_pickT);
-            _pickT = setTimeout(()=>{ pickingPhoto = false; }, 2000);  // 취소했을 때 풀어 주기
-            return;
-        }
+        if (pickingPhoto) return;
         clearTimeout(_focusT);
         _focusT = setTimeout(loadState, 400);
     });
