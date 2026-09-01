@@ -353,10 +353,67 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ===== 로그인 게이트 ===== */
+#gate{position:fixed;inset:0;z-index:300;background:var(--parchment);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#gate .gcard{background:var(--canvas);border-radius:var(--r-xl);box-shadow:0 24px 68px rgba(0,0,0,.12);padding:40px 36px;width:100%;max-width:420px}
+#gate h1{font-size:27px;font-weight:600;letter-spacing:-.03em;margin:0 0 6px}
+#gate .gsub{font-size:14.5px;color:var(--ink-48);margin:0 0 28px;line-height:1.5}
+#gate .gfoot{font-size:12.5px;color:var(--ink-48);margin:20px 0 0;line-height:1.55}
+
+/* ===== 탭 배지 ===== */
+.tab-badge{
+  display:none;min-width:19px;height:19px;padding:0 6px;border-radius:9999px;background:#d70015;color:#fff;
+  font-size:11.5px;font-weight:700;line-height:19px;text-align:center;margin-left:6px;vertical-align:2px;
+}
+.tab-badge.on{display:inline-block}
+.tabbar .tab-badge{position:absolute;top:3px;left:50%;margin-left:4px}
+.tabbar button{position:relative}
+.pane[hidden]{display:none}
+
+/* ===== 결재/반납 ===== */
+.sec-count{font-size:14px;font-weight:500;color:var(--ink-48);margin-left:8px}
+.offline{background:#fff4e5;border:1px solid #ffd9a0;color:#7a4c00;border-radius:var(--r-md);padding:14px 18px;font-size:14px;margin:0 0 22px;line-height:1.55}
+.blk{margin-bottom:34px}
+
+/* ===== 사진 드롭존 ===== */
+.filebtn{width:100%;justify-content:center;padding:22px 18px;text-align:center;line-height:1.5}
+.filebtn .dz-sub{display:block;font-size:12.5px;color:var(--ink-48);margin-top:3px;font-weight:400}
+.filebtn b{font-weight:600;color:var(--ink)}
+.filebtn.drag{border-color:var(--primary);border-style:solid;background:rgba(0,102,204,.07)}
+.filebtn.drag b{color:var(--primary)}
 </style>
 </head>
 <body>
 
+<!-- ===== 로그인 ===== -->
+<div id="gate">
+  <div class="gcard">
+    <h1>교구 대여소</h1>
+    <p class="gsub">학교와 이름만 적으면 바로 시작합니다.<br>비밀번호는 없습니다.</p>
+    <div class="field">
+      <label for="gSchool">학교</label>
+      <input class="input" id="gSchool" list="schoolList" placeholder="예: 백암초등학교" autocomplete="off">
+      <datalist id="schoolList"></datalist>
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label for="gName">이름</label>
+        <input class="input" id="gName" placeholder="예: 권준구" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="gRole">직</label>
+        <select class="input" id="gRole"></select>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-primary btn-block" onclick="doLogin()">시작하기</button>
+    </div>
+    <p class="gfoot">여기 적은 학교가 <b>결재 권한</b>의 기준입니다. 우리 학교가 올린 교구의 신청만 승인·반려할 수 있어요.</p>
+  </div>
+</div>
+
+<!-- ===== 앱 ===== -->
 <header class="global-nav">
     <a href="/" title="AIroom 교무실로">
         <svg width="7" height="12" viewBox="0 0 7 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1L1 6l5 5"/></svg>
@@ -370,15 +427,116 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
 <div class="sub-nav" id="subNav">
     <div class="sn-title" id="snTitle">교구 대여소</div>
     <nav class="sn-links">
-        <button class="sn-link" data-view="browse" onclick="go('browse')">둘러보기</button>
-        <button class="sn-link" data-view="mine" onclick="go('mine')">내 대여</button>
-        <button class="sn-link" data-view="status" onclick="go('status')">전체 현황</button>
-        <button class="btn-primary btn-sm" onclick="go('add')">교구 올리기</button>
+        <button class="sn-link" data-tab="rent" onclick="go('rent')">대여</button>
+        <button class="sn-link" data-tab="back" onclick="go('back')">반납<span class="tab-badge" data-badge="back"></span></button>
+        <button class="sn-link" data-tab="appr" onclick="go('appr')">결재<span class="tab-badge" data-badge="appr"></span></button>
     </nav>
 </div>
 
 <div id="bannerRoot"></div>
-<main id="main"></main>
+
+<main>
+  <!-- ── 탭 1: 대여 ── -->
+  <section class="pane" id="pane-rent">
+    <section class="tile tile-parchment"><div class="wrap">
+      <h1 class="hero">대여</h1>
+      <p class="lead">가까운 학교끼리 교구를 나눠 씁니다. 필요한 것을 골라 신청하세요.</p>
+      <div class="kpis" id="kpiRow"></div>
+    </div></section>
+
+    <section class="wrap" style="padding-top:32px">
+      <div class="filters">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="q" placeholder="교구 이름이나 학교로 찾기" autocomplete="off" oninput="onSearch(this.value)">
+        </div>
+        <label class="toggle"><input type="checkbox" id="onlyAvail" onchange="onOnlyAvail(this.checked)"> 지금 바로 가능한 것만</label>
+        <button class="btn-primary btn-sm" style="margin-left:auto" onclick="toggleAdd()" id="addToggle">＋ 우리 학교 교구 올리기</button>
+      </div>
+      <div class="chiprow" id="catRow" style="margin-bottom:26px"></div>
+
+      <!-- 교구 올리기 폼: 정적 DOM. 목록을 다시 그려도 이 안의 입력값은 절대 지워지지 않는다. -->
+      <div class="panel" id="addPanel" hidden style="margin-bottom:30px">
+        <h2 class="sec" style="margin-top:0">우리 학교 교구 올리기</h2>
+        <div class="field">
+          <label for="aName">무엇을 올리나요?</label>
+          <input class="input" id="aName" placeholder="예: 빔프로젝터(엡손 EB-970)">
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="aCat">분류</label>
+            <select class="input" id="aCat"></select>
+          </div>
+          <div class="field">
+            <label for="aPlace">어디서 받나요?</label>
+            <input class="input" id="aPlace" placeholder="예: 본관 2층 시청각실">
+          </div>
+        </div>
+        <div class="field">
+          <label>아이콘</label>
+          <div class="emoji-pick" id="emojiPick"></div>
+          <div class="hint">사진을 올리면 아이콘 대신 사진이 보입니다.</div>
+        </div>
+        <div class="field">
+          <label>사진 <span class="muted" style="font-weight:400">(선택)</span></label>
+          <label class="filebtn" id="photoDrop">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            <span><b>사진 고르기</b><span class="dz-sub">여기로 끌어다 놓거나 붙여넣기(Ctrl+V)도 됩니다</span></span>
+            <input type="file" id="aPhoto" accept="image/*" onclick="pickingPhoto=true" onchange="pickPhoto(this)">
+          </label>
+          <div id="photoPrev" style="margin-top:12px;display:flex;align-items:center;gap:10px"></div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label>수량</label>
+            <div class="stepper">
+              <button type="button" onclick="stepQty(-1)" aria-label="줄이기">−</button>
+              <span class="val" id="aQtyVal">1</span>
+              <button type="button" onclick="stepQty(1)" aria-label="늘리기">＋</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="aMaxDays">최대 며칠까지</label>
+            <input class="input" id="aMaxDays" type="number" min="0" max="365" value="14">
+            <div class="hint">0을 넣으면 제한 없음</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="aNote">알아둘 점 <span class="muted" style="font-weight:400">(선택)</span></label>
+          <textarea class="input" id="aNote" placeholder="예: 삼각대·케이블 포함. C타입 케이블로 충전."></textarea>
+        </div>
+        <div class="field">
+          <label class="toggle"><input type="checkbox" id="aAuto"> 신청이 오면 자동으로 승인하기</label>
+          <div class="hint">체크하면 남는 수량이 있고 순번이 1번일 때 바로 승인됩니다.</div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-pearl" onclick="toggleAdd(false)">접기</button>
+          <button class="btn-primary" onclick="submitItem()" id="addSubmit">교구 올리기</button>
+        </div>
+      </div>
+
+      <div id="rentGrid"></div>
+    </section>
+  </section>
+
+  <!-- ── 탭 2: 반납 ── -->
+  <section class="pane" id="pane-back" hidden>
+    <section class="tile tile-parchment"><div class="wrap">
+      <h1 class="hero">반납</h1>
+      <p class="lead">내가 빌린 교구를 여기서 받고, 여기서 돌려줍니다.</p>
+    </div></section>
+    <section class="wrap" style="padding-top:36px" id="backBody"></section>
+  </section>
+
+  <!-- ── 탭 3: 결재 ── -->
+  <section class="pane" id="pane-appr" hidden>
+    <section class="tile tile-parchment"><div class="wrap">
+      <h1 class="hero">결재</h1>
+      <p class="lead">우리 학교가 올린 교구에 들어온 신청을 승인하거나 반려합니다.</p>
+    </div></section>
+    <section class="wrap" style="padding-top:36px" id="apprBody"></section>
+  </section>
+</main>
 
 <footer class="foot">
     <div class="wrap">
@@ -388,81 +546,83 @@ textarea.input{min-height:88px;resize:vertical;line-height:1.5}
             <a href="#" onclick="event.preventDefault();openIdentity()">내 신원 바꾸기</a>
         </div>
         <p class="fine" style="margin-top:18px;max-width:44em">
-            누구나 올리고 빌릴 수 있는 초안입니다. 비밀번호가 없으니 신청·승인할 때 학교와 이름을 정확히 적어 주세요.
+            비밀번호가 없는 개방형입니다. 승인·반려는 교구를 올린 학교만, 취소·반납 신청은 본인만 할 수 있습니다.
         </p>
     </div>
 </footer>
 
 <nav class="tabbar">
-    <button data-view="browse" onclick="go('browse')">
+    <button data-tab="rent" onclick="go('rent')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        둘러보기
+        대여
     </button>
-    <button data-view="mine" onclick="go('mine')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        내 대여
+    <button data-tab="back" onclick="go('back')">
+        <span class="tab-badge" data-badge="back"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        반납
     </button>
-    <button data-view="add" onclick="go('add')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        올리기
-    </button>
-    <button data-view="status" onclick="go('status')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-        현황
+    <button data-tab="appr" onclick="go('appr')">
+        <span class="tab-badge" data-badge="appr"></span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        결재
     </button>
 </nav>
 
 <div id="modalRoot"></div>
 <div id="toast"></div>
-
 <script>
 /* =========================================================
-   교구 대여소 — 초안(완전 개방판)
+   교구 대여소 — 3탭판 (대여 / 반납 / 결재)
    설계: RENTAL_DESIGN.md / 디자인 토큰: DESIGN.md (Apple)
+
+   렌더링 원칙 (입력값이 사라지던 버그의 근본 대책):
+   1) 폼·검색창·탭바는 정적 DOM 이다. 자바스크립트가 절대 innerHTML 로 갈아끼우지 않는다.
+   2) 다시 그리는 것은 목록 컨테이너뿐 (#kpiRow #catRow #rentGrid #backBody #apprBody #bannerRoot).
+   3) 20초 폴링은 데이터가 실제로 바뀐 경우에만 다시 그린다.
+   4) 사진 고르는 중에는(pickingPhoto) 어떤 갱신도 하지 않는다.
    ========================================================= */
 
-// ===== 주소 정리 (/rental.html → /rental) =====
 if (location.pathname.endsWith('/rental.html')) history.replaceState(null, '', '/rental');
 
 // ===== 전역 상태 =====
 let S = { items: [], loans: [], schools: [], settings: {}, serverDate: '' };
 let ME = null;
-let view = 'browse';
-let loaded = false;
+let tab = 'rent';
+let loaded = false, netFail = false, polling = false, lastSig = '';
 let filterCat = 'all', filterText = '', onlyAvailable = false;
 let addDraft = { emoji: '📦', photo: '', qty: 1 };
+let pickingPhoto = false;
+let reqCtx = null, apprCtx = null;
+let _searchT = null, _focusT = null, _pickT = null;
 
 const OCCUPYING = ['approved', 'out', 'return_requested'];
+const LIVE = ['requested', 'approved', 'out', 'return_requested'];
 const LABEL = {
-    requested: '대기 중', approved: '승인됨 · 아직 안 가져감', out: '대여 중',
-    return_requested: '반납 확인 대기', returned: '반납 완료', rejected: '반려됨', canceled: '취소함'
+    requested: '승인 기다리는 중', approved: '승인됨 · 아직 안 가져감', out: '대여 중',
+    return_requested: '반납 확인 기다리는 중', returned: '반납 완료', rejected: '반려됨', canceled: '취소함'
 };
 const BADGE = {
     requested: 'b-wait', approved: 'b-appr', out: 'b-out',
     return_requested: 'b-back', returned: 'b-done', rejected: 'b-off', canceled: 'b-off'
 };
 const QUICK_EMOJI = ['📦','📽️','🔬','⚽','🎹','🎨','💻','🔭','🎤','🧪','📷','🥁','🎪','🧩'];
-
-// ===== 아이콘 (SF Symbols 대신 인라인 SVG — 윈도우/안드로이드에서 두부 방지) =====
-const SVG = {
-    search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
-    plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
-    camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
-    check:'<polyline points="20 6 9 17 4 12"/>',
-    arrow:'<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'
-};
-function ico(name, size){
-    const s = size || 18;
-    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+SVG[name]+'</svg>';
-}
+const DEF_CATS = ['시청각','체육','과학','미술','음악','정보','행사','기타'];
+const DEF_ROLES = ['교사','교감','교장','교육실무사','늘봄·돌봄','영양(교)사','행정실','기타'];
 
 // ===== 유틸 =====
-function esc(t){ const d=document.createElement('div'); d.textContent = t==null?'':t; return d.innerHTML; }
+// 텍스트·속성 양쪽에 안전하도록 따옴표까지 이스케이프한다.
+function esc(t){
+    return String(t == null ? '' : t)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function $(id){ return document.getElementById(id); }
 function toast(msg, err){
-    const t=document.createElement('div'); t.className='toast'+(err?' err':''); t.textContent=msg;
-    $('toast').appendChild(t); setTimeout(()=>t.remove(), 2800);
+    const t = document.createElement('div');
+    t.className = 'toast' + (err ? ' err' : '');
+    t.textContent = msg;
+    $('toast').appendChild(t);
+    setTimeout(()=>t.remove(), 2800);
 }
 function fmtD(iso){ if(!iso) return ''; const p=iso.split('-'); return Number(p[1])+'월 '+Number(p[2])+'일'; }
 function daysBetween(a,b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }
@@ -495,7 +655,6 @@ function queueOf(itemId){
 function activeOf(itemId){
     return S.loans.filter(l=>l.itemId===itemId && OCCUPYING.includes(l.status)).sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
 }
-// 대기열 각 건이 언제쯤 가능한지 (날짜는 문자열 비교만)
 function computeEtas(item){
     let free = availableOf(item);
     const releases = activeOf(item.id).map(l=>({date:l.wantTo, qty:l.qty}));
@@ -517,150 +676,156 @@ function computeEtas(item){
     }
     return out;
 }
-function isMine(l){ return ME && l.borrower.school===ME.school && l.borrower.name===ME.name; }
-function isOwner(item){ return ME && item && item.owner.school===ME.school; }
+function isMine(l){ return !!ME && l.borrower.school===ME.school && l.borrower.name===ME.name; }
+function isOwner(item){ return !!ME && !!item && item.owner.school===ME.school; }
+// 연체는 실제로 물건이 나간 뒤(out)부터 센다. 승인만 받고 안 가져간 건 연체가 아니다.
 function lateDays(l){
-    if(!['approved','out'].includes(l.status)) return 0;
+    if (l.status!=='out' && l.status!=='return_requested') return 0;
     const d = daysBetween(l.wantTo, todayStr());
     return d>0 ? d : 0;
 }
-function statusText(l){
-    if (l.status==='requested'){
-        const q = queueOf(l.itemId);
-        const idx = q.findIndex(x=>x.id===l.id);
-        if (l.readyAt) return '내 차례 · 승인 기다리는 중';
-        return idx===0 ? '승인 기다리는 중' : '대기 중 · '+(idx+1)+'번째';
-    }
-    if (l.status==='out') return '대여 중 · '+fmtD(l.wantTo)+'까지';
-    return LABEL[l.status] || l.status;
+function myItems(){ return S.items.filter(isOwner); }
+function myItemIds(){ return new Set(myItems().map(i=>i.id)); }
+function apprList(){
+    const ids = myItemIds();
+    return S.loans.filter(l=>ids.has(l.itemId) && LIVE.includes(l.status));
 }
+function apprPending(){ return apprList().filter(l=>l.status==='requested' || l.status==='return_requested'); }
+function myLoans(){ return S.loans.filter(isMine); }
+function myLive(){ return myLoans().filter(l=>LIVE.includes(l.status)).sort((a,b)=>a.seq-b.seq); }
 
-// ===== 신원 =====
-function loadIdentity(){
-    try { ME = JSON.parse(localStorage.getItem('rental_identity')||'null'); } catch(e){ ME = null; }
+// ===== 로그인 =====
+function fillGateOptions(){
+    const roles = (S.settings.roles && S.settings.roles.length) ? S.settings.roles : DEF_ROLES;
+    const cur = ($('gRole').value) || (ME && ME.role) || '교사';
+    $('gRole').innerHTML = roles.map(r=>'<option'+(r===cur?' selected':'')+'>'+esc(r)+'</option>').join('');
+    $('schoolList').innerHTML = S.schools.map(s=>'<option value="'+esc(s.name)+'">').join('');
+}
+function openIdentity(){
+    $('gSchool').value = ME ? ME.school : '';
+    $('gName').value   = ME ? ME.name : '';
+    fillGateOptions();
+    $('gate').style.display = 'flex';
+    setTimeout(()=>{ const el=$('gSchool'); if(el) el.focus(); }, 60);
+}
+async function doLogin(){
+    const school = $('gSchool').value.trim();
+    const name   = $('gName').value.trim();
+    const role   = $('gRole').value;
+    if (!school || !name) return toast('학교와 이름을 적어 주세요.', true);
+    ME = { school, name, role, savedAt: new Date().toISOString() };
+    try { localStorage.setItem('rental_identity', JSON.stringify(ME)); } catch(e){}
+    $('gate').style.display = 'none';
     renderMe();
+    paint();
+    if (!S.schools.find(s=>s.name===school)){
+        try { const r = await api('POST','/api/rental/schools',{name:school}); S.schools = r.schools; fillGateOptions(); } catch(e){}
+    }
 }
 function renderMe(){
     $('gnMe').innerHTML = ME
         ? '<span class="gn-avatar">'+esc(initial(ME.name))+'</span><span><b>'+esc(shortSchool(ME.school))+'</b> '+esc(ME.name)+'</span>'
         : '학교·이름 입력하기';
 }
-function openIdentity(force){
-    const roles = (S.settings.roles && S.settings.roles.length ? S.settings.roles
-        : ['교사','교감','교장','교육실무사','늘봄·돌봄','영양(교)사','행정실','기타']);
-    const schools = S.schools.map(s=>s.name);
-    const cur = ME || { school:'', name:'', role:'교사' };
-    openModal(`
-      <h3>누가 쓰고 있나요?</h3>
-      <p class="m-sub">한 번만 적어 두면 다음부터 그대로 씁니다. 비밀번호는 없습니다.</p>
-      <div class="field">
-        <label for="idSchool">학교</label>
-        <input class="input" id="idSchool" list="schoolList" placeholder="예: 백암초등학교" value="${esc(cur.school)}" autocomplete="off">
-        <datalist id="schoolList">${schools.map(s=>'<option value="'+esc(s)+'">').join('')}</datalist>
-        <div class="hint">목록에 없으면 그냥 적으면 됩니다. 적은 학교는 다음 사람에게도 보입니다.</div>
-      </div>
-      <div class="two-col">
-        <div class="field">
-          <label for="idName">이름</label>
-          <input class="input" id="idName" placeholder="예: 권준구" value="${esc(cur.name)}" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="idRole">직</label>
-          <select class="input" id="idRole">
-            ${roles.map(r=>'<option'+(r===cur.role?' selected':'')+'>'+esc(r)+'</option>').join('')}
-          </select>
-        </div>
-      </div>
-      <div class="modal-actions">
-        ${force ? '' : '<button class="btn-pearl" onclick="closeModal()">취소</button>'}
-        <button class="btn-primary" onclick="saveIdentity()">시작하기</button>
-      </div>
-    `, !force);
-    setTimeout(()=>{ const el=$('idSchool'); if(el) el.focus(); }, 80);
-}
-async function saveIdentity(){
-    const school = $('idSchool').value.trim();
-    const name = $('idName').value.trim();
-    const role = $('idRole').value;
-    if (!school || !name) return toast('학교와 이름을 적어 주세요.', true);
-    ME = { school, name, role, savedAt: new Date().toISOString() };
-    localStorage.setItem('rental_identity', JSON.stringify(ME));
-    closeModal(); renderMe(); render();
-    if (!S.schools.find(s=>s.name===school)){
-        try { const r = await api('POST','/api/rental/schools',{name:school}); S.schools = r.schools; } catch(e){}
-    }
-}
-function requireMe(){
-    if (!ME){ openIdentity(true); return false; }
-    return true;
-}
 
 // ===== 모달 =====
-function openModal(html, closable){
-    const root = $('modalRoot');
-    root.innerHTML = '<div class="modal-back" id="modalBack"><div class="modal" role="dialog" aria-modal="true">'+html+'</div></div>';
-    if (closable !== false){
-        $('modalBack').addEventListener('click', e=>{ if(e.target.id==='modalBack') closeModal(); });
-    }
-    document.body.style.overflow='hidden';
+function openModal(html){
+    $('modalRoot').innerHTML = '<div class="modal-back" id="modalBack"><div class="modal" role="dialog" aria-modal="true">'+html+'</div></div>';
+    $('modalBack').addEventListener('click', e=>{ if(e.target.id==='modalBack') closeModal(); });
+    document.body.style.overflow = 'hidden';
 }
 function closeModal(){ $('modalRoot').innerHTML=''; document.body.style.overflow=''; }
+function modalOpen(){ return !!$('modalRoot').firstChild; }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
-
-// 서브내비 그림자
 window.addEventListener('scroll', ()=>{
     const n=$('subNav'); if(n) n.classList.toggle('scrolled', window.scrollY>10);
 }, {passive:true});
 
 // ===== 데이터 =====
 async function loadState(){
+    if (pickingPhoto || polling) return;
+    polling = true;
     try {
         const s = await api('GET','/api/rental/state');
-        S = s; loaded = true; render();
-    } catch(e){ if(!loaded) toast(e.message, true); }
+        S = s; loaded = true; netFail = false;
+        const sig = JSON.stringify([s.items, s.loans, s.settings, s.schools]);
+        if (sig !== lastSig){ lastSig = sig; fillGateOptions(); paint(); }
+    } catch(e){
+        netFail = true;
+        if (!loaded) paint();
+    } finally { polling = false; }
 }
 
-// ===== 화면 전환 =====
-function go(v){
-    view = v;
+// ===== 탭 =====
+function go(t){
+    tab = t;
+    ['rent','back','appr'].forEach(k=>{ $('pane-'+k).hidden = (k!==t); });
+    document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
     window.scrollTo({top:0, behavior:'instant'});
-    render();
+    paint();
 }
 
-// ===== 렌더 =====
-function render(){
-    document.querySelectorAll('.sn-link,.tabbar button').forEach(b=>{
-        b.classList.toggle('active', b.dataset.view===view);
-    });
+// ===== 그리기 (정적 폼은 건드리지 않는다) =====
+function paint(){
     $('snTitle').textContent = S.settings.title || '교구 대여소';
-    renderBanner();
-    const m = $('main');
-    if (view==='browse') m.innerHTML = viewBrowse();
-    else if (view==='mine') m.innerHTML = viewMine();
-    else if (view==='add') m.innerHTML = viewAdd();
-    else m.innerHTML = viewStatus();
-    if (view==='add') syncAddDraft();
+    paintBadges();
+    paintBanner();
+    if (tab==='rent'){ paintKpi(); paintCats(); paintGrid(); }
+    else if (tab==='back') paintBack();
+    else paintAppr();
 }
-
-function renderBanner(){
+function paintBadges(){
+    const n = { back: myLive().length, appr: apprPending().length };
+    document.querySelectorAll('[data-badge]').forEach(el=>{
+        const c = n[el.dataset.badge] || 0;
+        el.textContent = c > 99 ? '99+' : c;
+        el.classList.toggle('on', c > 0);
+        el.style.background = el.dataset.badge==='appr' ? '#d70015' : 'var(--ink-48)';
+    });
+}
+function paintBanner(){
     const root = $('bannerRoot');
-    const mine = S.loans.filter(l=>isMine(l) && l.status==='requested' && l.readyAt);
-    const notice = S.settings.notice;
     let html = '';
-    if (mine.length){
-        const it = itemOf(mine[0].itemId);
-        html += '<div class="banner">🔔 <span><b>내 차례예요!</b> '+esc(it?it.name:'교구')+' — 보유교 승인만 남았습니다.</span>'
-             +  '<button class="btn-primary btn-sm" onclick="go(\'mine\')">확인</button></div>';
+    if (ME){
+        const ready = myLoans().filter(l=>l.status==='requested' && l.readyAt);
+        if (ready.length){
+            const it = itemOf(ready[0].itemId);
+            html += '<div class="banner">🔔 <span><b>내 차례예요!</b> '+esc(it?it.name:'교구')+' — 보유교 승인만 남았습니다.</span>'
+                 +  '<button class="btn-primary btn-sm" data-act="tab-back">확인</button></div>';
+        }
+        const p = apprPending().length;
+        if (p && tab!=='appr'){
+            html += '<div class="banner banner-notice">📮 <span>결재할 것이 <b>'+p+'건</b> 있습니다.</span>'
+                 +  '<button class="btn-primary btn-sm" data-act="tab-appr">결재하러 가기</button></div>';
+        }
     }
-    if (notice){
-        html += '<div class="banner banner-notice">📣 '+esc(notice)+'</div>';
-    }
+    if (S.settings.notice) html += '<div class="banner banner-notice">📣 '+esc(S.settings.notice)+'</div>';
     root.innerHTML = html;
 }
+function offlineHtml(){
+    return '<div class="offline"><b>서버에 연결하지 못했어요.</b><br>'
+         + '이 화면은 서버가 있는 주소(<code>/rental</code>)에서만 동작합니다. 잠시 후 새로고침해 주세요.</div>';
+}
 
-/* ---------- ① 둘러보기 ---------- */
-function viewBrowse(){
-    const cats = S.settings.categories || [];
+/* ---------- 탭 1: 대여 ---------- */
+function paintKpi(){
+    const all = S.items.filter(i=>i.active!==false);
+    const totalQty = all.reduce((s,i)=>s+i.total,0);
+    const availQty = all.reduce((s,i)=>s+availableOf(i),0);
+    const waiting = S.loans.filter(l=>l.status==='requested').length;
+    $('kpiRow').innerHTML =
+        kpi(totalQty,'올라온 교구') + kpi(availQty,'지금 빌릴 수 있음') +
+        kpi(waiting,'대기 중인 신청') + kpi(S.schools.length,'함께 쓰는 학교');
+}
+function kpi(n,l){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function paintCats(){
+    const cats = (S.settings.categories && S.settings.categories.length) ? S.settings.categories : DEF_CATS;
+    $('catRow').innerHTML = '<button class="chip'+(filterCat==='all'?' on':'')+'" data-act="cat" data-id="all">전체</button>'
+        + cats.map(c=>'<button class="chip'+(filterCat===c?' on':'')+'" data-act="cat" data-id="'+esc(c)+'">'+esc(c)+'</button>').join('');
+}
+function paintGrid(){
+    const g = $('rentGrid');
+    if (!loaded){ g.innerHTML = netFail ? offlineHtml() : skeletonGrid(); return; }
     const all = S.items.filter(i=>i.active!==false);
     let list = all;
     if (filterCat!=='all') list = list.filter(i=>i.category===filterCat);
@@ -671,64 +836,9 @@ function viewBrowse(){
     if (onlyAvailable) list = list.filter(i=>availableOf(i)>0);
     list = list.slice().sort((a,b)=>(availableOf(b)>0)-(availableOf(a)>0) || b.createdAt.localeCompare(a.createdAt));
 
-    const totalQty = all.reduce((s,i)=>s+i.total,0);
-    const availQty = all.reduce((s,i)=>s+availableOf(i),0);
-    const waiting = S.loans.filter(l=>l.status==='requested').length;
-
-    return `
-    <section class="tile tile-parchment">
-      <div class="wrap">
-        <h1 class="hero">${esc(S.settings.title||'소규모 학교 연계 교구 대여소')}</h1>
-        <p class="lead">가까운 학교끼리 교구를 나눠 씁니다.<br>학교와 이름만 적으면 바로 빌릴 수 있어요.</p>
-        <div class="kpis">
-          <div class="kpi"><div class="n">${totalQty}</div><div class="l">올라온 교구</div></div>
-          <div class="kpi"><div class="n">${availQty}</div><div class="l">지금 빌릴 수 있음</div></div>
-          <div class="kpi"><div class="n">${waiting}</div><div class="l">대기 중인 신청</div></div>
-          <div class="kpi"><div class="n">${S.schools.length}</div><div class="l">함께 쓰는 학교</div></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="wrap" style="padding-top:36px">
-      <div class="filters">
-        <div class="search">
-          ${ico('search',18)}
-          <input id="q" placeholder="교구 이름이나 학교로 찾기" value="${esc(filterText)}" autocomplete="off">
-        </div>
-        <label class="toggle"><input type="checkbox" ${onlyAvailable?'checked':''} onchange="setOnlyAvail(this.checked)"> 지금 바로 가능한 것만</label>
-      </div>
-      <div class="chiprow" style="margin-bottom:26px">
-        <button class="chip${filterCat==='all'?' on':''}" onclick="setCat('all')">전체</button>
-        ${cats.map(c=>'<button class="chip'+(filterCat===c?' on':'')+'" onclick="setCat(\''+esc(c)+'\')">'+esc(c)+'</button>').join('')}
-      </div>
-      ${!loaded ? skeletonGrid()
-        : list.length ? '<div class="grid">'+list.map(cardHtml).join('')+'</div>'
-        : all.length ? emptyHtml('찾는 교구가 없어요.','다른 낱말로 찾거나 분류를 바꿔 보세요.','전체 보기',"resetFilter()")
-        : emptyHtml('아직 올라온 교구가 없어요.','첫 교구를 올려 다른 학교와 나눠 보세요.','교구 올리기',"go('add')")}
-    </section>
-
-    <section class="tile tile-dark" style="margin-top:64px">
-      <div class="wrap">
-        <h2 class="sec">이렇게 씁니다</h2>
-        <div class="steps">
-          <div class="step">
-            <div class="num">1</div>
-            <h4>학교·이름을 적어요</h4>
-            <p>가입도 비밀번호도 없습니다. 한 번 적으면 이 기기에 저장돼요.</p>
-          </div>
-          <div class="step">
-            <div class="num">2</div>
-            <h4>필요한 교구를 신청해요</h4>
-            <p>누가 이미 쓰고 있으면 대기열에 순번이 잡히고, 언제쯤 차례가 오는지 알려 줍니다.</p>
-          </div>
-          <div class="step">
-            <div class="num">3</div>
-            <h4>다 쓰면 반납을 눌러요</h4>
-            <p>보유 학교가 확인하면 끝. 다음 차례인 분에게 바로 넘어갑니다.</p>
-          </div>
-        </div>
-      </div>
-    </section>`;
+    g.innerHTML = list.length ? '<div class="grid">'+list.map(cardHtml).join('')+'</div>'
+        : all.length ? emptyHtml('찾는 교구가 없어요.','다른 낱말로 찾거나 분류를 바꿔 보세요.','전체 보기','reset')
+        : emptyHtml('아직 올라온 교구가 없어요.','첫 교구를 올려 다른 학교와 나눠 보세요.','교구 올리기','openadd');
 }
 function skeletonGrid(){
     let s='<div class="grid">';
@@ -740,197 +850,170 @@ function skeletonGrid(){
 function cardHtml(i){
     const avail = availableOf(i);
     const q = queueOf(i.id);
-    const etas = computeEtas(i);
     let badge, cta;
     if (avail>0){
         badge = '<span class="badge b-done">'+(i.trackQty? i.total+'개 중 '+avail+'개 가능':'지금 가능')+'</span>';
-        cta = '<button class="btn-primary btn-sm" onclick="openRequest(\''+i.id+'\')">대여 신청</button>';
+        cta = '<button class="btn-primary btn-sm" data-act="req" data-id="'+i.id+'">대여 신청</button>';
     } else {
+        const etas = computeEtas(i);
         const head = q.length? etas[q[0].id] : null;
         const first = activeOf(i.id)[0];
         const when = q.length===0 ? (first ? fmtD(first.wantTo)+' 이후' : '미정')
                                   : (head ? fmtD(head)+'쯤' : '미정');
         badge = '<span class="badge b-wait">'+(q.length? '대기 '+q.length+'명 · ':'')+when+' 가능</span>';
-        cta = '<button class="btn-ghost btn-sm" onclick="openRequest(\''+i.id+'\')">대기 걸기</button>';
+        cta = '<button class="btn-ghost btn-sm" data-act="req" data-id="'+i.id+'">대기 걸기</button>';
     }
     const thumb = i.hasPhoto
         ? '<img src="/api/rental/items/'+i.id+'/photo" alt="'+esc(i.name)+'" loading="lazy">'
         : '<span class="emoji">'+esc(i.emoji||'📦')+'</span>';
-    return `
-    <article class="card card-hover">
-      <div class="thumb">${thumb}</div>
-      <h3>${esc(i.name)}</h3>
-      <p class="sub">${esc(shortSchool(i.owner.school))}${i.place? ' · '+esc(i.place):''}</p>
-      ${badge}
-      <div class="foot">
-        ${cta}
-        ${isOwner(i) ? '<span class="owner-tools"><button class="btn-quiet" onclick="openEditItem(\''+i.id+'\')">수정</button><button class="btn-danger" onclick="delItem(\''+i.id+'\')">삭제</button></span>' : ''}
-      </div>
-    </article>`;
+    return '<article class="card card-hover">'
+        + '<div class="thumb">'+thumb+'</div>'
+        + '<h3>'+esc(i.name)+'</h3>'
+        + '<p class="sub">'+esc(shortSchool(i.owner.school))+(i.place? ' · '+esc(i.place):'')+'</p>'
+        + badge
+        + '<div class="foot">'+cta
+        + (isOwner(i) ? '<span class="owner-tools"><button class="btn-quiet" data-act="edit" data-id="'+i.id+'">수정</button>'
+                      + '<button class="btn-danger" data-act="del" data-id="'+i.id+'">삭제</button></span>' : '')
+        + '</div></article>';
 }
-function setCat(c){ filterCat=c; render(); }
-function setOnlyAvail(v){ onlyAvailable=v; render(); }
-function resetFilter(){ filterCat='all'; filterText=''; onlyAvailable=false; render(); }
-// 한글 IME: 조합 중 재렌더하면 글자가 튄다 → 디바운스 후 커서 복원
-document.addEventListener('input', e=>{
-    if (e.target && e.target.id==='q'){
-        filterText = e.target.value;
-        clearTimeout(window._qt);
-        window._qt = setTimeout(()=>{ const pos=e.target.selectionStart; render();
-            const el=$('q'); if(el){ el.focus(); el.setSelectionRange(pos,pos); } }, 260);
+function onSearch(v){
+    filterText = v;
+    clearTimeout(_searchT);
+    // 검색창은 정적 DOM 이라 다시 그려도 커서가 튀지 않는다. 목록만 갱신한다.
+    _searchT = setTimeout(paintGrid, 200);
+}
+function onOnlyAvail(v){ onlyAvailable = v; paintGrid(); }
+function setCat(c){ filterCat = c; paintCats(); paintGrid(); }
+function resetFilter(){
+    filterCat='all'; filterText=''; onlyAvailable=false;
+    $('q').value=''; $('onlyAvail').checked=false;
+    paintCats(); paintGrid();
+}
+
+/* ---------- 교구 올리기 (정적 폼) ---------- */
+const DRAFT_FIELDS = ['aName','aCat','aPlace','aMaxDays','aNote'];
+function toggleAdd(force){
+    const p = $('addPanel');
+    const open = (force === undefined) ? p.hidden : force;
+    p.hidden = !open;
+    $('addToggle').textContent = open ? '올리기 접기' : '＋ 우리 학교 교구 올리기';
+    if (open) p.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function initAddForm(){
+    const cats = (S.settings.categories && S.settings.categories.length) ? S.settings.categories : DEF_CATS;
+    const keep = $('aCat').value;
+    $('aCat').innerHTML = cats.map(c=>'<option'+(c===keep?' selected':'')+'>'+esc(c)+'</option>').join('');
+    if ($('emojiPick').childElementCount === 0){
+        $('emojiPick').innerHTML = QUICK_EMOJI.map(e=>'<button type="button" data-act="emoji" data-id="'+e+'">'+e+'</button>').join('');
     }
-});
-
-/* ---------- ② 내 대여 ---------- */
-function viewMine(){
-    if (!ME) return '<section class="wrap tile">'+emptyHtml('먼저 학교와 이름을 적어 주세요.','내 신청 내역을 찾으려면 신원이 필요해요.','학교·이름 입력','openIdentity()')+'</section>';
-    const mine = S.loans.filter(isMine);
-    const live = mine.filter(l=>['requested','approved','out','return_requested'].includes(l.status)).sort((a,b)=>a.seq-b.seq);
-    const past = mine.filter(l=>['returned','rejected','canceled'].includes(l.status)).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
-    return `
-    <section class="tile tile-parchment"><div class="wrap">
-      <h1 class="hero">내 대여</h1>
-      <p class="lead">${esc(shortSchool(ME.school))} · ${esc(ME.name)} · ${esc(ME.role)}</p>
-    </div></section>
-    <section class="wrap" style="padding-top:40px">
-      <h2 class="sec">진행 중</h2>
-      ${live.length ? '<div class="list">'+live.map(loanRow).join('')+'</div>'
-                    : emptyHtml('진행 중인 대여가 없어요.','둘러보기에서 필요한 교구를 찾아보세요.','둘러보기',"go('browse')")}
-      ${past.length ? '<h2 class="sec" style="margin-top:56px">지난 기록</h2><div class="list">'+past.slice(0,20).map(loanRow).join('')+'</div>' : ''}
-    </section>`;
-}
-function loanRow(l){
-    const i = itemOf(l.itemId);
-    const late = lateDays(l);
-    const acts = [];
-    if (l.status==='requested') acts.push(btn('취소','cancel',l.id,'quiet'));
-    if (l.status==='approved'){ acts.push(btn('수령했어요','pickup',l.id,'primary')); acts.push(btn('취소','cancel',l.id,'quiet')); }
-    if (l.status==='out') acts.push(btn('반납 신청','return-request',l.id,'primary'));
-    if (l.status==='return_requested') acts.push(btn('반납 신청 취소','return-cancel',l.id,'quiet'));
-    return `
-    <div class="row">
-      <div class="r-emoji">${esc(i?i.emoji:'📦')}</div>
-      <div class="r-body">
-        <p class="r-title">${esc(i?i.name:'(삭제된 교구)')} ${l.qty>1?'<span class="muted" style="font-weight:400">'+l.qty+'개</span>':''}</p>
-        <p class="r-meta">${esc(shortSchool(i?i.owner.school:''))} · ${fmtD(l.wantFrom)}~${fmtD(l.wantTo)}</p>
-        <div class="badges">
-          <span class="badge ${BADGE[l.status]}">${esc(statusText(l))}</span>
-          ${late? '<span class="badge b-late">연체 '+late+'일</span>':''}
-          ${l.rejectReason? '<span class="fine">사유: '+esc(l.rejectReason)+'</span>':''}
-        </div>
-      </div>
-      <div class="r-actions">${acts.join('')}</div>
-    </div>`;
-}
-function btn(label, action, id, kind){
-    const cls = kind==='primary' ? 'btn-primary btn-sm' : kind==='danger' ? 'btn-danger' : 'btn-quiet';
-    return '<button class="'+cls+'" onclick="doAction(\''+id+'\',\''+action+'\')">'+label+'</button>';
-}
-
-/* ---------- ③ 올리기 ---------- */
-function viewAdd(){
-    const cats = S.settings.categories || ['시청각','체육','과학','미술','음악','정보','행사','기타'];
-    return `
-    <section class="tile tile-parchment"><div class="wrap-narrow">
-      <h1 class="hero">교구 올리기</h1>
-      <p class="lead">우리 학교에 있는 교구를 다른 학교와 나눠 씁니다.</p>
-    </div></section>
-    <section class="wrap-narrow" style="padding-top:40px">
-      <div class="panel">
-        <div class="field">
-          <label for="aName">무엇을 올리나요?</label>
-          <input class="input" id="aName" placeholder="예: 빔프로젝터(엡손 EB-970)">
-        </div>
-        <div class="two-col">
-          <div class="field">
-            <label for="aCat">분류</label>
-            <select class="input" id="aCat">${cats.map(c=>'<option>'+esc(c)+'</option>').join('')}</select>
-          </div>
-          <div class="field">
-            <label for="aPlace">어디서 받나요?</label>
-            <input class="input" id="aPlace" placeholder="예: 본관 2층 시청각실">
-          </div>
-        </div>
-        <div class="field">
-          <label>아이콘</label>
-          <div class="emoji-pick" id="emojiPick">
-            ${QUICK_EMOJI.map(e=>'<button type="button" onclick="pickEmoji(\''+e+'\')">'+e+'</button>').join('')}
-          </div>
-          <div class="hint">사진을 올리면 아이콘 대신 사진이 보입니다.</div>
-        </div>
-        <div class="field">
-          <label>사진 <span class="muted" style="font-weight:400">(선택)</span></label>
-          <label class="filebtn">
-            ${ico('camera',20)} 사진 고르기
-            <input type="file" id="aPhoto" accept="image/*" onchange="pickPhoto(this)">
-          </label>
-          <div id="photoPrev" style="margin-top:12px;display:flex;align-items:center;gap:10px"></div>
-        </div>
-        <div class="two-col">
-          <div class="field">
-            <label>수량</label>
-            <div class="stepper">
-              <button type="button" onclick="stepQty(-1)" aria-label="줄이기">−</button>
-              <span class="val" id="aQtyVal">1</span>
-              <button type="button" onclick="stepQty(1)" aria-label="늘리기">＋</button>
-            </div>
-          </div>
-          <div class="field">
-            <label for="aMaxDays">최대 며칠까지</label>
-            <input class="input" id="aMaxDays" type="number" min="0" max="365" value="${S.settings.defaultMaxDays||14}">
-            <div class="hint">0을 넣으면 제한 없음</div>
-          </div>
-        </div>
-        <div class="field">
-          <label for="aNote">알아둘 점 <span class="muted" style="font-weight:400">(선택)</span></label>
-          <textarea class="input" id="aNote" placeholder="예: 삼각대·HDMI 케이블 포함. 램프 예열 5분 필요."></textarea>
-        </div>
-        <div class="field">
-          <label class="toggle"><input type="checkbox" id="aAuto"> 신청이 오면 자동으로 승인하기</label>
-          <div class="hint">체크하면 남는 수량이 있고 순번이 1번일 때 바로 승인됩니다.</div>
-        </div>
-        <p class="fine" style="margin:26px 0 0">올리는 사람: ${ME? esc(shortSchool(ME.school))+' · '+esc(ME.name)+' · '+esc(ME.role) : '학교·이름을 먼저 입력해 주세요.'}</p>
-        <div class="modal-actions">
-          <button class="btn-primary" onclick="submitItem()">교구 올리기</button>
-        </div>
-      </div>
-    </section>`;
+    syncAddDraft();
 }
 function syncAddDraft(){
     $('aQtyVal').textContent = addDraft.qty;
     document.querySelectorAll('#emojiPick button').forEach(b=>{
-        b.classList.toggle('on', b.textContent===addDraft.emoji);
+        b.classList.toggle('on', b.dataset.id===addDraft.emoji);
     });
-    if (addDraft.photo){
-        $('photoPrev').innerHTML = '<img src="'+addDraft.photo+'" style="width:104px;height:104px;object-fit:contain;border:1px solid var(--hairline);border-radius:11px;padding:8px;background:var(--parchment)">'
-            + '<button class="btn-quiet" onclick="clearPhoto()">사진 빼기</button>';
-    }
+    $('photoPrev').innerHTML = addDraft.photo
+        ? '<img src="'+addDraft.photo+'" style="width:104px;height:104px;object-fit:contain;border:1px solid var(--hairline);border-radius:11px;padding:8px;background:var(--parchment)">'
+          + '<button class="btn-quiet" data-act="clearphoto">사진 빼기</button>'
+        : '';
 }
-function pickEmoji(e){ addDraft.emoji=e; syncAddDraft(); }
-function stepQty(d){ addDraft.qty = Math.max(1, Math.min(999, addDraft.qty+d)); syncAddDraft(); }
-function clearPhoto(){ addDraft.photo=''; $('photoPrev').innerHTML=''; $('aPhoto').value=''; }
+function pickEmoji(e){ addDraft.emoji=e; syncAddDraft(); saveDraft(); }
+function stepQty(d){ addDraft.qty = Math.max(1, Math.min(999, addDraft.qty+d)); syncAddDraft(); saveDraft(); }
+function clearPhoto(){ addDraft.photo=''; $('aPhoto').value=''; syncAddDraft(); saveDraft(); }
 function pickPhoto(input){
+    clearTimeout(_pickT);
     const f = input.files && input.files[0];
-    if (!f) return;
+    if (!f){ pickingPhoto = false; return; }
+    handlePhotoFile(f);
+}
+// 끌어다 놓기 · 붙여넣기 · 파일 고르기가 모두 여기로 모인다.
+function handlePhotoFile(f){
+    if (!f || f.type.indexOf('image/') !== 0){ pickingPhoto = false; return toast('이미지 파일만 올릴 수 있어요.', true); }
     const img = new Image();
     const rd = new FileReader();
+    const done = () => { pickingPhoto = false; };
+    rd.onerror = done;
+    img.onerror = () => { done(); toast('사진을 읽지 못했어요.', true); };
     rd.onload = () => { img.onload = () => {
-        const max = 800;
-        const scale = Math.min(1, max/Math.max(img.width, img.height));
-        const c = document.createElement('canvas');
-        c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        let url = c.toDataURL('image/jpeg', 0.72);
-        if (url.length > 190000) url = c.toDataURL('image/jpeg', 0.55);
-        if (url.length > 190000){ toast('사진이 너무 커요. 다른 사진을 골라 주세요.', true); return; }
-        addDraft.photo = url; syncAddDraft();
+        try {
+            const max = 800;
+            const scale = Math.min(1, max/Math.max(img.width, img.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            let url = c.toDataURL('image/jpeg', 0.72);
+            if (url.length > 190000) url = c.toDataURL('image/jpeg', 0.55);
+            if (url.length > 190000){ toast('사진이 너무 커요. 다른 사진을 골라 주세요.', true); return; }
+            addDraft.photo = url; syncAddDraft(); saveDraft();
+        } finally { done(); }
     }; img.src = rd.result; };
     rd.readAsDataURL(f);
 }
+function initPhotoDrop(){
+    const dz = $('photoDrop');
+    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e=>{
+        e.preventDefault(); e.stopPropagation(); dz.classList.add('drag');
+    }));
+    ['dragleave','dragend'].forEach(ev => dz.addEventListener(ev, e=>{
+        e.preventDefault(); e.stopPropagation();
+        if (ev==='dragend' || !dz.contains(e.relatedTarget)) dz.classList.remove('drag');
+    }));
+    dz.addEventListener('drop', e=>{
+        e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag');
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) handlePhotoFile(f);
+    });
+    // 페이지 다른 곳에 떨어뜨렸을 때 브라우저가 사진을 통째로 여는 것을 막는다.
+    ['dragover','drop'].forEach(ev => document.addEventListener(ev, e=>{
+        if (!dz.contains(e.target)) e.preventDefault();
+    }));
+    // 폼이 펼쳐져 있을 때만 붙여넣기를 받는다.
+    document.addEventListener('paste', e=>{
+        if ($('addPanel').hidden || modalOpen()) return;
+        const it = [...(e.clipboardData ? e.clipboardData.items : [])].find(x=>x.type.startsWith('image/'));
+        if (it){ e.preventDefault(); handlePhotoFile(it.getAsFile()); }
+    });
+}
+// 작성 중이던 내용은 새로고침해도 남는다.
+let _draftT = null;
+function saveDraft(){
+    clearTimeout(_draftT);
+    _draftT = setTimeout(saveDraftNow, 300);
+}
+function saveDraftNow(){
+    try {
+        const d = { emoji: addDraft.emoji, photo: addDraft.photo, qty: addDraft.qty, auto: $('aAuto').checked };
+        DRAFT_FIELDS.forEach(k=>{ d[k] = $(k).value; });
+        localStorage.setItem('rental_draft', JSON.stringify(d));
+    } catch(e){}
+}
+function loadDraft(){
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem('rental_draft')||'null'); } catch(e){}
+    if (!d) return;
+    addDraft.emoji = d.emoji || '📦';
+    addDraft.photo = d.photo || '';
+    addDraft.qty   = d.qty || 1;
+    DRAFT_FIELDS.forEach(k=>{ if (d[k] != null) $(k).value = d[k]; });
+    $('aAuto').checked = !!d.auto;
+    if (d.aName || d.photo) toggleAdd(true);
+}
+function clearDraft(){
+    addDraft = { emoji:'📦', photo:'', qty:1 };
+    DRAFT_FIELDS.forEach(k=>{ $(k).value = ''; });
+    $('aMaxDays').value = S.settings.defaultMaxDays || 14;
+    $('aAuto').checked = false;
+    $('aPhoto').value = '';
+    try { localStorage.removeItem('rental_draft'); } catch(e){}
+    initAddForm();
+}
 async function submitItem(){
-    if (!requireMe()) return;
+    if (!ME) return openIdentity();
     const name = $('aName').value.trim();
     if (!name) return toast('교구 이름을 적어 주세요.', true);
+    const btn = $('addSubmit');
+    btn.disabled = true;
     try {
         const r = await api('POST','/api/rental/items',{
             name, category:$('aCat').value, emoji:addDraft.emoji, place:$('aPlace').value.trim(),
@@ -938,285 +1021,416 @@ async function submitItem(){
             maxDays:parseInt($('aMaxDays').value,10)||0, autoApprove:$('aAuto').checked,
             owner:ME, actor:ME, photoDataUrl:addDraft.photo || ''
         });
-        addDraft = { emoji:'📦', photo:'', qty:1 };
-        S.items = r.items;
+        S.items = r.items; lastSig = '';
+        clearDraft();
+        toggleAdd(false);
         toast('교구를 올렸어요.');
-        go('browse');
+        paint();
     } catch(e){ toast(e.message, true); }
+    finally { btn.disabled = false; }
 }
 
 /* ---------- 교구 수정/삭제 ---------- */
 function openEditItem(id){
     const i = itemOf(id); if(!i) return;
-    openModal(`
-      <h3>${esc(i.name)}</h3>
-      <p class="m-sub">보유교: ${esc(i.owner.school)} · ${esc(i.owner.name)}</p>
-      <div class="field"><label for="eName">이름</label><input class="input" id="eName" value="${esc(i.name)}"></div>
-      <div class="two-col">
-        <div class="field"><label for="eTotal">총 수량</label><input class="input" id="eTotal" type="number" min="1" max="999" value="${i.total}"></div>
-        <div class="field"><label for="eMax">최대 일수</label><input class="input" id="eMax" type="number" min="0" max="365" value="${i.maxDays||0}"></div>
-      </div>
-      <div class="field"><label for="ePlace">받는 곳</label><input class="input" id="ePlace" value="${esc(i.place||'')}"></div>
-      <div class="field"><label for="eNote">알아둘 점</label><textarea class="input" id="eNote">${esc(i.note||'')}</textarea></div>
-      <div class="field"><label class="toggle"><input type="checkbox" id="eActive" ${i.active!==false?'checked':''}> 목록에 보이기</label></div>
-      <div class="modal-actions">
-        <button class="btn-pearl" onclick="closeModal()">취소</button>
-        <button class="btn-primary" onclick="saveItem('${i.id}')">저장</button>
-      </div>`);
+    openModal(
+      '<h3>'+esc(i.name)+'</h3>'
+    + '<p class="m-sub">보유교: '+esc(i.owner.school)+' · '+esc(i.owner.name)+'</p>'
+    + '<div class="field"><label for="eName">이름</label><input class="input" id="eName" value="'+esc(i.name)+'"></div>'
+    + '<div class="two-col">'
+    + '<div class="field"><label for="eTotal">총 수량</label><input class="input" id="eTotal" type="number" min="1" max="999" value="'+i.total+'"></div>'
+    + '<div class="field"><label for="eMax">최대 일수</label><input class="input" id="eMax" type="number" min="0" max="365" value="'+(i.maxDays||0)+'"></div>'
+    + '</div>'
+    + '<div class="field"><label for="ePlace">받는 곳</label><input class="input" id="ePlace" value="'+esc(i.place||'')+'"></div>'
+    + '<div class="field"><label for="eNote">알아둘 점</label><textarea class="input" id="eNote">'+esc(i.note||'')+'</textarea></div>'
+    + '<div class="field"><label class="toggle"><input type="checkbox" id="eAuto" '+(i.autoApprove?'checked':'')+'> 신청이 오면 자동 승인</label></div>'
+    + '<div class="field"><label class="toggle"><input type="checkbox" id="eActive" '+(i.active!==false?'checked':'')+'> 목록에 보이기</label></div>'
+    + '<div class="field"><label>사진 바꾸기 <span class="muted" style="font-weight:400">(선택)</span></label>'
+    + '<label class="filebtn">사진 고르기<input type="file" id="ePhoto" accept="image/*" onclick="pickingPhoto=true" onchange="editPhoto(this)"></label>'
+    + '<div id="ePhotoPrev" style="margin-top:10px"></div></div>'
+    + '<div class="modal-actions">'
+    + '<button class="btn-pearl" data-act="close">취소</button>'
+    + '<button class="btn-primary" data-act="save-item" data-id="'+i.id+'">저장</button></div>');
+    editDraftPhoto = '';
+}
+let editDraftPhoto = '';
+function editPhoto(input){
+    const f = input.files && input.files[0];
+    if (!f){ pickingPhoto = false; return; }
+    const img = new Image(), rd = new FileReader();
+    rd.onload = () => { img.onload = () => {
+        try {
+            const scale = Math.min(1, 800/Math.max(img.width, img.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(img.width*scale); c.height = Math.round(img.height*scale);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            let url = c.toDataURL('image/jpeg', 0.72);
+            if (url.length > 190000) url = c.toDataURL('image/jpeg', 0.55);
+            if (url.length > 190000){ toast('사진이 너무 커요.', true); return; }
+            editDraftPhoto = url;
+            const p = $('ePhotoPrev');
+            if (p) p.innerHTML = '<img src="'+url+'" style="width:96px;height:96px;object-fit:contain;border:1px solid var(--hairline);border-radius:10px;padding:6px">';
+        } finally { pickingPhoto = false; }
+    }; img.src = rd.result; };
+    rd.onerror = ()=>{ pickingPhoto = false; };
+    rd.readAsDataURL(f);
 }
 async function saveItem(id){
     try {
-        const r = await api('PATCH','/api/rental/items/'+id,{
+        const body = {
             name:$('eName').value, total:$('eTotal').value, maxDays:$('eMax').value,
-            place:$('ePlace').value, note:$('eNote').value, active:$('eActive').checked, actor:ME
-        });
-        S.items = r.items; closeModal(); toast('저장했어요.'); render();
+            place:$('ePlace').value, note:$('eNote').value,
+            autoApprove:$('eAuto').checked, active:$('eActive').checked, actor:ME
+        };
+        if (editDraftPhoto) body.photoDataUrl = editDraftPhoto;
+        const r = await api('PATCH','/api/rental/items/'+id, body);
+        S.items = r.items; lastSig = ''; editDraftPhoto = '';
+        closeModal(); toast('저장했어요.'); paint();
     } catch(e){ toast(e.message, true); }
 }
 function delItem(id){
     const i = itemOf(id); if(!i) return;
-    openModal(`
-      <h3>'${esc(i.name)}'을 지울까요?</h3>
-      <p class="m-sub">목록에서 사라집니다. 지난 대여 기록은 남습니다.</p>
-      <div class="modal-actions">
-        <button class="btn-pearl" onclick="closeModal()">그대로 두기</button>
-        <button class="btn-primary" style="background:#d70015" onclick="delItemGo('${id}')">지우기</button>
-      </div>`);
+    openModal(
+      '<h3>' + esc(i.name) + '을(를) 지울까요?</h3>'
+    + '<p class="m-sub">목록에서 사라집니다. 지난 대여 기록은 남습니다.</p>'
+    + '<div class="modal-actions"><button class="btn-pearl" data-act="close">그대로 두기</button>'
+    + '<button class="btn-primary" style="background:#d70015" data-act="del-go" data-id="'+i.id+'">지우기</button></div>');
 }
 async function delItemGo(id){
     try {
         const r = await api('DELETE','/api/rental/items/'+id,{actor:ME});
-        S.items = r.items; closeModal(); toast('지웠어요.'); render();
+        S.items = r.items; lastSig = ''; closeModal(); toast('지웠어요.'); paint();
     } catch(e){ closeModal(); toast(e.message, true); }
 }
 
 /* ---------- 대여 신청 ---------- */
 function openRequest(id){
-    if (!requireMe()) return;
+    if (!ME) return openIdentity();
     const i = itemOf(id); if(!i) return;
     const avail = availableOf(i);
     const today = todayStr();
-    const to = addDays(today, Math.max(0, Math.min((i.maxDays||14)-1, 4)));
-    window._req = { itemId:id, qty:1, max:Math.max(1, i.trackQty? i.total : 1) };
-    openModal(`
-      <h3>${esc(i.name)}</h3>
-      <p class="m-sub">${esc(shortSchool(i.owner.school))}${i.place?' · '+esc(i.place):''}${i.note?'<br>'+esc(i.note):''}</p>
-      ${avail>0 ? '' : '<div class="badge b-wait" style="margin-bottom:20px">지금은 빌려간 상태예요. 대기열에 이름을 올립니다.</div>'}
-      ${i.trackQty ? `
-      <div class="field">
-        <label>수량 <span class="muted" style="font-weight:400">(지금 가능 ${avail}개 / 총 ${i.total}개)</span></label>
-        <div class="stepper">
-          <button type="button" onclick="reqQty(-1)" aria-label="줄이기">−</button>
-          <span class="val" id="rQty">1</span>
-          <button type="button" onclick="reqQty(1)" aria-label="늘리기">＋</button>
-        </div>
-      </div>` : ''}
-      <div class="two-col">
-        <div class="field"><label for="rFrom">언제부터</label><input class="input" id="rFrom" type="date" value="${today}"></div>
-        <div class="field"><label for="rTo">언제까지</label><input class="input" id="rTo" type="date" value="${to}"></div>
-      </div>
-      ${i.maxDays? '<p class="hint" style="margin:-14px 0 22px">최대 '+i.maxDays+'일까지 빌릴 수 있어요.</p>':''}
-      <div class="field">
-        <label>받는 방법</label>
-        <div class="radio-row">
-          ${['방문','순회차량','택배','협의'].map((m,k)=>'<button type="button" class="chip'+(k===0?' on':'')+'" data-m="'+m+'" onclick="pickMethod(this)">'+m+'</button>').join('')}
-        </div>
-      </div>
-      <div class="field"><label for="rMemo">쓸 곳 <span class="muted" style="font-weight:400">(선택)</span></label><input class="input" id="rMemo" placeholder="예: 3학년 과학 수업"></div>
-      <div class="field"><label for="rContact">연락처 <span class="muted" style="font-weight:400">(선택)</span></label><input class="input" id="rContact" placeholder="010-0000-0000"></div>
-      <p class="fine" style="margin-top:22px">신청자: ${esc(shortSchool(ME.school))} · ${esc(ME.name)} · ${esc(ME.role)}</p>
-      <div class="modal-actions">
-        <button class="btn-pearl" onclick="closeModal()">취소</button>
-        <button class="btn-primary" onclick="submitRequest()">${avail>0?'신청하기':'대기 걸기'}</button>
-      </div>`);
+    const span = i.maxDays > 0 ? Math.min(i.maxDays - 1, 4) : 4;
+    const to = addDays(today, Math.max(0, span));
+    reqCtx = { itemId:id, qty:1, max: Math.max(1, i.trackQty ? i.total : 1) };
+    openModal(
+      '<h3>'+esc(i.name)+'</h3>'
+    + '<p class="m-sub">'+esc(shortSchool(i.owner.school))+(i.place?' · '+esc(i.place):'')+(i.note?'<br>'+esc(i.note):'')+'</p>'
+    + (avail>0 ? '' : '<div class="badge b-wait" style="margin-bottom:20px">지금은 빌려간 상태예요. 대기열에 이름을 올립니다.</div>')
+    + (i.trackQty ?
+        '<div class="field"><label>수량 <span class="muted" style="font-weight:400">(지금 가능 '+avail+'개 / 총 '+i.total+'개)</span></label>'
+      + '<div class="stepper"><button type="button" data-act="rq" data-id="-1">−</button>'
+      + '<span class="val" id="rQty">1</span>'
+      + '<button type="button" data-act="rq" data-id="1">＋</button></div></div>' : '')
+    + '<div class="two-col">'
+    + '<div class="field"><label for="rFrom">언제부터</label><input class="input" id="rFrom" type="date" value="'+today+'"></div>'
+    + '<div class="field"><label for="rTo">언제까지</label><input class="input" id="rTo" type="date" value="'+to+'"></div></div>'
+    + (i.maxDays? '<p class="hint" style="margin:-14px 0 22px">최대 '+i.maxDays+'일까지 빌릴 수 있어요.</p>':'')
+    + '<div class="field"><label>받는 방법</label><div class="radio-row" id="mRow">'
+    + ['방문','순회차량','택배','협의'].map((m,k)=>'<button type="button" class="chip'+(k===0?' on':'')+'" data-act="method" data-id="'+m+'">'+m+'</button>').join('')
+    + '</div></div>'
+    + '<div class="field"><label for="rMemo">쓸 곳 <span class="muted" style="font-weight:400">(선택)</span></label><input class="input" id="rMemo" placeholder="예: 3학년 과학 수업"></div>'
+    + '<div class="field"><label for="rContact">연락처 <span class="muted" style="font-weight:400">(선택)</span></label><input class="input" id="rContact" placeholder="010-0000-0000"></div>'
+    + '<p class="fine" style="margin-top:22px">신청자: '+esc(shortSchool(ME.school))+' · '+esc(ME.name)+' · '+esc(ME.role)+'</p>'
+    + '<div class="modal-actions"><button class="btn-pearl" data-act="close">취소</button>'
+    + '<button class="btn-primary" data-act="req-go">'+(avail>0?'신청하기':'대기 걸기')+'</button></div>');
 }
 function reqQty(d){
-    window._req.qty = Math.max(1, Math.min(window._req.max, window._req.qty+d));
-    $('rQty').textContent = window._req.qty;
+    if (!reqCtx) return;
+    reqCtx.qty = Math.max(1, Math.min(reqCtx.max, reqCtx.qty + d));
+    $('rQty').textContent = reqCtx.qty;
 }
 function pickMethod(el){
-    document.querySelectorAll('[data-m]').forEach(b=>b.classList.remove('on'));
+    const row = $('mRow'); if (!row) return;
+    row.querySelectorAll('[data-act="method"]').forEach(b=>b.classList.remove('on'));
     el.classList.add('on');
 }
 async function submitRequest(){
-    const r = window._req;
-    const sel = document.querySelector('[data-m].on');
+    if (!reqCtx) return closeModal();
+    const r = reqCtx;
+    const sel = document.querySelector('#mRow [data-act="method"].on');
     try {
         const res = await api('POST','/api/rental/loans',{
             itemId:r.itemId, qty:r.qty, borrower:ME, actor:ME,
             wantFrom:$('rFrom').value, wantTo:$('rTo').value,
-            method: sel? sel.dataset.m : '방문',
+            method: sel ? sel.dataset.id : '방문',
             memo:$('rMemo').value, contact:$('rContact').value
         });
-        S.loans = res.loans;
+        S.loans = res.loans; lastSig = '';
         closeModal();
-        const i = itemOf(r.itemId);
         const q = queueOf(r.itemId);
         const idx = q.findIndex(x=>x.id===res.loan.id);
         if (res.loan.status==='approved') toast('바로 승인됐어요. 받으러 가시면 됩니다.');
-        else if (idx>0){
-            const eta = computeEtas(i)[res.loan.id];
-            toast('대기 '+(idx+1)+'번째로 올렸어요.'+(eta? ' '+fmtD(eta)+'쯤 차례가 옵니다.':''));
-        } else toast('신청했어요. '+shortSchool(i.owner.school)+' 담당자가 승인하면 표시됩니다.');
-        go('mine');
+        else if (idx>0) toast('대기 '+(idx+1)+'번째로 올렸어요.');
+        else toast('신청했어요. 보유교가 승인하면 반납 탭에 나타납니다.');
+        reqCtx = null;
+        go('back');
     } catch(e){ toast(e.message, true); }
 }
 
-/* ---------- ④ 전체 현황 ---------- */
-function viewStatus(){
-    const late = S.loans.filter(l=>lateDays(l)>0).sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
-    const items = S.items.filter(i=>i.active!==false)
-        .filter(i=>activeOf(i.id).length || queueOf(i.id).length);
-    return `
-    <section class="tile tile-parchment"><div class="wrap">
-      <h1 class="hero">전체 현황</h1>
-      <p class="lead">누가 무엇을 언제까지 쓰는지, 다음 차례는 누구인지 한눈에 봅니다.</p>
-    </div></section>
-    ${late.length ? `
-    <section class="tile tile-dark"><div class="wrap">
-      <h2 class="sec">연체 중 ${late.length}건</h2>
-      <div>
-      ${late.map(l=>{ const i=itemOf(l.itemId); return `
-        <div style="display:flex;gap:12px;align-items:center;padding:14px 0;border-top:1px solid rgba(255,255,255,.12);font-size:15px;flex-wrap:wrap">
-          <span style="font-size:22px">${esc(i?i.emoji:'📦')}</span>
-          <b style="color:#fff">${esc(i?i.name:'')}</b>
-          <span style="color:var(--body-muted)">${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)}</span>
-          ${l.contact? '<span style="color:var(--body-muted)">'+esc(l.contact)+'</span>':''}
-          <span class="badge b-late" style="margin-left:auto">${lateDays(l)}일 지남</span>
-        </div>`; }).join('')}
-      </div>
-    </div></section>` : ''}
-    <section class="wrap" style="padding-top:40px">
-      ${items.length ? items.map(statusBlock).join('')
-        : emptyHtml('지금 오가는 교구가 없어요.','모든 교구가 제자리에 있습니다.','둘러보기',"go('browse')")}
-    </section>`;
+/* ---------- 탭 2: 반납 ---------- */
+function paintBack(){
+    const b = $('backBody');
+    if (!ME){ b.innerHTML = emptyHtml('먼저 로그인해 주세요.','학교와 이름이 있어야 내 내역을 찾을 수 있어요.','로그인','login'); return; }
+    if (!loaded && netFail){ b.innerHTML = offlineHtml(); return; }
+
+    const live = myLive();
+    const get  = live.filter(l=>l.status==='approved');
+    const has  = live.filter(l=>l.status==='out');
+    const wait = live.filter(l=>l.status==='return_requested');
+    const que  = live.filter(l=>l.status==='requested');
+    const past = myLoans().filter(l=>['returned','rejected','canceled'].includes(l.status))
+                          .sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')).slice(0,20);
+
+    let h = '';
+    if (get.length)  h += block('받으러 가세요', get, '승인이 났습니다. 받은 뒤 아래 버튼을 눌러 주세요.');
+    if (has.length)  h += block('쓰는 중', has, '다 쓰면 반납 신청을 눌러 주세요.');
+    if (wait.length) h += block('반납 확인 기다리는 중', wait, '보유교가 확인하면 끝납니다.');
+    if (que.length)  h += block('승인 기다리는 중', que, '보유교가 승인하면 알려 드립니다.');
+    if (!h) h = emptyHtml('지금 빌린 교구가 없어요.','대여 탭에서 필요한 교구를 찾아보세요.','대여하러 가기','tab-rent');
+    if (past.length) h += '<h2 class="sec" style="margin-top:52px">지난 기록</h2><div class="list">'+past.map(loanRow).join('')+'</div>';
+    b.innerHTML = h;
 }
-function statusBlock(i){
-    const act = activeOf(i.id);
-    const q = queueOf(i.id);
-    const etas = computeEtas(i);
-    return `
-    <div class="list" style="margin-bottom:20px;padding:20px">
-      <div style="display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:1px solid var(--divider-soft)">
-        <span style="font-size:30px">${esc(i.emoji)}</span>
-        <div>
-          <h3 style="margin:0;font-size:18px;font-weight:600;letter-spacing:-.02em">${esc(i.name)}</h3>
-          <p class="r-meta">${esc(shortSchool(i.owner.school))} · 총 ${i.total}개 · 지금 ${availableOf(i)}개 있음</p>
-        </div>
-      </div>
-      ${act.map(l=>`
-        <div class="row">
-          <div class="r-body">
-            <p class="r-title">${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)} <span class="muted" style="font-weight:400">${l.qty}개</span></p>
-            <p class="r-meta">${fmtD(l.wantFrom)}~${fmtD(l.wantTo)} · ${esc(l.method)}</p>
-            <div class="badges">
-              <span class="badge ${BADGE[l.status]}">${esc(LABEL[l.status])}</span>
-              ${lateDays(l)? '<span class="badge b-late">연체 '+lateDays(l)+'일</span>':''}
-            </div>
-          </div>
-          <div class="r-actions">
-            ${l.status==='return_requested' ? btn('반납 확인','return-confirm',l.id,'primary') : ''}
-            ${l.status==='approved' ? btn('수령 확인','pickup',l.id,'quiet') : ''}
-            ${['out','return_requested','approved'].includes(l.status) ? btn('강제 반납','force-return',l.id,'danger') : ''}
-          </div>
-        </div>`).join('')}
-      ${q.map((l,idx)=>`
-        <div class="row">
-          <div class="r-body">
-            <p class="r-title"><span class="muted" style="font-weight:600">${idx+1}번 대기</span> · ${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)} <span class="muted" style="font-weight:400">${l.qty}개</span></p>
-            <p class="r-meta">${fmtD(l.wantFrom)}~${fmtD(l.wantTo)} · ${etas[l.id]? fmtD(etas[l.id])+'쯤 가능' : '가능 시점 미정'}${l.memo? ' · '+esc(l.memo):''}</p>
-          </div>
-          <div class="r-actions">
-            <button class="btn-primary btn-sm" onclick="approveAsk('${l.id}',${idx})">승인</button>
-            <button class="btn-quiet" onclick="rejectAsk('${l.id}')">반려</button>
-          </div>
-        </div>`).join('')}
-    </div>`;
+function block(title, rows, sub){
+    return '<div class="blk"><h2 class="sec" style="margin-top:0">'+esc(title)
+        + '<span class="sec-count">'+rows.length+'건</span></h2>'
+        + (sub? '<p class="hint" style="margin:-10px 0 14px">'+esc(sub)+'</p>':'')
+        + '<div class="list">'+rows.map(loanRow).join('')+'</div></div>';
+}
+function loanRow(l){
+    const i = itemOf(l.itemId);
+    const late = lateDays(l);
+    const acts = [];
+    if (l.status==='requested')        acts.push(btn('신청 취소','cancel',l.id,'quiet'));
+    if (l.status==='approved'){        acts.push(btn('받았어요','pickup',l.id,'primary'));
+                                       acts.push(btn('신청 취소','cancel',l.id,'quiet')); }
+    if (l.status==='out')              acts.push(btn('반납 신청','return-request',l.id,'primary'));
+    if (l.status==='return_requested') acts.push(btn('반납 신청 취소','return-cancel',l.id,'quiet'));
+
+    let sub = fmtD(l.wantFrom)+'~'+fmtD(l.wantTo)+' · '+esc(l.method)+' · '+l.qty+'개';
+    if (l.status==='requested'){
+        const q = queueOf(l.itemId);
+        const idx = q.findIndex(x=>x.id===l.id);
+        if (idx>0) sub += ' · 대기 '+(idx+1)+'번째';
+        else if (l.readyAt) sub += ' · 내 차례';
+    }
+    if (l.status==='rejected' && l.rejectReason) sub += ' · 사유: '+esc(l.rejectReason);
+
+    return '<div class="row">'
+        + '<span class="r-emoji">'+esc(i?i.emoji:'📦')+'</span>'
+        + '<div class="r-body">'
+        + '<p class="r-title">'+esc(i?i.name:'(삭제된 교구)')+' <span class="muted" style="font-weight:400">'+esc(i?shortSchool(i.owner.school):'')+'</span></p>'
+        + '<p class="r-meta">'+sub+'</p>'
+        + '<div class="badges"><span class="badge '+BADGE[l.status]+'">'+esc(LABEL[l.status]||l.status)+'</span>'
+        + (late? '<span class="badge b-late">'+late+'일 지남</span>':'')+'</div>'
+        + '</div><div class="r-actions">'+acts.join('')+'</div></div>';
+}
+function btn(label, action, id, kind){
+    const cls = kind==='primary' ? 'btn-primary btn-sm' : kind==='danger' ? 'btn-danger' : 'btn-quiet';
+    return '<button class="'+cls+'" data-act="do" data-do="'+action+'" data-id="'+id+'">'+esc(label)+'</button>';
+}
+
+/* ---------- 탭 3: 결재 ---------- */
+function paintAppr(){
+    const b = $('apprBody');
+    if (!ME){ b.innerHTML = emptyHtml('먼저 로그인해 주세요.','학교 이름이 결재 권한의 기준입니다.','로그인','login'); return; }
+    if (!loaded && netFail){ b.innerHTML = offlineHtml(); return; }
+    if (!myItems().length){
+        b.innerHTML = emptyHtml(esc(shortSchool(ME.school))+'가 올린 교구가 없어요.',
+            '교구를 올리면 다른 학교의 신청이 여기로 들어옵니다.','교구 올리기','openadd');
+        return;
+    }
+    const all = apprList();
+    const req  = all.filter(l=>l.status==='requested').sort((a,b)=>a.seq-b.seq);
+    const back = all.filter(l=>l.status==='return_requested');
+    const outs = all.filter(l=>l.status==='approved' || l.status==='out')
+                    .sort((a,b)=>a.wantTo.localeCompare(b.wantTo));
+
+    let h = '';
+    if (req.length)  h += apprBlock('승인 기다리는 신청', req, '먼저 신청한 순서대로 보여 줍니다.');
+    if (back.length) h += apprBlock('반납 확인 요청', back, '물건을 받으셨으면 확인을 눌러 주세요.');
+    if (!req.length && !back.length){
+        h += '<div class="empty" style="padding:52px 20px"><div class="e-emoji">✅</div>'
+          +  '<p class="e-t">지금 결재할 것이 없습니다.</p>'
+          +  '<p class="e-s">새 신청이 들어오면 결재 탭에 빨간 숫자로 알려 드려요.</p></div>';
+    }
+    if (outs.length) h += apprBlock('나가 있는 교구', outs, '아직 돌아오지 않은 것들입니다.');
+    b.innerHTML = h;
+}
+function apprBlock(title, rows, sub){
+    return '<div class="blk"><h2 class="sec" style="margin-top:0">'+esc(title)
+        + '<span class="sec-count">'+rows.length+'건</span></h2>'
+        + (sub? '<p class="hint" style="margin:-10px 0 14px">'+esc(sub)+'</p>':'')
+        + '<div class="list">'+rows.map(apprRow).join('')+'</div></div>';
+}
+function apprRow(l){
+    const i = itemOf(l.itemId);
+    const late = lateDays(l);
+    const acts = [];
+    if (l.status==='requested'){
+        const q = queueOf(l.itemId);
+        const idx = q.findIndex(x=>x.id===l.id);
+        acts.push('<button class="btn-primary btn-sm" data-act="approve" data-id="'+l.id+'" data-idx="'+idx+'">승인</button>');
+        acts.push('<button class="btn-quiet" data-act="reject" data-id="'+l.id+'">반려</button>');
+    }
+    if (l.status==='return_requested') acts.push(btn('반납 확인','return-confirm',l.id,'primary'));
+    if (l.status==='approved')         acts.push(btn('수령 확인','pickup',l.id,'quiet'));
+    if (OCCUPYING.includes(l.status))  acts.push(btn('강제 반납','force-return',l.id,'danger'));
+
+    let sub = esc(shortSchool(l.borrower.school))+' '+esc(l.borrower.name)
+            + (l.borrower.role? ' ('+esc(l.borrower.role)+')':'')
+            + ' · '+l.qty+'개 · '+fmtD(l.wantFrom)+'~'+fmtD(l.wantTo)+' · '+esc(l.method);
+    if (l.memo) sub += ' · '+esc(l.memo);
+    if (l.contact) sub += ' · '+esc(l.contact);
+    if (l.status==='requested'){
+        const q = queueOf(l.itemId);
+        const idx = q.findIndex(x=>x.id===l.id);
+        if (idx>0) sub += ' · 대기 '+(idx+1)+'번째';
+    }
+    return '<div class="row">'
+        + '<span class="r-emoji">'+esc(i?i.emoji:'📦')+'</span>'
+        + '<div class="r-body">'
+        + '<p class="r-title">'+esc(i?i.name:'(삭제된 교구)')+'</p>'
+        + '<p class="r-meta">'+sub+'</p>'
+        + '<div class="badges"><span class="badge '+BADGE[l.status]+'">'+esc(LABEL[l.status]||l.status)+'</span>'
+        + (late? '<span class="badge b-late">연체 '+late+'일</span>':'')+'</div>'
+        + '</div><div class="r-actions">'+acts.join('')+'</div></div>';
 }
 function approveAsk(id, idx){
     const l = S.loans.find(x=>x.id===id); if(!l) return;
     const i = itemOf(l.itemId);
     const avail = availableOf(i);
-    window._appr = { id, qty: Math.min(l.qty, Math.max(1, avail)), max: l.qty, override: idx>0 };
-    openModal(`
-      <h3>승인할까요?</h3>
-      <p class="m-sub">${esc(i.name)} · ${esc(shortSchool(l.borrower.school))} ${esc(l.borrower.name)} · ${fmtD(l.wantFrom)}~${fmtD(l.wantTo)}</p>
-      ${avail < l.qty ? '<div class="badge b-wait" style="margin-bottom:20px">신청은 '+l.qty+'개인데 지금 '+avail+'개만 있어요. 수량을 줄여 승인하면 남은 '+(l.qty-avail)+'개는 대기열 맨 앞에 남습니다.</div>' : ''}
-      <div class="field">
-        <label>승인 수량 <span class="muted" style="font-weight:400">(신청 ${l.qty}개 / 가능 ${avail}개)</span></label>
-        <div class="stepper">
-          <button type="button" onclick="apprQty(-1)" aria-label="줄이기">−</button>
-          <span class="val" id="aq">${window._appr.qty}</span>
-          <button type="button" onclick="apprQty(1)" aria-label="늘리기">＋</button>
-        </div>
-      </div>
-      ${idx>0 ? '<p class="hint">앞 순번이 있습니다. 그래도 승인하면 기록에 [먼저 승인]으로 남습니다.</p>' : ''}
-      <div class="modal-actions">
-        <button class="btn-pearl" onclick="closeModal()">취소</button>
-        <button class="btn-primary" onclick="approveGo()">${idx>0?'먼저 승인':'승인'}</button>
-      </div>`);
+    apprCtx = { id, qty: Math.min(l.qty, Math.max(1, avail)), max: l.qty, override: idx>0 };
+    openModal(
+      '<h3>승인할까요?</h3>'
+    + '<p class="m-sub">'+esc(i?i.name:'')+' · '+esc(shortSchool(l.borrower.school))+' '+esc(l.borrower.name)
+    + ' · '+fmtD(l.wantFrom)+'~'+fmtD(l.wantTo)+'</p>'
+    + (avail < l.qty ? '<div class="badge b-wait" style="margin-bottom:20px">신청은 '+l.qty+'개인데 지금 '+avail+'개만 있어요. 수량을 줄여 승인하면 남은 '+(l.qty-avail)+'개는 대기열 맨 앞에 남습니다.</div>' : '')
+    + '<div class="field"><label>승인 수량 <span class="muted" style="font-weight:400">(신청 '+l.qty+'개 / 가능 '+avail+'개)</span></label>'
+    + '<div class="stepper"><button type="button" data-act="aq" data-id="-1">−</button>'
+    + '<span class="val" id="aq">'+apprCtx.qty+'</span>'
+    + '<button type="button" data-act="aq" data-id="1">＋</button></div></div>'
+    + (idx>0 ? '<p class="hint">앞 순번이 있습니다. 그래도 승인하면 기록에 [먼저 승인]으로 남습니다.</p>' : '')
+    + '<div class="modal-actions"><button class="btn-pearl" data-act="close">취소</button>'
+    + '<button class="btn-primary" data-act="approve-go">'+(idx>0?'먼저 승인':'승인')+'</button></div>');
 }
 function apprQty(d){
-    const a = window._appr;
-    a.qty = Math.max(1, Math.min(a.max, a.qty+d));
-    $('aq').textContent = a.qty;
+    if (!apprCtx) return;
+    apprCtx.qty = Math.max(1, Math.min(apprCtx.max, apprCtx.qty + d));
+    $('aq').textContent = apprCtx.qty;
 }
 async function approveGo(){
-    const a = window._appr;
+    if (!apprCtx) return closeModal();
     try {
-        const r = await api('POST','/api/rental/loans/'+a.id+'/approve',{qty:a.qty, override:a.override, actor:ME});
-        S.loans = r.loans; closeModal(); toast('승인했어요.'); render();
+        const r = await api('POST','/api/rental/loans/'+apprCtx.id+'/approve',{qty:apprCtx.qty, override:apprCtx.override, actor:ME});
+        S.loans = r.loans; lastSig = ''; apprCtx = null;
+        closeModal(); toast('승인했어요.'); paint();
     } catch(e){ closeModal(); toast(e.message, true); }
 }
 function rejectAsk(id){
-    openModal(`
-      <h3>반려할까요?</h3>
-      <p class="m-sub">사유는 신청한 분에게 그대로 보입니다.</p>
-      <div class="field"><label for="rjR">사유</label><input class="input" id="rjR" placeholder="예: 그 주에 본교 수업에서 사용합니다"></div>
-      <div class="modal-actions">
-        <button class="btn-pearl" onclick="closeModal()">취소</button>
-        <button class="btn-primary" onclick="rejectGo('${id}')">반려</button>
-      </div>`);
+    apprCtx = { id };
+    openModal(
+      '<h3>반려할까요?</h3>'
+    + '<p class="m-sub">사유는 신청한 분에게 그대로 보입니다.</p>'
+    + '<div class="field"><label for="rjR">사유</label><input class="input" id="rjR" placeholder="예: 그 주에 본교 수업에서 사용합니다"></div>'
+    + '<div class="modal-actions"><button class="btn-pearl" data-act="close">취소</button>'
+    + '<button class="btn-primary" data-act="reject-go">반려</button></div>');
 }
-async function rejectGo(id){
+async function rejectGo(){
+    if (!apprCtx) return closeModal();
     const reason = $('rjR').value.trim();
     if (!reason) return toast('사유를 적어 주세요.', true);
     try {
-        const r = await api('POST','/api/rental/loans/'+id+'/reject',{reason, actor:ME});
-        S.loans = r.loans; closeModal(); toast('반려했어요.'); render();
+        const r = await api('POST','/api/rental/loans/'+apprCtx.id+'/reject',{reason, actor:ME});
+        S.loans = r.loans; lastSig = ''; apprCtx = null;
+        closeModal(); toast('반려했어요.'); paint();
     } catch(e){ closeModal(); toast(e.message, true); }
 }
 
 /* ---------- 공통 액션 ---------- */
 async function doAction(id, action){
-    if (!requireMe()) return;
+    if (!ME) return openIdentity();
     try {
         const r = await api('POST','/api/rental/loans/'+id+'/'+action,{actor:ME});
-        S.loans = r.loans;
-        const msg = { cancel:'취소했어요.', pickup:'수령 처리했어요.', 'return-request':'반납 신청했어요. 보유교가 확인하면 끝납니다.',
-                      'return-cancel':'반납 신청을 취소했어요.', 'return-confirm':'반납을 확인했어요.', 'force-return':'강제 반납 처리했어요.' };
+        S.loans = r.loans; lastSig = '';
+        const msg = { cancel:'취소했어요.', pickup:'수령 처리했어요.',
+                      'return-request':'반납 신청했어요. 보유교가 확인하면 끝납니다.',
+                      'return-cancel':'반납 신청을 취소했어요.', 'return-confirm':'반납을 확인했어요.',
+                      'force-return':'강제 반납 처리했어요.' };
         toast(msg[action] || '처리했어요.');
-        render();
+        paint();
     } catch(e){ toast(e.message, true); }
 }
-
-function emptyHtml(title, sub, cta, onclick){
-    return `<div class="empty">
-      <div class="e-emoji">📦</div>
-      <p class="e-t">${esc(title)}</p>
-      <p class="e-s">${esc(sub)}</p>
-      ${cta? '<button class="btn-primary" onclick="'+onclick+'">'+esc(cta)+'</button>':''}
-    </div>`;
+function emptyHtml(title, sub, cta, act){
+    return '<div class="empty"><div class="e-emoji">📦</div>'
+        + '<p class="e-t">'+title+'</p><p class="e-s">'+esc(sub)+'</p>'
+        + (cta? '<button class="btn-primary" data-act="'+act+'">'+esc(cta)+'</button>':'')
+        + '</div>';
 }
+
+/* ---------- 클릭 위임 (onclick 문자열에 사용자 입력을 끼워 넣지 않는다) ---------- */
+document.addEventListener('click', e=>{
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const a = b.dataset.act, id = b.dataset.id;
+    switch(a){
+        case 'cat':          setCat(id); break;
+        case 'reset':        resetFilter(); break;
+        case 'req':          openRequest(id); break;
+        case 'edit':         openEditItem(id); break;
+        case 'del':          delItem(id); break;
+        case 'del-go':       delItemGo(id); break;
+        case 'save-item':    saveItem(id); break;
+        case 'rq':           reqQty(Number(id)); break;
+        case 'aq':           apprQty(Number(id)); break;
+        case 'method':       pickMethod(b); break;
+        case 'req-go':       submitRequest(); break;
+        case 'approve':      approveAsk(id, Number(b.dataset.idx)); break;
+        case 'approve-go':   approveGo(); break;
+        case 'reject':       rejectAsk(id); break;
+        case 'reject-go':    rejectGo(); break;
+        case 'do':           doAction(id, b.dataset.do); break;
+        case 'emoji':        pickEmoji(id); break;
+        case 'clearphoto':   clearPhoto(); break;
+        case 'close':        closeModal(); break;
+        case 'openadd':      go('rent'); toggleAdd(true); break;
+        case 'login':        openIdentity(); break;
+        case 'tab-rent':     go('rent'); break;
+        case 'tab-back':     go('back'); break;
+        case 'tab-appr':     go('appr'); break;
+    }
+});
+// 폼에 뭔가 적을 때마다 초안을 저장한다 (새로고침·기기 잠금에도 살아남게)
+document.addEventListener('input', e=>{
+    if (e.target.closest && e.target.closest('#addPanel')) saveDraft();
+});
+$('gate').addEventListener('keydown', e=>{ if (e.key==='Enter') doLogin(); });
 
 // ===== 시작 =====
 (async function(){
-    loadIdentity();
-    render();
+    try { ME = JSON.parse(localStorage.getItem('rental_identity')||'null'); } catch(e){ ME = null; }
+    renderMe();
+    initAddForm();
+    initPhotoDrop();
+    loadDraft();
+    go('rent');
+    if (ME) $('gate').style.display = 'none';
+    else { fillGateOptions(); }
+
     await loadState();
-    if (!ME) openIdentity(true);
+    initAddForm();
+    if (!ME) openIdentity();
+
     setInterval(loadState, 20000);
-    window.addEventListener('focus', loadState);
+    // 파일 선택창에서 돌아온 focus 로는 절대 갱신하지 않는다 (사진 넣으면 초기화되던 원인).
+    window.addEventListener('focus', ()=>{
+        if (pickingPhoto){
+            clearTimeout(_pickT);
+            _pickT = setTimeout(()=>{ pickingPhoto = false; }, 2000);  // 취소했을 때 풀어 주기
+            return;
+        }
+        clearTimeout(_focusT);
+        _focusT = setTimeout(loadState, 400);
+    });
 })();
 </script>
 </body>
