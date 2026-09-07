@@ -33,7 +33,8 @@ let activeSheetId = null;
 let rows = [];                // 활성 시트의 행
 let scopeFilter = '__all__';
 let searchTerm = '';
-let unsubSheets = null, unsubRows = null, unsubPresence = null;
+let members = [];             // 학교 사용자 명부 (codocs_members) — 이름·직위·소속의 기준
+let unsubSheets = null, unsubRows = null, unsubPresence = null, unsubMembers = null;
 let presence = [];            // [{id,name,scope,cell,at}]
 let heartbeatTimer = null;
 let edit = null;              // {rowId, colKey, value} — 편집 중인 셀
@@ -111,19 +112,26 @@ const TEMPLATES = {
 };
 
 /* ===================== 본인 식별 / 권한 ===================== */
-function allStaff() { const h = HOST(); try { return h.staff || []; } catch (e) { return []; } }
+// 명부(codocs_members)가 있으면 그것이 기준. 아직 세팅 전이면 SPA의 staff.json으로 폴백한다.
+function allStaff() {
+    if (members.length) return members;
+    const h = HOST();
+    try { return (h.staff || []).map(s => ({ ...s, scope: guessScope(s.position) })); } catch (e) { return []; }
+}
+function guessScope(position) { return /수정|분교/.test(position || '') ? '수정분교' : '본교'; }
+function memberOf(name) { return allStaff().find(x => x.name === name) || null; }
+function memberOrder(name) { const i = allStaff().findIndex(x => x.name === name); return i < 0 ? 9999 : i; }
 function myName() { const h = HOST(); return (h.myName || localStorage.getItem('airoom_ws_name') || '').trim() || null; }
 function isAdmin() { const h = HOST(); return !!h.isAdmin || document.body.classList.contains('admin-mode'); }
 
-// 소속 추론: staff.json의 position에 '수정'이 들어가면 수정분교. 수동 지정이 있으면 그 값 우선.
+// 소속: 명부에 지정된 값이 1순위, 수동 지정이 2순위, 직위 추론이 3순위
 function myScope(sheet) {
-    const manual = localStorage.getItem('airoom_codocs_scope');
     const scopes = (sheet && sheet.scopes) || [];
-    if (manual && (!scopes.length || scopes.includes(manual))) return manual;
     const n = myName();
-    if (!n) return null;
-    const s = allStaff().find(x => x.name === n);
-    const guess = s && /수정/.test(s.position || '') ? '수정분교' : '본교';
+    const me = n ? memberOf(n) : null;
+    const manual = localStorage.getItem('airoom_codocs_scope');
+    const guess = (me && me.scope) || manual || (me ? guessScope(me.position) : null);
+    if (!guess) return null;
     return scopes.length ? (scopes.includes(guess) ? guess : scopes[0]) : guess;
 }
 
@@ -190,6 +198,14 @@ function watchSheets() {
     });
 }
 
+function watchMembers() {
+    if (unsubMembers) unsubMembers();
+    unsubMembers = onSnapshot(query(collection(db, 'codocs_members'), orderBy('order')), snap => {
+        members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render();
+    }, err => console.warn('[codocs] members', err));
+}
+
 function watchRows() {
     if (unsubRows) { unsubRows(); unsubRows = null; }
     if (unsubPresence) { unsubPresence(); unsubPresence = null; }
@@ -244,6 +260,7 @@ export async function open() {
     if (!ready) {
         page.innerHTML = shell('<div class="cd-empty">🔌 실시간 서버에 연결하는 중…</div>');
         try { await boot(); } catch (e) { showFatal(e.message); return; }
+        watchMembers();
         watchSheets();
     }
     render();
@@ -305,6 +322,7 @@ function render() {
         ${sheets.map(s => `<button class="cd-sheet${s.id === activeSheetId ? ' active' : ''}" data-cd="sheet" data-id="${esc(s.id)}">${esc(s.icon || '📄')} ${esc(s.title)}</button>`).join('')}
         <button class="cd-sheet cd-add admin-only" data-cd="newSheet">➕ 시트 만들기</button>
         <button class="cd-sheet cd-add admin-only" data-cd="importSheet">📥 파일로 만들기</button>
+        <button class="cd-sheet cd-add admin-only" data-cd="members">👥 학교 사용자</button>
     </div>`;
 
     if (!sheet) {
@@ -490,6 +508,7 @@ function handle(action, el) {
         case 'newSheet': return openSheetModal(null);
         case 'settings': return openSheetModal(sheet);
         case 'importSheet': return openImportModal('new');
+        case 'members': return openMembersModal();
         case 'appendFile': return openImportModal('append');
         case 'addRow': return addRow();
         case 'rowMenu': return openRowMenu(el.dataset.id, el);
@@ -686,7 +705,7 @@ function openIdentityModal() {
     modal('이름 · 소속 설정', `
         <label class="cd-f"><span>이름</span><input id="cdMName" list="cdStaffList2" value="${esc(myName() || '')}"><datalist id="cdStaffList2">${allStaff().map(s => `<option value="${esc(s.name)}">${esc(s.position || '')}</option>`).join('')}</datalist></label>
         <label class="cd-f"><span>소속</span><select id="cdMScope">${scopes.map(s => `<option value="${esc(s)}"${s === myScope(sheet) ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
-        <div class="cd-hint">소속은 이 브라우저에만 저장되며, 편집 가능한 행을 가르는 기준이 됩니다.</div>
+        <div class="cd-hint">명부(관리 모드 → 👥 학교 사용자)에 소속이 지정돼 있으면 그 값이 우선합니다. 여기서 고른 소속은 명부에 없는 사람에게만 적용되며 이 브라우저에만 저장됩니다.</div>
         <div class="cd-modalfoot"><button class="btn btn-secondary" data-act="clear">이름 지우기</button><button class="btn btn-primary" data-act="ok">저장</button></div>`,
         (body, close) => {
             body.querySelector('[data-act=ok]').addEventListener('click', () => {
@@ -705,6 +724,192 @@ function openIdentityModal() {
                 close(); leave(); render();
             });
         });
+}
+
+/* ===================== 학교 사용자 설정 (명부) =====================
+ * 관리 모드에서 이름·직위·소속을 직접 고친다. 저장하는 순간
+ *   ① 이름이 바뀐 사람 → 모든 시트의 교직원 셀·담당자(owner)·최종수정자 이름을 따라 바꾸고
+ *   ② 소속이 바뀐 사람 → 그 사람이 담당인 행을 새 소속으로 옮기고
+ *   ③ 새로 생긴 소속 → 각 시트의 구분(탭) 목록에 추가하고
+ *   ④ 모든 시트의 행을 (소속 순서 → 명부 순번 → 기존 순서)로 재정렬해 order를 다시 매긴다.
+ * 즉 "바뀐 순간부터 데이터가 새 세팅값 기준으로 다시 줄을 선다".
+ */
+function openMembersModal() {
+    // 아직 명부가 없으면 SPA의 staff.json + 확인대장 추가 인원으로 초기 세팅
+    let draft = members.length
+        ? members.map(m => ({ id: m.id, name: m.name || '', position: m.position || '', scope: m.scope || guessScope(m.position) }))
+        : (HOST().staff || []).map(s => ({ id: s.id, name: s.name || '', position: s.position || '', scope: guessScope(s.position) }));
+    const before = new Map(members.map(m => [m.id, { name: m.name, scope: m.scope || guessScope(m.position) }]));
+    const removed = new Set();
+
+    modal('👥 학교 사용자 설정', `
+        <div class="cd-hint" style="margin-bottom:8px;">
+            여기서 정한 <b>이름 · 직위 · 소속</b>이 모든 시트의 기준이 됩니다.
+            저장하면 이름이 바뀐 사람의 기록도 함께 고쳐지고, 행이 새 소속 기준으로 다시 정렬됩니다.
+        </div>
+        <div class="cd-colhead">구성원 <span><button class="btn btn-secondary" data-act="addM" style="font-size:12px;padding:4px 10px;">＋ 행 추가</button></span></div>
+        <div class="cd-mhead2"><span>이름</span><span>직위</span><span>소속</span><span></span></div>
+        <div id="cdMembers" class="cd-cols" style="max-height:46vh;overflow:auto;"></div>
+        <div class="cd-modalfoot">
+            <span class="cd-hint" id="cdMStat" style="flex:1;"></span>
+            <button class="btn btn-primary" data-act="saveM">저장하고 다시 정렬</button>
+        </div>`, (root, close) => {
+        const box = root.querySelector('#cdMembers');
+        const stat = root.querySelector('#cdMStat');
+        const scopeOptions = () => {
+            const set = new Set(['본교', '수정분교']);
+            draft.forEach(d => { if (d.scope) set.add(d.scope); });
+            sheets.forEach(s => (s.scopes || []).forEach(x => set.add(x)));
+            return [...set];
+        };
+        const draw = () => {
+            const opts = scopeOptions();
+            box.innerHTML = draft.map((m, i) => `
+                <div class="cd-col cd-mrow" data-i="${i}">
+                    <input class="cd-mn" value="${esc(m.name)}" placeholder="이름">
+                    <input class="cd-mp" value="${esc(m.position)}" placeholder="직위 (예: 3-친절)">
+                    <input class="cd-ms" value="${esc(m.scope)}" list="cdScopeOpts" placeholder="소속">
+                    <button class="cd-cb cd-cdel" title="삭제">✕</button>
+                </div>`).join('') + `<datalist id="cdScopeOpts">${opts.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`;
+            box.querySelectorAll('.cd-mrow').forEach(el => {
+                const i = +el.dataset.i;
+                el.querySelector('.cd-mn').addEventListener('input', e => { draft[i].name = e.target.value; });
+                el.querySelector('.cd-mp').addEventListener('input', e => { draft[i].position = e.target.value; });
+                el.querySelector('.cd-ms').addEventListener('input', e => { draft[i].scope = e.target.value; });
+                el.querySelector('.cd-cdel').addEventListener('click', () => {
+                    if (draft[i].id && before.has(draft[i].id)) removed.add(draft[i].id);
+                    draft.splice(i, 1); draw();
+                });
+            });
+            stat.textContent = `${draft.length}명`;
+        };
+        draw();
+
+        root.querySelector('[data-act=addM]').addEventListener('click', () => {
+            draft.push({ id: 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), name: '', position: '', scope: '본교' });
+            draw();
+            const last = box.querySelector('.cd-mrow:last-of-type .cd-mn');
+            if (last) last.focus();
+        });
+
+        root.querySelector('[data-act=saveM]').addEventListener('click', async ev => {
+            const btn = ev.currentTarget;
+            const clean = draft.map(d => ({ ...d, name: (d.name || '').trim(), position: (d.position || '').trim(), scope: (d.scope || '').trim() || '본교' }))
+                .filter(d => d.name);
+            if (!clean.length) { toast('이름이 있는 행이 하나도 없습니다', 'error'); return; }
+            const dupe = clean.map(c => c.name).find((n, i, a) => a.indexOf(n) !== i);
+            if (dupe) { toast(`이름이 겹칩니다: ${dupe}`, 'error'); return; }
+
+            // 무엇이 바뀌었는지 먼저 계산 (저장 전에 옛 이름을 알아야 전파할 수 있다)
+            const renames = [], moved = [];
+            clean.forEach(c => {
+                const b = before.get(c.id);
+                if (!b) return;
+                if (b.name && b.name !== c.name) renames.push({ from: b.name, to: c.name });
+                if ((b.scope || '') !== c.scope) moved.push({ name: c.name, to: c.scope });
+            });
+
+            btn.disabled = true; btn.textContent = '저장 중…';
+            try {
+                const b = writeBatch(db);
+                clean.forEach((c, i) => b.set(doc(db, 'codocs_members', c.id), {
+                    name: c.name, position: c.position, scope: c.scope, order: i * 10,
+                    updatedBy: myName() || '', updatedAt: serverTimestamp()
+                }));
+                removed.forEach(id => { if (!clean.find(c => c.id === id)) b.delete(doc(db, 'codocs_members', id)); });
+                await b.commit();
+                members = clean.map((c, i) => ({ ...c, order: i * 10 }));   // 스냅샷보다 먼저 반영
+
+                btn.textContent = '기록 반영 중…';
+                const n = await resyncAll(renames, moved, clean);
+
+                // 본인 이름이 바뀌었으면 로컬 식별값도 따라간다
+                const meRen = renames.find(r => r.from === myName());
+                if (meRen) {
+                    const h = HOST();
+                    const rec = clean.find(c => c.name === meRen.to);
+                    if (h.setIdentity && rec) h.setIdentity(rec.id, rec.name);
+                    else localStorage.setItem('airoom_ws_name', meRen.to);
+                }
+                localStorage.removeItem('airoom_codocs_scope');   // 명부가 기준이므로 수동 지정은 해제
+
+                toast(n ? `저장 완료 — 기록 ${n}건을 새 설정에 맞춰 정리했습니다` : '저장했습니다', 'success');
+                close(); render();
+            } catch (e) {
+                toast('저장 실패: ' + e.message, 'error');
+                btn.disabled = false; btn.textContent = '저장하고 다시 정렬';
+            }
+        });
+    }, 700);
+}
+
+/* 행을 (소속 순서 → 명부 순번 → 기존 order)로 줄 세운다. 각 행의 `_holder`가 담당자 이름.
+   명부에 없는 소속·사람은 맨 뒤로 보내되 서로의 상대 순서는 유지한다. */
+function sortRowsByRoster(list, scopes, roster) {
+    const orderOf = name => { const i = roster.findIndex(r => r.name === name); return i < 0 ? 9999 : i; };
+    const scopeOf = sc => { const i = scopes.indexOf(sc || ''); return i < 0 ? 999 : i; };
+    return list.map((r, i) => ({ r, i })).sort((x, y) => {
+        const sa = scopeOf(x.r.scope), sb = scopeOf(y.r.scope);
+        if (sa !== sb) return sa - sb;
+        const oa = orderOf(x.r._holder), ob = orderOf(y.r._holder);
+        if (oa !== ob) return oa - ob;
+        const da = (x.r.order || 0) - (y.r.order || 0);
+        return da !== 0 ? da : x.i - y.i;
+    }).map(x => x.r);
+}
+
+/* 명부 변경을 모든 시트에 반영하고 행을 다시 정렬한다. 바뀐 문서 수를 돌려준다. */
+async function resyncAll(renames, moved, roster) {
+    const renameMap = new Map(renames.map(r => [r.from, r.to]));
+    const moveMap = new Map(moved.map(m => [m.name, m.to]));
+    const rosterScopes = [...new Set(roster.map(r => r.scope).filter(Boolean))];
+    let touched = 0;
+
+    for (const sheet of sheets) {
+        const staffKeys = (sheet.columns || []).filter(c => c.type === 'staff').map(c => c.key);
+        // ③ 새로 생긴 소속을 구분(탭)에 추가 — 기존 구분은 지우지 않는다(행이 붕 뜨면 안 되므로)
+        const scopes = [...(sheet.scopes || [])];
+        rosterScopes.forEach(s => { if (!scopes.includes(s)) scopes.push(s); });
+        if (scopes.length !== (sheet.scopes || []).length) {
+            await updateDoc(doc(db, 'codocs_sheets', sheet.id), { scopes });
+            sheet.scopes = scopes;
+            touched++;
+        }
+
+        const snap = await getDocs(query(collection(db, 'codocs_sheets', sheet.id, 'rows'), orderBy('order')));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // ①② 이름 치환 + 소속 이동
+        list.forEach(r => {
+            r._patch = {};
+            const cells = r.cells || {};
+            staffKeys.forEach(k => {
+                const v = cells[k];
+                if (v && renameMap.has(v)) { r._patch['cells.' + k] = renameMap.get(v); cells[k] = renameMap.get(v); }
+            });
+            if (r.owner && renameMap.has(r.owner)) { r._patch.owner = renameMap.get(r.owner); r.owner = renameMap.get(r.owner); }
+            if (r.updatedBy && renameMap.has(r.updatedBy)) { r._patch.updatedBy = renameMap.get(r.updatedBy); }
+            // 행의 담당자 = 교직원 열의 첫 값, 없으면 owner
+            const holder = staffKeys.map(k => cells[k]).find(Boolean) || r.owner || '';
+            if (holder && moveMap.has(holder) && r.scope !== moveMap.get(holder)) {
+                r._patch.scope = moveMap.get(holder); r.scope = moveMap.get(holder);
+            }
+            r._holder = holder;
+        });
+
+        // ④ 재정렬 — 소속 순서 → 명부 순번 → 기존 순서
+        const sorted = sortRowsByRoster(list, scopes, roster);
+        sorted.forEach((r, i) => { const want = (i + 1) * 1000; if (r.order !== want) r._patch.order = want; });
+
+        const dirty = sorted.filter(r => Object.keys(r._patch).length);
+        for (let i = 0; i < dirty.length; i += 400) {
+            const b = writeBatch(db);
+            dirty.slice(i, i + 400).forEach(r => b.update(doc(db, 'codocs_sheets', sheet.id, 'rows', r.id), r._patch));
+            await b.commit();
+        }
+        touched += dirty.length;
+    }
+    return touched;
 }
 
 /* ===================== 시트 만들기 / 설정 (시트 형식 개발) ===================== */
@@ -1232,6 +1437,9 @@ const CSS_TEXT = `
 .cd-cb{border:1px solid var(--border);background:var(--bg);border-radius:6px;cursor:pointer;padding:5px 7px;font-size:11px;}
 .cd-cdel{color:#c92a2a;}
 .cd-modalfoot{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:16px;}
+.cd-mhead2{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:5px;font-size:11px;color:var(--text-light);padding:0 2px 4px;}
+.cd-mhead2 span:last-child{width:29px;}
+.cd-mrow{grid-template-columns:1fr 1fr 1fr auto;}
 .cd-menu .cd-menubtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
 .cd-drop{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px;text-align:center;cursor:pointer;}
 .cd-drop.over{border-color:var(--primary);background:var(--primary-light);}
@@ -1255,4 +1463,4 @@ if (pageEl && pageEl.classList.contains('active')) window.codocsOpen();
 window.CoDocs = { open, close: leave };
 
 /* 자동 테스트용 내부 함수 노출 (node _check/codocs-test.mjs) */
-export const __test = { parseDelimited, parseXlsx, buildXlsx, guessType, cellError, colIdx };
+export const __test = { parseDelimited, parseXlsx, buildXlsx, guessType, cellError, colIdx, sortRowsByRoster };

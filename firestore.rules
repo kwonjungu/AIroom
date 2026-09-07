@@ -121,6 +121,18 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    // ─── 함께 만드는 문서 — 학교 사용자 명부 ───
+    // 이름·직위·소속의 기준. 관리 모드에서만 고치지만 Auth가 없어 형식만 강제한다.
+    match /codocs_members/{memberId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.name is string
+                 && request.resource.data.name.size() > 0
+                 && request.resource.data.name.size() < 30
+                 && request.resource.data.scope is string
+                 && request.resource.data.scope.size() < 30;
+      allow delete: if true;
+    }
+
     // ─── 함께 만드는 문서 (codocs) ───
     // 실시간 공동 편집 시트. Auth가 없으므로 rules로는 형식만 지킨다.
     // (내부 보안은 SPA 접근코드 + 이름 식별 + 시트별 editPolicy 로 제어)

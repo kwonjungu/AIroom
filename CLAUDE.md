@@ -65,7 +65,16 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
   첫 줄=열 제목, 열 타입 자동 추정(`guessType`), '구분 열' 지정 시 본교/분교로 자동 분리.
   xlsx 파싱은 전역 JSZip(SPA가 CDN으로 이미 로드) 사용. CP949 CSV는 깨짐 문자 수로 감지해 euc-kr로 재해석.
 - **내보내기**: 엑셀(자체 최소 xlsx 생성, inlineStr 방식) / CSV(BOM 포함) / 📋 시트로 복사(TSV → 구글 스프레드시트 A1에 붙여넣기) / 인쇄(A4 가로).
-- **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·xlsx 왕복 28케이스.
+- **학교 사용자 설정(명부)**: 관리 모드 → 👥 학교 사용자. `codocs_members/{id}` = `{name, position, scope, order}`.
+  **이름·직위·소속의 단일 기준**이며, 비어 있으면 SPA의 staff.json(+확인대장 추가 인원)으로 폴백하고
+  모달을 열면 그 명단으로 초안을 채운다(문서 id는 staff.json의 `s1`… 을 그대로 써서 `airoom_ws_staffId` 호환 유지).
+  저장 시 `resyncAll(renames, moved, roster)` 이 도미노로 반영한다:
+  ① 이름이 바뀐 사람 → 모든 시트의 교직원 타입 셀·`owner`·`updatedBy` 치환
+  ② 소속이 바뀐 사람 → 그 사람이 담당(교직원 열 첫 값, 없으면 owner)인 행의 `scope` 이동
+  ③ 명부에 새로 생긴 소속 → 각 시트 `scopes`에 추가(기존 구분은 지우지 않는다 — 행이 붕 뜬다)
+  ④ 모든 시트 행을 `sortRowsByRoster()`(소속 순서 → 명부 순번 → 기존 order, 안정 정렬)로 재정렬해 `order` 재부여
+  본인 이름이 바뀌면 localStorage 식별값도 따라가고, 명부가 기준이 되므로 `airoom_codocs_scope` 수동 지정은 해제한다.
+- **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·명부 재정렬·xlsx 왕복 34케이스.
   xlsx는 **exceljs(제3의 구현)로 다시 읽어** 검증한다. codocs.js 수정 시 반드시 실행할 것.
 
 ### ⚠️ 배포 전 반드시 할 일
