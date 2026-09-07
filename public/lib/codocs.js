@@ -194,7 +194,49 @@ function watchSheets() {
         render();
     }, err => {
         console.warn('[codocs] sheets', err);
-        showFatal('시트 목록을 불러오지 못했습니다: ' + err.message);
+        if (err.code === 'permission-denied') showRulesHelp();
+        else showFatal('시트 목록을 불러오지 못했습니다: ' + err.message);
+    });
+}
+
+/* Firestore 규칙 미게시 = 이 기능의 유일한 수동 준비물.
+   "관리자에게 문의"로 끝내면 아무도 못 고치므로, 화면에서 바로 해결하게 안내한다.
+   ⚠ 이 프로젝트의 DB는 (default)가 아니라 `kwon` — 콘솔에서 DB를 잘못 고르면 붙여넣어도 그대로다.
+   그래서 링크를 databases/kwon/rules 로 직접 건다. */
+const RULES_URL = 'https://raw.githubusercontent.com/kwonjungu/AIroom/main/firestore.rules';
+const CONSOLE_URL = 'https://console.firebase.google.com/project/airoom-ebce3/firestore/databases/kwon/rules';
+function showRulesHelp() {
+    const page = document.getElementById('page-codocs');
+    if (!page) return;
+    page.innerHTML = shell(`<div class="cd-setup">
+        <div class="cd-setuptitle">🔐 딱 한 번, 보안 규칙을 게시해야 합니다</div>
+        <p class="cd-setupdesc">
+            데이터베이스가 아직 이 기능의 읽기·쓰기를 허용하지 않고 있습니다(<code>permission-denied</code>).
+            아래 3단계를 한 번만 해두면 이후로는 계속 됩니다. <b>관리자(권준구) 계정</b>으로 진행하세요.
+        </p>
+        <ol class="cd-steps">
+            <li><b>규칙 복사</b> — 아래 버튼을 누르면 클립보드에 들어갑니다.
+                <div style="margin-top:6px;"><button class="btn btn-primary" data-cd="copyRules">📋 규칙 전체 복사</button>
+                <span id="cdRulesStat" class="cd-hint"></span></div></li>
+            <li><b>콘솔 열기</b> — <a href="${CONSOLE_URL}" target="_blank" rel="noopener">Firestore 규칙 편집기 열기 ↗</a>
+                <div class="cd-hint">링크가 <code>kwon</code> 데이터베이스의 규칙 탭으로 바로 갑니다.
+                    이 프로젝트의 DB는 <code>(default)</code>가 아니라 <code>kwon</code>이라, 다른 DB에 붙여넣으면 아무 일도 일어나지 않습니다.</div></li>
+            <li><b>붙여넣고 게시</b> — 편집기 내용을 전부 지우고 붙여넣은 뒤 <b>게시</b> 버튼을 누릅니다.
+                <div class="cd-hint">게시 후 이 페이지를 새로고침하면 바로 열립니다.</div></li>
+        </ol>
+        <details class="cd-rulesbox"><summary>규칙 내용 직접 보기</summary><pre id="cdRulesPre">불러오는 중…</pre></details>
+    </div>`);
+    const pre = page.querySelector('#cdRulesPre');
+    let text = null;
+    fetch(RULES_URL).then(r => r.ok ? r.text() : Promise.reject(new Error('HTTP ' + r.status)))
+        .then(t => { text = t; pre.textContent = t; })
+        .catch(e => { pre.textContent = '불러오지 못했습니다 — 레포의 firestore.rules 파일을 직접 여세요. (' + e.message + ')'; });
+    page.querySelector('[data-cd=copyRules]').addEventListener('click', () => {
+        const stat = page.querySelector('#cdRulesStat');
+        if (!text) { stat.textContent = ' 아직 불러오는 중입니다. 잠시 후 다시 눌러주세요.'; return; }
+        navigator.clipboard.writeText(text)
+            .then(() => { stat.textContent = ' 복사했습니다 — 2단계로 가세요.'; })
+            .catch(() => { stat.textContent = ' 복사 실패 — 아래 "규칙 내용 직접 보기"에서 수동 복사하세요.'; });
     });
 }
 
@@ -203,7 +245,10 @@ function watchMembers() {
     unsubMembers = onSnapshot(query(collection(db, 'codocs_members'), orderBy('order')), snap => {
         members = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         render();
-    }, err => console.warn('[codocs] members', err));
+    }, err => {
+        console.warn('[codocs] members', err);
+        if (err.code === 'permission-denied') showRulesHelp();
+    });
 }
 
 function watchRows() {
@@ -1652,6 +1697,16 @@ const CSS_TEXT = `
 .cd-mhead2 span:last-child{width:29px;}
 .cd-mrow{grid-template-columns:1fr 1fr 1fr auto;}
 .cd-menu .cd-menubtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+#page-codocs .cd-setup{padding:22px 24px;background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);}
+#page-codocs .cd-setuptitle{font-size:18px;font-weight:800;margin-bottom:8px;}
+#page-codocs .cd-setupdesc{font-size:13px;color:var(--text);line-height:1.6;margin:0 0 14px;}
+#page-codocs .cd-steps{margin:0;padding-left:20px;font-size:13px;line-height:1.9;}
+#page-codocs .cd-steps li{margin-bottom:10px;}
+#page-codocs .cd-steps code,#page-codocs .cd-setupdesc code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12px;}
+#page-codocs .cd-steps .cd-hint{display:block;line-height:1.5;margin-top:2px;}
+#page-codocs .cd-rulesbox{margin-top:16px;font-size:13px;}
+#page-codocs .cd-rulesbox summary{cursor:pointer;color:var(--text-light);}
+#page-codocs .cd-rulesbox pre{margin-top:8px;max-height:300px;overflow:auto;background:#2D3748;color:#E2E8F0;padding:12px;border-radius:8px;font-size:11px;line-height:1.5;}
 .cd-ipsec{padding:12px 0;border-bottom:1px solid var(--border);}
 .cd-ipsec:last-of-type{border-bottom:none;}
 .cd-iplabel{font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:4px;}

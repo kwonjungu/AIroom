@@ -94,7 +94,10 @@ package.json에 `main`/`start`가 있어 Vercel이 Node 서버로 인식하므�
 `/api/health`를 때려보고 200이면 그때 프로덕션 브랜치에 푸시.
 
 ### ⚠️ 배포 전 반드시 할 일
-**`firestore.rules`를 Firebase 콘솔에 게시해야 동작한다.** (콘솔 → Firestore Database → 규칙 → 전체 붙여넣기 → 게시)
+**`firestore.rules`를 Firebase 콘솔에 게시해야 동작한다.**
+게시 전에는 탭이 `permission-denied`로 막히는데, 이때 `showRulesHelp()`가 **화면에서 바로 해결하는 3단계 안내**를 띄운다
+(규칙 전체 복사 버튼 + 콘솔 직링크 + 규칙 원문 펼쳐보기). 규칙 원문은 public 레포의 raw URL에서 받아온다.
+⚠ 콘솔 링크는 반드시 `databases/kwon/rules` — 이 프로젝트 DB는 `(default)`가 아니라 `kwon`이라 다른 DB에 붙여넣으면 아무 일도 안 일어난다.
 게시 전에는 시트 목록이 `permission-denied`로 비어 보인다. `codocs_sheets` 규칙이 파일 하단에 추가되어 있음.
 
 ### 함정
