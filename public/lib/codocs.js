@@ -1637,9 +1637,12 @@ const CSS_TEXT = `
 #page-codocs #cdSearch{flex:1;min-width:160px;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;}
 #page-codocs .cd-tablewrap{overflow:auto;max-height:66vh;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card-bg);}
 #page-codocs .cd-table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;}
-#page-codocs .cd-th{position:sticky;top:0;z-index:2;background:#F1F5F9;border-bottom:2px solid var(--border);border-right:1px solid var(--border);padding:8px 10px;text-align:left;font-weight:700;white-space:nowrap;}
-#page-codocs .cd-ttype{display:block;font-size:10px;font-weight:400;color:var(--text-light);}
-#page-codocs .cd-td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:7px 10px;vertical-align:top;cursor:text;white-space:pre-wrap;word-break:break-word;min-width:60px;}
+/* CSS_TEXT는 템플릿 리터럴이라 백틱 금지. ⚠ SPA 전역에 thead th 규칙이 color:white를 걸고 있어(index.html 215줄)
+   배경만 바꾸면 흰 글자가 밝은 배경에 얹혀 안 보인다 — 실제로 그랬다. 배경·글자색을 같이 못박는다. */
+#page-codocs .cd-th{position:sticky;top:0;z-index:2;background:#2D3748;color:#fff;border-bottom:none;border-right:1px solid rgba(255,255,255,.15);padding:9px 10px;text-align:left;font-weight:700;white-space:nowrap;}
+#page-codocs .cd-th:last-child{border-right:none;}
+#page-codocs .cd-ttype{display:block;font-size:10px;font-weight:400;color:#A0AEC0;}
+#page-codocs .cd-td{background:var(--card-bg);color:var(--text);border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:7px 10px;vertical-align:top;cursor:text;white-space:pre-wrap;word-break:break-word;min-width:60px;}
 #page-codocs .cd-td:not(.cd-ro):hover{background:var(--primary-light);}
 #page-codocs .cd-ro{background:#FAFBFC;color:var(--text-light);cursor:default;}
 #page-codocs .cd-err{background:#FFF0F0;box-shadow:inset 0 0 0 2px #ffa8a8;}
