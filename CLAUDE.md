@@ -82,8 +82,11 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
   본인 이름이 바뀌면 localStorage 식별값도 따라가고, 명부가 기준이 되므로 `airoom_codocs_scope` 수동 지정은 해제한다.
 - **내 IP 확인 버튼**: IP 타입 열이 있는 시트에만 툴바에 뜬다(행 메뉴 ⋯ 에도 있음).
   ⚠ **브라우저는 사설 IP를 안 알려준다** — 크롬·엣지가 WebRTC 후보를 mDNS(`xxxx.local`)로 가린다. 그래서 2단:
-  ① WebRTC ICE 후보 긁기(`localIps`, 1.5초 타임아웃) — 나오면 원클릭, 가려지면 **그 칸을 통째로 숨긴다**(실패 문구도 안 띄움)
-  ② **`ipconfig /all` 결과 붙여넣기(`parseIpconfig`)** — 실무에서 이게 제일 확실. 한/영 ipconfig·ifconfig·ip addr 지원,
+  ① WebRTC ICE 후보 긁기(`localIps`, 1.5초 타임아웃) — **주소를 얻으면 클릭 없이 IP 칸을 바로 채운다.**
+     기본 크롬·엣지는 mDNS로 가려 못 얻고, 그 경우 이 칸은 아예 안 뜬다. 학교 PC에 크롬 정책
+     `WebRtcLocalIpsAllowedUrls`(대상 URL 2개)를 걸면 진짜로 자동이 된다 → `docs/school-pc-ip-policy.md`.
+     단 WebRTC로는 **IP만** 얻는다. 서브넷·게이트웨이·MAC은 여전히 ②가 필요하다.
+  ② **`cmd /c "ipconfig /all | clip"` 결과 붙여넣기(`parseIpconfig`)** — 실무에서 이게 제일 확실. 한/영 ipconfig·ifconfig·ip addr 지원,
      169.254(자동 구성)·루프백 제외, 게이트웨이 있는 어댑터 우선, MAC은 콜론 표기로 통일.
   읽어낸 값은 `netFieldMap()`이 열 타입(ip/mac)과 key·라벨(서브넷/게이트웨이)로 짝지어 채운다.
   **모달 하나가 곧 행 입력 폼이다** — 붙여넣으면 네트워크 칸만 자동으로 차고(`applyNet`), 장소·기기종류 등

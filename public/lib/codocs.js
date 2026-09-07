@@ -936,9 +936,12 @@ function openIpModal(rowId) {
     modal(rowId ? '📝 기기 정보 수정' : '➕ 내 기기 등록', `
         <div class="cd-ipsec">
             <div class="cd-iplabel">네트워크 정보 자동 입력 <span class="cd-hint" style="font-weight:400;">(선택 — 직접 적어도 됩니다)</span></div>
-            <div class="cd-hint" style="margin:2px 0 6px;">⊞Win+R → <b>cmd</b> → 명령 붙여넣고 Enter → 결과 전체 복사(Ctrl+A, Ctrl+C) → 아래 상자에 붙여넣기</div>
+            <div class="cd-hint" style="margin:2px 0 6px;">
+                ① 아래 <b>명령 복사</b> → ② <b>⊞Win+R</b> 누르고 <b>Ctrl+V</b>, Enter (검은 창이 잠깐 떴다 사라집니다)
+                → ③ 아래 상자에 <b>Ctrl+V</b>. 결과가 바로 클립보드에 담기므로 창에서 긁을 필요가 없습니다.
+            </div>
             <div class="cd-cmdrow">
-                <code>ipconfig /all</code>
+                <code>cmd /c "ipconfig /all | clip"</code>
                 <button class="btn btn-secondary" data-act="copyCmd">명령 복사</button>
             </div>
             <div id="cdLocSec" style="display:none;margin-top:8px;"><div id="cdLocIp"></div></div>
@@ -998,17 +1001,28 @@ function openIpModal(rowId) {
                 : '이 시트에는 네트워크 칸이 없습니다.';
         };
 
+        // 브라우저가 내부 주소를 알려주는 환경이면(크롬 WebRtcLocalIpsAllowedUrls 정책 등)
+        // 아무것도 누르지 않아도 IP 칸이 채워진다. 못 알아내면 이 칸은 아예 안 뜬다.
         localIps().then(list => {
             if (!list.length) return;
             const el = root.querySelector('#cdLocIp');
             root.querySelector('#cdLocSec').style.display = '';
-            el.innerHTML = `<div class="cd-hint" style="margin-bottom:4px;">이 컴퓨터에서 찾은 주소 — 누르면 IP 칸에 들어갑니다</div>` +
-                list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('');
-            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () => applyNet({ ip: b.dataset.ip })));
+            const ipCol = map.ip;
+            const already = ipCol && (values[ipCol.key] || '').trim();
+            if (!already) applyNet({ ip: list[0] });
+            el.innerHTML = `<div class="cd-hint" style="margin-bottom:4px;">${already ? '이 컴퓨터에서 찾은 주소 — 누르면 IP 칸에 들어갑니다'
+                : list.length > 1 ? '이 컴퓨터에서 찾은 주소를 자동으로 넣었습니다. 랜카드가 여러 개면 눌러서 바꾸세요.'
+                    : '이 컴퓨터에서 찾은 주소를 자동으로 넣었습니다.'}</div>` +
+                list.map(ip => `<button class="cd-ippick${!already && ip === list[0] ? ' on' : ''}" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('');
+            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () => {
+                el.querySelectorAll('.cd-ippick').forEach(x => x.classList.remove('on'));
+                b.classList.add('on');
+                applyNet({ ip: b.dataset.ip });
+            }));
         });
 
         root.querySelector('[data-act=copyCmd]').addEventListener('click', () => {
-            navigator.clipboard.writeText('ipconfig /all')
+            navigator.clipboard.writeText('cmd /c "ipconfig /all | clip"')
                 .then(() => toast('명령을 복사했습니다 — cmd 창에 붙여넣으세요', 'success'))
                 .catch(() => toast('복사 실패 — 직접 입력해주세요', 'error'));
         });
@@ -1807,6 +1821,7 @@ const CSS_TEXT = `
 .cd-ipval{font-size:17px;font-weight:700;font-family:ui-monospace,Consolas,monospace;}
 .cd-ippick{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;border:2px solid var(--border);background:var(--card-bg);border-radius:8px;padding:6px 12px;margin:0 6px 6px 0;cursor:pointer;}
 .cd-ippick:hover{border-color:var(--primary);background:var(--primary-light);}
+.cd-ippick.on{border-color:var(--primary);background:var(--primary);color:#fff;}
 .cd-auto{display:inline-block;margin-left:5px;padding:0 5px;border-radius:4px;background:var(--primary-light);color:var(--primary-dark);font-size:9px;font-weight:700;vertical-align:middle;}
 .cd-cmdrow{display:flex;gap:8px;align-items:center;}
 .cd-cmdrow code{flex:1;background:#2D3748;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;}
