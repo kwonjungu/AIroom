@@ -394,7 +394,7 @@ function render() {
             ${sheet.desc ? `<div class="cd-desc">${esc(sheet.desc)}</div>` : ''}
         </div>
         <div class="cd-actions">
-            ${(sheet.columns || []).some(c => c.type === 'ip') ? '<button class="btn btn-primary" data-cd="myip">🔍 내 IP 확인</button>' : ''}
+            ${(sheet.columns || []).some(c => c.type === 'ip') ? '<button class="btn btn-primary" data-cd="myip">🔍 내 IP 확인</button><button class="btn btn-secondary" data-cd="manual">📖 작성법</button>' : ''}
             <button class="btn btn-secondary" data-cd="export" data-fmt="xlsx">⬇️ 엑셀</button>
             <button class="btn btn-secondary" data-cd="export" data-fmt="csv">⬇️ CSV</button>
             <button class="btn btn-secondary" data-cd="copyTsv" title="구글 스프레드시트에 그대로 붙여넣을 수 있습니다">📋 시트로 복사</button>
@@ -561,6 +561,7 @@ function handle(action, el) {
         case 'importSheet': return openImportModal('new');
         case 'members': return openMembersModal();
         case 'myip': return openIpModal(null);
+        case 'manual': return openManual();
         case 'appendFile': return openImportModal('append');
         case 'addRow': return addRow();
         case 'rowMenu': return openRowMenu(el.dataset.id, el);
@@ -792,6 +793,101 @@ function openIdentityModal() {
         });
 }
 
+/* ===================== 사진으로 보는 사용 안내 =====================
+ * 대상은 윈도우를 깊이 모르는 선생님이다. 용어를 설명하지 말고 "무엇을 누르면 무엇이 나온다"로만 쓴다.
+ * 사진은 실제 교내 PC 화면(public/assets/codocs/manual-*.png).
+ */
+const ASSET_BASE = location.hostname.endsWith('github.io')
+    ? (location.pathname.indexOf('/public/') >= 0 ? 'assets/codocs/' : 'public/assets/codocs/')
+    : '/assets/codocs/';
+
+const MANUAL_STEPS = [
+    {
+        img: 'manual-1.png',
+        title: '화면 맨 아래 <b>검색</b> 칸을 누릅니다',
+        body: '바탕화면 제일 아래 줄 왼쪽에 있는 돋보기(🔍) 모양 칸입니다.'
+    },
+    {
+        img: 'manual-2.png',
+        title: '<b>명령 프롬프트</b> 라고 칩니다',
+        body: '다 치지 않아도 <b>명령</b> 까지만 쳐도 위에 뜹니다. 그걸 누르면 <b>까만 창</b>이 하나 열립니다.'
+    },
+    {
+        img: 'manual-3.png',
+        title: '까만 창에 <b>ipconfig /all</b> 을 치고 Enter',
+        body: '띄어쓰기 한 칸, 빗금(/) 방향까지 사진 그대로 칩니다. 아래 <b>명령 복사</b> 버튼을 누르고 까만 창에서 붙여넣기(Ctrl+V) 해도 됩니다.'
+    },
+    {
+        img: 'manual-4.png',
+        title: '글자가 우르르 나옵니다 — 정상입니다',
+        body: '뭔가 잘못된 게 아닙니다. 이 중에서 우리가 쓸 줄은 딱 몇 개뿐이고, 그것도 <b>직접 찾을 필요는 없습니다.</b>'
+    },
+    {
+        img: 'manual-5.png',
+        title: '우리가 넣을 값은 <b>IPv4 주소</b> 입니다',
+        body: '이 줄이 그 컴퓨터의 IP입니다. 위쪽에 <b>IPv6</b> 라고 적힌 길고 복잡한 줄(fe80::… )은 <b>다른 것</b>이니 헷갈리지 마세요. 우리가 쓰는 건 숫자와 점으로만 된 <b>IPv4</b> 입니다.'
+    },
+    {
+        img: 'manual-6.png',
+        title: '서브넷 마스크·기본 게이트웨이도 같은 화면에 있습니다',
+        body: '대장에 이 칸들이 있으면 이것도 같이 들어갑니다. 역시 직접 옮겨 적을 필요 없습니다.'
+    },
+    {
+        img: 'manual-7.png',
+        title: '까만 창 내용을 <b>전부 복사</b>해서 상자에 붙여넣습니다',
+        body: '까만 창 안을 한 번 클릭하고 <b>Ctrl+A</b>(전체 선택) → <b>Ctrl+C</b>(복사) → 이 창의 상자에 <b>Ctrl+V</b>(붙여넣기). 그러면 <b>IP 주소가 저절로 채워집니다.</b> 어느 줄인지 찾을 필요가 없습니다.'
+    }
+];
+
+function openManual() {
+    modal('📖 사진으로 보는 IP 대장 작성법', `
+        <div class="cd-manual-lead">
+            컴퓨터를 잘 몰라도 괜찮습니다. <b>사진 그대로 따라 하시면 됩니다.</b>
+            까만 창이 무섭게 생겼지만 아무것도 망가지지 않습니다.
+        </div>
+        ${MANUAL_STEPS.map((s, i) => `
+            <div class="cd-mstep">
+                <div class="cd-mstep-head"><span class="cd-mnum">${i + 1}</span><span>${s.title}</span></div>
+                <div class="cd-mstep-body">${s.body}</div>
+                <img class="cd-mimg" src="${ASSET_BASE}${s.img}" alt="${i + 1}단계 화면" loading="lazy">
+            </div>`).join('')}
+
+        <div class="cd-mnote">
+            <div class="cd-mnote-title">나머지 칸은 이렇게 적습니다</div>
+            <ul>
+                <li><b>자산번호 / 모델</b> — 컴퓨터 본체에 <b>붙어 있는 라벨(스티커)</b>을 보고 그대로 옮겨 적으시면 됩니다.
+                    보통 본체 앞면이나 옆면에 붙어 있습니다. 라벨이 없으면 비워 두셔도 됩니다.</li>
+                <li><b>사용 장소</b> — 교실 이름을 적습니다. 예: <code>3학년 친절반</code>, <code>교무실</code>, <code>도서실</code></li>
+                <li><b>기기 종류</b> — 목록에서 고르시면 됩니다. 데스크탑PC / 노트북 / 프린터 …</li>
+                <li><b>이름</b> — 본인 이름을 고르면 <b>직위는 저절로 채워집니다.</b></li>
+                <li><b>확인일</b> — 오늘 날짜가 미리 들어가 있습니다. 그대로 두시면 됩니다.</li>
+            </ul>
+        </div>
+
+        <div class="cd-mnote">
+            <div class="cd-mnote-title">까만 창 여는 게 번거로우시면 (더 빠른 방법)</div>
+            <ol>
+                <li>아래 상자의 <b>명령 복사</b> 대신 이 명령을 복사합니다
+                    <div class="cd-cmdrow" style="margin-top:6px;"><code>cmd /c "ipconfig /all | clip"</code>
+                    <button class="btn btn-secondary" data-act="copyClip">복사</button></div></li>
+                <li>키보드에서 <b>⊞(창 모양 키) + R</b> 을 같이 누릅니다 → 작은 칸이 뜹니다</li>
+                <li>거기에 <b>Ctrl+V</b> 하고 Enter → 까만 창이 <b>잠깐 깜빡</b> 하고 사라집니다</li>
+                <li>이 창의 상자에 <b>Ctrl+V</b> → 끝. 복사 과정이 필요 없습니다.</li>
+            </ol>
+        </div>
+
+        <div class="cd-modalfoot"><button class="btn btn-primary" data-act="closeManual">알겠습니다</button></div>`,
+        (root, close) => {
+            const clip = root.querySelector('[data-act=copyClip]');
+            if (clip) clip.addEventListener('click', () => {
+                navigator.clipboard.writeText('cmd /c "ipconfig /all | clip"')
+                    .then(() => toast('복사했습니다', 'success'))
+                    .catch(() => toast('복사 실패 — 직접 입력해주세요', 'error'));
+            });
+            root.querySelector('[data-act=closeManual]').addEventListener('click', close);
+        }, 620);
+}
+
 /* ===================== 내 IP 확인 =====================
  * ⚠ 브라우저는 사설 IP(192.168.x.x)를 그냥 알려주지 않는다.
  *   요즘 크롬/엣지는 WebRTC 후보를 mDNS(xxxx.local)로 가려서 LAN 주소가 안 나온다.
@@ -886,6 +982,17 @@ function positionColOf(sheet) {
 }
 function staffColOf(sheet) { return (sheet.columns || []).find(c => c.type === 'staff'); }
 
+/* 폼 칸 아래에 붙는 한 줄 안내. 컴퓨터를 잘 모르는 분이 무엇을 보고 적을지 바로 알게 한다. */
+function fieldHint(c) {
+    const L = (c.label || '').replace(/\s/g, '');
+    let t = '';
+    if (c.type === 'ip') t = '까만 창의 <b>IPv4 주소</b> 값입니다. 위에 붙여넣으면 저절로 들어갑니다.';
+    else if (/자산번호|모델|자산/.test(L)) t = '컴퓨터 본체에 <b>붙어 있는 라벨(스티커)</b>을 보고 적으세요. 없으면 비워 두셔도 됩니다.';
+    else if (/사용장소|장소|위치/.test(L)) t = '예: 3학년 친절반, 교무실, 도서실';
+    else if (c.type === 'position') t = '이름을 고르면 저절로 채워집니다.';
+    return t ? `<span class="cd-fh">${t}</span>` : '';
+}
+
 function openIpModal(rowId) {
     const sheet = currentSheet();
     if (!sheet) return;
@@ -930,18 +1037,19 @@ function openIpModal(rowId) {
             const ph = c.type === 'ip' ? '192.168.0.10' : c.type === 'mac' ? 'AA:BB:CC:DD:EE:FF' : '';
             input = `<input data-k="${esc(c.key)}" value="${esc(v)}" placeholder="${ph}">`;
         }
-        return `<label class="cd-f"><span>${esc(c.label)}${auto}</span>${input}</label>`;
+        return `<label class="cd-f"><span>${esc(c.label)}${auto}</span>${input}${fieldHint(c)}</label>`;
     };
 
     modal(rowId ? '📝 기기 정보 수정' : '➕ 내 기기 등록', `
         <div class="cd-ipsec">
             <div class="cd-iplabel">네트워크 정보 자동 입력 <span class="cd-hint" style="font-weight:400;">(선택 — 직접 적어도 됩니다)</span></div>
-            <div class="cd-hint" style="margin:2px 0 6px;">
-                ① 아래 <b>명령 복사</b> → ② <b>⊞Win+R</b> 누르고 <b>Ctrl+V</b>, Enter (검은 창이 잠깐 떴다 사라집니다)
-                → ③ 아래 상자에 <b>Ctrl+V</b>. 결과가 바로 클립보드에 담기므로 창에서 긁을 필요가 없습니다.
+            <div class="cd-hint" style="margin:2px 0 8px;">
+                까만 창(명령 프롬프트)에서 아래 명령을 치고, 나온 내용을 전부 복사해 아래 상자에 붙여넣으세요.
+                <b>어느 줄인지 찾을 필요 없습니다</b> — 통째로 붙여넣으면 알아서 골라냅니다.
+                <button class="cd-manlink" data-act="manual">📖 처음이신가요? 사진으로 보는 안내</button>
             </div>
             <div class="cd-cmdrow">
-                <code>cmd /c "ipconfig /all | clip"</code>
+                <code>ipconfig /all</code>
                 <button class="btn btn-secondary" data-act="copyCmd">명령 복사</button>
             </div>
             <div id="cdLocSec" style="display:none;margin-top:8px;"><div id="cdLocIp"></div></div>
@@ -1021,9 +1129,11 @@ function openIpModal(rowId) {
             }));
         });
 
+        root.querySelector('[data-act=manual]').addEventListener('click', () => openManual());
+
         root.querySelector('[data-act=copyCmd]').addEventListener('click', () => {
-            navigator.clipboard.writeText('cmd /c "ipconfig /all | clip"')
-                .then(() => toast('명령을 복사했습니다 — cmd 창에 붙여넣으세요', 'success'))
+            navigator.clipboard.writeText('ipconfig /all')
+                .then(() => toast('명령을 복사했습니다 — 까만 창에 붙여넣고 Enter', 'success'))
                 .catch(() => toast('복사 실패 — 직접 입력해주세요', 'error'));
         });
 
@@ -1822,6 +1932,18 @@ const CSS_TEXT = `
 .cd-ippick{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;border:2px solid var(--border);background:var(--card-bg);border-radius:8px;padding:6px 12px;margin:0 6px 6px 0;cursor:pointer;}
 .cd-ippick:hover{border-color:var(--primary);background:var(--primary-light);}
 .cd-ippick.on{border-color:var(--primary);background:var(--primary);color:#fff;}
+.cd-fh{display:block;font-size:11px;font-weight:400;color:var(--text-light);line-height:1.5;margin-top:3px;}
+.cd-manlink{display:inline-block;margin-left:4px;border:none;background:transparent;color:var(--primary-dark);font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:0;}
+.cd-manual-lead{font-size:13px;line-height:1.7;background:var(--primary-light);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;}
+.cd-mstep{margin-bottom:20px;}
+.cd-mstep-head{display:flex;align-items:flex-start;gap:8px;font-size:14px;font-weight:700;line-height:1.5;}
+.cd-mnum{flex:none;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.cd-mstep-body{font-size:13px;line-height:1.7;color:var(--text);margin:5px 0 8px 30px;}
+.cd-mimg{display:block;margin-left:30px;max-width:calc(100% - 30px);border:1px solid var(--border);border-radius:8px;background:#000;}
+.cd-mnote{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-top:16px;}
+.cd-mnote-title{font-size:13px;font-weight:800;margin-bottom:8px;}
+.cd-mnote ul,.cd-mnote ol{margin:0;padding-left:20px;font-size:13px;line-height:1.9;}
+.cd-mnote code{background:var(--card-bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12px;}
 .cd-auto{display:inline-block;margin-left:5px;padding:0 5px;border-radius:4px;background:var(--primary-light);color:var(--primary-dark);font-size:9px;font-weight:700;vertical-align:middle;}
 .cd-cmdrow{display:flex;gap:8px;align-items:center;}
 .cd-cmdrow code{flex:1;background:#2D3748;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;}

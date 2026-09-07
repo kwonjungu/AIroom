@@ -71,6 +71,13 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
 - **교직원 열은 `staff`(이름) + `position`(직위) 두 개로 쓴다.** 이름을 고르면 직위가 명부에서 자동으로 따라온다
   — 폼은 `syncPosition()`, 표 셀 편집은 `saveCell()`이 같은 패치에 직위를 얹는다. 짝은 `staffColOf`/`positionColOf`가 찾고,
   `positionColOf`는 타입이 1순위·라벨(직위/position)이 2순위라 옛 시트도 열 이름만 맞으면 동작한다.
+- **사진으로 보는 작성법**(`openManual`): 툴바 `📖 작성법` + 등록 폼 안 링크. 대상이 윈도우를 잘 모르는 선생님이라
+  용어 설명 없이 "무엇을 누르면 무엇이 나온다"로만 썼다. 사진은 실제 교내 PC 화면 `public/assets/codocs/manual-1~7.png`.
+  IPv6(fe80::…)와 헷갈리지 않게 **IPv4 주소**를 명시하고, 자산번호는 **본체에 붙은 라벨**을 보고 적으라고 안내한다.
+  이미지 경로는 `ASSET_BASE`가 host별로 갈라준다(모듈 로더와 같은 이유 — GitHub Pages는 레포 루트가 `/AIroom/` 하위).
+  폼 각 칸 아래 한 줄 안내는 `fieldHint()` — IP·자산번호·장소·직위에만 붙는다.
+  ⚠ 모달의 명령은 스크린샷과 같은 `ipconfig /all`로 맞춰 둔다. 사진과 화면이 다르면 안내가 무용지물이 된다
+  (`| clip` 빠른 방법은 매뉴얼 하단에만 둔다).
 - **학교 사용자 설정(명부)**: 관리 모드 → 👥 학교 사용자. `codocs_members/{id}` = `{name, position, scope, order}`.
   **이름·직위·소속의 단일 기준**이며, 비어 있으면 SPA의 staff.json(+확인대장 추가 인원)으로 폴백하고
   모달을 열면 그 명단으로 초안을 채운다(문서 id는 staff.json의 `s1`… 을 그대로 써서 `airoom_ws_staffId` 호환 유지).
