@@ -702,7 +702,7 @@ function openRowMenu(rowId, anchor) {
         <div class="cd-menu">
             ${scopes.length ? `<label class="cd-f"><span>구분</span><select id="cdRowScope">${scopes.map(s => `<option value="${esc(s)}"${s === row.scope ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>` : ''}
             <div class="cd-menubtns">
-                ${(sheet.columns || []).some(c => c.type === 'ip') ? '<button class="btn btn-secondary" data-act="myip" style="grid-column:1/-1;">🔍 내 IP로 이 행 채우기</button>' : ''}
+                ${(sheet.columns || []).some(c => c.type === 'ip') ? '<button class="btn btn-secondary" data-act="myip" style="grid-column:1/-1;">📝 기기 정보 수정</button>' : ''}
                 <button class="btn btn-secondary" data-act="up">⬆️ 위로</button>
                 <button class="btn btn-secondary" data-act="down">⬇️ 아래로</button>
                 <button class="btn btn-secondary" data-act="dup">📄 복제</button>
@@ -853,59 +853,113 @@ function netFieldMap(sheet) {
     };
 }
 
+function todayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/* 한 창에서 기기 정보를 전부 받아 행 하나로 저장한다.
+   ipconfig 붙여넣기는 네트워크 칸(IP·서브넷·게이트웨이·MAC)을 채워주는 보조 수단일 뿐,
+   장소·기기종류 같은 나머지 칸은 사람이 여기서 같이 적는다. 끝에 "행 추가" 한 번으로 끝난다. */
 function openIpModal(rowId) {
     const sheet = currentSheet();
-    const map = sheet ? netFieldMap(sheet) : {};
-    const targets = ['ip', 'mask', 'gw', 'mac'].filter(k => map[k]);
-    if (!sheet || !targets.length) { toast('이 시트에는 IP 칸이 없습니다', 'error'); return; }
+    if (!sheet) return;
+    const map = netFieldMap(sheet);
+    const netKeys = new Set(['ip', 'mask', 'gw', 'mac'].map(k => map[k] && map[k].key).filter(Boolean));
+    const cols = (sheet.columns || []).filter(c => c.type !== 'seq');
+    const row = rowId ? rows.find(r => r.id === rowId) : null;
+    const scopes = sheet.scopes || [];
+    let busy = false, pasteTimer = null;
 
-    let busy = false;          // 붙여넣기가 여러 번 튀어도 행이 두 번 생기지 않게
-    let pasteTimer = null;
+    // 초기값: 기존 행이면 그 값, 새 행이면 열 기본값 + 본인 이름 + 오늘 날짜
+    const values = {};
+    cols.forEach(c => {
+        let v = row ? ((row.cells || {})[c.key] || '') : (c.def || '');
+        if (!row && !v) {
+            if (c.type === 'staff') v = myName() || '';
+            else if (c.type === 'date') v = todayIso();
+        }
+        values[c.key] = v;
+    });
+    let scope = row ? (row.scope || '') : (scopeFilter !== '__all__' ? scopeFilter : (myScope(sheet) || scopes[0] || ''));
 
-    modal('🔍 내 IP 확인', `
-        <!-- WebRTC로 사설 IP를 찾았을 때만 이 칸이 채워진다. 못 찾으면 통째로 숨긴다(대부분 못 찾는다). -->
-        <div class="cd-ipsec" id="cdLocSec" style="display:none;">
-            <div class="cd-iplabel">이 컴퓨터에서 찾은 주소 — 누르면 바로 등록</div>
-            <div id="cdLocIp"></div>
-        </div>
+    const field = c => {
+        const v = values[c.key] || '';
+        const auto = netKeys.has(c.key) ? '<span class="cd-auto">자동</span>' : '';
+        let input;
+        if (c.type === 'select') {
+            input = `<select data-k="${esc(c.key)}"><option value=""></option>${(c.options || []).map(o => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+        } else if (c.type === 'staff') {
+            input = `<input data-k="${esc(c.key)}" list="cdFormStaff" value="${esc(v)}">`;
+        } else if (c.type === 'date') {
+            input = `<input data-k="${esc(c.key)}" type="date" value="${esc(v)}">`;
+        } else if (c.type === 'memo') {
+            input = `<textarea data-k="${esc(c.key)}" rows="2">${esc(v)}</textarea>`;
+        } else if (c.type === 'number') {
+            input = `<input data-k="${esc(c.key)}" type="number" value="${esc(v)}">`;
+        } else if (c.type === 'check') {
+            input = `<input data-k="${esc(c.key)}" type="checkbox"${v ? ' checked' : ''} style="width:auto;">`;
+        } else {
+            const ph = c.type === 'ip' ? '192.168.0.10' : c.type === 'mac' ? 'AA:BB:CC:DD:EE:FF' : '';
+            input = `<input data-k="${esc(c.key)}" value="${esc(v)}" placeholder="${ph}">`;
+        }
+        return `<label class="cd-f"><span>${esc(c.label)}${auto}</span>${input}</label>`;
+    };
+
+    modal(rowId ? '📝 기기 정보 수정' : '➕ 내 기기 등록', `
         <div class="cd-ipsec">
-            <div class="cd-iplabel">1. 명령 실행</div>
-            <div class="cd-hint" style="margin-bottom:6px;">⊞Win+R → <b>cmd</b> → 아래 명령 붙여넣고 Enter</div>
+            <div class="cd-iplabel">네트워크 정보 자동 입력 <span class="cd-hint" style="font-weight:400;">(선택 — 직접 적어도 됩니다)</span></div>
+            <div class="cd-hint" style="margin:2px 0 6px;">⊞Win+R → <b>cmd</b> → 명령 붙여넣고 Enter → 결과 전체 복사(Ctrl+A, Ctrl+C) → 아래 상자에 붙여넣기</div>
             <div class="cd-cmdrow">
-                <code id="cdCmd">ipconfig /all</code>
+                <code>ipconfig /all</code>
                 <button class="btn btn-secondary" data-act="copyCmd">명령 복사</button>
             </div>
+            <div id="cdLocSec" style="display:none;margin-top:8px;"><div id="cdLocIp"></div></div>
+            <textarea id="cdPaste2" rows="3" placeholder="여기에 붙여넣으면 IP·서브넷·게이트웨이·MAC이 아래에 채워집니다" style="margin-top:8px;"></textarea>
+            <div id="cdIpStat" class="cd-hint" style="margin-top:4px;"></div>
         </div>
         <div class="cd-ipsec">
-            <div class="cd-iplabel">2. 결과 붙여넣기 — 붙여넣는 즉시 등록됩니다</div>
-            <div class="cd-hint" style="margin-bottom:6px;">까만 창 내용을 전부 긁어(Ctrl+A → Ctrl+C) 여기에 붙여넣으세요. 알아서 골라서 ${rowId ? '이 행에 채웁니다' : '새 행으로 넣습니다'}.</div>
-            <textarea id="cdPaste2" rows="4" placeholder="여기에 붙여넣기 (Ctrl+V)" autofocus></textarea>
-            <div id="cdIpStat" class="cd-hint" style="margin-top:6px;"></div>
+            <div class="cd-iplabel">기기 정보</div>
+            ${scopes.length ? `<label class="cd-f"><span>구분</span><select id="cdFormScope">${scopes.map(o => `<option value="${esc(o)}"${o === scope ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>` : ''}
+            <div class="cd-grid2" id="cdFormFields">${cols.map(field).join('')}</div>
+            <datalist id="cdFormStaff">${allStaff().map(m => `<option value="${esc(m.name)}">${esc(m.position || '')}</option>`).join('')}</datalist>
+        </div>
+        <div class="cd-modalfoot">
+            <span class="cd-hint" id="cdFormStat" style="flex:1;"></span>
+            <button class="btn btn-primary" data-act="save">${rowId ? '저장' : '➕ 행 추가'}</button>
         </div>`, (root, close) => {
         const stat = root.querySelector('#cdIpStat');
+        const fstat = root.querySelector('#cdFormStat');
+        const box = root.querySelector('#cdFormFields');
 
-        // 읽어낸 값을 그대로 저장하고 창을 닫는다. 확인 버튼을 한 번 더 누르게 하지 않는다.
-        const commit = async info => {
-            if (busy) return;
-            busy = true;
-            stat.textContent = '등록 중…';
-            try {
-                await applyNetInfo(rowId, info, map);
-                close();
-            } catch (e) {
-                busy = false;
-                stat.innerHTML = `<span style="color:#c92a2a;">등록 실패 — ${esc(e.message)}</span>`;
-            }
+        const grab = el => el.type === 'checkbox' ? (el.checked ? '1' : '') : el.value;
+        box.addEventListener('input', e => { if (e.target.dataset.k) values[e.target.dataset.k] = grab(e.target); });
+        box.addEventListener('change', e => { if (e.target.dataset.k) values[e.target.dataset.k] = grab(e.target); });
+        const scopeSel = root.querySelector('#cdFormScope');
+        if (scopeSel) scopeSel.addEventListener('change', () => { scope = scopeSel.value; });
+
+        // 파싱 결과를 폼에 밀어 넣는다. 자동 칸이므로 이미 적힌 값도 최신 값으로 덮는다.
+        const applyNet = got => {
+            const filled = [];
+            ['ip', 'mask', 'gw', 'mac'].forEach(k => {
+                if (!map[k] || !got[k]) return;
+                values[map[k].key] = got[k];
+                const el = box.querySelector(`[data-k="${CSS.escape(map[k].key)}"]`);
+                if (el) el.value = got[k];
+                filled.push(map[k].label);
+            });
+            stat.innerHTML = filled.length
+                ? `<span style="color:var(--success-dark);">✓ ${esc(filled.join(' · '))} 채웠습니다. 아래 나머지 칸을 마저 적고 행 추가를 누르세요.</span>`
+                : '이 시트에는 네트워크 칸이 없습니다.';
         };
 
-        // 운 좋게 브라우저가 알려주면 한 번 눌러서 끝난다. 못 알아내면 칸 자체를 숨겨 방해하지 않는다.
         localIps().then(list => {
-            if (!list.length || busy) return;
+            if (!list.length) return;
             const el = root.querySelector('#cdLocIp');
             root.querySelector('#cdLocSec').style.display = '';
-            el.innerHTML = list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('');
-            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () =>
-                commit({ ip: b.dataset.ip, mask: '', gw: '', mac: '' })));
+            el.innerHTML = `<div class="cd-hint" style="margin-bottom:4px;">이 컴퓨터에서 찾은 주소 — 누르면 IP 칸에 들어갑니다</div>` +
+                list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('');
+            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () => applyNet({ ip: b.dataset.ip })));
         });
 
         root.querySelector('[data-act=copyCmd]').addEventListener('click', () => {
@@ -914,7 +968,6 @@ function openIpModal(rowId) {
                 .catch(() => toast('복사 실패 — 직접 입력해주세요', 'error'));
         });
 
-        // 손으로 타이핑하는 경우도 있으니 살짝 기다렸다가 판단한다.
         root.querySelector('#cdPaste2').addEventListener('input', e => {
             const text = e.target.value;
             clearTimeout(pasteTimer);
@@ -922,44 +975,59 @@ function openIpModal(rowId) {
             stat.textContent = '읽는 중…';
             pasteTimer = setTimeout(() => {
                 const got = parseIpconfig(text);
-                if (got && got.ip) commit(got);
+                if (got && got.ip) applyNet(got);
                 else stat.textContent = '주소를 찾지 못했습니다 — ipconfig /all 결과를 통째로 붙여넣어 주세요.';
             }, 350);
         });
-    }, 600);
+
+        root.querySelector('[data-act=save]').addEventListener('click', async ev => {
+            if (busy) return;
+            const btn = ev.currentTarget;
+            // 형식·중복은 막고, 빈 칸은 나중에 채우도록 허용한다
+            for (const c of cols) {
+                const err = cellError(c, values[c.key], rows, rowId || '');
+                if (err) { fstat.innerHTML = `<span style="color:#c92a2a;">${esc(c.label)}: ${esc(err)}</span>`; return; }
+            }
+            if (!cols.some(c => (values[c.key] || '').trim())) {
+                fstat.innerHTML = '<span style="color:#c92a2a;">입력한 내용이 없습니다.</span>'; return;
+            }
+            busy = true; btn.disabled = true; btn.textContent = '저장 중…';
+            try {
+                await saveIpRow(rowId, values, scope, cols);
+                close();
+            } catch (e) {
+                busy = false; btn.disabled = false; btn.textContent = rowId ? '저장' : '➕ 행 추가';
+                fstat.innerHTML = `<span style="color:#c92a2a;">${esc(e.message)}</span>`;
+            }
+        });
+    }, 640);
 }
 
-async function applyNetInfo(rowId, info, map) {
-    const sheet = currentSheet(); if (!sheet) return;
-    const patch = {};
-    ['ip', 'mask', 'gw', 'mac'].forEach(k => { if (map[k] && info[k]) patch['cells.' + map[k].key] = info[k]; });
-    if (!Object.keys(patch).length) throw new Error('채울 값이 없습니다');
-    patch.updatedBy = myName() || '';
-    patch.updatedAt = serverTimestamp();
+async function saveIpRow(rowId, values, scope, cols) {
+    const sheet = currentSheet();
+    if (!sheet) throw new Error('시트를 찾을 수 없습니다');
+    if (!myName()) throw new Error('먼저 본인 이름을 입력해주세요');
+    const cells = {};
+    cols.forEach(c => { const v = (values[c.key] || '').trim(); if (v) cells[c.key] = v; });
 
     if (rowId) {
         const row = rows.find(r => r.id === rowId);
         if (!canEdit(sheet, row)) throw new Error('이 행은 편집할 수 없습니다');
-        await updateDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', rowId), patch);
-        toast(`${info.ip || ''} 입력 완료`.trim(), 'success');
+        await updateDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', rowId), {
+            cells, scope, updatedBy: myName(), updatedAt: serverTimestamp()
+        });
+        toast('저장했습니다', 'success');
         return;
     }
-    // 대상 행이 없으면 내 소속으로 새 행을 만들어 넣는다
-    if (!myName()) throw new Error('먼저 본인 이름을 입력해주세요');
-    const scope = scopeFilter !== '__all__' ? scopeFilter : (myScope(sheet) || (sheet.scopes || [])[0] || '');
     if (!canEdit(sheet, { scope })) throw new Error('이 구분에는 행을 추가할 수 없습니다');
-    const cells = {};
-    (sheet.columns || []).forEach(c => { if (c.def) cells[c.key] = c.def; });
-    ['ip', 'mask', 'gw', 'mac'].forEach(k => { if (map[k] && info[k]) cells[map[k].key] = info[k]; });
-    const staffCol = (sheet.columns || []).find(c => c.type === 'staff');
-    if (staffCol) cells[staffCol.key] = myName();
     const maxOrder = rows.reduce((m, r) => Math.max(m, r.order || 0), 0);
     const id = 'r_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     await setDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', id), {
-        scope, cells, owner: myName() || '', order: maxOrder + 1000,
-        updatedBy: myName() || '', updatedAt: serverTimestamp()
+        scope, cells, owner: myName(), order: maxOrder + 1000,
+        updatedBy: myName(), updatedAt: serverTimestamp()
     });
-    toast(`${scope} · ${info.ip} 행을 추가했습니다`, 'success');
+    const ipCol = (sheet.columns || []).find(c => c.type === 'ip');
+    toast(`${scope}${ipCol && cells[ipCol.key] ? ' · ' + cells[ipCol.key] : ''} 행을 추가했습니다`, 'success');
 }
 
 /* ===================== 학교 사용자 설정 (명부) =====================
@@ -1696,6 +1764,7 @@ const CSS_TEXT = `
 .cd-ipval{font-size:17px;font-weight:700;font-family:ui-monospace,Consolas,monospace;}
 .cd-ippick{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;border:2px solid var(--border);background:var(--card-bg);border-radius:8px;padding:6px 12px;margin:0 6px 6px 0;cursor:pointer;}
 .cd-ippick:hover{border-color:var(--primary);background:var(--primary-light);}
+.cd-auto{display:inline-block;margin-left:5px;padding:0 5px;border-radius:4px;background:var(--primary-light);color:var(--primary-dark);font-size:9px;font-weight:700;vertical-align:middle;}
 .cd-cmdrow{display:flex;gap:8px;align-items:center;}
 .cd-cmdrow code{flex:1;background:#2D3748;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;}
 .cd-cmdrow .btn{font-size:12px;padding:7px 12px;}
