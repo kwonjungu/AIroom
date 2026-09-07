@@ -31,7 +31,7 @@ let booting = null;           // 부트 Promise (중복 호출 방지)
 let sheets = [];              // 시트 메타 목록
 let activeSheetId = null;
 let rows = [];                // 활성 시트의 행
-let scopeFilter = '__all__';
+let scopeFilter = null;        // null이면 첫 렌더에서 본인 소속으로 정한다 ('전체' 탭은 없앴다)
 let searchTerm = '';
 let members = [];             // 학교 사용자 명부 (codocs_members) — 이름·직위·소속의 기준
 let unsubSheets = null, unsubRows = null, unsubPresence = null, unsubMembers = null;
@@ -50,7 +50,8 @@ const COL_TYPES = [
     { v: 'mac', label: 'MAC 주소' },
     { v: 'select', label: '선택 목록' },
     { v: 'date', label: '날짜' },
-    { v: 'staff', label: '교직원' },
+    { v: 'staff', label: '교직원 이름' },
+    { v: 'position', label: '직위(이름 따라 자동)' },
     { v: 'check', label: '체크' },
     { v: 'seq', label: '순번(자동)' }
 ];
@@ -73,7 +74,8 @@ const TEMPLATES = {
             { key: 'mask', label: '서브넷 마스크', type: 'text', width: 130, def: '255.255.255.0' },
             { key: 'gw', label: '게이트웨이', type: 'text', width: 130 },
             { key: 'mac', label: 'MAC 주소', type: 'mac', width: 150 },
-            { key: 'user', label: '사용자', type: 'staff', width: 100 },
+            { key: 'pos', label: '직위', type: 'position', width: 100 },
+            { key: 'user', label: '이름', type: 'staff', width: 90 },
             { key: 'day', label: '확인일', type: 'date', width: 120 },
             { key: 'memo', label: '비고', type: 'memo', width: 180 }
         ]
@@ -90,7 +92,8 @@ const TEMPLATES = {
             { key: 'spec', label: '규격', type: 'text', width: 140 },
             { key: 'qty', label: '수량', type: 'number', width: 80 },
             { key: 'place', label: '보관 장소', type: 'text', width: 140 },
-            { key: 'user', label: '관리자', type: 'staff', width: 100 },
+            { key: 'pos', label: '직위', type: 'position', width: 100 },
+            { key: 'user', label: '관리자', type: 'staff', width: 90 },
             { key: 'day', label: '확인일', type: 'date', width: 120 },
             { key: 'memo', label: '비고', type: 'memo', width: 180 }
         ]
@@ -379,6 +382,12 @@ function render() {
 
     // 툴바
     const scopes = sheet.scopes || [];
+    // 시트에 등록되지 않은 구분을 가진 행이 있으면 그 탭도 같이 띄운다 — 안 그러면 영영 안 보인다
+    const orphan = [...new Set(rows.map(r => r.scope || '').filter(v => v && !scopes.includes(v)))];
+    const scopeTabs = scopes.concat(orphan);
+    if (!scopeFilter || !scopeTabs.includes(scopeFilter)) {
+        scopeFilter = (scopeTabs.includes(myScope(sheet)) ? myScope(sheet) : scopeTabs[0]) || null;
+    }
     html += `<div class="cd-head">
         <div>
             <div class="cd-title">${esc(sheet.icon || '📄')} ${esc(sheet.title)}${sheet.locked ? ' <span class="cd-lock">🔒 잠김</span>' : ''}</div>
@@ -397,9 +406,8 @@ function render() {
     </div>`;
 
     html += `<div class="cd-filter">
-        ${scopes.length ? `<div class="cd-scopes">
-            <button class="cd-scope${scopeFilter === '__all__' ? ' active' : ''}" data-cd="scope" data-v="__all__">전체 <b>${rows.length}</b></button>
-            ${scopes.map(s => `<button class="cd-scope${scopeFilter === s ? ' active' : ''}" data-cd="scope" data-v="${esc(s)}">${esc(s)} <b>${rows.filter(r => r.scope === s).length}</b></button>`).join('')}
+        ${scopeTabs.length ? `<div class="cd-scopes">
+            ${scopeTabs.map(s => `<button class="cd-scope${scopeFilter === s ? ' active' : ''}" data-cd="scope" data-v="${esc(s)}">${esc(s)} <b>${rows.filter(r => r.scope === s).length}</b></button>`).join('')}
         </div>` : ''}
         <input type="search" id="cdSearch" placeholder="🔍 검색 (IP·장소·이름 등)" value="${esc(searchTerm)}">
         <button class="btn btn-primary" data-cd="addRow">➕ 행 추가</button>
@@ -424,7 +432,6 @@ function render() {
 function headHtml(sheet) {
     const cols = sheet.columns || [];
     return `<tr>
-        ${sheet.scopes && sheet.scopes.length && scopeFilter === '__all__' ? '<th class="cd-th cd-scopecol">구분</th>' : ''}
         ${cols.map(c => `<th class="cd-th" style="min-width:${c.width || 120}px">${esc(c.label)}${c.type !== 'text' && c.type !== 'seq' ? `<span class="cd-ttype">${esc(typeLabel(c.type))}</span>` : ''}</th>`).join('')}
         <th class="cd-th cd-metacol">최종 수정</th>
         <th class="cd-th cd-rowmenu"></th>
@@ -433,7 +440,7 @@ function headHtml(sheet) {
 
 function visibleRows(sheet) {
     let list = rows;
-    if (scopeFilter !== '__all__') list = list.filter(r => r.scope === scopeFilter);
+    if (scopeFilter) list = list.filter(r => r.scope === scopeFilter);
     const q = searchTerm.trim().toLowerCase();
     if (q) list = list.filter(r => Object.values(r.cells || {}).some(v => String(v || '').toLowerCase().includes(q)) || String(r.scope || '').toLowerCase().includes(q));
     return list;
@@ -445,7 +452,6 @@ function bodyHtml(sheet) {
     if (!list.length) {
         return `<tr><td class="cd-none" colspan="${cols.length + 2}">${rows.length ? '검색 결과가 없습니다.' : '아직 행이 없습니다. ➕ 행 추가를 눌러 시작하세요.'}</td></tr>`;
     }
-    const showScope = sheet.scopes && sheet.scopes.length && scopeFilter === '__all__';
     let seq = {};
     return list.map(r => {
         const editable = canEdit(sheet, r);
@@ -459,7 +465,6 @@ function bodyHtml(sheet) {
                 ${err ? `title="${esc(err)}"` : ''}>${c.type === 'check' ? (raw ? '✅' : '') : esc(disp)}</td>`;
         }).join('');
         return `<tr data-row="${esc(r.id)}">
-            ${showScope ? `<td class="cd-td cd-ro cd-scopecol"><span class="cd-scopetag cd-sc-${hashIdx(r.scope)}">${esc(r.scope || '-')}</span></td>` : ''}
             ${tds}
             <td class="cd-td cd-ro cd-metacol">${esc(r.updatedBy || '')}${r.updatedAt && r.updatedAt.seconds ? `<br><span class="cd-ago">${fmtWhen(r.updatedAt.seconds * 1000)}</span>` : ''}</td>
             <td class="cd-td cd-ro cd-rowmenu">${editable ? `<button class="cd-x" data-cd="rowMenu" data-id="${esc(r.id)}" title="행 메뉴">⋯</button>` : '🔒'}</td>
@@ -546,7 +551,7 @@ function handle(action, el) {
         case 'sheet': {
             if (edit) commitEdit();
             leave();
-            activeSheetId = el.dataset.id; scopeFilter = '__all__'; searchTerm = '';
+            activeSheetId = el.dataset.id; scopeFilter = null; searchTerm = '';
             watchRows(); render(); startBeat();
             return;
         }
@@ -613,6 +618,10 @@ function editorHtml(col, cur) {
     if (col.type === 'staff') {
         return `<input class="cd-input" list="cdStaffAll" value="${esc(cur)}"><datalist id="cdStaffAll">${allStaff().map(s => `<option value="${esc(s.name)}">`).join('')}</datalist>`;
     }
+    if (col.type === 'position') {
+        const list = [...new Set(allStaff().map(s => s.position).filter(Boolean))];
+        return `<input class="cd-input" list="cdPosAll" value="${esc(cur)}"><datalist id="cdPosAll">${list.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`;
+    }
     if (col.type === 'date') return `<input class="cd-input" type="date" value="${esc(cur)}">`;
     if (col.type === 'memo') return `<textarea class="cd-input" rows="2">${esc(cur)}</textarea>`;
     if (col.type === 'number') return `<input class="cd-input" type="number" value="${esc(cur)}">`;
@@ -668,11 +677,19 @@ function moveFocus(rowId, colKey, dRow, dCol) {
 
 async function saveCell(rowId, colKey, value) {
     try {
-        await updateDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', rowId), {
+        const sheet = currentSheet();
+        const patch = {
             ['cells.' + colKey]: value,
             updatedBy: myName() || '',
             updatedAt: serverTimestamp()
-        });
+        };
+        // 이름 칸을 고치면 직위 칸도 명부 값으로 같이 맞춘다
+        const staffCol = sheet && staffColOf(sheet), posCol = sheet && positionColOf(sheet);
+        if (staffCol && posCol && colKey === staffCol.key) {
+            const m = memberOf(String(value || '').trim());
+            if (m && m.position) patch['cells.' + posCol.key] = m.position;
+        }
+        await updateDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', rowId), patch);
     } catch (e) { toast('저장 실패: ' + e.message, 'error'); render(); }
 }
 
@@ -680,7 +697,7 @@ async function saveCell(rowId, colKey, value) {
 async function addRow() {
     const sheet = currentSheet(); if (!sheet) return;
     if (!myName()) { toast('먼저 본인 이름을 입력해주세요', 'error'); return; }
-    const scope = scopeFilter !== '__all__' ? scopeFilter : (myScope(sheet) || (sheet.scopes || [])[0] || '');
+    const scope = scopeFilter || myScope(sheet) || (sheet.scopes || [])[0] || '';
     if (!canEdit(sheet, { scope })) { toast('이 구분에는 행을 추가할 수 없습니다', 'error'); return; }
     const cells = {};
     (sheet.columns || []).forEach(c => { if (c.def) cells[c.key] = c.def; });
@@ -861,6 +878,14 @@ function todayIso() {
 /* 한 창에서 기기 정보를 전부 받아 행 하나로 저장한다.
    ipconfig 붙여넣기는 네트워크 칸(IP·서브넷·게이트웨이·MAC)을 채워주는 보조 수단일 뿐,
    장소·기기종류 같은 나머지 칸은 사람이 여기서 같이 적는다. 끝에 "행 추가" 한 번으로 끝난다. */
+/* 교직원 이름 열과 짝이 되는 직위 열을 찾는다. 명시적 타입이 1순위, 옛 시트 호환으로 라벨도 본다. */
+function positionColOf(sheet) {
+    const cols = (sheet.columns || []);
+    return cols.find(c => c.type === 'position')
+        || cols.find(c => /직위|position/i.test(c.label || '') || /^(pos|position)$/i.test(c.key || ''));
+}
+function staffColOf(sheet) { return (sheet.columns || []).find(c => c.type === 'staff'); }
+
 function openIpModal(rowId) {
     const sheet = currentSheet();
     if (!sheet) return;
@@ -881,7 +906,7 @@ function openIpModal(rowId) {
         }
         values[c.key] = v;
     });
-    let scope = row ? (row.scope || '') : (scopeFilter !== '__all__' ? scopeFilter : (myScope(sheet) || scopes[0] || ''));
+    let scope = row ? (row.scope || '') : (scopeFilter || myScope(sheet) || scopes[0] || '');
 
     const field = c => {
         const v = values[c.key] || '';
@@ -891,6 +916,8 @@ function openIpModal(rowId) {
             input = `<select data-k="${esc(c.key)}"><option value=""></option>${(c.options || []).map(o => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
         } else if (c.type === 'staff') {
             input = `<input data-k="${esc(c.key)}" list="cdFormStaff" value="${esc(v)}">`;
+        } else if (c.type === 'position') {
+            input = `<input data-k="${esc(c.key)}" list="cdFormPos" value="${esc(v)}">`;
         } else if (c.type === 'date') {
             input = `<input data-k="${esc(c.key)}" type="date" value="${esc(v)}">`;
         } else if (c.type === 'memo') {
@@ -923,6 +950,7 @@ function openIpModal(rowId) {
             ${scopes.length ? `<label class="cd-f"><span>구분</span><select id="cdFormScope">${scopes.map(o => `<option value="${esc(o)}"${o === scope ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>` : ''}
             <div class="cd-grid2" id="cdFormFields">${cols.map(field).join('')}</div>
             <datalist id="cdFormStaff">${allStaff().map(m => `<option value="${esc(m.name)}">${esc(m.position || '')}</option>`).join('')}</datalist>
+            <datalist id="cdFormPos">${[...new Set(allStaff().map(m => m.position).filter(Boolean))].map(o => `<option value="${esc(o)}">`).join('')}</datalist>
         </div>
         <div class="cd-modalfoot">
             <span class="cd-hint" id="cdFormStat" style="flex:1;"></span>
@@ -933,8 +961,25 @@ function openIpModal(rowId) {
         const box = root.querySelector('#cdFormFields');
 
         const grab = el => el.type === 'checkbox' ? (el.checked ? '1' : '') : el.value;
-        box.addEventListener('input', e => { if (e.target.dataset.k) values[e.target.dataset.k] = grab(e.target); });
-        box.addEventListener('change', e => { if (e.target.dataset.k) values[e.target.dataset.k] = grab(e.target); });
+        const staffCol = staffColOf(sheet), posCol = positionColOf(sheet);
+        // 이름을 고르면 직위는 명부에서 끌어와 자동으로 채운다
+        const syncPosition = () => {
+            if (!staffCol || !posCol) return;
+            const m = memberOf((values[staffCol.key] || '').trim());
+            if (!m || !m.position) return;
+            values[posCol.key] = m.position;
+            const el = box.querySelector(`[data-k="${CSS.escape(posCol.key)}"]`);
+            if (el) el.value = m.position;
+        };
+        const onField = e => {
+            const k = e.target.dataset.k;
+            if (!k) return;
+            values[k] = grab(e.target);
+            if (staffCol && k === staffCol.key) syncPosition();
+        };
+        box.addEventListener('input', onField);
+        box.addEventListener('change', onField);
+        syncPosition();
         const scopeSel = root.querySelector('#cdFormScope');
         if (scopeSel) scopeSel.addEventListener('change', () => { scope = scopeSel.value; });
 
@@ -1722,8 +1767,6 @@ const CSS_TEXT = `
 #page-codocs .cd-ago{color:var(--text-light);font-size:10px;}
 #page-codocs .cd-rowmenu{width:38px;text-align:center;}
 #page-codocs .cd-x{border:none;background:transparent;cursor:pointer;font-size:16px;color:var(--text-light);}
-#page-codocs .cd-scopecol{white-space:nowrap;}
-#page-codocs .cd-scopetag{color:#fff;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
 #page-codocs .cd-none{padding:26px;text-align:center;color:var(--text-light);}
 #page-codocs .cd-empty{padding:40px;text-align:center;color:var(--text);background:var(--card-bg);border-radius:var(--radius);box-shadow:var(--shadow);}
 #page-codocs .cd-foot{font-size:12px;color:var(--text-light);margin-top:8px;}

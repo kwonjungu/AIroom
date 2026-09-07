@@ -65,6 +65,12 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
   첫 줄=열 제목, 열 타입 자동 추정(`guessType`), '구분 열' 지정 시 본교/분교로 자동 분리.
   xlsx 파싱은 전역 JSZip(SPA가 CDN으로 이미 로드) 사용. CP949 CSV는 깨짐 문자 수로 감지해 euc-kr로 재해석.
 - **내보내기**: 엑셀(자체 최소 xlsx 생성, inlineStr 방식) / CSV(BOM 포함) / 📋 시트로 복사(TSV → 구글 스프레드시트 A1에 붙여넣기) / 인쇄(A4 가로).
+- **구분 탭에 '전체'는 없다**(2026-09-07 요청). 항상 한 구분만 보고, 첫 렌더에서 본인 소속으로 자동 선택된다
+  (`scopeFilter`는 null로 시작 → `scopeTabs`에서 결정). 시트 `scopes`에 없는 구분을 가진 행이 있으면 그 탭도 붙여
+  행이 영영 안 보이는 일을 막는다(`orphan`). 표에서 구분 열은 뺐지만 **내보내기에는 남긴다**.
+- **교직원 열은 `staff`(이름) + `position`(직위) 두 개로 쓴다.** 이름을 고르면 직위가 명부에서 자동으로 따라온다
+  — 폼은 `syncPosition()`, 표 셀 편집은 `saveCell()`이 같은 패치에 직위를 얹는다. 짝은 `staffColOf`/`positionColOf`가 찾고,
+  `positionColOf`는 타입이 1순위·라벨(직위/position)이 2순위라 옛 시트도 열 이름만 맞으면 동작한다.
 - **학교 사용자 설정(명부)**: 관리 모드 → 👥 학교 사용자. `codocs_members/{id}` = `{name, position, scope, order}`.
   **이름·직위·소속의 단일 기준**이며, 비어 있으면 SPA의 staff.json(+확인대장 추가 인원)으로 폴백하고
   모달을 열면 그 명단으로 초안을 채운다(문서 id는 staff.json의 `s1`… 을 그대로 써서 `airoom_ws_staffId` 호환 유지).
