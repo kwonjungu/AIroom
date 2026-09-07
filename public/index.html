@@ -822,6 +822,19 @@
     <script src="/lib/translate-autofit.js"></script>
     <script src="/lib/translate-hwpx.js"></script>
     <script src="/lib/translate-hwp.js"></script>
+    <!-- 함께 만드는 문서(codocs) 실시간 시트 모듈 -->
+    <script>
+    // GitHub Pages 미러는 레포 루트가 /AIroom/ 하위라 절대경로 /lib/... 가 빗나간다 → host별로 경로를 고른다.
+    (function(){
+        var p = location.hostname.endsWith('github.io')
+            ? (location.pathname.indexOf('/public/') >= 0 ? 'lib/codocs.js' : 'public/lib/codocs.js')
+            : '/lib/codocs.js';
+        var s = document.createElement('script');
+        s.type = 'module'; s.src = p;
+        s.onerror = function(){ console.warn('[codocs] 모듈을 불러오지 못했습니다:', p); };
+        document.head.appendChild(s);
+    })();
+    </script>
 </head>
 <body>
     <!-- 인증 게이트 -->
@@ -1646,6 +1659,10 @@
         <div id="plDayList"></div>
     </div>
 
+    <!-- ===== 함께 만드는 문서 PAGE (실시간 공동 편집 시트) ===== -->
+    <!-- 내용은 public/lib/codocs.js 가 통째로 그린다 (두 SPA 공용 단일 사본) -->
+    <div class="page" id="page-codocs"></div>
+
     <!-- 순찰 세팅 모달 -->
     <div class="modal-overlay" id="plSetupModal"><div class="modal" style="max-width:600px;">
         <div class="modal-header"><h2>⚙️ 방학 순찰 세팅</h2><button class="btn-close" onclick="closeModal('plSetupModal')">✕</button></div>
@@ -2068,8 +2085,9 @@ const DEFAULT_TABS=[
     {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13},
     {id:'checklist',title:'확인대장',icon:'✅',type:'builtin',order:14},
     {id:'patrol',title:'순찰일지',icon:'🌙',type:'builtin',order:15},
+    {id:'codocs',title:'함께 만드는 문서',icon:'📝',type:'builtin',order:16},
     // 링크 탭: 페이지를 그리지 않고 /rental 로 바로 이동 (GitHub Pages 미러에서도 열리게 절대 URL)
-    {id:'rental',title:'교구 대여소',icon:'📦',type:'link',order:16,href:'https://a-iroom.vercel.app/rental'}
+    {id:'rental',title:'교구 대여소',icon:'📦',type:'link',order:17,href:'https://a-iroom.vercel.app/rental'}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -2526,7 +2544,25 @@ async function loadWeatherAlert(){
     }
 }
 
+// ===== 함께 만드는 문서(codocs) ↔ SPA 브리지 =====
+// codocs.js는 별도 모듈이라 이 스크립트의 let 변수에 직접 접근할 수 없다. 게터로만 열어준다.
+window.CODOCS_HOST = {
+    get authToken(){ return authToken; },
+    get isAdmin(){ return isAdmin; },
+    get staff(){ try { return clAllStaff(); } catch(e) { return staff || []; } },
+    get myName(){ return localStorage.getItem('airoom_ws_name') || null; },
+    get myStaffId(){ return localStorage.getItem('airoom_ws_staffId') || null; },
+    setIdentity(id, name){
+        localStorage.setItem('airoom_ws_staffId', id);
+        localStorage.setItem('airoom_ws_name', name);
+        wsMyStaffId = id; wsMyName = name;
+    },
+    toast(m, t){ showToast(m, t); }
+};
+
 function switchPage(p,btn){
+    // 함께 만드는 문서에서 벗어나면 실시간 접속 표시를 정리한다
+    if(activeTabId==='codocs'&&p!=='codocs'&&window.codocsClose)window.codocsClose();
     // 링크 탭(교구 대여소 등)은 페이지가 없으므로 바로 이동시킨다. 가드 없으면 본문이 백지가 됨.
     const _lt=(tabsConfig||[]).find(t=>t.id===p);
     if(_lt&&_lt.type==='link'&&_lt.href){location.href=_lt.href;return;}
@@ -2554,6 +2590,7 @@ function switchPage(p,btn){
     if(p==='winter-schedule'){wsLoad().then(()=>renderWinterSchedule()).catch(()=>{});}
     if(p==='checklist'){clLoad().then(()=>renderChecklist()).catch(()=>renderChecklist());}
     if(p==='patrol'){plLoad().then(()=>renderPatrol()).catch(()=>renderPatrol());}
+    if(p==='codocs'&&window.codocsOpen)window.codocsOpen();
 }
 
 // ===== SCHEDULE =====

@@ -120,5 +120,35 @@ service cloud.firestore {
         );
       allow delete: if true;
     }
+
+    // ─── 함께 만드는 문서 (codocs) ───
+    // 실시간 공동 편집 시트. Auth가 없으므로 rules로는 형식만 지킨다.
+    // (내부 보안은 SPA 접근코드 + 이름 식별 + 시트별 editPolicy 로 제어)
+    match /codocs_sheets/{sheetId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.title is string
+                 && request.resource.data.title.size() > 0
+                 && request.resource.data.title.size() < 100
+                 && request.resource.data.columns is list
+                 && request.resource.data.columns.size() > 0
+                 && request.resource.data.columns.size() <= 40;
+      allow delete: if true;
+
+      // 행 1개 = 문서 1개. 셀 단위(cells.<key>) 병합 저장이라 동시 편집이 서로를 덮어쓰지 않는다.
+      match /rows/{rowId} {
+        allow read: if true;
+        allow create, update: if request.resource.data.cells is map
+                   && request.resource.data.cells.size() <= 40;
+        allow delete: if true;
+      }
+
+      // 접속 표시(누가 어느 셀을 편집 중인지). 20초 하트비트, 창 닫으면 삭제.
+      match /presence/{clientId} {
+        allow read: if true;
+        allow write: if request.resource == null
+                  || (request.resource.data.name is string
+                      && request.resource.data.name.size() < 30);
+      }
+    }
   }
 }

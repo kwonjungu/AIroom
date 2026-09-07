@@ -38,6 +38,49 @@ Claude Code 대화를 이어갈 때 빠르게 맥락을 잡기 위한 메모. �
 - **서명**: 포인터 이벤트 캔버스(마우스+터치). 순찰자 서명 = **회차(시간)별로 각각**, 본인/관리자만 — 카드 헤더에 n/총회차 진행 배지. 확인자 서명 = 하루 1회, 관리모드, 직위+성명 입력(교장/교감 칩 자동 노출), **일괄 확인 서명** = 순찰 기록 있고 확인 전인 날 전체에 한 번에 적용.
 - **GitHub Pages 미러**: `kwonjungu.github.io/AIroom/`이 루트 `index.html`을 정적 서빙. github.io에서 열리면 fetch 래퍼가 `/api`·`/defaults` 요청을 `a-iroom.vercel.app`으로 보냄(server.js CORS 허용, 두 SPA 공통). `.nojekyll`로 Jekyll 빌드 우회(순찰 커밋부터 빌드 errored였음).
 
+## 함께 만드는 문서 탭 (codocs, 2026-09) — 실시간 공동 편집 시트
+
+구글 스프레드시트 대체. "본교/분교 나눠서 IP 대장을 본인이 확인해서 넣도록"(이원빈 교사 요청)이 최초 요구.
+DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** — 전체-JSON 저장인 Redis로는 동시 편집이 서로를 덮어쓴다.
+
+- **구현 파일**: `public/lib/codocs.js` **단 하나** (ES 모듈, ~1,000줄).
+  두 SPA에 코드를 복붙하지 않는 유일한 기능이다. SPA 쪽에는 4가지만 들어간다:
+  ① DEFAULT_TABS 항목 ② `<div class="page" id="page-codocs"></div>` ③ 모듈 로더 `<script>` ④ `window.CODOCS_HOST` 브리지.
+  **로더가 host별로 경로를 바꾼다** — GitHub Pages는 레포 루트가 `/AIroom/` 하위라 절대경로 `/lib/...`가 빗나가므로
+  github.io면 `public/lib/codocs.js`(상대), 그 외에는 `/lib/codocs.js`.
+- **브리지가 필요한 이유**: SPA의 `authToken`·`isAdmin`·`staff`는 전부 `let` 선언이라 **window에 안 붙는다**.
+  별도 모듈에서 볼 수 없어 `window.CODOCS_HOST`에 게터로만 노출한다. 새 값이 필요하면 여기에 게터를 추가할 것.
+- **Firestore 스키마** (프로젝트 `airoom-ebce3`, **DB명 `kwon`** — `getFirestore(app,'kwon')` 필수, FIREBASE_SETUP.md 참고):
+  - `codocs_sheets/{sheetId}` = `{title, icon, desc, scopes:['본교','수정분교'], editPolicy, locked, columns:[{key,label,type,width,options?,def?}], order}`
+  - `codocs_sheets/{sheetId}/rows/{rowId}` = `{scope, cells:{colKey:값}, owner, order, updatedBy, updatedAt}`
+  - `codocs_sheets/{sheetId}/presence/{clientId}` = `{name, scope, cell:'rowId:colKey', ms}` (20초 하트비트, 60초 지나면 무시)
+- **동시 편집이 안 깨지는 이유**: 셀 저장이 `updateDoc(row, {['cells.'+key]: v})` — **필드 단위 병합**이라
+  같은 행의 다른 칸을 둘이 동시에 고쳐도 서로를 덮어쓰지 않는다. 행 단위 통째 저장으로 바꾸지 말 것.
+- **편집 권한**: 본인 식별은 방학근무/확인대장/순찰과 같은 localStorage `airoom_ws_staffId/name` 공유.
+  소속은 staff.json의 position에 '수정'이 있으면 수정분교로 추정하고, `airoom_codocs_scope`로 수동 덮어쓰기 가능.
+  `editPolicy` = `scope`(본인 소속 구분만·기본) / `owner`(본인이 만든 행만) / `all`. 관리 모드는 전부 편집.
+- **시트 형식 개발**: 관리 모드 → ⚙️ 시트 설정에서 열 추가·삭제·순서·타입(텍스트/긴글/숫자/IP/MAC/선택/날짜/교직원/체크/순번)·
+  선택지·기본값·구분(탭)·권한을 편집. 새 시트는 `IP 대장`/`물품 대장`/`빈 시트` 템플릿에서 시작(`TEMPLATES`).
+- **업로드**: 📥 파일로 만들기 / 파일 추가 — xlsx·csv·tsv 드래그, 또는 엑셀·구글시트에서 복사한 표를 그대로 붙여넣기.
+  첫 줄=열 제목, 열 타입 자동 추정(`guessType`), '구분 열' 지정 시 본교/분교로 자동 분리.
+  xlsx 파싱은 전역 JSZip(SPA가 CDN으로 이미 로드) 사용. CP949 CSV는 깨짐 문자 수로 감지해 euc-kr로 재해석.
+- **내보내기**: 엑셀(자체 최소 xlsx 생성, inlineStr 방식) / CSV(BOM 포함) / 📋 시트로 복사(TSV → 구글 스프레드시트 A1에 붙여넣기) / 인쇄(A4 가로).
+- **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·xlsx 왕복 28케이스.
+  xlsx는 **exceljs(제3의 구현)로 다시 읽어** 검증한다. codocs.js 수정 시 반드시 실행할 것.
+
+### ⚠️ 배포 전 반드시 할 일
+**`firestore.rules`를 Firebase 콘솔에 게시해야 동작한다.** (콘솔 → Firestore Database → 규칙 → 전체 붙여넣기 → 게시)
+게시 전에는 시트 목록이 `permission-denied`로 비어 보인다. `codocs_sheets` 규칙이 파일 하단에 추가되어 있음.
+
+### 함정
+1. **원격 스냅샷이 수시로 `render()`를 부른다.** 편집 중이던 `<input>`이 날아가지 않도록 `edit` 상태를 들고 있다가
+   `reopenEditor()`로 입력값·캐럿까지 되살린다. 스크롤 위치·검색창 포커스도 같은 이유로 보존한다.
+2. **`commitEdit()`이 `render()`를 유발하므로 그 전에 잡아둔 `<td>` 참조는 끊긴다.** `openEditor`는 커밋 후 `tdOf()`로 다시 찾는다.
+3. `presence`는 창을 닫아도 지워지지 않을 수 있어(`beforeunload`의 비동기 삭제는 보장 없음) **60초 staleness 필터**로 거른다.
+4. 탭을 벗어나면 `switchPage`가 `window.codocsClose()`를 불러 하트비트를 멈춘다 — 안 그러면 안 보는 사람도 계속 쓰기가 발생한다.
+
+---
+
 ## 프로젝트 개요
 
 - **이름**: AIroom (한글명 "백암이 — 아이들을 위한 교무실")
