@@ -97,7 +97,7 @@ package.json에 `main`/`start`가 있어 Vercel이 Node 서버로 인식하므�
 **`firestore.rules`를 Firebase 콘솔에 게시해야 동작한다.**
 게시 전에는 탭이 `permission-denied`로 막히는데, 이때 `showRulesHelp()`가 **화면에서 바로 해결하는 3단계 안내**를 띄운다
 (규칙 전체 복사 버튼 + 콘솔 직링크 + 규칙 원문 펼쳐보기). 규칙 원문은 public 레포의 raw URL에서 받아온다.
-⚠ 콘솔 링크는 반드시 `databases/kwon/rules` — 이 프로젝트 DB는 `(default)`가 아니라 `kwon`이라 다른 DB에 붙여넣으면 아무 일도 안 일어난다.
+⚠ 콘솔 규칙 편집기 주소는 `.../firestore/databases/kwon/security/rules` — 경로에 `security`가 들어가고, DB는 `(default)`가 아니라 `kwon`이다. 둘 중 하나만 틀려도 엉뚱한 화면이 열린다.
 게시 전에는 시트 목록이 `permission-denied`로 비어 보인다. `codocs_sheets` 규칙이 파일 하단에 추가되어 있음.
 
 ### 함정

@@ -202,9 +202,9 @@ function watchSheets() {
 /* Firestore 규칙 미게시 = 이 기능의 유일한 수동 준비물.
    "관리자에게 문의"로 끝내면 아무도 못 고치므로, 화면에서 바로 해결하게 안내한다.
    ⚠ 이 프로젝트의 DB는 (default)가 아니라 `kwon` — 콘솔에서 DB를 잘못 고르면 붙여넣어도 그대로다.
-   그래서 링크를 databases/kwon/rules 로 직접 건다. */
+   그래서 링크를 databases/kwon/security/rules 로 직접 건다(경로에 security 가 들어간다). */
 const RULES_URL = 'https://raw.githubusercontent.com/kwonjungu/AIroom/main/firestore.rules';
-const CONSOLE_URL = 'https://console.firebase.google.com/project/airoom-ebce3/firestore/databases/kwon/rules';
+const CONSOLE_URL = 'https://console.firebase.google.com/project/airoom-ebce3/firestore/databases/kwon/security/rules';
 function showRulesHelp() {
     const page = document.getElementById('page-codocs');
     if (!page) return;
