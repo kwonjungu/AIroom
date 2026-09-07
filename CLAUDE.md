@@ -74,8 +74,24 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
   ③ 명부에 새로 생긴 소속 → 각 시트 `scopes`에 추가(기존 구분은 지우지 않는다 — 행이 붕 뜬다)
   ④ 모든 시트 행을 `sortRowsByRoster()`(소속 순서 → 명부 순번 → 기존 order, 안정 정렬)로 재정렬해 `order` 재부여
   본인 이름이 바뀌면 localStorage 식별값도 따라가고, 명부가 기준이 되므로 `airoom_codocs_scope` 수동 지정은 해제한다.
-- **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·명부 재정렬·xlsx 왕복 34케이스.
+- **내 IP 확인 버튼**: IP 타입 열이 있는 시트에만 툴바에 뜬다(행 메뉴 ⋯ 에도 있음).
+  ⚠ **브라우저는 사설 IP를 안 알려준다** — 크롬·엣지가 WebRTC 후보를 mDNS(`xxxx.local`)로 가린다. 그래서 3단:
+  ① 공인 IP = `GET /api/whoami`(server.js, requireAuth, trust proxy 덕에 req.ip가 실제 클라이언트)
+  ② 사설 IP = WebRTC ICE 후보 긁기(`localIps`, 1.5초 타임아웃). 가려지면 조용히 포기하고 안내로 넘어감
+  ③ **`ipconfig /all` 결과 붙여넣기(`parseIpconfig`)** — 실무에서 이게 제일 확실. 한/영 ipconfig·ifconfig·ip addr 지원,
+     169.254(자동 구성)·루프백 제외, 게이트웨이 있는 어댑터 우선, MAC은 콜론 표기로 통일.
+  읽어낸 값은 `netFieldMap()`이 열 타입(ip/mac)과 key·라벨(서브넷/게이트웨이)로 짝지어 채운다.
+- **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·ipconfig 파싱·명부 재정렬·xlsx 왕복 47케이스.
   xlsx는 **exceljs(제3의 구현)로 다시 읽어** 검증한다. codocs.js 수정 시 반드시 실행할 것.
+
+### ⚠️ vercel.json에 rewrite를 다시 넣지 말 것 (2026-09-07)
+`{"rewrites":[{"source":"/(.*)","destination":"/server.js"}]}` 는 **빌더가 바뀌면서 경로 자체를 `/server.js`로**
+바꿔 전달하게 됐다. 그 결과 모든 `/api/*`가 Express 404(`Cannot GET /server.js`)가 되어 로그인부터 막혔다.
+같은 소스인데 9/1 빌드는 정상, 9/7 빌드는 전멸 — 소스가 아니라 빌더 차이다.
+package.json에 `main`/`start`가 있어 Vercel이 Node 서버로 인식하므로 **rewrite 없이(`{"version":2}`)** 두면 된다.
+정적 파일은 CDN이 `public/`을 앞에서 서빙하고, 나머지는 전부 server.js로 들어온다.
+검증 요령: 프로덕션 브랜치 말고 `main`에만 먼저 푸시 → `gh api repos/kwonjungu/AIroom/deployments`로 프리뷰 URL을 얻어
+`/api/health`를 때려보고 200이면 그때 프로덕션 브랜치에 푸시.
 
 ### ⚠️ 배포 전 반드시 할 일
 **`firestore.rules`를 Firebase 콘솔에 게시해야 동작한다.** (콘솔 → Firestore Database → 규칙 → 전체 붙여넣기 → 게시)

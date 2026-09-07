@@ -340,6 +340,7 @@ function render() {
             ${sheet.desc ? `<div class="cd-desc">${esc(sheet.desc)}</div>` : ''}
         </div>
         <div class="cd-actions">
+            ${(sheet.columns || []).some(c => c.type === 'ip') ? '<button class="btn btn-primary" data-cd="myip">🔍 내 IP 확인</button>' : ''}
             <button class="btn btn-secondary" data-cd="export" data-fmt="xlsx">⬇️ 엑셀</button>
             <button class="btn btn-secondary" data-cd="export" data-fmt="csv">⬇️ CSV</button>
             <button class="btn btn-secondary" data-cd="copyTsv" title="구글 스프레드시트에 그대로 붙여넣을 수 있습니다">📋 시트로 복사</button>
@@ -509,6 +510,7 @@ function handle(action, el) {
         case 'settings': return openSheetModal(sheet);
         case 'importSheet': return openImportModal('new');
         case 'members': return openMembersModal();
+        case 'myip': return openIpModal(null);
         case 'appendFile': return openImportModal('append');
         case 'addRow': return addRow();
         case 'rowMenu': return openRowMenu(el.dataset.id, el);
@@ -655,6 +657,7 @@ function openRowMenu(rowId, anchor) {
         <div class="cd-menu">
             ${scopes.length ? `<label class="cd-f"><span>구분</span><select id="cdRowScope">${scopes.map(s => `<option value="${esc(s)}"${s === row.scope ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>` : ''}
             <div class="cd-menubtns">
+                ${(sheet.columns || []).some(c => c.type === 'ip') ? '<button class="btn btn-secondary" data-act="myip" style="grid-column:1/-1;">🔍 내 IP로 이 행 채우기</button>' : ''}
                 <button class="btn btn-secondary" data-act="up">⬆️ 위로</button>
                 <button class="btn btn-secondary" data-act="down">⬇️ 아래로</button>
                 <button class="btn btn-secondary" data-act="dup">📄 복제</button>
@@ -668,6 +671,7 @@ function openRowMenu(rowId, anchor) {
         });
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
             const a = b.dataset.act;
+            if (a === 'myip') { close(); openIpModal(rowId); return; }
             const idx = rows.findIndex(r => r.id === rowId);
             try {
                 if (a === 'del') {
@@ -724,6 +728,213 @@ function openIdentityModal() {
                 close(); leave(); render();
             });
         });
+}
+
+/* ===================== 내 IP 확인 =====================
+ * ⚠ 브라우저는 사설 IP(192.168.x.x)를 그냥 알려주지 않는다.
+ *   요즘 크롬/엣지는 WebRTC 후보를 mDNS(xxxx.local)로 가려서 LAN 주소가 안 나온다.
+ *   그래서 3단으로 간다:
+ *     1) 공인 IP  — 서버(/api/whoami)가 본 주소. 항상 나온다.
+ *     2) 사설 IP  — WebRTC로 시도. mDNS로 가려지면 조용히 포기한다.
+ *     3) 붙여넣기 — `ipconfig /all` 결과를 통째로 붙여넣으면 IP·서브넷·게이트웨이·MAC을
+ *                   전부 뽑아 해당 칸에 자동으로 채운다. 실무에서 이게 제일 확실하다.
+ */
+const RE_PRIVATE = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
+
+async function publicIp() {
+    const headers = {};
+    const t = HOST().authToken;
+    if (t) headers['X-Auth-Token'] = t;
+    const r = await fetch('/api/whoami', { headers });
+    if (!r.ok) throw new Error('서버 응답 ' + r.status);
+    const j = await r.json();
+    if (!j.ip) throw new Error('주소를 받지 못했습니다');
+    return j.ip;
+}
+
+// WebRTC ICE 후보에서 사설 IPv4를 긁어본다. mDNS로 가려지면 빈 배열.
+function localIps(timeoutMs = 1500) {
+    return new Promise(resolve => {
+        const found = new Set();
+        let pc;
+        try { pc = new RTCPeerConnection({ iceServers: [] }); }
+        catch (e) { return resolve([]); }
+        const done = () => { try { pc.close(); } catch (e) { } resolve([...found]); };
+        const timer = setTimeout(done, timeoutMs);
+        pc.onicecandidate = ev => {
+            if (!ev.candidate) { clearTimeout(timer); return done(); }
+            const m = String(ev.candidate.candidate || '').match(/(\d{1,3}(?:\.\d{1,3}){3})/);
+            if (m && RE_IP.test(m[1]) && RE_PRIVATE.test(m[1])) found.add(m[1]);
+        };
+        try {
+            pc.createDataChannel('x');
+            pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => { clearTimeout(timer); done(); });
+        } catch (e) { clearTimeout(timer); done(); }
+    });
+}
+
+/* `ipconfig /all`(한/영), `ifconfig`, `ip addr` 출력에서 IP·서브넷·게이트웨이·MAC을 뽑는다.
+   어댑터가 여러 개면 게이트웨이가 있는 것을 우선하고, 169.254.x(자동 구성)와 루프백은 버린다. */
+function parseIpconfig(text) {
+    const src = String(text || '').replace(/\r\n/g, '\n');
+    if (!src.trim()) return null;
+
+    // 빈 줄이 이어지는 지점을 어댑터 경계로 본다. ipconfig는 어댑터마다 빈 줄로 구분된다.
+    const blocks = src.split(/\n\s*\n/).filter(b => /\d{1,3}(\.\d{1,3}){3}/.test(b));
+    const cands = (blocks.length ? blocks : [src]).map(b => {
+        const pick = (...res) => { for (const re of res) { const m = b.match(re); if (m) return m[1].trim(); } return ''; };
+        const ip = pick(
+            /IPv4[^\n:]*:\s*([\d.]+)/i,                       // ipconfig (한글/영문 공통 라벨)
+            /inet\s+(?:addr:)?([\d.]+)/i                       // ifconfig / ip addr
+        );
+        const mask = pick(
+            /(?:서브넷 마스크|Subnet Mask)[^\n:]*:\s*([\d.]+)/i,
+            /(?:netmask|Mask:)\s*([\d.]+)/i
+        );
+        const gw = pick(
+            /(?:기본 게이트웨이|Default Gateway)[^\n:]*:\s*([\d.]+)/i,
+            /(?:^|\n)\s*default via\s+([\d.]+)/i
+        );
+        const mac = pick(
+            /(?:물리적 주소|Physical Address)[^\n:]*:\s*([0-9A-Fa-f]{2}(?:[-:][0-9A-Fa-f]{2}){5})/i,
+            /(?:ether|HWaddr|link\/ether)\s+([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})/i
+        );
+        return { ip, mask, gw, mac: mac ? mac.toUpperCase().replace(/-/g, ':') : '' };
+    }).filter(c => c.ip && RE_IP.test(c.ip) && !/^127\./.test(c.ip) && !/^169\.254\./.test(c.ip));
+
+    if (!cands.length) return null;
+    // 게이트웨이가 있는 어댑터 = 실제로 쓰는 랜카드. 없으면 사설 IP, 그것도 없으면 첫 번째.
+    return cands.find(c => c.gw) || cands.find(c => RE_PRIVATE.test(c.ip)) || cands[0];
+}
+
+/* 감지한 값을 시트 열에 맞춰 채운다. 열 타입(ip/mac)과 key·라벨(서브넷/게이트웨이)로 짝을 찾는다. */
+function netFieldMap(sheet) {
+    const cols = sheet.columns || [];
+    const byKeyOrLabel = (...words) => cols.find(c =>
+        words.some(w => (c.key || '').toLowerCase().includes(w) || (c.label || '').replace(/\s/g, '').includes(w)));
+    return {
+        ip: cols.find(c => c.type === 'ip'),
+        mac: cols.find(c => c.type === 'mac'),
+        mask: byKeyOrLabel('mask', '서브넷', '마스크'),
+        gw: byKeyOrLabel('gw', 'gateway', '게이트웨이')
+    };
+}
+
+function openIpModal(rowId) {
+    const sheet = currentSheet();
+    const map = sheet ? netFieldMap(sheet) : {};
+    const targets = ['ip', 'mask', 'gw', 'mac'].filter(k => map[k]);
+    let info = { ip: '', mask: '', gw: '', mac: '' };
+
+    modal('🔍 내 IP 확인', `
+        <div class="cd-ipsec">
+            <div class="cd-iplabel">밖에서 보이는 주소 (공인 IP)</div>
+            <div class="cd-ipval" id="cdPubIp">확인 중…</div>
+            <div class="cd-hint">학교가 인터넷에 나갈 때 쓰는 주소입니다. 기기별 IP 대장에 적는 값이 아닙니다.</div>
+        </div>
+        <div class="cd-ipsec">
+            <div class="cd-iplabel">이 컴퓨터의 내부 주소 (사설 IP)</div>
+            <div id="cdLocIp" class="cd-ipval">확인 중…</div>
+        </div>
+        <div class="cd-ipsec">
+            <div class="cd-iplabel">확실하게 채우기 — 명령 결과 붙여넣기</div>
+            <div class="cd-hint" style="margin-bottom:6px;">
+                ⊞Win+R → <b>cmd</b> → 아래 명령을 붙여넣고 Enter → 나온 내용을 전부 복사해서 여기에 붙여넣으세요.
+            </div>
+            <div class="cd-cmdrow">
+                <code id="cdCmd">ipconfig /all</code>
+                <button class="btn btn-secondary" data-act="copyCmd">복사</button>
+            </div>
+            <textarea id="cdPaste2" rows="4" placeholder="ipconfig /all 결과를 여기에 붙여넣기" style="margin-top:8px;"></textarea>
+            <div id="cdParsed" class="cd-parsed"></div>
+        </div>
+        <div class="cd-modalfoot">
+            <span class="cd-hint" id="cdIpStat" style="flex:1;"></span>
+            ${sheet && targets.length ? `<button class="btn btn-primary" data-act="fill" disabled>${rowId ? '이 행에 채우기' : '새 행으로 추가'}</button>` : ''}
+        </div>`, (root, close) => {
+        const stat = root.querySelector('#cdIpStat');
+        const fillBtn = root.querySelector('[data-act=fill]');
+        const parsed = root.querySelector('#cdParsed');
+
+        const showInfo = () => {
+            const have = ['ip', 'mask', 'gw', 'mac'].filter(k => info[k]);
+            if (!have.length) { parsed.innerHTML = ''; if (fillBtn) fillBtn.disabled = true; return; }
+            const label = { ip: 'IP 주소', mask: '서브넷 마스크', gw: '게이트웨이', mac: 'MAC 주소' };
+            parsed.innerHTML = `<div class="cd-iplabel" style="margin-top:10px;">읽어낸 값</div>` +
+                have.map(k => `<div class="cd-kv"><span>${label[k]}</span><b>${esc(info[k])}</b>${map[k] ? '' : '<em>이 시트엔 해당 칸 없음</em>'}</div>`).join('');
+            if (fillBtn) fillBtn.disabled = !targets.some(k => info[k]);
+        };
+
+        publicIp()
+            .then(ip => { root.querySelector('#cdPubIp').textContent = ip; })
+            .catch(e => { root.querySelector('#cdPubIp').innerHTML = `<span class="cd-dim">확인 실패 — ${esc(e.message)}</span>`; });
+
+        localIps().then(list => {
+            const el = root.querySelector('#cdLocIp');
+            if (!list.length) {
+                el.innerHTML = `<span class="cd-dim">브라우저가 알려주지 않습니다</span>
+                    <div class="cd-hint" style="margin-top:4px;">크롬·엣지는 보안상 내부 주소를 가립니다. 아래 붙여넣기 방법을 쓰세요.</div>`;
+                return;
+            }
+            el.innerHTML = list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('') +
+                `<div class="cd-hint" style="margin-top:4px;">주소를 눌러 선택하세요.</div>`;
+            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () => {
+                info.ip = b.dataset.ip; showInfo();
+            }));
+        });
+
+        root.querySelector('[data-act=copyCmd]').addEventListener('click', () => {
+            navigator.clipboard.writeText('ipconfig /all')
+                .then(() => toast('명령을 복사했습니다', 'success'))
+                .catch(() => toast('복사 실패 — 직접 입력해주세요', 'error'));
+        });
+
+        root.querySelector('#cdPaste2').addEventListener('input', e => {
+            const got = parseIpconfig(e.target.value);
+            if (got) { info = { ...info, ...got }; stat.textContent = '읽었습니다'; }
+            else stat.textContent = e.target.value.trim() ? '주소를 찾지 못했습니다' : '';
+            showInfo();
+        });
+
+        if (fillBtn) fillBtn.addEventListener('click', async () => {
+            fillBtn.disabled = true;
+            try { await applyNetInfo(rowId, info, map); close(); }
+            catch (err) { toast('입력 실패: ' + err.message, 'error'); fillBtn.disabled = false; }
+        });
+    }, 600);
+}
+
+async function applyNetInfo(rowId, info, map) {
+    const sheet = currentSheet(); if (!sheet) return;
+    const patch = {};
+    ['ip', 'mask', 'gw', 'mac'].forEach(k => { if (map[k] && info[k]) patch['cells.' + map[k].key] = info[k]; });
+    if (!Object.keys(patch).length) { toast('채울 값이 없습니다', 'error'); return; }
+    patch.updatedBy = myName() || '';
+    patch.updatedAt = serverTimestamp();
+
+    if (rowId) {
+        const row = rows.find(r => r.id === rowId);
+        if (!canEdit(sheet, row)) { toast('이 행은 편집할 수 없습니다', 'error'); return; }
+        await updateDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', rowId), patch);
+        toast('입력했습니다', 'success');
+        return;
+    }
+    // 대상 행이 없으면 내 소속으로 새 행을 만들어 넣는다
+    if (!myName()) { toast('먼저 본인 이름을 입력해주세요', 'error'); return; }
+    const scope = scopeFilter !== '__all__' ? scopeFilter : (myScope(sheet) || (sheet.scopes || [])[0] || '');
+    if (!canEdit(sheet, { scope })) { toast('이 구분에는 행을 추가할 수 없습니다', 'error'); return; }
+    const cells = {};
+    (sheet.columns || []).forEach(c => { if (c.def) cells[c.key] = c.def; });
+    ['ip', 'mask', 'gw', 'mac'].forEach(k => { if (map[k] && info[k]) cells[map[k].key] = info[k]; });
+    const staffCol = (sheet.columns || []).find(c => c.type === 'staff');
+    if (staffCol) cells[staffCol.key] = myName();
+    const maxOrder = rows.reduce((m, r) => Math.max(m, r.order || 0), 0);
+    const id = 'r_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    await setDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', id), {
+        scope, cells, owner: myName() || '', order: maxOrder + 1000,
+        updatedBy: myName() || '', updatedAt: serverTimestamp()
+    });
+    toast('새 행에 넣었습니다', 'success');
 }
 
 /* ===================== 학교 사용자 설정 (명부) =====================
@@ -1441,6 +1652,20 @@ const CSS_TEXT = `
 .cd-mhead2 span:last-child{width:29px;}
 .cd-mrow{grid-template-columns:1fr 1fr 1fr auto;}
 .cd-menu .cd-menubtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.cd-ipsec{padding:12px 0;border-bottom:1px solid var(--border);}
+.cd-ipsec:last-of-type{border-bottom:none;}
+.cd-iplabel{font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:4px;}
+.cd-ipval{font-size:17px;font-weight:700;font-family:ui-monospace,Consolas,monospace;}
+.cd-dim{font-size:13px;font-weight:400;color:var(--text-light);font-family:inherit;}
+.cd-ippick{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;border:2px solid var(--border);background:var(--card-bg);border-radius:8px;padding:6px 12px;margin:0 6px 6px 0;cursor:pointer;}
+.cd-ippick:hover{border-color:var(--primary);background:var(--primary-light);}
+.cd-cmdrow{display:flex;gap:8px;align-items:center;}
+.cd-cmdrow code{flex:1;background:#2D3748;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;}
+.cd-cmdrow .btn{font-size:12px;padding:7px 12px;}
+.cd-parsed .cd-kv{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;}
+.cd-parsed .cd-kv span{width:110px;color:var(--text-light);}
+.cd-parsed .cd-kv b{font-family:ui-monospace,Consolas,monospace;}
+.cd-parsed .cd-kv em{font-size:11px;color:#c92a2a;font-style:normal;}
 .cd-drop{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px;text-align:center;cursor:pointer;}
 .cd-drop.over{border-color:var(--primary);background:var(--primary-light);}
 @media(max-width:640px){
@@ -1463,4 +1688,4 @@ if (pageEl && pageEl.classList.contains('active')) window.codocsOpen();
 window.CoDocs = { open, close: leave };
 
 /* 자동 테스트용 내부 함수 노출 (node _check/codocs-test.mjs) */
-export const __test = { parseDelimited, parseXlsx, buildXlsx, guessType, cellError, colIdx, sortRowsByRoster };
+export const __test = { parseDelimited, parseXlsx, buildXlsx, guessType, cellError, colIdx, sortRowsByRoster, parseIpconfig, netFieldMap };

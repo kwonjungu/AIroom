@@ -1482,6 +1482,14 @@ app.get('/api/health', async (req, res) => {
     res.json(status);
 });
 
+// 접속자 공인 IP (함께 만드는 문서의 "내 IP 확인" 버튼용).
+// 브라우저는 사설 IP를 알려주지 않으므로 밖에서 보이는 주소만 돌려준다.
+// trust proxy가 켜져 있어 req.ip가 x-forwarded-for의 실제 클라이언트 주소다.
+app.get('/api/whoami', requireAuth, (req, res) => {
+    const raw = req.ip || req.connection.remoteAddress || '';
+    res.json({ ip: String(raw).replace(/^::ffff:/, '') });   // IPv4-mapped IPv6 표기 정리
+});
+
 // Firebase config (환경변수에서 클라이언트로 전달)
 app.get('/api/firebase-config', requireAuth, (req, res) => {
     const cfg = {
