@@ -80,6 +80,8 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
   ② **`ipconfig /all` 결과 붙여넣기(`parseIpconfig`)** — 실무에서 이게 제일 확실. 한/영 ipconfig·ifconfig·ip addr 지원,
      169.254(자동 구성)·루프백 제외, 게이트웨이 있는 어댑터 우선, MAC은 콜론 표기로 통일.
   읽어낸 값은 `netFieldMap()`이 열 타입(ip/mac)과 key·라벨(서브넷/게이트웨이)로 짝지어 채운다.
+  **확인 버튼이 없다** — 붙여넣으면 350ms 뒤 파싱해서 곧바로 행을 만들고 창을 닫는다(`commit`, `busy` 플래그로 중복 방지).
+  그래서 `applyNetInfo`의 실패는 toast가 아니라 **throw** 해야 한다. 안 그러면 조용히 닫히고 아무 일도 안 일어난다.
   공인 IP 표시와 `GET /api/whoami` 라우트는 **뺐다** — 기기별 대장에 적을 값이 아닌데 맨 위에 크게 띄워 혼란만 줬다(2026-09-07 사용자 지적).
 - **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·ipconfig 파싱·명부 재정렬·xlsx 왕복 47케이스.
   xlsx는 **exceljs(제3의 구현)로 다시 읽어** 검증한다. codocs.js 수정 시 반드시 실행할 것.

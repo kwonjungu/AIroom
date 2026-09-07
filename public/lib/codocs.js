@@ -857,12 +857,15 @@ function openIpModal(rowId) {
     const sheet = currentSheet();
     const map = sheet ? netFieldMap(sheet) : {};
     const targets = ['ip', 'mask', 'gw', 'mac'].filter(k => map[k]);
-    let info = { ip: '', mask: '', gw: '', mac: '' };
+    if (!sheet || !targets.length) { toast('이 시트에는 IP 칸이 없습니다', 'error'); return; }
+
+    let busy = false;          // 붙여넣기가 여러 번 튀어도 행이 두 번 생기지 않게
+    let pasteTimer = null;
 
     modal('🔍 내 IP 확인', `
         <!-- WebRTC로 사설 IP를 찾았을 때만 이 칸이 채워진다. 못 찾으면 통째로 숨긴다(대부분 못 찾는다). -->
         <div class="cd-ipsec" id="cdLocSec" style="display:none;">
-            <div class="cd-iplabel">이 컴퓨터에서 찾은 주소</div>
+            <div class="cd-iplabel">이 컴퓨터에서 찾은 주소 — 누르면 바로 등록</div>
             <div id="cdLocIp"></div>
         </div>
         <div class="cd-ipsec">
@@ -874,57 +877,54 @@ function openIpModal(rowId) {
             </div>
         </div>
         <div class="cd-ipsec">
-            <div class="cd-iplabel">2. 결과 붙여넣기</div>
-            <div class="cd-hint" style="margin-bottom:6px;">까만 창 내용을 전부 긁어(Ctrl+A → Ctrl+C) 여기에 붙여넣으세요. 알아서 골라냅니다.</div>
-            <textarea id="cdPaste2" rows="4" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
-            <div id="cdParsed" class="cd-parsed"></div>
-        </div>
-        <div class="cd-modalfoot">
-            <span class="cd-hint" id="cdIpStat" style="flex:1;"></span>
-            ${sheet && targets.length ? `<button class="btn btn-primary" data-act="fill" disabled>${rowId ? '이 행에 채우기' : '새 행으로 추가'}</button>` : ''}
+            <div class="cd-iplabel">2. 결과 붙여넣기 — 붙여넣는 즉시 등록됩니다</div>
+            <div class="cd-hint" style="margin-bottom:6px;">까만 창 내용을 전부 긁어(Ctrl+A → Ctrl+C) 여기에 붙여넣으세요. 알아서 골라서 ${rowId ? '이 행에 채웁니다' : '새 행으로 넣습니다'}.</div>
+            <textarea id="cdPaste2" rows="4" placeholder="여기에 붙여넣기 (Ctrl+V)" autofocus></textarea>
+            <div id="cdIpStat" class="cd-hint" style="margin-top:6px;"></div>
         </div>`, (root, close) => {
         const stat = root.querySelector('#cdIpStat');
-        const fillBtn = root.querySelector('[data-act=fill]');
-        const parsed = root.querySelector('#cdParsed');
 
-        const showInfo = () => {
-            const have = ['ip', 'mask', 'gw', 'mac'].filter(k => info[k]);
-            if (!have.length) { parsed.innerHTML = ''; if (fillBtn) fillBtn.disabled = true; return; }
-            const label = { ip: 'IP 주소', mask: '서브넷 마스크', gw: '게이트웨이', mac: 'MAC 주소' };
-            parsed.innerHTML = `<div class="cd-iplabel" style="margin-top:10px;">읽어낸 값</div>` +
-                have.map(k => `<div class="cd-kv"><span>${label[k]}</span><b>${esc(info[k])}</b>${map[k] ? '' : '<em>이 시트엔 해당 칸 없음</em>'}</div>`).join('');
-            if (fillBtn) fillBtn.disabled = !targets.some(k => info[k]);
+        // 읽어낸 값을 그대로 저장하고 창을 닫는다. 확인 버튼을 한 번 더 누르게 하지 않는다.
+        const commit = async info => {
+            if (busy) return;
+            busy = true;
+            stat.textContent = '등록 중…';
+            try {
+                await applyNetInfo(rowId, info, map);
+                close();
+            } catch (e) {
+                busy = false;
+                stat.innerHTML = `<span style="color:#c92a2a;">등록 실패 — ${esc(e.message)}</span>`;
+            }
         };
 
-        // 운 좋게 브라우저가 알려주면 원클릭으로 끝난다. 못 알아내면 칸 자체를 숨겨 방해하지 않는다.
+        // 운 좋게 브라우저가 알려주면 한 번 눌러서 끝난다. 못 알아내면 칸 자체를 숨겨 방해하지 않는다.
         localIps().then(list => {
-            if (!list.length) return;
+            if (!list.length || busy) return;
             const el = root.querySelector('#cdLocIp');
             root.querySelector('#cdLocSec').style.display = '';
-            el.innerHTML = list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('') +
-                `<div class="cd-hint" style="margin-top:4px;">눌러서 선택하세요. 서브넷·게이트웨이·MAC까지 넣으려면 아래 붙여넣기를 쓰세요.</div>`;
-            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () => {
-                info.ip = b.dataset.ip; showInfo();
-            }));
+            el.innerHTML = list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('');
+            el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () =>
+                commit({ ip: b.dataset.ip, mask: '', gw: '', mac: '' })));
         });
 
         root.querySelector('[data-act=copyCmd]').addEventListener('click', () => {
             navigator.clipboard.writeText('ipconfig /all')
-                .then(() => toast('명령을 복사했습니다', 'success'))
+                .then(() => toast('명령을 복사했습니다 — cmd 창에 붙여넣으세요', 'success'))
                 .catch(() => toast('복사 실패 — 직접 입력해주세요', 'error'));
         });
 
+        // 손으로 타이핑하는 경우도 있으니 살짝 기다렸다가 판단한다.
         root.querySelector('#cdPaste2').addEventListener('input', e => {
-            const got = parseIpconfig(e.target.value);
-            if (got) { info = { ...info, ...got }; stat.textContent = '읽었습니다'; }
-            else stat.textContent = e.target.value.trim() ? '주소를 찾지 못했습니다' : '';
-            showInfo();
-        });
-
-        if (fillBtn) fillBtn.addEventListener('click', async () => {
-            fillBtn.disabled = true;
-            try { await applyNetInfo(rowId, info, map); close(); }
-            catch (err) { toast('입력 실패: ' + err.message, 'error'); fillBtn.disabled = false; }
+            const text = e.target.value;
+            clearTimeout(pasteTimer);
+            if (!text.trim()) { stat.textContent = ''; return; }
+            stat.textContent = '읽는 중…';
+            pasteTimer = setTimeout(() => {
+                const got = parseIpconfig(text);
+                if (got && got.ip) commit(got);
+                else stat.textContent = '주소를 찾지 못했습니다 — ipconfig /all 결과를 통째로 붙여넣어 주세요.';
+            }, 350);
         });
     }, 600);
 }
@@ -933,21 +933,21 @@ async function applyNetInfo(rowId, info, map) {
     const sheet = currentSheet(); if (!sheet) return;
     const patch = {};
     ['ip', 'mask', 'gw', 'mac'].forEach(k => { if (map[k] && info[k]) patch['cells.' + map[k].key] = info[k]; });
-    if (!Object.keys(patch).length) { toast('채울 값이 없습니다', 'error'); return; }
+    if (!Object.keys(patch).length) throw new Error('채울 값이 없습니다');
     patch.updatedBy = myName() || '';
     patch.updatedAt = serverTimestamp();
 
     if (rowId) {
         const row = rows.find(r => r.id === rowId);
-        if (!canEdit(sheet, row)) { toast('이 행은 편집할 수 없습니다', 'error'); return; }
+        if (!canEdit(sheet, row)) throw new Error('이 행은 편집할 수 없습니다');
         await updateDoc(doc(db, 'codocs_sheets', activeSheetId, 'rows', rowId), patch);
-        toast('입력했습니다', 'success');
+        toast(`${info.ip || ''} 입력 완료`.trim(), 'success');
         return;
     }
     // 대상 행이 없으면 내 소속으로 새 행을 만들어 넣는다
-    if (!myName()) { toast('먼저 본인 이름을 입력해주세요', 'error'); return; }
+    if (!myName()) throw new Error('먼저 본인 이름을 입력해주세요');
     const scope = scopeFilter !== '__all__' ? scopeFilter : (myScope(sheet) || (sheet.scopes || [])[0] || '');
-    if (!canEdit(sheet, { scope })) { toast('이 구분에는 행을 추가할 수 없습니다', 'error'); return; }
+    if (!canEdit(sheet, { scope })) throw new Error('이 구분에는 행을 추가할 수 없습니다');
     const cells = {};
     (sheet.columns || []).forEach(c => { if (c.def) cells[c.key] = c.def; });
     ['ip', 'mask', 'gw', 'mac'].forEach(k => { if (map[k] && info[k]) cells[map[k].key] = info[k]; });
@@ -959,7 +959,7 @@ async function applyNetInfo(rowId, info, map) {
         scope, cells, owner: myName() || '', order: maxOrder + 1000,
         updatedBy: myName() || '', updatedAt: serverTimestamp()
     });
-    toast('새 행에 넣었습니다', 'success');
+    toast(`${scope} · ${info.ip} 행을 추가했습니다`, 'success');
 }
 
 /* ===================== 학교 사용자 설정 (명부) =====================
@@ -1696,10 +1696,6 @@ const CSS_TEXT = `
 .cd-cmdrow{display:flex;gap:8px;align-items:center;}
 .cd-cmdrow code{flex:1;background:#2D3748;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;}
 .cd-cmdrow .btn{font-size:12px;padding:7px 12px;}
-.cd-parsed .cd-kv{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0;}
-.cd-parsed .cd-kv span{width:110px;color:var(--text-light);}
-.cd-parsed .cd-kv b{font-family:ui-monospace,Consolas,monospace;}
-.cd-parsed .cd-kv em{font-size:11px;color:#c92a2a;font-style:normal;}
 .cd-drop{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px;text-align:center;cursor:pointer;}
 .cd-drop.over{border-color:var(--primary);background:var(--primary-light);}
 @media(max-width:640px){
