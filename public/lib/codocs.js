@@ -71,7 +71,9 @@ const TEMPLATES = {
             { key: 'device', label: '기기 종류', type: 'select', width: 120, options: ['데스크탑PC', '노트북', '태블릿', '프린터/복합기', 'TV/전자칠판', '공유기', 'AP', 'CCTV/NVR', '서버/NAS', '기타'] },
             { key: 'model', label: '자산번호 / 모델', type: 'text', width: 150 },
             { key: 'ip', label: 'IP 주소', type: 'ip', width: 130 },
-            { key: 'mask', label: '서브넷 마스크', type: 'text', width: 130, def: '255.255.255.0' },
+            // 기본값을 박아두지 않는다 — 학교마다 대역이 다르다(백암초 본교는 255.255.254.0).
+            // 대장에 틀린 값이 자동으로 박히느니 빈칸이 낫다. 붙여넣기가 실제 값을 채운다.
+            { key: 'mask', label: '서브넷 마스크', type: 'text', width: 130 },
             { key: 'gw', label: '게이트웨이', type: 'text', width: 130 },
             { key: 'mac', label: 'MAC 주소', type: 'mac', width: 150 },
             { key: 'pos', label: '직위', type: 'position', width: 100 },
