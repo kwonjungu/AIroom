@@ -75,12 +75,12 @@ DEFAULT_TABS order 16, 빌트인. **Redis가 아니라 Firestore를 쓴다** —
   ④ 모든 시트 행을 `sortRowsByRoster()`(소속 순서 → 명부 순번 → 기존 order, 안정 정렬)로 재정렬해 `order` 재부여
   본인 이름이 바뀌면 localStorage 식별값도 따라가고, 명부가 기준이 되므로 `airoom_codocs_scope` 수동 지정은 해제한다.
 - **내 IP 확인 버튼**: IP 타입 열이 있는 시트에만 툴바에 뜬다(행 메뉴 ⋯ 에도 있음).
-  ⚠ **브라우저는 사설 IP를 안 알려준다** — 크롬·엣지가 WebRTC 후보를 mDNS(`xxxx.local`)로 가린다. 그래서 3단:
-  ① 공인 IP = `GET /api/whoami`(server.js, requireAuth, trust proxy 덕에 req.ip가 실제 클라이언트)
-  ② 사설 IP = WebRTC ICE 후보 긁기(`localIps`, 1.5초 타임아웃). 가려지면 조용히 포기하고 안내로 넘어감
-  ③ **`ipconfig /all` 결과 붙여넣기(`parseIpconfig`)** — 실무에서 이게 제일 확실. 한/영 ipconfig·ifconfig·ip addr 지원,
+  ⚠ **브라우저는 사설 IP를 안 알려준다** — 크롬·엣지가 WebRTC 후보를 mDNS(`xxxx.local`)로 가린다. 그래서 2단:
+  ① WebRTC ICE 후보 긁기(`localIps`, 1.5초 타임아웃) — 나오면 원클릭, 가려지면 **그 칸을 통째로 숨긴다**(실패 문구도 안 띄움)
+  ② **`ipconfig /all` 결과 붙여넣기(`parseIpconfig`)** — 실무에서 이게 제일 확실. 한/영 ipconfig·ifconfig·ip addr 지원,
      169.254(자동 구성)·루프백 제외, 게이트웨이 있는 어댑터 우선, MAC은 콜론 표기로 통일.
   읽어낸 값은 `netFieldMap()`이 열 타입(ip/mac)과 key·라벨(서브넷/게이트웨이)로 짝지어 채운다.
+  공인 IP 표시와 `GET /api/whoami` 라우트는 **뺐다** — 기기별 대장에 적을 값이 아닌데 맨 위에 크게 띄워 혼란만 줬다(2026-09-07 사용자 지적).
 - **테스트**: `node _check/codocs-test.mjs` — CSV 파서·타입추정·셀검증·ipconfig 파싱·명부 재정렬·xlsx 왕복 47케이스.
   xlsx는 **exceljs(제3의 구현)로 다시 읽어** 검증한다. codocs.js 수정 시 반드시 실행할 것.
 

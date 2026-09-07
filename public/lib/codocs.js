@@ -778,24 +778,12 @@ function openIdentityModal() {
 /* ===================== 내 IP 확인 =====================
  * ⚠ 브라우저는 사설 IP(192.168.x.x)를 그냥 알려주지 않는다.
  *   요즘 크롬/엣지는 WebRTC 후보를 mDNS(xxxx.local)로 가려서 LAN 주소가 안 나온다.
- *   그래서 3단으로 간다:
- *     1) 공인 IP  — 서버(/api/whoami)가 본 주소. 항상 나온다.
- *     2) 사설 IP  — WebRTC로 시도. mDNS로 가려지면 조용히 포기한다.
- *     3) 붙여넣기 — `ipconfig /all` 결과를 통째로 붙여넣으면 IP·서브넷·게이트웨이·MAC을
- *                   전부 뽑아 해당 칸에 자동으로 채운다. 실무에서 이게 제일 확실하다.
+ *   그래서 2단으로 간다:
+ *     1) WebRTC로 사설 IP를 시도 — 나오면 원클릭. 가려지면 그 칸을 통째로 숨긴다.
+ *     2) `ipconfig /all` 결과 붙여넣기 — IP·서브넷·게이트웨이·MAC을 전부 뽑아 자동으로 채운다.
+ *   공인 IP는 기기별 대장에 적을 값이 아니라 화면에서 뺐다(2026-09-07, 사용자 지적).
  */
 const RE_PRIVATE = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
-
-async function publicIp() {
-    const headers = {};
-    const t = HOST().authToken;
-    if (t) headers['X-Auth-Token'] = t;
-    const r = await fetch('/api/whoami', { headers });
-    if (!r.ok) throw new Error('서버 응답 ' + r.status);
-    const j = await r.json();
-    if (!j.ip) throw new Error('주소를 받지 못했습니다');
-    return j.ip;
-}
 
 // WebRTC ICE 후보에서 사설 IPv4를 긁어본다. mDNS로 가려지면 빈 배열.
 function localIps(timeoutMs = 1500) {
@@ -872,25 +860,23 @@ function openIpModal(rowId) {
     let info = { ip: '', mask: '', gw: '', mac: '' };
 
     modal('🔍 내 IP 확인', `
-        <div class="cd-ipsec">
-            <div class="cd-iplabel">밖에서 보이는 주소 (공인 IP)</div>
-            <div class="cd-ipval" id="cdPubIp">확인 중…</div>
-            <div class="cd-hint">학교가 인터넷에 나갈 때 쓰는 주소입니다. 기기별 IP 대장에 적는 값이 아닙니다.</div>
+        <!-- WebRTC로 사설 IP를 찾았을 때만 이 칸이 채워진다. 못 찾으면 통째로 숨긴다(대부분 못 찾는다). -->
+        <div class="cd-ipsec" id="cdLocSec" style="display:none;">
+            <div class="cd-iplabel">이 컴퓨터에서 찾은 주소</div>
+            <div id="cdLocIp"></div>
         </div>
         <div class="cd-ipsec">
-            <div class="cd-iplabel">이 컴퓨터의 내부 주소 (사설 IP)</div>
-            <div id="cdLocIp" class="cd-ipval">확인 중…</div>
-        </div>
-        <div class="cd-ipsec">
-            <div class="cd-iplabel">확실하게 채우기 — 명령 결과 붙여넣기</div>
-            <div class="cd-hint" style="margin-bottom:6px;">
-                ⊞Win+R → <b>cmd</b> → 아래 명령을 붙여넣고 Enter → 나온 내용을 전부 복사해서 여기에 붙여넣으세요.
-            </div>
+            <div class="cd-iplabel">1. 명령 실행</div>
+            <div class="cd-hint" style="margin-bottom:6px;">⊞Win+R → <b>cmd</b> → 아래 명령 붙여넣고 Enter</div>
             <div class="cd-cmdrow">
                 <code id="cdCmd">ipconfig /all</code>
-                <button class="btn btn-secondary" data-act="copyCmd">복사</button>
+                <button class="btn btn-secondary" data-act="copyCmd">명령 복사</button>
             </div>
-            <textarea id="cdPaste2" rows="4" placeholder="ipconfig /all 결과를 여기에 붙여넣기" style="margin-top:8px;"></textarea>
+        </div>
+        <div class="cd-ipsec">
+            <div class="cd-iplabel">2. 결과 붙여넣기</div>
+            <div class="cd-hint" style="margin-bottom:6px;">까만 창 내용을 전부 긁어(Ctrl+A → Ctrl+C) 여기에 붙여넣으세요. 알아서 골라냅니다.</div>
+            <textarea id="cdPaste2" rows="4" placeholder="여기에 붙여넣기 (Ctrl+V)"></textarea>
             <div id="cdParsed" class="cd-parsed"></div>
         </div>
         <div class="cd-modalfoot">
@@ -910,19 +896,13 @@ function openIpModal(rowId) {
             if (fillBtn) fillBtn.disabled = !targets.some(k => info[k]);
         };
 
-        publicIp()
-            .then(ip => { root.querySelector('#cdPubIp').textContent = ip; })
-            .catch(e => { root.querySelector('#cdPubIp').innerHTML = `<span class="cd-dim">확인 실패 — ${esc(e.message)}</span>`; });
-
+        // 운 좋게 브라우저가 알려주면 원클릭으로 끝난다. 못 알아내면 칸 자체를 숨겨 방해하지 않는다.
         localIps().then(list => {
+            if (!list.length) return;
             const el = root.querySelector('#cdLocIp');
-            if (!list.length) {
-                el.innerHTML = `<span class="cd-dim">브라우저가 알려주지 않습니다</span>
-                    <div class="cd-hint" style="margin-top:4px;">크롬·엣지는 보안상 내부 주소를 가립니다. 아래 붙여넣기 방법을 쓰세요.</div>`;
-                return;
-            }
+            root.querySelector('#cdLocSec').style.display = '';
             el.innerHTML = list.map(ip => `<button class="cd-ippick" data-ip="${esc(ip)}">${esc(ip)}</button>`).join('') +
-                `<div class="cd-hint" style="margin-top:4px;">주소를 눌러 선택하세요.</div>`;
+                `<div class="cd-hint" style="margin-top:4px;">눌러서 선택하세요. 서브넷·게이트웨이·MAC까지 넣으려면 아래 붙여넣기를 쓰세요.</div>`;
             el.querySelectorAll('.cd-ippick').forEach(b => b.addEventListener('click', () => {
                 info.ip = b.dataset.ip; showInfo();
             }));
@@ -1711,7 +1691,6 @@ const CSS_TEXT = `
 .cd-ipsec:last-of-type{border-bottom:none;}
 .cd-iplabel{font-size:12px;font-weight:700;color:var(--text-light);margin-bottom:4px;}
 .cd-ipval{font-size:17px;font-weight:700;font-family:ui-monospace,Consolas,monospace;}
-.cd-dim{font-size:13px;font-weight:400;color:var(--text-light);font-family:inherit;}
 .cd-ippick{font-family:ui-monospace,Consolas,monospace;font-size:15px;font-weight:700;border:2px solid var(--border);background:var(--card-bg);border-radius:8px;padding:6px 12px;margin:0 6px 6px 0;cursor:pointer;}
 .cd-ippick:hover{border-color:var(--primary);background:var(--primary-light);}
 .cd-cmdrow{display:flex;gap:8px;align-items:center;}
