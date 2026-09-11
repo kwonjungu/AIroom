@@ -150,11 +150,8 @@
 <div id="toast"></div>
 
 <script>
-// 메일 API는 데이터센터 IP를 차단하므로 브라우저가 직접 호출한다.
-// 서버(/api/mail/*)는 비밀번호 게이트와 계정 명부 저장만 담당.
-// 2026-08: mail.tm이 자사 오리진 외 CORS를 막아 자매 서비스 mail.gw(동일 API, CORS *)로 전환.
-// 기존 mail.tm 도메인 주소는 브라우저에서 더 못 쓰므로 선택 시 같은 번호로 재발급한다.
-const MAILTM = 'https://api.mail.gw';
+// Use the authenticated same-origin mail proxy.
+const MAILTM = '/api/mail/provider';
 const RETENTION_DAYS = 30; // 수신 후 이 일수가 지난 메일은 자동 삭제
 let mailKey = localStorage.getItem('mail_key') || '';
 let selected = null;      // 선택된 계정 name
@@ -183,9 +180,9 @@ async function api(method, path, body) {
     return data;
 }
 
-// ----- mail.gw API (브라우저 직접 호출) -----
+// ----- Mail API via same-origin server -----
 async function tm(pathname, { method = 'GET', body, token, contentType } = {}) {
-    const headers = { 'Accept': 'application/json' };
+    const headers = { 'Accept': 'application/json', 'X-Mail-Key': mailKey };
     if (body) headers['Content-Type'] = contentType || 'application/json';
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const opts = { method, headers, body: body ? JSON.stringify(body) : undefined };
@@ -201,7 +198,7 @@ async function tm(pathname, { method = 'GET', body, token, contentType } = {}) {
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch (e) {}
     if (!r.ok) {
-        const err = new Error((data && (data.message || data['hydra:description'] || data.detail)) || ('메일 서버 오류 ' + r.status));
+        const err = new Error((data && (data.error || data.message || data['hydra:description'] || data.detail)) || ('메일 서버 오류 ' + r.status));
         err.status = r.status;
         throw err;
     }
@@ -213,16 +210,16 @@ function hydraList(data) {
 }
 
 // 발급 도메인은 자주 안 바뀌므로 캐시 — 학급 인원수만큼 /domains를 중복 호출하지 않도록
-// (키에 gw를 넣어 mail.tm 시절 캐시와 분리)
+// Separate the cache from the previous provider.
 async function tmActiveDomain() {
     let cached = null;
-    try { cached = JSON.parse(localStorage.getItem('tmgw_domain') || 'null'); } catch (e) {}
+    try { cached = JSON.parse(localStorage.getItem('tm_proxy_domain_v1') || 'null'); } catch (e) {}
     if (cached && cached.domain && Date.now() - cached.at < 10 * 60 * 1000) return cached.domain;
     try {
         const list = hydraList(await tm('/domains?page=1'));
         const active = list.find(d => d.isActive && !d.isPrivate) || list[0];
         if (!active) throw new Error('메일 도메인 목록을 가져오지 못했습니다.');
-        localStorage.setItem('tmgw_domain', JSON.stringify({ domain: active.domain, at: Date.now() }));
+        localStorage.setItem('tm_proxy_domain_v1', JSON.stringify({ domain: active.domain, at: Date.now() }));
         return active.domain;
     } catch (e) {
         if (cached && cached.domain) return cached.domain; // 조회 실패 시 만료된 캐시라도 사용
@@ -304,7 +301,7 @@ function renderAccounts() {
     document.getElementById('acctCount').textContent = created + ' / 99 생성됨';
 }
 
-// mail.tm 시절 발급된 주소는 mail.gw에서 로그인 불가 — 같은 번호로 새 주소를 발급해 명부 갱신
+// Ask before replacing an address incompatible with the current provider.
 async function ensureUsableAddress(acc) {
     try { await tmToken(acc.address); return true; } // 로그인되면 (사라진 계정 재생성 포함) 그대로 사용
     catch (e) {
@@ -524,7 +521,7 @@ function closeViewer() {
 }
 
 async function downloadBlob(url, token, filename) {
-    const r = await fetch(MAILTM + url, { headers: { Authorization: 'Bearer ' + token } });
+    const r = await fetch(MAILTM + url, { headers: { Authorization: 'Bearer ' + token, 'X-Mail-Key': mailKey } });
     if (!r.ok) throw new Error('다운로드 실패 (' + r.status + ')');
     const blob = await r.blob();
     const objUrl = URL.createObjectURL(blob);
