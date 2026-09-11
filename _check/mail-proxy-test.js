@@ -1,5 +1,7 @@
 ﻿const assert = require('node:assert/strict');
-const proxy = require('../lib/mail-proxy');
+const { createMailProxy } = require('../lib/mail-proxy');
+const { requestMail } = require('../lib/mail-transport');
+const proxy = createMailProxy((...args) => global.fetch(...args));
 const realFetch = global.fetch;
 async function request(method, url, body) {
  const result = { headers: {}, statusCode: 200 };
@@ -25,7 +27,7 @@ async function request(method, url, body) {
  assert.equal((await request('GET','/domains')).statusCode,504);
  global.fetch=async()=>new Response(new Uint8Array([0,255,128]),{headers:{'content-type':'application/octet-stream'}});
  assert.deepEqual((await request('GET','/messages/abc/attachment/xyz')).body,Buffer.from([0,255,128]));
- global.fetch=realFetch;
+ global.fetch=requestMail;
  const live=await request('GET','/domains?page=1');
  assert.equal(live.statusCode,200,JSON.stringify(live.body));
  const data=JSON.parse(live.body); assert.ok((data['hydra:member'] || data.member || data).length);
