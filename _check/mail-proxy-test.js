@@ -1,10 +1,12 @@
 ﻿const assert = require('node:assert/strict');
-const proxy = require('../lib/mail-proxy');
+const { createMailProxy } = require('../lib/mail-proxy');
+const { requestMail } = require('../lib/mail-transport');
+const proxy = createMailProxy((...args) => global.fetch(...args));
 const realFetch = global.fetch;
-async function request(method, url, body) {
+async function request(method, url, body, handler = proxy) {
  const result = { headers: {}, statusCode: 200 };
  const res = {set(k,v){result.headers[k]=v;return this},status(v){result.statusCode=v;return this},json(v){result.body=v;return this},send(v){result.body=v;return this},end(){return this}};
- await proxy({method,url,body,headers:{authorization:'Bearer test','x-mail-key':'private'}},res);
+ await handler({method,url,body,headers:{authorization:'Bearer test','x-mail-key':'private'}},res);
  return result;
 }
 (async()=>{
@@ -25,9 +27,24 @@ async function request(method, url, body) {
  assert.equal((await request('GET','/domains')).statusCode,504);
  global.fetch=async()=>new Response(new Uint8Array([0,255,128]),{headers:{'content-type':'application/octet-stream'}});
  assert.deepEqual((await request('GET','/messages/abc/attachment/xyz')).body,Buffer.from([0,255,128]));
- global.fetch=realFetch;
+ global.fetch=requestMail;
  const live=await request('GET','/domains?page=1');
  assert.equal(live.statusCode,200,JSON.stringify(live.body));
  const data=JSON.parse(live.body); assert.ok((data['hydra:member'] || data.member || data).length);
- console.log('Mail proxy checks passed, including live upstream domains.');
+ global.fetch = () => { throw new Error('Vercel-instrumented fetch must not be called'); };
+ assert.equal((await request('GET', '/domains?page=1', undefined, createMailProxy())).statusCode, 200);
+ const https = require('node:https');
+ const originalRequest = https.request;
+ try {
+  https.request = function(...args) {
+   const req = originalRequest.apply(this, args);
+   req.setHeader('x-vercel-id', 'icn1::regression-test');
+   req.setHeader('x-invocation-id', 'icn1::regression-test');
+   return req;
+  };
+  assert.equal((await requestMail(new URL('https://api.mail.tm/domains'), {signal: AbortSignal.timeout(15000)})).status, 200);
+  const invalid = await requestMail(new URL('https://api.mail.tm/token'), {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({address: 'invalid-airoom-test@uberip.com', password: 'invalid'}), signal: AbortSignal.timeout(15000)});
+  assert.equal(invalid.status, 401);
+ } finally { https.request = originalRequest; }
+ console.log('Passed: proxy, injected-header regression, JSON POST transport, live upstream.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{global.fetch=realFetch});
