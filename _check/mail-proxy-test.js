@@ -33,5 +33,18 @@ async function request(method, url, body, handler = proxy) {
  const data=JSON.parse(live.body); assert.ok((data['hydra:member'] || data.member || data).length);
  global.fetch = () => { throw new Error('Vercel-instrumented fetch must not be called'); };
  assert.equal((await request('GET', '/domains?page=1', undefined, createMailProxy())).statusCode, 200);
- console.log('Mail proxy checks passed, including native HTTPS with global fetch disabled.');
+ const https = require('node:https');
+ const originalRequest = https.request;
+ try {
+  https.request = function(...args) {
+   const req = originalRequest.apply(this, args);
+   req.setHeader('x-vercel-id', 'icn1::regression-test');
+   req.setHeader('x-invocation-id', 'icn1::regression-test');
+   return req;
+  };
+  assert.equal((await requestMail(new URL('https://api.mail.tm/domains'), {signal: AbortSignal.timeout(15000)})).status, 200);
+  const invalid = await requestMail(new URL('https://api.mail.tm/token'), {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({address: 'invalid-airoom-test@uberip.com', password: 'invalid'}), signal: AbortSignal.timeout(15000)});
+  assert.equal(invalid.status, 401);
+ } finally { https.request = originalRequest; }
+ console.log('Passed: proxy, injected-header regression, JSON POST transport, live upstream.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{global.fetch=realFetch});
