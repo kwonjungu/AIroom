@@ -32,6 +32,17 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     assert.equal((await request(`/${r.id}/finalize`, 'POST', { version: r.version }, token)).res.status, 401);
     assert.equal((await request(`/${r.id}/finalize`, 'POST', { version: r.version })).res.status, 409);
     assert.equal((await request(`/${r.id}/provision`, 'POST', { version: 1 })).res.status, 409);
+    // 서명 전에는 제출이 막힌다.
+    {
+        const rows = r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(d.RUBRICS.document.map(v => [v.id, v.max])), bonus: 0, note: '' }));
+        r = (await request(`/${r.id}/evaluations/document/save`, 'POST', { version: r.version, rows }, token)).json;
+        const blocked = await request(`/${r.id}/evaluations/document/submit`, 'POST', { version: r.version }, token);
+        assert.equal(blocked.res.status, 400); assert.match(blocked.json.error, /청렴서약서/);
+    }
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(400, 9)]).toString('base64');
+    assert.equal((await request(`/${r.id}/pledge`, 'POST', { version: r.version, image: 'data:image/svg+xml;base64,' + png }, token)).res.status, 400);
+    r = (await request(`/${r.id}/pledge`, 'POST', { version: r.version, image: 'data:image/png;base64,' + png }, token)).json;
+    assert.ok(r.reviewers[0].pledge.signedAt);
     for (const stage of ['document', 'interview']) {
         const rows = r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(d.RUBRICS[stage].map(v => [v.id, v.max])), bonus: 0, note: '<img src=x onerror=alert(1)>' }));
         r = (await request(`/${r.id}/evaluations/${stage}/save`, 'POST', { version: r.version, rows }, token)).json;
@@ -41,7 +52,7 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     }
     r = (await request(`/${r.id}/finalize`, 'POST', { version: r.version })).json; assert.equal(r.snapshot.results[0].total, 100);
     const htmlResult = await request(`/${r.id}/export/html`); const html = await htmlResult.res.text(); assert.match(html, /window.print/); assert.ok(!html.includes('<script>alert(1)</script>')); assert.ok(!html.includes('<img src=x')); assert.match(html, /면접·최종 합산 통계표/);
-    const xlsxResult = await request(`/${r.id}/export/xlsx`); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(await xlsxResult.res.arrayBuffer())); assert.equal(workbook.worksheets.length, 4); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('G2').value, 100); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('B2').type, ExcelJS.ValueType.String);
+    const xlsxResult = await request(`/${r.id}/export/xlsx`); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(await xlsxResult.res.arrayBuffer())); assert.equal(workbook.worksheets.length, 5); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('G2').value, 100); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('B2').type, ExcelJS.ValueType.String);
     const zipResult = await request(`/${r.id}/export/zip`); const zip = await JSZip.loadAsync(Buffer.from(await zipResult.res.arrayBuffer())); assert.equal(Object.keys(zip.files).length, 4); assert.ok(zip.file('채점표_서약서_인쇄용.html'));
     assert.equal((await request(`/${r.id}/export/html`, 'GET', undefined, token)).res.status, 401);
     const reloaded = await createStore({ directory }).get(r.id); assert.equal(reloaded.snapshot.results[0].total, 100);
