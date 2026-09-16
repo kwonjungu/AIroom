@@ -62,7 +62,7 @@ test('three sections are declared in content.hpf in spine order and counted in h
     assert.match(await zip.file('Contents/header.xml').async('string'), /secCnt="3"/);
 });
 
-test('only the table section is landscape: NARROWLY with width > height', async () => {
+test('only the table section is landscape: NARROWLY flag with portrait paper dims', async () => {
     const zip = await JSZip.loadAsync(await buildHwpx(finalized()));
     const pagePr = async i => {
         const xml = await zip.file(`Contents/section${i}.xml`).async('string');
@@ -71,8 +71,9 @@ test('only the table section is landscape: NARROWLY with width > height', async 
         const [, landscape, width, height] = /landscape="([^"]+)" width="(\d+)" height="(\d+)"/.exec(tags[0]);
         return { landscape, width: Number(width), height: Number(height) };
     };
-    // 가로 구역: PAGELANDSCAPETYPE 의 PLT_NARROWLY + 세로 문서의 폭/높이를 맞바꾼 값.
-    assert.deepEqual(await pagePr(1), { landscape: 'NARROWLY', width: 84188, height: 59528 });
+    // 실기 판별(2026-09-17): NARROWLY 플래그가 용지를 회전한다. width/height 는 세로 값
+    // 그대로여야 하며, 치수까지 맞바꾸면 두 번 회전이 되어 한/글에서 세로로 열린다.
+    assert.deepEqual(await pagePr(1), { landscape: 'NARROWLY', width: 59528, height: 84188 });
     for (const i of [0, 2]) {
         assert.deepEqual(await pagePr(i), { landscape: 'WIDELY', width: 59528, height: 84188 }, `구역 ${i} 는 세로여야 한다`);
     }
@@ -82,7 +83,9 @@ test('each section carries only its own content and its tables fit that section 
     const zip = await JSZip.loadAsync(await buildHwpx(finalized()));
     const [cover, tables, pledges] = await Promise.all([0, 1, 2].map(i => zip.file(`Contents/section${i}.xml`).async('string')));
     // 구역 0: 표지. 집계표도 서약서도 여기 있으면 안 된다.
-    assert.ok(cover.includes('채용 심사 결과') && cover.includes('순위 기준'));
+    assert.ok(cover.includes('채용 심사 결과') && cover.includes('서류전형일'));
+    // 순위 기준·확정 시각은 공문서 표지에서 뺐다 (2026-09-17)
+    assert.ok(!cover.includes('순위 기준') && !cover.includes('확정일'), '표지에 내부 산정 정보가 남아 있다');
     assert.ok(!cover.includes('집계표') && !cover.includes('청렴서약서'));
     // 구역 1(가로): 집계표 + 채점표.
     for (const needle of ['1. 서류심사 집계표', '2. 면접·최종 합산 통계표', '서류심사 채점표', '면접심사 채점표', '최종 순위', '채점자 직위']) {
