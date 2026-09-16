@@ -24,11 +24,16 @@ gcloud services enable drive.googleapis.com sheets.googleapis.com --project=airo
 2. 브랜딩: 앱 이름 `백암이 채용 관리`, 지원 이메일·개발자 연락처를 운영 계정으로 지정합니다.
 3. 대상: 개인 Gmail 계정이므로 외부 사용자 앱으로 설정하고, 테스트 사용자에 운영 계정을 추가합니다.
 4. 데이터 액세스: 현재 단일 운영 계정 개발 버전은 `https://www.googleapis.com/auth/drive` 권한을 사용합니다. 미리 지정된 원본 파일·폴더 ID를 읽고 복사하기 위해서입니다. 운영 계정의 Drive에 폭넓은 접근이 가능한 권한이므로 승인 화면에서 확인하세요.
-5. [클라이언트](https://console.cloud.google.com/auth/clients?project=airoom-ebce3) → 클라이언트 만들기 → **웹 애플리케이션**.
-6. 승인된 리디렉션 URI에 아래를 정확하게 추가합니다. 서버 측 OAuth이므로 JavaScript 원본은 현재 구현에 필수는 아닙니다.
+5. [클라이언트](https://console.cloud.google.com/auth/clients?project=airoom-ebce3) → 클라이언트 만들기.
+   `애플리케이션 유형`은 드롭다운입니다. 처음에 **데스크톱 앱**이 보이더라도 목록을 펼쳐 **웹 애플리케이션**을 고릅니다.
+   목록이 펼쳐지지 않으면 2~4번(브랜딩·대상·데이터 액세스)이 아직 저장되지 않은 것입니다.
+   데스크톱 앱 유형은 이 구현에 쓸 수 없습니다. 서버가 고정 경로 콜백으로 코드를 받기 때문입니다.
+6. 승인된 리디렉션 URI에 아래를 정확하게 추가합니다. 로컬과 배포 주소를 모두 넣어두면 한 클라이언트로 양쪽을 씁니다.
+   서버 측 OAuth이므로 JavaScript 원본은 현재 구현에 필수는 아닙니다.
 
 ```text
 http://localhost:3100/api/recruitments/google/callback
+https://a-iroom.vercel.app/api/recruitments/google/callback
 ```
 
 7. 클라이언트 JSON을 다운로드합니다. 채팅, GitHub, 공개 폴더에 올리지 않습니다.
@@ -54,6 +59,24 @@ npm start
 5. 웹으로 돌아오면 `Drive 접근 확인`을 누릅니다.
 
 연결 상태의 ‘인증 정보 저장됨’은 저장된 갱신 토큰의 존재를 뜻합니다. 실제 사용 가능 여부는 접근 확인으로 검사합니다. OAuth 테스트 모드의 갱신 토큰은 Google 정책에 따라 만료될 수 있으며, 이 경우 다시 연결합니다.
+
+## 3-1. 템플릿 원본 소유권 (2026-09-16 확인)
+
+`lib/recruitment/config.js`의 `templateIds`가 가리키는 두 시트는 운영 계정 소유가 아닙니다.
+
+| 정원 | 제목 | 소유자 | 상위 폴더 |
+|---|---|---|---|
+| 10명 | 강사 채용 프로그램 심사(4) 면접(4) 지원(10)(Copyright © 2026 KHSDO) | `khwell@gmail.com` | `1SqNAh_Zrz…` |
+| 20명 | 강사 채용 프로그램 심사(4) 면접(4) 지원(20)(Copyright © 2026 KHSDO) | `khwell@gmail.com` | `1SqNAh_Zrz…` |
+
+`백암이 채용 지원 시스템` 폴더(`1n5Aypzoy…`)는 운영 계정 소유이고 파일 생성이 가능합니다. 원본만 외부 소유입니다.
+
+따라서 자동 생성 전에 확인할 것:
+
+1. 원본 소유자가 공유를 유지해야 복사가 계속 동작합니다. 공유가 끊기면 `files/{id}/copy`가 403으로 실패합니다.
+2. 제목의 `Copyright © 2026 KHSDO` 표기대로 제3자 저작물입니다. 학교 업무에 복제·배포하려면 소유자 허락을 먼저 받으세요.
+3. 권장: 원본을 운영 계정 Drive로 **한 번 복사해 운영용 사본**을 만들고, `templateIds`를 그 사본 ID로 바꿉니다.
+   외부 원본이 수정·삭제돼도 영향받지 않고, 수식 정비도 사본에서 합니다.
 
 ## 4. 현재 Drive 폴더 공유 설정
 
