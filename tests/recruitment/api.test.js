@@ -53,8 +53,10 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     r = (await request(`/${r.id}/finalize`, 'POST', { version: r.version })).json; assert.equal(r.snapshot.results[0].total, 100);
     const htmlResult = await request(`/${r.id}/export/html`); const html = await htmlResult.res.text(); assert.match(html, /window.print/); assert.ok(!html.includes('<script>alert(1)</script>')); assert.ok(!html.includes('<img src=x')); assert.match(html, /면접·최종 합산 통계표/);
     const xlsxResult = await request(`/${r.id}/export/xlsx`); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(await xlsxResult.res.arrayBuffer())); assert.equal(workbook.worksheets.length, 7); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('G2').value, 100); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('B2').type, ExcelJS.ValueType.String);
-    const zipResult = await request(`/${r.id}/export/zip`); const zip = await JSZip.loadAsync(Buffer.from(await zipResult.res.arrayBuffer())); assert.equal(Object.keys(zip.files).length, 4); assert.ok(zip.file('채점표_서약서_인쇄용.html'));
+    const hwpxResult = await request(`/${r.id}/export/hwpx`); assert.equal(hwpxResult.res.status, 200); assert.equal(hwpxResult.res.headers.get('content-type'), 'application/hwp+zip'); const hwpxBuffer = Buffer.from(await hwpxResult.res.arrayBuffer()); assert.equal(hwpxBuffer.subarray(0, 2).toString(), 'PK');
+    const zipResult = await request(`/${r.id}/export/zip`); const zip = await JSZip.loadAsync(Buffer.from(await zipResult.res.arrayBuffer())); assert.equal(Object.keys(zip.files).length, 5); assert.ok(zip.file('채점표_서약서_인쇄용.html')); assert.ok(zip.file('평가통계_확정본.hwpx'));
     assert.equal((await request(`/${r.id}/export/html`, 'GET', undefined, token)).res.status, 401);
+    assert.equal((await request(`/${r.id}/export/hwpx`, 'GET', undefined, token)).res.status, 401);
     const reloaded = await createStore({ directory }).get(r.id); assert.equal(reloaded.snapshot.results[0].total, 100);
 });
 test('the config endpoint never hands the operator address or folder id to the browser', async t => {
