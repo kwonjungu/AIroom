@@ -18,7 +18,10 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     t.after(async () => { await new Promise(resolve => server.close(resolve)); await fs.rm(directory, { recursive: true, force: true }); });
     const base = `http://127.0.0.1:${server.address().port}/api/recruitments`;
     async function request(url, method = 'GET', body, who = 'admin') { const headers = { 'Content-Type': 'application/json' }; if (who === 'admin') headers['X-Auth-Token'] = 'admin-test'; else if (who === 'user') headers['X-Auth-Token'] = 'user-test'; else if (who) headers['X-Recruitment-Token'] = who; const res = await fetch(base + url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) }); const json = res.headers.get('content-type')?.includes('application/json') ? await res.json() : null; return { res, json }; }
-    assert.equal((await request('', 'GET', undefined, null)).res.status, 401); assert.equal((await request('', 'POST', payload(), 'user')).res.status, 403);
+    assert.equal((await request('', 'GET', undefined, null)).res.status, 401);
+    assert.equal((await request('', 'GET', undefined, 'bogus-token')).res.status, 401);
+    // 백암이 접근 코드 세션(role 'user')도 채용 관리자로 인정한다.
+    assert.equal((await request('', 'POST', payload(), 'user')).res.status, 201);
     let { json: r } = await request('', 'POST', payload()); assert.ok(r.id);
     let invite = await request(`/${r.id}/invites/${r.reviewers[0].id}`, 'POST', { version: r.version }); r = invite.json.recruitment; const oldToken = invite.json.invitationPath.split('invite=')[1];
     invite = await request(`/${r.id}/invites/${r.reviewers[0].id}`, 'POST', { version: r.version }); r = invite.json.recruitment; const token = invite.json.invitationPath.split('invite=')[1];
