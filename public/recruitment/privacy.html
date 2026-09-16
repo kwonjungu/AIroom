@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>개인정보처리방침 · 백암이 채용 관리</title><link rel="stylesheet" href="/recruitment/style.css"></head>
+<body><header class="topbar"><a class="brand" href="/recruitment">백암이 <span>채용 관리</span></a></header>
+<main><section class="panel">
+<p class="eyebrow">PRIVACY POLICY</p>
+<h1>개인정보처리방침</h1>
+<p class="muted">시행일: 2026년 9월 16일</p>
+
+<h2>1. 서비스 성격</h2>
+<p>백암이 채용 관리(이하 “서비스”)는 학교의 강사 채용 심사를 진행하기 위한 내부 업무 도구입니다. 학교 담당자와 그가 지정한 평가위원만 사용하며, 일반에 공개된 회원가입 절차가 없습니다.</p>
+
+<h2>2. 처리하는 정보</h2>
+<table><thead><tr><th>구분</th><th>항목</th><th>입력 주체</th></tr></thead><tbody>
+<tr><td>채용 설정</td><td>학교명, 채용명, 채용 분야, 전형일</td><td>관리자</td></tr>
+<tr><td>지원자</td><td>접수번호, 성명</td><td>관리자</td></tr>
+<tr><td>평가위원</td><td>성명, 직위, 이메일</td><td>관리자</td></tr>
+<tr><td>평가 기록</td><td>항목별 점수, 가점, 참석 여부, 평가 메모, 제출 시각</td><td>평가위원</td></tr>
+<tr><td>처리 이력</td><td>작업 종류, 수행자, 시각</td><td>서비스 자동 기록</td></tr>
+</tbody></table>
+<p>지원자의 주민등록번호, 연락처, 주소, 자기소개서 원문은 서비스에 저장하지 않습니다. 서비스가 다루는 지원자 식별값은 <strong>접수번호와 성명</strong>뿐입니다.</p>
+
+<h2>3. 처리 목적</h2>
+<p>채용 심사의 점수 집계, 전형 단계 관리, 결과 문서 생성 외의 목적으로 사용하지 않습니다. 광고·마케팅·프로파일링에 이용하지 않으며 자동화된 합격 결정을 하지 않습니다. 순위는 참고 자료이고 최종 선발은 학교가 결정합니다.</p>
+
+<h2>4. Google 계정 정보의 이용</h2>
+<p>운영자가 Google 계정 연결을 승인하면 서비스는 다음을 처리합니다.</p>
+<ul class="rule-list">
+<li>연결된 계정의 이메일 주소를 확인합니다. 지정된 운영 계정인지 검증하는 용도로만 사용합니다.</li>
+<li>Google이 발급한 접근·갱신 토큰을 <strong>AES-256-GCM으로 암호화</strong>하여 서버에 저장합니다. 토큰을 제3자에게 전달하지 않습니다.</li>
+<li>Google Drive에서는 운영자가 지정한 채용 폴더와 채용 심사 템플릿에만 접근합니다. 그 밖의 파일을 열람·수정·삭제하지 않습니다.</li>
+<li>Google 사용자 데이터를 광고에 사용하거나 판매하지 않으며, 사람이 열람하지 않습니다.</li>
+</ul>
+<p>연결 해제는 <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Google 계정 권한 관리</a>에서 언제든 가능합니다. 해제하면 서버에 저장된 토큰은 더 이상 사용되지 않습니다.</p>
+
+<h2>5. 보관과 파기</h2>
+<p>채용 데이터는 서비스 운영 서버(또는 연결된 Redis 저장소)에 보관합니다. 채용 절차가 종료되고 학교의 문서 보존 기간이 지나면 관리자가 삭제합니다. 관리자가 삭제하면 복구되지 않습니다.</p>
+
+<h2>6. 접근 통제</h2>
+<ul class="rule-list">
+<li>관리자는 기관에서 관리하는 접근 코드로 로그인합니다.</li>
+<li>평가위원은 위원별로 발급된 링크로 접속하며, 서버에는 그 링크의 해시값만 저장됩니다. 링크는 발급 7일 후 만료되고 재발급 시 이전 링크는 즉시 무효가 됩니다.</li>
+<li>평가위원은 본인에게 배정된 채용만 볼 수 있고, 점수 입력은 본인 몫에 한정됩니다.</li>
+<li>결과가 확정되면 점수는 잠기고, 수정하려면 관리자가 사유를 기록하고 재개방해야 합니다.</li>
+</ul>
+
+<h2>7. 제3자 제공과 위탁</h2>
+<p>수집한 정보를 제3자에게 제공하거나 판매하지 않습니다. 서비스 운영을 위해 다음 인프라를 이용합니다.</p>
+<ul class="rule-list">
+<li>Vercel — 웹 서비스 호스팅</li>
+<li>Upstash Redis — 채용 데이터 저장</li>
+<li>Google Drive·Sheets API — 운영자가 연결을 승인한 경우에 한정</li>
+</ul>
+
+<h2>8. 정보주체의 권리</h2>
+<p>지원자와 평가위원은 본인 정보의 열람·정정·삭제를 요청할 수 있습니다. 요청은 해당 채용을 진행한 학교의 담당자 또는 아래 연락처로 접수하며, 확인 후 지체 없이 처리합니다.</p>
+
+<h2>9. 문의</h2>
+<p>운영자: kdhdhdbdbr@gmail.com</p>
+
+<h2>10. 변경</h2>
+<p>이 방침이 바뀌면 이 페이지에 변경 내용과 시행일을 게시합니다.</p>
+
+<p style="margin-top:30px"><a class="secondary" href="/recruitment">채용 관리로 돌아가기</a></p>
+</section></main></body></html>
