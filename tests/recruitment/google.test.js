@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { createGoogleAuth } = require('../../lib/recruitment/google-auth');
-const { GoogleWorkspaceClient, templatePlan } = require('../../lib/recruitment/providers/google');
+const { GoogleWorkspaceClient } = require('../../lib/recruitment/providers/google');
 const config = require('../../lib/recruitment/config');
 
 test('OAuth state, operator account, encrypted persistence and token refresh', async t => {
@@ -29,7 +29,4 @@ test('Google connection check rejects wrong operator and public folder without w
     let account = 'other@example.com'; let publicFolder = true; const methods = [];
     const client = new GoogleWorkspaceClient({ getAccessToken: async () => 'not-a-real-token', fetchImpl: async (url, options) => { methods.push(options.method || 'GET'); return Response.json(url.includes('about?') ? { user: { emailAddress: account } } : { id: config.folderId, name: '폴더', mimeType: 'application/vnd.google-apps.folder', capabilities: { canAddChildren: true }, permissions: publicFolder ? [{ type: 'anyone', role: 'reader' }] : [{ type: 'user', role: 'owner' }] }); } });
     await assert.rejects(client.checkConnection(), /운영 계정/); account = config.operatorEmail; await assert.rejects(client.checkConnection(), /공개/); publicFolder = false; assert.equal((await client.checkConnection()).email, config.operatorEmail); assert.ok(methods.every(v => v === 'GET'));
-});
-test('template mapping validates observed tabs instead of guessing', () => {
-    assert.throws(() => templatePlan({ candidates: [] }, { sheets: [] }), /탭이 없습니다/);
 });

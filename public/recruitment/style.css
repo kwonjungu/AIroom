@@ -6,3 +6,16 @@
 
 .sign-pad{width:100%;height:190px;border:2px dashed #b9c5cb;border-radius:10px;background:#fcfdfd;touch-action:none;cursor:crosshair;display:block;margin-bottom:14px}
 .signature-view{max-height:110px;max-width:320px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px;margin-top:12px}
+
+.rubric-box{border:1px solid var(--line);border-radius:10px;padding:16px;background:#fbfcfd}
+.rubric-box h4{margin:0;font-size:16px}
+.rubric-rows{margin:14px 0}
+.rubric-row{display:grid;grid-template-columns:1fr 92px 38px;gap:8px;margin-bottom:8px;align-items:center}
+.rubric-row input{border:1px solid #c9c9d0;border-radius:6px;padding:9px 10px;font-size:15px;width:100%}
+.rubric-row button{padding:9px 0;font-size:17px;line-height:1}
+.candidate-row{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:center;margin-bottom:8px;max-width:520px}
+.candidate-code{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;text-align:center;background:#eef1f4;border-radius:6px;padding:9px 0}
+.candidate-row input{border:1px solid #c9c9d0;border-radius:6px;padding:9px 10px;font-size:15px;width:100%}
+
+.invite-list{width:100%;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:12px;resize:vertical;background:#fff;color:var(--ink)}
+.invite-box .actions a{padding:11px 0}
