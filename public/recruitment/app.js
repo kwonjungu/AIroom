@@ -68,7 +68,7 @@
 
 <h3 style="margin-top:28px">평가 항목과 배점</h3><p class="muted small">전형별로 항목을 추가·삭제하고 배점을 바꿀 수 있습니다. 0.5점 단위, 항목당 최대 100점, 전형별 최대 12개. 생성 후에는 바꿀 수 없습니다.</p><div class="grid">${rubricEditor('document')}${rubricEditor('interview')}</div>
 
-<h3 style="margin-top:28px">평가위원</h3><p class="muted small">전형별 1~4명. 같은 위원이 두 전형에 참여하면 한 줄에 모두 선택하세요.</p><div id="reviewer-rows">${reviewerRow()}</div><button type="button" class="secondary" data-action="add-reviewer" style="margin:14px 0 24px">+ 위원 추가</button>
+<h3 style="margin-top:28px">평가위원</h3><p class="muted small">최대 5명. 같은 위원이 두 전형에 참여하면 한 줄에 모두 선택하세요.</p><div id="reviewer-rows">${reviewerRow()}</div><button type="button" class="secondary" data-action="add-reviewer" style="margin:14px 0 24px">+ 위원 추가</button>
 
 <h3>지원자</h3><p class="muted small">인원수를 정하면 접수번호가 001부터 자동으로 붙습니다. 이름만 입력하세요.</p><label class="field" style="max-width:200px">지원자 수<input name="candidateCount" type="number" min="1" max="20" value="3" required></label><div id="candidate-rows">${candidateRows(3)}</div>
 
@@ -177,7 +177,7 @@
             if (action === 'tab') { state.tab = button.dataset.tab; render(); }
             if (action === 'refresh') { await load(); notify('최신 상태를 불러왔습니다.'); }
             if (action === 'exit') { if (idFromUrl()) sessionStorage.removeItem(`recruitment-invite:${idFromUrl()}`); setId(null); state.current = null; try { await load(null); } catch (e) { login(e.message); } }
-            if (action === 'add-reviewer') { if (document.querySelectorAll('.reviewer').length >= 8) throw new Error('위원은 최대 8명입니다.'); $('#reviewer-rows').insertAdjacentHTML('beforeend', reviewerRow()); state.dirty = true; }
+            if (action === 'add-reviewer') { if (document.querySelectorAll('.reviewer').length >= 5) throw new Error('평가위원은 최대 5명입니다.'); $('#reviewer-rows').insertAdjacentHTML('beforeend', reviewerRow()); state.dirty = true; }
             if (action === 'remove-reviewer') { if (document.querySelectorAll('.reviewer').length <= 1) throw new Error('위원이 최소 1명 필요합니다.'); button.closest('.reviewer').remove(); state.dirty = true; }
             if (action === 'fill-example') { const form = $('#create-form'); if (!form) return; if (state.dirty && !confirm('현재 입력을 예시로 바꿀까요?')) return; Object.entries({ school: '예시초등학교', title: '2026 기초학력 협력강사 채용 (예시)', field: '기초학력 협력강사', shortlistLimit: '2', candidateCount: '3' }).forEach(([k, v]) => { form.elements[k].value = v; });
                 syncCandidates(['예시지원자 가', '예시지원자 나', '예시지원자 다']); $('#reviewer-rows').innerHTML = reviewerRow({ name: '예시위원 가' }) + reviewerRow({ name: '예시위원 나' }); state.dirty = true; }

@@ -15,6 +15,10 @@ test('validates duplicate codes, dates, reviewer assignments and capacity', () =
     assert.throws(() => d.createRecruitment(input({ documentDate: '2026-02-30' })), /날짜/);
     assert.throws(() => d.createRecruitment(input({ shortlistLimit: 5 })), /최대 4명/);
     assert.throws(() => d.createRecruitment(input({ reviewers: [{ name: '가', position: '교사', email: 'x@e.com', stages: ['document'] }] })), /각 전형/);
+    // 사용자 확정 사양(2026-09-17): 평가위원 최대 5명. 5명은 되고 6명은 거부.
+    const five = Array.from({ length: 5 }, (_, i) => ({ name: '위원' + i, position: '교사', stages: ['document', 'interview'] }));
+    assert.equal(d.createRecruitment(input({ reviewers: five })).reviewers.length, 5);
+    assert.throws(() => d.createRecruitment(input({ reviewers: [...five, { name: '위원6', position: '교사', stages: ['document'] }] })), /1~5명/);
 });
 test('unsubmitted reviewers never reduce an average to zero; duplicate names retain identity', () => {
     const r = provision(d.createRecruitment(input())); const v = r.reviewers[0];
