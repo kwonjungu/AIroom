@@ -57,6 +57,26 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     assert.equal((await request(`/${r.id}/export/html`, 'GET', undefined, token)).res.status, 401);
     const reloaded = await createStore({ directory }).get(r.id); assert.equal(reloaded.snapshot.results[0].total, 100);
 });
+test('the config endpoint never hands the operator address or folder id to the browser', async t => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-config-'));
+    const app = express(); app.use('/api/recruitments', createRouter({ directory, validateSession: async token => token === 'admin-test' ? { role: 'admin' } : null }));
+    const server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
+    t.after(async () => { await new Promise(resolve => server.close(resolve)); await fs.rm(directory, { recursive: true, force: true }); });
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/api/recruitments/config`, { headers: { 'X-Auth-Token': 'admin-test' } });
+    const body = await res.json(); const text = JSON.stringify(body);
+    assert.ok(!text.includes('@'), `설정 응답에 메일 주소가 있다: ${text}`);
+    assert.equal(body.operatorEmail, undefined);
+    assert.equal(body.folderId, undefined);
+    assert.deepEqual(Object.keys(body.google).sort(), ['configured', 'connected']);
+});
+test('a reviewer needs no email address', async t => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-noemail-'));
+    t.after(() => fs.rm(directory, { recursive: true, force: true }));
+    const body = payload(); delete body.reviewers[0].email;
+    const r = d.createRecruitment(body);
+    assert.equal(r.reviewers[0].email, null);
+    assert.throws(() => d.createRecruitment({ ...payload(), reviewers: [{ name: '가', position: '교사', stages: ['document', 'interview'] }, { name: '가', position: '교사', stages: ['document'] }] }), /같은 이름·직위/);
+});
 test('local store serializes writers and rejects stale versions; serverless has no silent fallback', async t => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-cas-')); t.after(() => fs.rm(directory, { recursive: true, force: true })); const store = createStore({ directory }); const r = await store.create(d.createRecruitment(payload()));
     const results = await Promise.allSettled([store.mutate(r.id, 1, x => x), store.mutate(r.id, 1, x => x)]); assert.equal(results.filter(x => x.status === 'fulfilled').length, 1); assert.equal((await store.get(r.id)).version, 2);

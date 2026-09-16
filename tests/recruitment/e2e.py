@@ -96,12 +96,17 @@ with sync_playwright() as pw:
         page.fill("[name=interviewDate]", "2026-09-25")
         page.locator("[name=reviewer-name]").fill("권준구")
         page.locator("[name=reviewer-position]").fill("교감")
-        page.locator("[name=reviewer-email]").fill("a@example.com")
         page.click('[data-action="add-reviewer"]')
         page.locator("[name=reviewer-name]").nth(1).fill("오세라")
         page.locator("[name=reviewer-position]").nth(1).fill("교사")
-        page.locator("[name=reviewer-email]").nth(1).fill("b@example.com")
 
+    def no_email_ui():
+        assert page.locator("[name=reviewer-email]").count() == 0, "위원 구글 계정 칸이 남아 있다"
+        body = page.locator("body").inner_text()
+        assert "@gmail.com" not in body, "화면에 운영자 메일이 보인다"
+        assert "Google 계정 연결" not in body, "Google 연결 칸이 남아 있다"
+
+    step("구글 계정 칸·연결 패널·운영자 메일 없음", no_email_ui)
     step("학교·위원 입력", fill_rest)
 
     def create():
