@@ -27,7 +27,9 @@ gcloud services enable drive.googleapis.com sheets.googleapis.com --project=airo
 5. [클라이언트](https://console.cloud.google.com/auth/clients?project=airoom-ebce3) → 클라이언트 만들기.
    `애플리케이션 유형`은 드롭다운입니다. 처음에 **데스크톱 앱**이 보이더라도 목록을 펼쳐 **웹 애플리케이션**을 고릅니다.
    목록이 펼쳐지지 않으면 2~4번(브랜딩·대상·데이터 액세스)이 아직 저장되지 않은 것입니다.
-   데스크톱 앱 유형은 이 구현에 쓸 수 없습니다. 서버가 고정 경로 콜백으로 코드를 받기 때문입니다.
+   이미 **데스크톱 앱**으로 만들었다면 로컬 테스트는 그대로 됩니다. Google 은 데스크톱 유형에 한해
+   루프백 주소(`localhost`/`127.0.0.1`)의 포트와 경로를 자유롭게 허용합니다 (2026-09-16 실측).
+   다만 배포 HTTPS 주소는 `redirect_uri_mismatch` 로 거부되므로, 배포용은 웹 애플리케이션으로 따로 만듭니다.
 6. 승인된 리디렉션 URI에 아래를 정확하게 추가합니다. 로컬과 배포 주소를 모두 넣어두면 한 클라이언트로 양쪽을 씁니다.
    서버 측 OAuth이므로 JavaScript 원본은 현재 구현에 필수는 아닙니다.
 
