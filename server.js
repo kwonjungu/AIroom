@@ -268,6 +268,13 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '10mb' }));
+// 채용 관리 화면: public/recruitment/ 디렉터리와 경로가 겹쳐 static 이 먼저 잡으면
+// 301 로 넘어가며 Referrer-Policy 가 빠진다. static 보다 앞에 둔다.
+app.get(['/recruitment', '/recruitment/'], (req, res) => {
+    res.set('Referrer-Policy', 'no-referrer');
+    res.sendFile(path.join(__dirname, 'public', 'recruitment', 'index.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/defaults', express.static(path.join(__dirname, 'defaults')));
 app.use('/defaults-posting', express.static(path.join(__dirname, 'defaults-posting')));
@@ -2263,6 +2270,10 @@ app.get('/api/admin/audit-log', requireAdmin, async (req, res) => {
     res.json(log.slice(-100)); // 최근 100건
 });
 
+// ===== 채용 관리: 별도 모듈, 기존 관리자 세션 재사용 =====
+app.use('/api/recruitments', require('./lib/recruitment/routes').createRouter({
+    validateSession, redis, serverless: IS_VERCEL
+}));
 // ===== 교구 대여소 (/rental) =====
 // 타 학교 교직원도 쓰므로 메인 접근코드와 분리된 독립 페이지 (초안: 완전 개방)
 require('./lib/rental')(app, {

@@ -1900,7 +1900,8 @@ const DEFAULT_TABS=[
     {id:'winter-schedule',title:'방학근무',icon:'🏫',type:'builtin',order:13},
     {id:'checklist',title:'확인대장',icon:'✅',type:'builtin',order:14},
     {id:'patrol',title:'순찰일지',icon:'🌙',type:'builtin',order:15},
-    {id:'codocs',title:'함께 만드는 문서',icon:'📝',type:'builtin',order:16}
+    {id:'codocs',title:'함께 만드는 문서',icon:'📝',type:'builtin',order:16},
+    {id:'recruitment',title:'채용 관리',icon:'📑',type:'link',order:18,href:'/recruitment'}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -2367,6 +2368,7 @@ window.CODOCS_HOST = {
 };
 
 function switchPage(p,btn){
+    if(p==='recruitment'){location.href=location.hostname.endsWith('github.io')?'https://a-iroom.vercel.app/recruitment':'/recruitment';return;}
     // 함께 만드는 문서에서 벗어나면 실시간 접속 표시를 정리한다
     if(activeTabId==='codocs'&&p!=='codocs'&&window.codocsClose)window.codocsClose();
     document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
