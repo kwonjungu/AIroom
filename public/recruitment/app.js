@@ -179,7 +179,7 @@
         const summary = notes && items.length ? `${stages[stage]} 평가 준거와 심사 참고자료` : notes ? '심사 참고자료' : `${stages[stage]} 평가 준거`;
         const notesHtml = notes ? `<h4>심사 참고자료</h4><p class="guidance-text">${esc(notes)}</p>` : '';
         const listHtml = items.length
-            ? `${notes ? '<h4>항목별 평가 준거</h4>' : ''}<dl class="criteria">${items.map(c => `<div><dt>${esc(c.label)}<span>${c.max}점</span></dt><dd>${esc(c.guide)}</dd></div>`).join('')}</dl>`
+            ? `${notes ? '<h4>항목별 평가 준거</h4>' : ''}<dl class="criteria">${items.map(c => `<div><dt>${esc(c.label)}<span>${c.max}점</span></dt><dd>${esc(c.guide).split(/\n/).map(v => v.trim()).filter(Boolean).map((v, i) => i === 0 ? `<span>${v}</span>` : `<span class="step">${v}</span>`).join('')}</dd></div>`).join('')}</dl>`
             : '';
         return `<details class="panel guide-panel"${open ? ' open' : ''}><summary>${esc(summary)}</summary><div class="guide-body">${notesHtml}${listHtml}</div></details>`;
     }
