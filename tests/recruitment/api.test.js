@@ -103,6 +103,27 @@ test('deleting a recruitment needs the exact title, and an extra confirmation wh
     assert.equal((await send(`/${created.id}`, 'DELETE', { confirmTitle: created.title, confirmUnfinished: true })).status, 404);
     assert.equal((await (await send('', 'GET')).json()).items.length, 0);
 });
+test('the scheduled purge endpoint refuses without the shared secret', async t => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-cron-'));
+    const app = express(); app.use('/api/recruitments', createRouter({ directory, validateSession: async () => null }));
+    const server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
+    const previous = process.env.CRON_SECRET;
+    t.after(async () => { await new Promise(resolve => server.close(resolve)); await fs.rm(directory, { recursive: true, force: true });
+        if (previous === undefined) delete process.env.CRON_SECRET; else process.env.CRON_SECRET = previous; });
+    const url = `http://127.0.0.1:${server.address().port}/api/recruitments/maintenance/purge`;
+    const call = headers => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: '{}' });
+
+    delete process.env.CRON_SECRET;
+    assert.equal((await call({})).status, 503, '비밀키가 없으면 동작하지 않는다');
+    process.env.CRON_SECRET = 'test-cron-secret';
+    assert.equal((await call({})).status, 401);
+    assert.equal((await call({ Authorization: 'Bearer wrong-secret-x' })).status, 401);
+    // 길이가 다른 값도 timingSafeEqual 에서 던지지 않고 401 로 떨어져야 한다.
+    assert.equal((await call({ Authorization: 'Bearer short' })).status, 401);
+    const ok = await call({ Authorization: 'Bearer test-cron-secret' });
+    assert.equal(ok.status, 200);
+    assert.match((await ok.json()).skipped, /연결되지 않았습니다/, 'Google 미연결이면 건너뛴다');
+});
 test('local store serializes writers and rejects stale versions; serverless has no silent fallback', async t => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-cas-')); t.after(() => fs.rm(directory, { recursive: true, force: true })); const store = createStore({ directory }); const r = await store.create(d.createRecruitment(payload()));
     const results = await Promise.allSettled([store.mutate(r.id, 1, x => x), store.mutate(r.id, 1, x => x)]); assert.equal(results.filter(x => x.status === 'fulfilled').length, 1); assert.equal((await store.get(r.id)).version, 2);

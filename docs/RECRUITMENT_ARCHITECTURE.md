@@ -112,6 +112,23 @@ Sheets API 클라이언트와 템플릿 매핑 코드는 제거했다.
 - Excel은 설정/규칙, 서류 집계, 면접 최종 집계, 위원별 상세의 4개 시트. 확정 결과값을 저장하며 live 수식 재계산에 의존하지 않는다. 문자열은 ExcelJS 문자열 셀로 쓰고 수식으로 실행하지 않는다.
 - ZIP은 HTML/XLSX/확정 JSON/안내문. 현재는 기기 다운로드만 제공한다. Drive 보관 업로드는 위 절의 남은 작업이다.
 
+## 보관 문서 자동 삭제
+
+확정 결과 문서를 Drive 폴더에 올리면 `appProperties.purgeAfter` 에 7일 뒤 시각이 기록된다.
+삭제는 두 경로에서 일어난다.
+
+| 경로 | 언제 | 인증 |
+|---|---|---|
+| `POST /:id/archive` | 관리자가 문서를 보관할 때 함께 정리 | 관리자 세션 |
+| `POST /maintenance/purge` | Vercel Cron 이 매일 03:00 KST(UTC 18:00) 호출 | `CRON_SECRET` Bearer |
+
+예약 경로는 관리자 세션이 없으므로 `CRON_SECRET` 환경변수와 `Authorization: Bearer` 를
+timingSafeEqual 로 대조한다. 비밀키가 없으면 503, 틀리면 401. Google 이 연결돼 있지 않으면
+아무것도 지우지 않고 `skipped` 를 돌려준다. 삭제는 휴지통이 아니라 완전 삭제다.
+
+`vercel.json` 의 `crons` 항목이 스케줄을 정의한다. 배포 후 Vercel 대시보드의 Cron Jobs 에서
+실행 이력을 확인할 수 있다.
+
 ## 실행과 검증
 
 ```powershell
