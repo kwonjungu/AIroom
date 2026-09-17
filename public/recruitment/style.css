@@ -281,3 +281,6 @@ dialog::backdrop{background:#0005}
   .submit-bar .muted{flex:1 1 100%;margin:0;font-size:12.5px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.danger-zone{border-color:#f0c7c0}
+.danger-zone h2{color:#a72e20}

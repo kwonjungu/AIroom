@@ -79,6 +79,30 @@ test('a reviewer needs no email address', async t => {
     assert.equal(r.reviewers[0].email, null);
     assert.throws(() => d.createRecruitment({ ...payload(), reviewers: [{ name: '가', position: '교사', stages: ['document', 'interview'] }, { name: '가', position: '교사', stages: ['document'] }] }), /같은 이름·직위/);
 });
+test('deleting a recruitment needs the exact title, and an extra confirmation while unfinished', async t => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-delete-'));
+    const app = express(); app.use('/api/recruitments', createRouter({ directory, validateSession: async token => token === 'admin-test' ? { role: 'admin' } : null }));
+    const server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
+    t.after(async () => { await new Promise(resolve => server.close(resolve)); await fs.rm(directory, { recursive: true, force: true }); });
+    const base = `http://127.0.0.1:${server.address().port}/api/recruitments`;
+    const send = (url, method, body, auth = true) => fetch(base + url, { method,
+        headers: { 'Content-Type': 'application/json', ...(auth ? { 'X-Auth-Token': 'admin-test' } : {}) },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+    const created = await (await send('', 'POST', payload())).json();
+
+    assert.equal((await send(`/${created.id}`, 'DELETE', { confirmTitle: created.title, confirmUnfinished: true }, false)).status, 401);
+    assert.equal((await send(`/${created.id}`, 'DELETE', {})).status, 400, '채용명 없이 지울 수 없다');
+    assert.equal((await send(`/${created.id}`, 'DELETE', { confirmTitle: '다른 이름' })).status, 400);
+    assert.equal((await send(`/${created.id}`, 'DELETE', { confirmTitle: created.title })).status, 409, '미확정이면 한 번 더 확인해야 한다');
+    assert.equal((await send(`/${created.id}`, 'GET')).status, 200, '거부된 뒤에도 채용은 남아 있어야 한다');
+
+    const gone = await send(`/${created.id}`, 'DELETE', { confirmTitle: created.title, confirmUnfinished: true });
+    assert.equal(gone.status, 200);
+    assert.equal((await gone.json()).deleted, true);
+    assert.equal((await send(`/${created.id}`, 'GET')).status, 404);
+    assert.equal((await send(`/${created.id}`, 'DELETE', { confirmTitle: created.title, confirmUnfinished: true })).status, 404);
+    assert.equal((await (await send('', 'GET')).json()).items.length, 0);
+});
 test('local store serializes writers and rejects stale versions; serverless has no silent fallback', async t => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'recruitment-cas-')); t.after(() => fs.rm(directory, { recursive: true, force: true })); const store = createStore({ directory }); const r = await store.create(d.createRecruitment(payload()));
     const results = await Promise.allSettled([store.mutate(r.id, 1, x => x), store.mutate(r.id, 1, x => x)]); assert.equal(results.filter(x => x.status === 'fulfilled').length, 1); assert.equal((await store.get(r.id)).version, 2);
