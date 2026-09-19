@@ -2427,6 +2427,9 @@ function requireRoomCode(req, res, next) {
     if (req.headers['x-room-code'] !== CAL_ROOM) {
         return res.status(401).json({ error: '입장코드가 맞지 않습니다.' });
     }
+    // 읽기는 세지 않는다. 화면이 7초마다 다시 부르는데 연수장은 공유 IP 한 개라
+    // GET 까지 세면 탭 몇 개만 열려도 그 방 전체가 429 가 된다.
+    if (req.method === 'GET') return next();
     const ip = req.ip || req.connection.remoteAddress;
     const now = Date.now();
     if (calRateLimits.size > 5000) { // 메모리 보호: 만료 엔트리 청소
@@ -2460,7 +2463,15 @@ app.get('/api/calandar', requireRoomCode, async (req, res) => {
         const list = /^\d{4}-\d{2}$/.test(month)
             ? store.events.filter(e => String(e.day || '').startsWith(month))
             : store.events;
-        res.json({ events: list });
+        // owner 는 내보내지 않는다. 그 값을 알면 남의 글을 지울 수 있다.
+        // 내 것인지 여부만 boolean 으로 준다.
+        const me = calClean(req.headers['x-owner'], 80);
+        res.json({
+            events: list.map(e => ({
+                id: e.id, day: e.day, title: e.title, author: e.author,
+                createdAt: e.createdAt, mine: !!me && e.owner === me
+            }))
+        });
     } catch (e) {
         console.error('GET /api/calandar 실패:', e.message);
         res.status(500).json({ error: '불러오지 못했습니다.' });
@@ -2483,13 +2494,15 @@ app.post('/api/calandar', requireRoomCode, async (req, res) => {
             if (store.events.filter(e => e.day === day).length >= CAL_MAX_PER_DAY) {
                 return { error: '이 날은 더 적을 수 없습니다.' };
             }
+            if (store.events.length >= CAL_MAX_EVENTS) {
+                return { error: '이 달력이 가득 찼습니다. 선생님께 비워 달라고 하세요.' };
+            }
             const ev = {
                 id: crypto.randomBytes(8).toString('hex'),
                 day, title, author, owner,
                 createdAt: new Date().toISOString()
             };
             store.events.push(ev);
-            if (store.events.length > CAL_MAX_EVENTS) store.events = store.events.slice(-CAL_MAX_EVENTS);
             await writeData('calandar-demo.json', store);
             return { event: ev };
         });
