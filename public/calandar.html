@@ -76,6 +76,30 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
 .more{font-size:12px;font-weight:700;color:var(--mute);}
 .app-foot{margin:18px 0 0;font-size:14px;color:var(--mute);}
 
+/* ---------- 정리 어시스턴트 (7칸) ---------- */
+.assist{margin:0 0 18px;padding:16px;border:1px solid var(--line);}
+.assist[hidden]{display:none;}
+.assist-title{margin:0 0 4px;font-size:18px;}
+.assist-lead{margin:0 0 12px;font-size:14px;color:var(--mute);}
+.assist-form{display:flex;gap:8px;}
+.assist-form input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line-strong);}
+.assist-form input:focus{outline:2px solid var(--accent);outline-offset:-2px;}
+.assist-note{margin:10px 0 0;font-size:14px;color:var(--mute);}
+.assist-note.is-bad{color:var(--sale);font-weight:700;}
+.assist-list{list-style:none;margin:12px 0 0;padding:0;}
+.assist-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+.ai-day{flex:none;min-width:7.5em;font-size:14px;font-weight:700;color:var(--accent);}
+.ai-title{flex:1;min-width:0;overflow-wrap:anywhere;}
+.btn-small{padding:7px 16px;font-size:14px;}
+
+/* ---------- 확인 문구 ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);
+  max-width:calc(100% - 32px);padding:12px 20px;background:var(--ink);color:#fff;
+  font-size:15px;font-weight:700;border-radius:30px;text-align:center;
+  opacity:0;transition:opacity .2s,transform .2s;z-index:20;}
+.toast[hidden]{display:none;}
+.toast.is-on{opacity:1;transform:translateX(-50%) translateY(0);}
+
 /* ---------- 하루 시트 ---------- */
 .sheet{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;background:rgba(17,17,17,.45);z-index:10;}
 .sheet[hidden]{display:none;}
@@ -94,6 +118,12 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
 .form input:focus{outline:2px solid var(--accent);outline-offset:-2px;}
 
 @media(min-width:720px){.sheet{align-items:center;}}
+@media(max-width:599px){
+  .assist-form{flex-wrap:wrap;}
+  .assist-form .btn{width:100%;}
+  .assist-list li{flex-wrap:wrap;gap:6px;}
+  .ai-day{min-width:0;}
+}
 @media(max-width:719px){
   body{font-size:16px;}
   .app{padding:12px 12px 36px;}
@@ -146,6 +176,17 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
 <section class="app" id="app" hidden>
   <p class="demo">바이브코딩 연수 <strong>6칸</strong> 예시입니다. 여기 적은 것은 아무나 볼 수 있고 가끔 비웁니다.</p>
 
+  <section class="assist" id="assist" hidden>
+    <h3 class="assist-title">생각나는 대로 적어 보세요</h3>
+    <p class="assist-lead">AI가 날짜와 내용으로 정리해 줍니다. 넣을지는 선생님이 고릅니다. 열쇠는 서버에만 있습니다.</p>
+    <form class="assist-form" id="ai-form">
+      <input id="ai-input" maxlength="300" autocomplete="off" placeholder="예) 다음 주 화요일 학급 회의, 금요일엔 현장학습 답사">
+      <button class="btn btn-primary" id="ai-go" type="submit">정리하기</button>
+    </form>
+    <p class="assist-note" id="ai-note" hidden></p>
+    <ul class="assist-list" id="ai-list"></ul>
+  </section>
+
   <header class="bar">
     <div class="bar-left">
       <button class="nav" id="prev" aria-label="지난달">&lsaquo;</button>
@@ -186,6 +227,8 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
   </div>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
 <script>
 (function () {
   'use strict';
@@ -224,6 +267,27 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
   var timer = null;
 
   var $ = function (id) { return document.getElementById(id); };
+
+  var toastTimer = null;
+  function toast(text) {
+    var t = $('toast');
+    t.textContent = text;
+    t.hidden = false;
+    // 숨김을 푼 직후 바로 클래스를 주면 전환이 안 먹는다. 한 틱 뒤에 준다.
+    requestAnimationFrame(function () { t.classList.add('is-on'); });
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      t.classList.remove('is-on');
+      setTimeout(function () { t.hidden = true; }, 250);
+    }, 2800);
+  }
+
+  var WEEK = '일월화수목금토';
+  function dayLabel(day) {
+    var a = day.split('-');
+    var d = new Date(Number(a[0]), Number(a[1]) - 1, Number(a[2]));
+    return Number(a[1]) + '월 ' + Number(a[2]) + '일 (' + WEEK.charAt(d.getDay()) + ')';
+  }
 
   function say(text, bad) {
     $('status').textContent = text;
@@ -278,6 +342,10 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
     $('room-badge').textContent = '방 ' + ROOM;
     $('me-badge').textContent = myName;
     load();
+    // 열쇠가 서버에 없으면 이 칸은 아예 띄우지 않는다.
+    fetch('/api/ai/status').then(function (r) { return r.json(); }).then(function (st) {
+      if (st && st.hasServerKey) $('assist').hidden = false;
+    }).catch(function () { /* 조용히 둔다 */ });
     if (!timer) timer = setInterval(function () {
       if (!document.hidden) load(true);
     }, POLL_MS);
@@ -439,13 +507,15 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
     var input = $('input');
     var title = input.value.trim();
     if (!title || !openDay) return;
+    var day = openDay;
     $('sheet-err').hidden = true;
 
     api('/api/calandar', {
       method: 'POST',
-      body: JSON.stringify({ day: openDay, title: title.slice(0, 40), author: myName, owner: OWNER })
+      body: JSON.stringify({ day: day, title: title.slice(0, 40), author: myName, owner: OWNER })
     }).then(function () {
       input.value = '';
+      toast(dayLabel(day) + '에 넣었습니다.');
       return load(true);
     }).catch(function (err) {
       sheetError('적지 못했습니다. ' + err.message);
@@ -457,6 +527,83 @@ button,input{font-family:inherit;font-size:inherit;color:inherit;}
       .then(function () { return load(true); })
       .catch(function (err) { sheetError('지우지 못했습니다. ' + err.message); });
   }
+
+  /* ---------- 정리 어시스턴트 (7칸) ---------- */
+  function aiNote(text, bad) {
+    var n = $('ai-note');
+    if (!text) { n.hidden = true; return; }
+    n.textContent = text;
+    n.classList.toggle('is-bad', !!bad);
+    n.hidden = false;
+  }
+
+  function aiRender(items) {
+    var ul = $('ai-list');
+    ul.replaceChildren();
+    items.forEach(function (it) {
+      var li = document.createElement('li');
+
+      var d = document.createElement('span');
+      d.className = 'ai-day';
+      d.textContent = dayLabel(it.day);
+
+      var t = document.createElement('span');
+      t.className = 'ai-title';
+      t.textContent = it.title;
+
+      var add = document.createElement('button');
+      add.className = 'btn btn-small';
+      add.type = 'button';
+      add.textContent = '추가하기';
+      add.addEventListener('click', function () {
+        add.disabled = true;
+        add.textContent = '넣는 중';
+        api('/api/calandar', {
+          method: 'POST',
+          body: JSON.stringify({ day: it.day, title: it.title, author: myName, owner: OWNER })
+        }).then(function () {
+          toast(dayLabel(it.day) + '에 넣었습니다.');
+          li.remove();
+          if (!ul.children.length) aiNote('');
+          return load(true);
+        }).catch(function (err) {
+          add.disabled = false;
+          add.textContent = '추가하기';
+          aiNote('넣지 못했습니다. ' + err.message, true);
+        });
+      });
+
+      li.appendChild(d);
+      li.appendChild(t);
+      li.appendChild(add);
+      ul.appendChild(li);
+    });
+  }
+
+  $('ai-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = $('ai-input').value.trim();
+    if (!text) return;
+    var go = $('ai-go');
+    go.disabled = true;
+    go.textContent = '정리하는 중';
+    aiNote('AI에게 물어보는 중입니다.');
+    $('ai-list').replaceChildren();
+
+    api('/api/calandar/ai', {
+      method: 'POST',
+      body: JSON.stringify({ text: text.slice(0, 300), today: ymd(new Date()) })
+    }).then(function (body) {
+      var items = (body && body.items) || [];
+      aiNote(items.length + '개로 정리했습니다. 넣을 것만 고르세요.');
+      aiRender(items);
+    }).catch(function (err) {
+      aiNote(err.message, true);
+    }).then(function () {
+      go.disabled = false;
+      go.textContent = '정리하기';
+    });
+  });
 
   /* ---------- 시작 ---------- */
   if (myName) {

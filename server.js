@@ -1907,9 +1907,12 @@ app.get('/api/ai/status', (req, res) => {
 // Groq 모델 폴백 순서 — 앞의 모델이 할당량 초과/폐기 시 다음 모델로 자동 전환
 // 품질 우선순위: 70B > 8B. 70B 계열이 동일 공급량 기준 먼저 소진되므로 8B로 폴백.
 // (llama3-70b-8192 / llama3-8b-8192 는 Groq에서 폐기(decommissioned)되어 제거함 — 2026-07)
+// (llama-3.3-70b-versatile / llama-3.1-8b-instant 도 폐기됨 — 2026-09 확인.
+//  /v1/models 조회 결과 라마 계열이 목록에서 사라졌다. 모델을 고정해 두지 말고
+//  안 되면 이 목록부터 /v1/models 와 대조할 것.)
 const GROQ_FALLBACK_MODELS = [
-    'llama-3.3-70b-versatile',  // 기본 (고품질)
-    'llama-3.1-8b-instant'      // 빠르고 할당량 여유 (최종 폴백)
+    'openai/gpt-oss-120b',      // 기본 (고품질)
+    'openai/gpt-oss-20b'        // 빠름
 ];
 
 // 429/할당량/모델 폐기 에러인지 판별
@@ -2537,6 +2540,115 @@ app.delete('/api/calandar/:id', requireRoomCode, async (req, res) => {
         console.error('DELETE /api/calandar 실패:', e.message);
         res.status(500).json({ error: '지우지 못했습니다.' });
     }
+});
+
+// ── 정리 어시스턴트 (연수 7칸 예시) ──────────────────────────────
+// 아무렇게나 적은 메모를 달력에 넣을 줄로 바꿔 준다.
+// 열쇠(GROQ_API_KEY)는 서버 환경변수에만 있고 브라우저로 나가지 않는다. 그게 7칸의 요지다.
+// AI 호출은 돈이 드니 입장코드 위에 사용량 제한을 한 겹 더 올린다.
+const CAL_AI_MAX_CHARS = 300;
+const CAL_AI_PER_MIN = 10;   // IP 당
+const CAL_AI_PER_DAY = 400;  // 이 달력 전체
+
+// 모델에게 날짜 계산을 시키면 추론에만 토큰을 다 쓰고 본문이 비어서 온다
+// (gpt-oss 는 추론형이다). 오늘부터 35일의 날짜·요일을 표로 줘서 고르기만 하게 한다.
+const CAL_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
+function calYmd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+        + '-' + String(d.getDate()).padStart(2, '0');
+}
+function calDateTable(todayStr, days) {
+    const a = todayStr.split('-').map(Number);
+    const base = new Date(a[0], a[1] - 1, a[2]);
+    const out = [];
+    for (let i = 0; i < days; i++) {
+        const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+        out.push(calYmd(d) + ' ' + CAL_WEEK[d.getDay()] + (i === 0 ? ' (오늘)' : ''));
+    }
+    return out.join(', ');
+}
+
+function calParseJson(text) {
+    const raw = String(text || '');
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const body = fenced ? fenced[1] : raw;
+    const start = body.indexOf('{');
+    const end = body.lastIndexOf('}');
+    if (start === -1 || end <= start) throw new Error('JSON 없음');
+    return JSON.parse(body.slice(start, end + 1));
+}
+
+async function calAiQuota(ip) {
+    // Redis 카운터로 센다. 서버리스는 인스턴스가 여러 개라 메모리 Map 으로는 총량을 못 센다.
+    if (!redis) return { ok: true };
+    const minute = Math.floor(Date.now() / 60000);
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+        const perIp = await redis.incr(`cal:ai:${ip}:${minute}`);
+        if (perIp === 1) await redis.expire(`cal:ai:${ip}:${minute}`, 120);
+        if (perIp > CAL_AI_PER_MIN) return { ok: false, error: '조금 쉬었다 다시 부탁해 주세요.' };
+        const perDay = await redis.incr(`cal:ai:all:${today}`);
+        if (perDay === 1) await redis.expire(`cal:ai:all:${today}`, 172800);
+        if (perDay > CAL_AI_PER_DAY) return { ok: false, error: '오늘 몫을 다 썼습니다. 내일 다시 됩니다.' };
+    } catch (e) {
+        console.warn('[calandar] AI 사용량 계산 실패, 통과시킴:', e.message);
+    }
+    return { ok: true };
+}
+
+app.post('/api/calandar/ai', requireRoomCode, async (req, res) => {
+    const body = req.body || {};
+    const text = calClean(body.text, CAL_AI_MAX_CHARS);
+    const today = CAL_DAY_RE.test(String(body.today || '')) ? body.today : new Date().toISOString().slice(0, 10);
+    if (!text) return res.status(400).json({ error: '무엇을 넣을지 적어 주세요.' });
+
+    const quota = await calAiQuota(req.ip || req.connection.remoteAddress);
+    if (!quota.ok) return res.status(429).json({ error: quota.error });
+
+    const system = [
+        '너는 초등학교 선생님이 아무렇게나 적은 메모를 학급 달력에 넣을 줄로 바꿔 주는 도우미다.',
+        'JSON 만 답한다. 형식은 {"items":[{"day":"YYYY-MM-DD","title":"..."}]} 이다.',
+        'title 은 한국어로 40자 안쪽. 무엇을 하는지만 적고 군더더기를 넣지 않는다.',
+        'items 는 최대 6개다. 날짜를 알 수 없는 항목은 아예 빼라.',
+        '사람 이름, 전화번호, 주소 같은 개인정보는 넣지 않는다.',
+        '날짜는 아래 표에서만 고른다. 직접 계산하지 마라.',
+        calDateTable(today, 35)
+    ].join('\n');
+
+    const result = await callGroqWithFallback({
+        model: 'openai/gpt-oss-120b',
+        temperature: 0.2,
+        max_tokens: 800,
+        reasoning_effort: 'low',  // 없으면 추론에 토큰을 다 쓰고 본문이 빈 채로 온다
+        messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: text }
+        ]
+    });
+
+    if (!result.ok) {
+        const d = result.data || {};
+        const msg = (d.error && (d.error.message || d.error)) || 'AI를 부르지 못했습니다.';
+        return res.status(result.status).json({ error: String(msg).slice(0, 200) });
+    }
+
+    let items = [];
+    try {
+        items = calParseJson(result.data.choices[0].message.content).items;
+    } catch (e) {
+        console.warn('[calandar] AI 응답 파싱 실패:', e.message);
+        return res.status(502).json({ error: 'AI가 알아들을 수 없는 답을 보냈습니다. 다시 눌러 보세요.' });
+    }
+    // AI 가 준 값도 남이 보낸 값과 똑같이 검사한다. 그대로 믿지 않는다.
+    const clean = (Array.isArray(items) ? items : [])
+        .map(it => ({ day: calClean(it && it.day, 10), title: calClean(it && it.title, 40) }))
+        .filter(it => CAL_DAY_RE.test(it.day) && !Number.isNaN(Date.parse(it.day)) && it.title)
+        .slice(0, 6);
+
+    if (!clean.length) {
+        return res.status(422).json({ error: '날짜를 못 찾았습니다. 몇 월 며칠인지 넣어 다시 적어 보세요.' });
+    }
+    res.json({ items: clean });
 });
 
 app.get(['/calandar', '/calandar/', '/calendar', '/calendar/'], (req, res) => {
