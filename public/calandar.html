@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리 반 공용 캘린더 — 예시</title>
+<meta name="description" content="입장코드 하나로 여럿이 같이 적는 공용 캘린더. 바이브코딩 연수 6칸 예시 앱.">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --ink:#111111; --canvas:#ffffff; --soft:#f5f5f5;
+  --line:#e2e2e4; --line-strong:#cacacb; --mute:#707072;
+  --accent:#3d3a8c; --accent-soft:#ecebf7;
+  --sale:#d30005; --mine:#8a5a00; --mine-soft:#fdf2dd;
+  --font:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--canvas);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.6;-webkit-text-size-adjust:100%;}
+button,input{font-family:inherit;font-size:inherit;color:inherit;}
+
+.btn{display:inline-block;padding:12px 28px;border:1px solid var(--ink);border-radius:30px;background:var(--canvas);font-weight:700;cursor:pointer;}
+.btn-primary{background:var(--ink);color:#fff;}
+.btn:disabled{opacity:.45;cursor:default;}
+
+/* ---------- 입장 ---------- */
+.gate{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.gate-box{width:100%;max-width:420px;}
+.kicker{margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);}
+.gate h1{margin:4px 0 12px;font-size:44px;line-height:1.1;letter-spacing:-.02em;}
+.gate-lead{margin:0 0 26px;color:#39393b;}
+.field{display:block;margin-bottom:16px;}
+.field span{display:block;margin-bottom:6px;font-size:14px;font-weight:700;color:var(--mute);}
+.field input{width:100%;padding:14px 16px;border:1px solid var(--line-strong);background:var(--canvas);}
+.field input:focus{outline:2px solid var(--accent);outline-offset:-2px;}
+.err{margin:0 0 12px;color:var(--sale);font-size:15px;font-weight:700;}
+#gate-enter{width:100%;margin-top:4px;}
+.gate-foot{margin:20px 0 0;font-size:14px;line-height:1.55;color:var(--mute);}
+
+/* ---------- 달력 ---------- */
+.app{max-width:1180px;margin:0 auto;padding:18px 20px 48px;}
+.demo{margin:0 0 14px;padding:10px 14px;background:var(--accent-soft);border-left:4px solid var(--accent);font-size:14px;line-height:1.5;}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--line);}
+.bar-left,.bar-right{display:flex;align-items:center;gap:10px;}
+.bar h2{margin:0;font-size:28px;letter-spacing:-.01em;min-width:7.5em;text-align:center;}
+.nav{width:40px;height:40px;border:1px solid var(--line-strong);border-radius:50%;background:var(--canvas);font-size:22px;line-height:1;cursor:pointer;}
+.nav:hover{background:var(--soft);}
+.chip{padding:8px 16px;border:1px solid var(--line-strong);border-radius:30px;background:var(--canvas);font-size:14px;font-weight:700;cursor:pointer;}
+.chip:hover{background:var(--soft);}
+.badge{padding:8px 14px;background:var(--soft);font-size:14px;font-weight:700;color:#39393b;}
+.status{min-height:1.6em;margin:10px 0 0;font-size:15px;color:var(--mute);}
+.status.is-bad{color:var(--sale);font-weight:700;}
+
+.week-head,.grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.week-head{margin-top:6px;font-size:13px;font-weight:700;color:var(--mute);}
+.week-head span{padding:8px 6px;text-align:center;}
+.week-head span:first-child{color:var(--sale);}
+.week-head span:last-child{color:var(--accent);}
+.grid{border-top:1px solid var(--line);border-left:1px solid var(--line);}
+.cell{min-height:118px;padding:8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--canvas);text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;font:inherit;}
+.cell:hover{background:var(--soft);}
+.cell.is-out{background:#fafafa;color:#b5b5b7;cursor:default;}
+.cell.is-out:hover{background:#fafafa;}
+.cell-no{align-self:flex-start;min-width:26px;padding:2px 6px;font-size:14px;font-weight:700;text-align:center;}
+.cell.is-sun .cell-no{color:var(--sale);}
+.cell.is-sat .cell-no{color:var(--accent);}
+.cell.is-today .cell-no{background:var(--ink);color:#fff;}
+.cell.is-today.is-sun .cell-no,.cell.is-today.is-sat .cell-no{color:#fff;}
+.ev{padding:3px 7px;background:var(--accent-soft);border-left:3px solid var(--accent);font-size:13px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ev.is-mine{background:var(--mine-soft);border-left-color:var(--mine);}
+.more{font-size:12px;font-weight:700;color:var(--mute);}
+.app-foot{margin:18px 0 0;font-size:14px;color:var(--mute);}
+
+/* ---------- 하루 시트 ---------- */
+.sheet{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;background:rgba(17,17,17,.45);z-index:10;}
+.sheet[hidden]{display:none;}
+.panel{width:100%;max-width:560px;max-height:84dvh;overflow-y:auto;padding:20px;background:var(--canvas);}
+.panel-head{display:flex;align-items:center;justify-content:space-between;}
+.panel-head h3{margin:0;font-size:24px;}
+.list{list-style:none;margin:14px 0;padding:0;}
+.list li{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-top:1px solid var(--line);}
+.list li:last-child{border-bottom:1px solid var(--line);}
+.who{flex:none;min-width:5.5em;font-size:13px;font-weight:700;color:var(--mute);}
+.what{flex:1;overflow-wrap:anywhere;}
+.del{flex:none;border:0;background:none;padding:0 2px;font-size:14px;font-weight:700;color:var(--sale);cursor:pointer;text-decoration:underline;}
+.empty{padding:16px 0;color:var(--mute);}
+.form{display:flex;gap:8px;}
+.form input{flex:1;padding:13px 14px;border:1px solid var(--line-strong);}
+.form input:focus{outline:2px solid var(--accent);outline-offset:-2px;}
+
+@media(min-width:720px){.sheet{align-items:center;}}
+@media(max-width:719px){
+  body{font-size:16px;}
+  .app{padding:12px 12px 36px;}
+  .bar h2{font-size:22px;min-width:0;}
+  .cell{min-height:84px;padding:5px;}
+  .ev{font-size:11px;padding:2px 4px;}
+  .badge,.chip{padding:6px 10px;font-size:13px;}
+  .gate h1{font-size:34px;}
+}
+</style>
+</head>
+<body>
+
+<!-- 1. 입장 -->
+<section class="gate" id="gate">
+  <div class="gate-box">
+    <p class="kicker">우리 반</p>
+    <h1>공용 캘린더</h1>
+    <p class="gate-lead">입장코드를 넣으면 같은 달력이 열립니다. 누가 적어도 모두에게 보입니다.</p>
+
+    <label class="field">
+      <span>입장코드</span>
+      <input id="gate-code" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="네 자리">
+    </label>
+    <label class="field">
+      <span>내 이름</span>
+      <input id="gate-name" autocomplete="off" maxlength="12" placeholder="12자까지">
+    </label>
+
+    <p class="err" id="gate-err" hidden></p>
+    <button class="btn btn-primary" id="gate-enter">들어가기</button>
+
+    <p class="gate-foot">연수용 예시 앱입니다. 입장코드는 문지기일 뿐 자물쇠가 아닙니다. 학생 이름과 전화번호처럼 남에게 보이면 안 되는 것은 적지 않습니다.</p>
+  </div>
+</section>
+
+<!-- 2. 달력 -->
+<section class="app" id="app" hidden>
+  <p class="demo">바이브코딩 연수 <strong>6칸</strong> 예시입니다. 여기 적은 것은 아무나 볼 수 있고 가끔 비웁니다.</p>
+
+  <header class="bar">
+    <div class="bar-left">
+      <button class="nav" id="prev" aria-label="지난달">&lsaquo;</button>
+      <h2 id="title">달력</h2>
+      <button class="nav" id="next" aria-label="다음달">&rsaquo;</button>
+      <button class="chip" id="today">오늘</button>
+    </div>
+    <div class="bar-right">
+      <span class="badge" id="room-badge">방</span>
+      <span class="badge" id="me-badge">이름</span>
+      <button class="chip" id="leave">나가기</button>
+    </div>
+  </header>
+
+  <p class="status" id="status" role="status"></p>
+
+  <div class="week-head" aria-hidden="true">
+    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <p class="app-foot">날짜를 누르면 그날 일정을 적습니다. 내가 적은 것은 30분 안에만 지울 수 있습니다.</p>
+</section>
+
+<!-- 3. 하루 -->
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+    <div class="panel-head">
+      <h3 id="panel-title">하루</h3>
+      <button class="nav" id="sheet-close" aria-label="닫기">&times;</button>
+    </div>
+    <ul class="list" id="list"></ul>
+    <form class="form" id="form">
+      <input id="input" maxlength="40" autocomplete="off" placeholder="무엇을 적을까요 (40자까지)">
+      <button class="btn btn-primary" type="submit">적기</button>
+    </form>
+    <p class="err" id="sheet-err" hidden style="margin-top:10px"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 설정 ---------- */
+  var ROOM = '1111';               // 입장코드이자 방 이름
+  var DELETE_WINDOW_MIN = 30;      // 내가 적은 것을 지울 수 있는 시간
+  var POLL_MS = 7000;              // 다른 사람이 적은 것을 가져오는 주기
+
+  /* ---------- 나를 구분하는 값 (이 브라우저에만 남는다) ---------- */
+  function readOwner() {
+    var id = localStorage.getItem('cal-owner');
+    if (!id) {
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+         : String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+      localStorage.setItem('cal-owner', id);
+    }
+    return id;
+  }
+  var OWNER = readOwner();
+  var myName = localStorage.getItem('cal-name') || '';
+
+  /* ---------- 날짜 ---------- */
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  var TODAY = ymd(new Date());
+
+  var cursor = new Date(); cursor.setDate(1);
+  var events = [];
+  var openDay = null;
+  var timer = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function say(text, bad) {
+    $('status').textContent = text;
+    $('status').classList.toggle('is-bad', !!bad);
+  }
+
+  /* ---------- 서버 ---------- */
+  function api(path, options) {
+    var opt = options || {};
+    opt.headers = Object.assign({
+      'Content-Type': 'application/json',
+      'X-Room-Code': ROOM,
+      'X-Owner': OWNER
+    }, opt.headers || {});
+    return fetch(path, opt).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        if (!res.ok) throw new Error(body.error || ('서버가 ' + res.status + ' 를 보냈습니다.'));
+        return body;
+      });
+    });
+  }
+
+  /* ---------- 입장 ---------- */
+  function gateError(text) {
+    $('gate-err').textContent = text;
+    $('gate-err').hidden = false;
+  }
+
+  function enter() {
+    var code = $('gate-code').value.trim();
+    var name = $('gate-name').value.trim();
+    if (code !== ROOM) return gateError('입장코드가 다릅니다.');
+    if (!name) return gateError('이름을 적어 주세요.');
+    myName = name.slice(0, 12);
+    localStorage.setItem('cal-name', myName);
+    $('gate-err').hidden = true;
+    openCalendar();
+  }
+
+  $('gate-enter').addEventListener('click', enter);
+  $('gate-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('gate-name').focus(); });
+  $('gate-name').addEventListener('keydown', function (e) { if (e.key === 'Enter') enter(); });
+
+  $('leave').addEventListener('click', function () {
+    localStorage.removeItem('cal-name');
+    location.reload();
+  });
+
+  function openCalendar() {
+    $('gate').hidden = true;
+    $('app').hidden = false;
+    $('room-badge').textContent = '방 ' + ROOM;
+    $('me-badge').textContent = myName;
+    load();
+    if (!timer) timer = setInterval(function () {
+      if (!document.hidden) load(true);
+    }, POLL_MS);
+  }
+
+  /* ---------- 불러오기 ---------- */
+  function monthKey(base) { return base.getFullYear() + '-' + pad(base.getMonth() + 1); }
+
+  function load(quiet) {
+    var month = monthKey(cursor);
+    if (!quiet) say('불러오는 중입니다.');
+    return api('/api/calandar?month=' + month).then(function (body) {
+      events = body.events || [];
+      say(events.length + '개가 올라와 있습니다.');
+      render();
+      if (openDay) renderSheet();
+    }).catch(function (e) {
+      say('불러오지 못했습니다. ' + e.message, true);
+    });
+  }
+
+  /* ---------- 달력 ---------- */
+  function render() {
+    var y = cursor.getFullYear(), m = cursor.getMonth();
+    $('title').textContent = y + '년 ' + (m + 1) + '월';
+
+    var first = new Date(y, m, 1);
+    var start = new Date(y, m, 1 - first.getDay());
+    // 그 달을 덮는 만큼만 그린다. 42칸 고정이면 통째로 빈 줄이 하나 더 생긴다.
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var cells = Math.ceil((first.getDay() + daysInMonth) / 7) * 7;
+
+    var byDay = {};
+    events.forEach(function (ev) {
+      (byDay[ev.day] = byDay[ev.day] || []).push(ev);
+    });
+
+    var grid = $('grid');
+    grid.replaceChildren();
+
+    for (var i = 0; i < cells; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var key = ymd(d);
+      var out = d.getMonth() !== m;
+
+      var cell = document.createElement(out ? 'div' : 'button');
+      cell.className = 'cell';
+      if (out) cell.classList.add('is-out');
+      if (d.getDay() === 0) cell.classList.add('is-sun');
+      if (d.getDay() === 6) cell.classList.add('is-sat');
+      if (key === TODAY) cell.classList.add('is-today');
+
+      var no = document.createElement('span');
+      no.className = 'cell-no';
+      no.textContent = d.getDate();
+      cell.appendChild(no);
+
+      if (!out) {
+        cell.type = 'button';
+        cell.addEventListener('click', openSheet.bind(null, key));
+        var list = byDay[key] || [];
+        list.slice(0, 3).forEach(function (ev) {
+          var chip = document.createElement('span');
+          chip.className = 'ev' + (ev.owner === OWNER ? ' is-mine' : '');
+          chip.textContent = ev.title;
+          cell.appendChild(chip);
+        });
+        if (list.length > 3) {
+          var more = document.createElement('span');
+          more.className = 'more';
+          more.textContent = '+' + (list.length - 3) + '개 더';
+          cell.appendChild(more);
+        }
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  $('prev').addEventListener('click', function () { cursor.setMonth(cursor.getMonth() - 1); load(); });
+  $('next').addEventListener('click', function () { cursor.setMonth(cursor.getMonth() + 1); load(); });
+  $('today').addEventListener('click', function () { cursor = new Date(); cursor.setDate(1); load(); });
+
+  /* ---------- 하루 ---------- */
+  function openSheet(day) {
+    openDay = day;
+    $('sheet').hidden = false;
+    $('sheet-err').hidden = true;
+    renderSheet();
+    $('input').focus();
+  }
+
+  function closeSheet() {
+    openDay = null;
+    $('sheet').hidden = true;
+  }
+
+  $('sheet-close').addEventListener('click', closeSheet);
+  $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet')) closeSheet(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('sheet').hidden) closeSheet(); });
+
+  function canDelete(ev) {
+    if (ev.owner !== OWNER) return false;
+    var age = (Date.now() - new Date(ev.createdAt).getTime()) / 60000;
+    return age < DELETE_WINDOW_MIN;
+  }
+
+  function renderSheet() {
+    var parts = openDay.split('-');
+    $('panel-title').textContent = Number(parts[1]) + '월 ' + Number(parts[2]) + '일';
+
+    var list = events.filter(function (ev) { return ev.day === openDay; });
+    var ul = $('list');
+    ul.replaceChildren();
+
+    if (!list.length) {
+      var li0 = document.createElement('li');
+      li0.className = 'empty';
+      li0.textContent = '아직 아무것도 없습니다. 첫 줄을 적어 보세요.';
+      ul.appendChild(li0);
+      return;
+    }
+
+    list.forEach(function (ev) {
+      var li = document.createElement('li');
+      var who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = ev.author;
+      var what = document.createElement('span');
+      what.className = 'what';
+      what.textContent = ev.title;
+      li.appendChild(who);
+      li.appendChild(what);
+      if (canDelete(ev)) {
+        var del = document.createElement('button');
+        del.className = 'del';
+        del.type = 'button';
+        del.textContent = '지우기';
+        del.addEventListener('click', function () { remove(ev.id); });
+        li.appendChild(del);
+      }
+      ul.appendChild(li);
+    });
+  }
+
+  function sheetError(text) {
+    $('sheet-err').textContent = text;
+    $('sheet-err').hidden = false;
+  }
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = $('input');
+    var title = input.value.trim();
+    if (!title || !openDay) return;
+    $('sheet-err').hidden = true;
+
+    api('/api/calandar', {
+      method: 'POST',
+      body: JSON.stringify({ day: openDay, title: title.slice(0, 40), author: myName, owner: OWNER })
+    }).then(function () {
+      input.value = '';
+      return load(true);
+    }).catch(function (err) {
+      sheetError('적지 못했습니다. ' + err.message);
+    });
+  });
+
+  function remove(id) {
+    api('/api/calandar/' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function () { return load(true); })
+      .catch(function (err) { sheetError('지우지 못했습니다. ' + err.message); });
+  }
+
+  /* ---------- 시작 ---------- */
+  if (myName) {
+    $('gate-name').value = myName;
+  }
+  $('gate-code').focus();
+})();
+</script>
+</body>
+</html>

@@ -259,7 +259,7 @@ app.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Vary', 'Origin');
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Auth-Token,X-Vibe-Client');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Auth-Token,X-Vibe-Client,X-Room-Code,X-Owner');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
         res.setHeader('Access-Control-Max-Age', '86400');
         if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -418,6 +418,7 @@ const KV_KEYS = {
     'bap3-managers.json': 'bap3-managers',
     'bap3-bosses.json': 'bap3-bosses',
     'vibe-progress.json': 'vibe-progress',
+    'calandar-demo.json': 'calandar-demo',
     'mail-accounts.json': 'mail-accounts',
     'rental-items.json': 'rental-items',
     'rental-loans.json': 'rental-loans',
@@ -2408,6 +2409,125 @@ app.post('/api/mail/accounts/:name', mailAuth, async (req, res) => {
         }
         res.json({ success: true, account: { name, address } });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== 공용 캘린더 예시 (/calandar) =====
+// 바이브코딩 연수 6칸 시연용. 로그인 없이 입장코드 하나로 같은 달력을 함께 쓴다.
+// 학교 업무 데이터와는 키(calandar-demo)부터 분리돼 있고, 쓰기는 전부 아래 제한을 지난다.
+// 입장코드는 문지기일 뿐 자물쇠가 아니다 — 여기에 개인정보를 넣지 않는다는 안내를 화면에 띄운다.
+const CAL_ROOM = '1111';                   // 입장코드이자 방 이름
+const CAL_MAX_EVENTS = 800;                // 전체 상한. 넘으면 오래된 것부터 버린다
+const CAL_MAX_PER_DAY = 40;
+const CAL_DELETE_WINDOW = 30 * 60 * 1000;  // 내가 적은 것을 지울 수 있는 시간
+const CAL_RATE_MAX = 60;
+const CAL_RATE_WINDOW = 60 * 1000;
+const calRateLimits = new Map();           // ip -> { count, resetAt }
+
+function requireRoomCode(req, res, next) {
+    if (req.headers['x-room-code'] !== CAL_ROOM) {
+        return res.status(401).json({ error: '입장코드가 맞지 않습니다.' });
+    }
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    if (calRateLimits.size > 5000) { // 메모리 보호: 만료 엔트리 청소
+        for (const [k, v] of calRateLimits) if (now > v.resetAt) calRateLimits.delete(k);
+    }
+    let entry = calRateLimits.get(ip);
+    if (!entry || now > entry.resetAt) {
+        entry = { count: 0, resetAt: now + CAL_RATE_WINDOW };
+        calRateLimits.set(ip, entry);
+    }
+    entry.count++;
+    if (entry.count > CAL_RATE_MAX) {
+        return res.status(429).json({ error: '너무 빠릅니다. 잠시 뒤에 다시 해 주세요.' });
+    }
+    next();
+}
+
+const CAL_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+function calClean(v, max) {
+    return String(v === undefined || v === null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
+}
+async function calRead() {
+    const data = await readData('calandar-demo.json');
+    return (data && Array.isArray(data.events)) ? data : { events: [] };
+}
+
+app.get('/api/calandar', requireRoomCode, async (req, res) => {
+    try {
+        const store = await calRead();
+        const month = typeof req.query.month === 'string' ? req.query.month : '';
+        const list = /^\d{4}-\d{2}$/.test(month)
+            ? store.events.filter(e => String(e.day || '').startsWith(month))
+            : store.events;
+        res.json({ events: list });
+    } catch (e) {
+        console.error('GET /api/calandar 실패:', e.message);
+        res.status(500).json({ error: '불러오지 못했습니다.' });
+    }
+});
+
+app.post('/api/calandar', requireRoomCode, async (req, res) => {
+    const body = req.body || {};
+    const day = calClean(body.day, 10);
+    const title = calClean(body.title, 40);
+    const author = calClean(body.author, 12);
+    const owner = calClean(body.owner, 80);
+    if (!CAL_DAY_RE.test(day) || Number.isNaN(Date.parse(day))) return res.status(400).json({ error: '날짜가 잘못됐습니다.' });
+    if (!title) return res.status(400).json({ error: '내용을 적어 주세요.' });
+    if (!author) return res.status(400).json({ error: '이름을 적어 주세요.' });
+    if (!owner) return res.status(400).json({ error: '누가 적었는지 알 수 없습니다.' });
+    try {
+        const done = await withRedisLock('calandar-demo', async () => {
+            const store = await calRead();
+            if (store.events.filter(e => e.day === day).length >= CAL_MAX_PER_DAY) {
+                return { error: '이 날은 더 적을 수 없습니다.' };
+            }
+            const ev = {
+                id: crypto.randomBytes(8).toString('hex'),
+                day, title, author, owner,
+                createdAt: new Date().toISOString()
+            };
+            store.events.push(ev);
+            if (store.events.length > CAL_MAX_EVENTS) store.events = store.events.slice(-CAL_MAX_EVENTS);
+            await writeData('calandar-demo.json', store);
+            return { event: ev };
+        });
+        if (done.error) return res.status(400).json(done);
+        res.json({ success: true, event: done.event });
+    } catch (e) {
+        console.error('POST /api/calandar 실패:', e.message);
+        res.status(500).json({ error: '적지 못했습니다.' });
+    }
+});
+
+app.delete('/api/calandar/:id', requireRoomCode, async (req, res) => {
+    const owner = calClean(req.headers['x-owner'], 80);
+    const id = calClean(req.params.id, 40);
+    if (!owner) return res.status(400).json({ error: '누가 지우는지 알 수 없습니다.' });
+    try {
+        const done = await withRedisLock('calandar-demo', async () => {
+            const store = await calRead();
+            const ev = store.events.find(e => e.id === id);
+            if (!ev) return { error: '이미 지워졌습니다.' };
+            if (ev.owner !== owner) return { error: '내가 적은 것만 지울 수 있습니다.' };
+            if (Date.now() - Date.parse(ev.createdAt) > CAL_DELETE_WINDOW) {
+                return { error: '적은 지 30분이 지나 지울 수 없습니다.' };
+            }
+            store.events = store.events.filter(e => e.id !== id);
+            await writeData('calandar-demo.json', store);
+            return { ok: true };
+        });
+        if (done.error) return res.status(400).json(done);
+        res.json({ success: true });
+    } catch (e) {
+        console.error('DELETE /api/calandar 실패:', e.message);
+        res.status(500).json({ error: '지우지 못했습니다.' });
+    }
+});
+
+app.get(['/calandar', '/calandar/', '/calendar', '/calendar/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'calandar.html'));
 });
 
 // 메인 페이지

@@ -130,6 +130,28 @@ package.json에 `main`/`start`가 있어 Vercel이 Node 서버로 인식하므�
 
 ---
 
+## 공용 캘린더 예시 (/calandar) — 2026-09
+
+바이브코딩 연수 **6칸(서버 활용)** 에서 "여럿이 같이 쓰는 앱"을 보여 주는 시연용 페이지.
+학교 업무 기능이 아니다. 수업 중 아무나 열어 적어 보는 자리다.
+
+- **파일**: `public/calandar.html` **하나뿐**. 독립 페이지(SPA 아님)라 두 SPA 동기화 규칙과 무관하다.
+- **라우트**: `GET /calandar`(오타 대비 `/calendar` 도 같은 화면) + `GET/POST /api/calandar`, `DELETE /api/calandar/:id`.
+  **DATA_ROUTES 에 넣지 않았다** — 그쪽은 `requireAuth` 라서 비로그인 학생이 못 쓴다. KV_KEYS 에만 등록한다.
+- **데이터**: `calandar-demo.json` → Redis 키 `calandar-demo`. `{ events: [{id, day, title, author, owner, createdAt}] }`.
+  업무 데이터와 키부터 분리돼 있다.
+- **인증 대신 입장코드**: `X-Room-Code: 1111` 헤더가 없으면 401. `requireRoomCode` 가 IP 분당 60회 제한도 건다
+  (vibecoding 의 `requireAuthOrVibe` 와 같은 발상).
+  **문지기일 뿐 자물쇠가 아니다** — 화면에 개인정보를 적지 말라고 띄워 두는 이유다.
+- **쓰기 제한**: 제목 40자·이름 12자로 잘라 저장, 하루 40개·전체 800개 상한(넘으면 오래된 것부터 버림),
+  날짜는 `YYYY-MM-DD` 만. 쓰기는 전부 `withRedisLock('calandar-demo')` 안에서 한다(전체-JSON 저장이라 동시 쓰기가 서로를 덮는다).
+- **지우기**: `X-Owner` 헤더(브라우저 localStorage 에 만든 임의 id)가 같고 **30분 안**일 때만.
+  헤더는 위조할 수 있으므로 진짜 잠금이 아니라 실수 방지 장치다. 연수에서 이 점을 그대로 설명한다.
+- **실시간이 아니다**: Redis 전체-JSON 이라 구독이 없다. 화면이 7초마다 다시 불러온다(`POLL_MS`).
+- **달력 그리기**: 42칸 고정이 아니라 그 달을 덮는 만큼(35 또는 42)만 그린다. 고정하면 통째로 빈 줄이 하나 생긴다.
+
+---
+
 ## 프로젝트 개요
 
 - **이름**: AIroom (한글명 "백암이 — 아이들을 위한 교무실")
