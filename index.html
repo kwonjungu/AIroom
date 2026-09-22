@@ -464,10 +464,11 @@
         .day-detail-input:focus{border-color:var(--primary);}
         .day-detail-manager{width:80px;border:1px solid var(--border);border-radius:0;padding:8px;font-size:13px;text-align:center;outline:none;}
         .day-detail-manager:focus{border-color:var(--primary);}
-        .sch-emoji-btn{width:34px;height:34px;border:2px solid var(--border);border-radius:0;background:var(--card-bg);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+        .sch-dept{color:var(--muted);font-weight:700;margin-right:4px;white-space:nowrap;}
+        .sch-emoji-btn{display:none!important;}
         .sch-emoji-btn:hover{border-color:var(--primary);background:var(--primary-light);}
         .sch-emoji-btn.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 2px rgba(28,105,212,0.25);}
-        .schedule-item-emoji{margin-right:3px;}
+        .list-table .col-event .sch-dept{color:var(--ink);}
         /* 일정 시간 표기 — 행사명 뒤에 붙는다 */
         .sch-time{color:var(--primary);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
         /* 월중행사 표: 행사명이 길어도 시간은 다음 줄에 통째로 내려간다 */
@@ -481,7 +482,8 @@
         /* 월중행사: 같은 날 마지막 행 아래에 굵은 선을 넣어 날짜 경계를 보이게 한다 */
         .list-table tr.day-end > td{border-bottom:2px solid var(--hairline-strong);}
         .list-table td.col-date,.list-table td.col-dow{vertical-align:middle;}
-        .day-detail-emoji{width:40px;border:1px solid var(--border);border-radius:0;padding:6px;font-size:18px;text-align:center;cursor:pointer;position:relative;}
+        .day-detail-emoji{display:none!important;}
+        .day-detail-dept{width:104px;height:38px;border:1px solid var(--hairline-strong);border-radius:0;padding:0 8px;font-size:13px;background:var(--card-bg);color:var(--ink);flex-shrink:0;}
         .emoji-dropdown{position:absolute;z-index:50;background:var(--card-bg);border:1px solid var(--hairline-strong);border-radius:0;box-shadow:none;padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:220px;}
 
         /* Skyscanner-style date picker */
@@ -1768,8 +1770,8 @@
         <div class="modal-body">
             <input type="hidden" id="scheduleAddDate">
             <div class="form-group"><label>날짜</label><div id="scheduleAddDateLabel" style="font-weight:600;font-size:15px;"></div></div>
-            <div class="form-group"><label>이모티콘</label>
-                <div id="scheduleEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+            <div class="form-group"><label>부서</label>
+                <select id="scheduleAddDept" class="sch-dept-select"></select>
             </div>
             <div class="form-group"><label>시간 <span style="font-size:11px;color:var(--text-light);font-weight:400;">비워 두면 시간 없이 등록됩니다</span></label>
                 <div class="sch-time-row">
@@ -1779,7 +1781,7 @@
                     <label class="sch-allday"><input type="checkbox" id="scheduleAddAllDay" onchange="schToggleAllDay('Add')"> 종일</label>
                 </div>
             </div>
-            <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleAddText" placeholder="[교육부]신입생 오리엔테이션"></div>
+            <div class="form-group"><label>행사명</label><input type="text" id="scheduleAddText" placeholder="본교 내빈방문(8명)"></div>
             <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력" required></div>
             <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
@@ -1800,8 +1802,8 @@
         <div class="modal-body">
             <input type="hidden" id="scheduleEditId">
             <div class="form-group"><label>날짜</label><input type="date" id="scheduleEditDate"></div>
-            <div class="form-group"><label>이모티콘</label>
-                <div id="scheduleEditEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+            <div class="form-group"><label>부서</label>
+                <select id="scheduleEditDept" class="sch-dept-select"></select>
             </div>
             <div class="form-group"><label>시간 <span style="font-size:11px;color:var(--text-light);font-weight:400;">비워 두면 시간 없이 등록됩니다</span></label>
                 <div class="sch-time-row">
@@ -1811,7 +1813,7 @@
                     <label class="sch-allday"><input type="checkbox" id="scheduleEditAllDay" onchange="schToggleAllDay('Edit')"> 종일</label>
                 </div>
             </div>
-            <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleEditText" placeholder="[교육부]신입생 오리엔테이션"></div>
+            <div class="form-group"><label>행사명</label><input type="text" id="scheduleEditText" placeholder="본교 내빈방문(8명)"></div>
             <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력" required></div>
             <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
@@ -1903,8 +1905,29 @@ if (IS_DEMO) {
     });
 }
 const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
-const SCH_EMOJIS=['','📌','⭐','🔔','📢','🎯','📝','💡','🏫','👨‍🏫','📅','⏰','🎓','📋','💻','📞','🏆','🔗','✅','⚠️','❗','🎉','🤝','📊','🏃','🎵','🎨','📖','🧪','🌿'];
-let selectedSchEmoji='';
+// 일정 앞에 붙는 부서 태그. 화면·인쇄·AI 추출이 모두 이 목록을 쓴다.
+const SCH_DEPTS=['교무','특수','늘봄','돌봄','유치원','인성','기초학력','안전','체육','영양','보건','연구','나이스','영어','과학','도서','학운위','분교'];
+// "[교무]본교 내빈방문(8명)" 에서 부서와 본문을 갈라낸다. 목록에 없는 대괄호는 본문으로 둔다.
+function splitDept(text){
+    const m=String(text||'').match(/^\s*\[([^\]]+)\]\s*(.*)$/);
+    if(m&&SCH_DEPTS.includes(m[1].trim())) return {dept:m[1].trim(), body:m[2]};
+    return {dept:'', body:String(text||'')};
+}
+// 부서와 본문을 합쳐 저장 형식으로 만든다.
+function joinDept(dept,body){
+    const b=String(body||'').trim();
+    return dept ? '['+dept+']'+b : b;
+}
+// 부서 태그를 화면용 조각으로. 없으면 빈 문자열.
+function deptBadge(text){
+    const {dept}=splitDept(text);
+    return dept ? '<span class="sch-dept">['+esc(dept)+']</span>' : '';
+}
+// 부서를 뗀 본문만.
+function deptBody(text){ return splitDept(text).body; }
+function deptOptions(sel){
+    return '<option value="">부서 없음</option>'+SCH_DEPTS.map(d=>'<option value="'+d+'"'+(d===sel?' selected':'')+'>'+d+'</option>').join('');
+}
 const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
 const ALL_EMOJIS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑','✅','❌','⚠️','❗','❓','🎉','🤝','🏃','🎵','🎨','🧪','🌿','🔑','🛡️','🔧','⚙️','🧩','🗓️','📆','🕐','💬','💭','📣','🔍','🏠','🚗','✈️','🌍','🌈','☀️','🌙','⭕','🔴','🟢','🔵','🟡','🟠','🟣','❤️','💙','💚','💛','🧡','💜','🖤','🤍','😀','😊','😎','🤔','😍','🙏','👍','👎','👋','✋','🤚','🖐️','👏','🙌','💪','🦾','🧠','👀','👁️','🐶','🐱','🐻','🦊','🐼','🦁','🐯','🐸','🐵','🌸','🌺','🌻','🌹','🍀','🌳','🍎','🍊','🍋','🍇','🍉','🍓','🥕','🍕','🎂','☕','🍿','🏀','⚽','🏈','⚾','🎾','🏐','🎮','🎲','🎪','🎭','🎬','🎤','🎸','🎹','🎺','🥁','🎻'];
@@ -2477,10 +2500,10 @@ function schTimeSuffix(it,cls){
 }
 function todayStr(){return fmtDate(new Date());}
 
-async function addScheduleItem(dateStr,text,manager,emoji,opts){
+async function addScheduleItem(dateStr,text,manager,_unused,opts){
     if(!text.trim())return;
     pushUndo();
-    const item={id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||'',emoji:emoji||''};
+    const item={id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||''};
     if(opts){
         if(opts.allDay) item.allDay=true;
         if(opts.startTime) item.startTime=opts.startTime;
@@ -2543,7 +2566,7 @@ function renderMonthView(el,titleEl){
         items.forEach(it=>{
             const hasExtra=it.link||it.fileUrl||it.gotoTab;
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
-                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}${schTimeSuffix(it)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
+                +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
@@ -2582,7 +2605,7 @@ function renderWeekView(el,titleEl){
         html+=`<td class="${isToday}">`;
         items.forEach(it=>{
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
-                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}${schTimeSuffix(it)}</span>`
+                +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
@@ -2606,8 +2629,8 @@ function renderDayView(el,titleEl){
         if(it.fileUrl) badges+=`<a href="${esc(it.fileUrl)}" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:10px;text-decoration:none;white-space:nowrap;">📎 ${esc(it.fileName||'파일')}</a>`;
         if(it.gotoTab){const tab=tabsConfig.find(t=>t.id===it.gotoTab);if(tab) badges+=`<button onclick="event.stopPropagation();switchPage('${it.gotoTab}',document.querySelector('.main-tab'))" style="font-size:11px;background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;">📌 ${esc(tab.title)}</button>`;}
         html+=`<div class="day-detail-item" style="flex-wrap:wrap;">
-            <button class="day-detail-emoji" onclick="toggleEmojiDropdown(this,'${it.id}')">${it.emoji||'😀'}</button>
-            <input class="day-detail-input" value="${esc(it.text)}" onchange="updateScheduleItem('${it.id}','text',this.value)">
+            <select class="day-detail-dept" onchange="updateScheduleDept('${it.id}',this.value)">${deptOptions(splitDept(it.text).dept)}</select>
+            <input class="day-detail-input" value="${esc(deptBody(it.text))}" onchange="updateScheduleBody('${it.id}',this.value)">
             ${schTimeLabel(it)?'<span class="sch-time" style="font-size:13px;">'+esc(schTimeLabel(it))+'</span>':''}
             <input class="day-detail-manager" value="${esc(it.manager||'')}" placeholder="담당자" onchange="updateScheduleItem('${it.id}','manager',this.value)">
             <button class="item-action-btn" onclick="openScheduleEdit('${it.id}')" style="font-size:14px;" title="수정">✏️</button>
@@ -2616,7 +2639,7 @@ function renderDayView(el,titleEl){
         </div>`;
     });
     html+=`<div class="day-detail-item" style="border-bottom:none;">
-        <button class="day-detail-emoji" id="newSchEmojiBtn" onclick="toggleNewEmojiDropdown(this)">😀</button>
+        <select class="day-detail-dept" id="newScheduleDept">${deptOptions('')}</select>
         <input class="day-detail-input" id="newScheduleText" placeholder="새 일정 입력 후 Enter" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
         <input class="day-detail-manager" id="newScheduleManager" placeholder="담당자" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
         <button class="item-action-btn" onclick="submitDayAdd('${ds}')" style="font-size:14px;">➕</button>
@@ -2674,7 +2697,7 @@ function renderListView(el,titleEl){
         } else {
             items.forEach((it,idx)=>{
                 html+=trOpen(idx)+(idx===0?dateCells:'');
-                html+=`<td class="col-event"><span class="event-name">${it.emoji?it.emoji+' ':''}${esc(it.text)}${schTimeSuffix(it)}</span></td>`;
+                html+=`<td class="col-event"><span class="event-name">${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}</span></td>`;
                 html+=`<td class="col-detail">${it.detail?`<div class="event-detail-line">${esc(it.detail)}</div>`:'<span style="color:var(--text-light);">-</span>'}</td>`;
                 html+=`<td class="col-manager">${it.manager?`<span class="manager-line">${esc(it.manager)}</span>`:''}</td>`;
                 html+=`</tr>`;
@@ -2686,7 +2709,7 @@ function renderListView(el,titleEl){
 }
 
 function promptScheduleAdd(dateStr){
-    selectedSchEmoji='';
+    document.getElementById('scheduleAddDept').innerHTML=deptOptions('');
     document.getElementById('scheduleAddDate').value=dateStr;
     const [y,m,d]=dateStr.split('-');
     const dt=new Date(+y,+m-1,+d);
@@ -2700,9 +2723,6 @@ function promptScheduleAdd(dateStr){
     schAddPendingFile=null;
     document.getElementById('schAddFileInput').value='';
     document.getElementById('schAddFileInfo').textContent='';
-    document.getElementById('scheduleEmojiPicker').innerHTML=SCH_EMOJIS.map(e=>
-        `<button type="button" class="sch-emoji-btn ${e===''?'selected':''}" onclick="selectSchEmoji('${e}',this)">${e||'없음'}</button>`
-    ).join('');
     openModal('scheduleAddModal');
     setTimeout(()=>document.getElementById('scheduleAddText').focus(),100);
 }
@@ -2738,41 +2758,25 @@ function schFillTime(which,item){
     s.value=(item&&item.startTime)||''; e.value=(item&&item.endTime)||'';
     s.disabled=a.checked; e.disabled=a.checked;
 }
-function selectSchEmoji(e,el){
-    selectedSchEmoji=e;
-    document.querySelectorAll('#scheduleEmojiPicker .sch-emoji-btn').forEach(b=>b.classList.remove('selected'));
-    el.classList.add('selected');
+// 일간 뷰에서 부서만 바꾼다(본문은 그대로).
+async function updateScheduleDept(id,dept){
+    const item=schedules.find(s=>s.id===id);if(!item)return;
+    await updateScheduleItem(id,'text',joinDept(dept,splitDept(item.text).body));
+    renderSchedule();
 }
-let newDayEmoji='';
-function toggleEmojiDropdown(btn,itemId){
-    closeAllEmojiDropdowns();
-    const dd=document.createElement('div');dd.className='emoji-dropdown';
-    SCH_EMOJIS.forEach(e=>{
-        const b=document.createElement('button');b.type='button';b.className='sch-emoji-btn';
-        b.textContent=e||'없음';b.onclick=()=>{
-            updateScheduleItem(itemId,'emoji',e);btn.textContent=e||'😀';dd.remove();
-        };
-        dd.appendChild(b);
-    });
-    btn.style.position='relative';btn.appendChild(dd);
-}
-function toggleNewEmojiDropdown(btn){
-    closeAllEmojiDropdowns();
-    const dd=document.createElement('div');dd.className='emoji-dropdown';
-    SCH_EMOJIS.forEach(e=>{
-        const b=document.createElement('button');b.type='button';b.className='sch-emoji-btn';
-        b.textContent=e||'없음';b.onclick=()=>{newDayEmoji=e;btn.textContent=e||'😀';dd.remove();};
-        dd.appendChild(b);
-    });
-    btn.style.position='relative';btn.appendChild(dd);
+// 일간 뷰에서 본문만 바꾼다(부서는 그대로).
+async function updateScheduleBody(id,body){
+    const item=schedules.find(s=>s.id===id);if(!item)return;
+    await updateScheduleItem(id,'text',joinDept(splitDept(item.text).dept,body));
 }
 function closeAllEmojiDropdowns(){document.querySelectorAll('.emoji-dropdown').forEach(d=>d.remove());}
 document.addEventListener('click',e=>{if(!e.target.closest('.day-detail-emoji')&&!e.target.closest('.emoji-dropdown'))closeAllEmojiDropdowns();});
 function submitDayAdd(ds){
     const text=document.getElementById('newScheduleText').value;
     const manager=document.getElementById('newScheduleManager').value;
-    addScheduleItem(ds,text,manager,newDayEmoji);
-    newDayEmoji='';
+    const dsel=document.getElementById('newScheduleDept');
+    addScheduleItem(ds,joinDept(dsel?dsel.value:'',text),manager,'');
+    if(dsel) dsel.value='';
 }
 async function submitScheduleAdd(){
     const dateStr=document.getElementById('scheduleAddDate').value;
@@ -2794,7 +2798,7 @@ async function submitScheduleAdd(){
         showToast('Firebase 미연결 — 파일 업로드 불가','error');
     }
     schAddPendingFile=null;
-    await addScheduleItem(dateStr,text,manager,selectedSchEmoji,opts);
+    await addScheduleItem(dateStr,joinDept(document.getElementById('scheduleAddDept').value,text),manager,'',opts);
     closeModal('scheduleAddModal');
 }
 
@@ -2805,26 +2809,23 @@ function handleSchAddFile(e){
     schAddPendingFile=file;
     document.getElementById('schAddFileInfo').textContent='📎 '+file.name+' ('+formatFileSize(file.size)+')';
 }
-let selectedEditEmoji='';
+
 let schEditPendingFile=null;
 function openScheduleEdit(id){
     const item=schedules.find(s=>s.id===id);if(!item)return;
     document.getElementById('scheduleEditId').value=id;
     document.getElementById('scheduleEditDate').value=item.date;
-    document.getElementById('scheduleEditText').value=item.text;
+    document.getElementById('scheduleEditText').value=deptBody(item.text);
     schFillTime('Edit',item);
     document.getElementById('scheduleEditDetail').value=item.detail||'';
     document.getElementById('scheduleEditManager').value=item.manager||'';
     document.getElementById('scheduleEditLink').value=item.link||'';
-    selectedEditEmoji=item.emoji||'';
+    document.getElementById('scheduleEditDept').innerHTML=deptOptions(splitDept(item.text).dept);
     schEditPendingFile=null;
     document.getElementById('schEditFileInput').value='';
     const fileInfo=document.getElementById('schEditFileInfo');
     if(item.fileUrl){fileInfo.innerHTML=`📎 <a href="${esc(item.fileUrl)}" target="_blank" style="font-size:12px;">${esc(item.fileName||'첨부파일')}</a> <button onclick="removeSchEditFile()" style="border:none;background:none;cursor:pointer;color:#e53935;font-size:12px;">✕ 삭제</button>`;}
     else{fileInfo.textContent='';}
-    document.getElementById('scheduleEditEmojiPicker').innerHTML=SCH_EMOJIS.map(e=>
-        `<button type="button" class="sch-emoji-btn ${e===selectedEditEmoji?'selected':''}" onclick="selectEditEmoji('${e}',this)">${e||'없음'}</button>`
-    ).join('');
     // 사이트 내 바로가기 셀렉트 생성
     const sel=document.getElementById('scheduleEditGoto');
     sel.innerHTML='<option value="">없음</option>';
@@ -2843,20 +2844,15 @@ function removeSchEditFile(){
     document.getElementById('schEditFileInfo').textContent='(첨부파일 삭제됨)';
     document.getElementById('schEditFileInput').value='';
 }
-function selectEditEmoji(e,el){
-    selectedEditEmoji=e;
-    document.querySelectorAll('#scheduleEditEmojiPicker .sch-emoji-btn').forEach(b=>b.classList.remove('selected'));
-    el.classList.add('selected');
-}
 async function submitScheduleEdit(){
     const id=document.getElementById('scheduleEditId').value;
     const item=schedules.find(s=>s.id===id);if(!item)return;
     pushUndo();
     item.date=document.getElementById('scheduleEditDate').value;
-    item.text=document.getElementById('scheduleEditText').value;
+    item.text=joinDept(document.getElementById('scheduleEditDept').value,document.getElementById('scheduleEditText').value);
     item.detail=document.getElementById('scheduleEditDetail').value.trim();
     item.manager=document.getElementById('scheduleEditManager').value;
-    item.emoji=selectedEditEmoji;
+    delete item.emoji;
     Object.assign(item,schReadTime('Edit'));
     item.link=document.getElementById('scheduleEditLink').value.trim()||'';
     item.gotoTab=document.getElementById('scheduleEditGoto').value||'';
@@ -2916,7 +2912,7 @@ function printSchedule(mode){
         html+='<thead><tr><th style="border:1px solid #333;padding:10px;background:#f0f0f0;width:40px;">No.</th><th style="border:1px solid #333;padding:10px;background:#f0f0f0;">일정</th><th style="border:1px solid #333;padding:10px;background:#f0f0f0;width:100px;">담당자</th></tr></thead><tbody>';
         if(items.length===0)html+='<tr><td colspan="3" style="border:1px solid #ccc;padding:20px;text-align:center;color:#999;">등록된 일정이 없습니다.</td></tr>';
         items.forEach((it,i)=>{
-            html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;">${i+1}</td><td style="border:1px solid #ccc;padding:8px;">${it.emoji?it.emoji+' ':''}${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;">${esc(it.manager||'')}</td></tr>`;
+            html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;">${i+1}</td><td style="border:1px solid #ccc;padding:8px;">${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;">${esc(it.manager||'')}</td></tr>`;
         });
         html+='</tbody></table>';
     } else if(mode==='week'){
@@ -2935,7 +2931,7 @@ function printSchedule(mode){
                 html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${dateLabel}</td><td style="border:1px solid #ccc;padding:8px;color:#999;">-</td><td style="border:1px solid #ccc;padding:8px;"></td></tr>`;
             } else {
                 items.forEach((it,j)=>{
-                    html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${j===0?dateLabel:''}</td><td style="border:1px solid #ccc;padding:8px;${j>0?'border-top:none;':''}">${it.emoji?it.emoji+' ':''}${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}">${esc(it.manager||'')}</td></tr>`;
+                    html+=`<tr><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}${i===0?'color:#e53935;':''}${i===6?'color:#1565c0;':''}">${j===0?dateLabel:''}</td><td style="border:1px solid #ccc;padding:8px;${j>0?'border-top:none;':''}">${esc(it.text)}</td><td style="border:1px solid #ccc;padding:8px;text-align:center;${j>0?'border-top:none;':''}">${esc(it.manager||'')}</td></tr>`;
                 });
             }
         }
@@ -2961,7 +2957,7 @@ function printSchedule(mode){
             if(items.length===0){
                 html+=`<td style="border:1px solid #ccc;padding:6px;"></td><td style="border:1px solid #ccc;padding:6px;"></td><td style="border:1px solid #ccc;padding:6px;"></td>`;
             } else {
-                const eventNames=items.map(it=>(it.emoji?it.emoji+' ':'')+esc(it.text));
+                const eventNames=items.map(it=>esc(it.text));
                 const detailItems=items.map(it=>it.detail?esc(it.detail):'').filter(Boolean);
                 const managers=[...new Set(items.map(it=>it.manager).filter(Boolean))];
                 html+=`<td style="border:1px solid #ccc;padding:6px;font-weight:600;color:#4A90D9;">${eventNames.join('<br>')}</td>`;
@@ -2988,7 +2984,7 @@ function printSchedule(mode){
             html+=`<td style="border:1px solid #ccc;padding:6px;vertical-align:top;min-height:60px;width:14.28%;">`;
             html+=`<div style="font-weight:700;margin-bottom:4px;${dow===0?'color:#e53935;':''}${dow===6?'color:#1565c0;':''}">${day}</div>`;
             items.forEach(it=>{
-                html+=`<div style="font-size:11px;padding:2px 4px;margin-bottom:2px;background:#e8f0fe;border-left:2px solid #4A90D9;border-radius:2px;">${it.emoji?it.emoji+' ':''}${esc(it.text)}${it.manager?' <span style="color:#888;font-size:10px;">('+esc(it.manager)+')</span>':''}</div>`;
+                html+=`<div style="font-size:11px;padding:2px 4px;margin-bottom:2px;background:#e8f0fe;border-left:2px solid #4A90D9;border-radius:2px;">${esc(it.text)}${it.manager?' <span style="color:#888;font-size:10px;">('+esc(it.manager)+')</span>':''}</div>`;
             });
             html+='</td>';
             if(dow===6&&day<last.getDate())html+='</tr><tr>';
