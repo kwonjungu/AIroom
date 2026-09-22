@@ -427,7 +427,7 @@
         .list-table td{border:1px solid var(--border);padding:8px 10px;font-size:13px;vertical-align:top;line-height:1.6;}
         .list-table .col-date{width:100px;text-align:center;font-weight:600;}
         .list-table .col-dow{width:40px;text-align:center;font-weight:600;}
-        .list-table .col-event{width:15%;}
+        .list-table .col-event{width:28%;}
         .list-table .col-detail{width:auto;}
         .list-table .col-manager{width:90px;text-align:center;}
         .list-table .col-note{width:15%;}
@@ -468,6 +468,19 @@
         .sch-emoji-btn:hover{border-color:var(--primary);background:var(--primary-light);}
         .sch-emoji-btn.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 2px rgba(28,105,212,0.25);}
         .schedule-item-emoji{margin-right:3px;}
+        /* 일정 시간 표기 — 행사명 뒤에 붙는다 */
+        .sch-time{color:var(--primary);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+        /* 월중행사 표: 행사명이 길어도 시간은 다음 줄에 통째로 내려간다 */
+        .list-table .col-event .event-name{display:block;}
+        .list-table .col-event .sch-time{display:inline-block;margin-top:1px;}
+        .sch-time-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+        .sch-time-row input[type=time]{height:42px;padding:0 10px;border:1px solid var(--hairline-strong);border-radius:0;font-size:14px;font-variant-numeric:tabular-nums;width:150px!important;flex:0 0 auto;}
+        .sch-time-row input[type=time]:disabled{background:var(--surface-soft);color:var(--muted-soft);}
+        .sch-time-row .dash{color:var(--muted);}
+        .sch-allday{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:300;color:var(--body-c);cursor:pointer;white-space:nowrap;}
+        /* 월중행사: 같은 날 마지막 행 아래에 굵은 선을 넣어 날짜 경계를 보이게 한다 */
+        .list-table tr.day-end > td{border-bottom:2px solid var(--hairline-strong);}
+        .list-table td.col-date,.list-table td.col-dow{vertical-align:middle;}
         .day-detail-emoji{width:40px;border:1px solid var(--border);border-radius:0;padding:6px;font-size:18px;text-align:center;cursor:pointer;position:relative;}
         .emoji-dropdown{position:absolute;z-index:50;background:var(--card-bg);border:1px solid var(--hairline-strong);border-radius:0;box-shadow:none;padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:220px;}
 
@@ -1758,6 +1771,14 @@
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
             </div>
+            <div class="form-group"><label>시간 <span style="font-size:11px;color:var(--text-light);font-weight:400;">비워 두면 시간 없이 등록됩니다</span></label>
+                <div class="sch-time-row">
+                    <input type="time" id="scheduleAddStart" onchange="schAddTimeTouched()">
+                    <span class="dash">~</span>
+                    <input type="time" id="scheduleAddEnd" onchange="schAddTimeTouched()">
+                    <label class="sch-allday"><input type="checkbox" id="scheduleAddAllDay" onchange="schToggleAllDay('Add')"> 종일</label>
+                </div>
+            </div>
             <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleAddText" placeholder="[교육부]신입생 오리엔테이션"></div>
             <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력" required></div>
             <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddManager" placeholder="담당자 입력" required></div>
@@ -1781,6 +1802,14 @@
             <div class="form-group"><label>날짜</label><input type="date" id="scheduleEditDate"></div>
             <div class="form-group"><label>이모티콘</label>
                 <div id="scheduleEditEmojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+            </div>
+            <div class="form-group"><label>시간 <span style="font-size:11px;color:var(--text-light);font-weight:400;">비워 두면 시간 없이 등록됩니다</span></label>
+                <div class="sch-time-row">
+                    <input type="time" id="scheduleEditStart" onchange="schEditTimeTouched()">
+                    <span class="dash">~</span>
+                    <input type="time" id="scheduleEditEnd" onchange="schEditTimeTouched()">
+                    <label class="sch-allday"><input type="checkbox" id="scheduleEditAllDay" onchange="schToggleAllDay('Edit')"> 종일</label>
+                </div>
             </div>
             <div class="form-group"><label>행사명 <span style="font-size:11px;color:var(--text-light);font-weight:400;">입력양식: [부서명]행사 내용</span></label><input type="text" id="scheduleEditText" placeholder="[교육부]신입생 오리엔테이션"></div>
             <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleEditDetail" placeholder="세부 내용 입력" required></div>
@@ -2424,7 +2453,28 @@ function scheduleNav(dir){
 }
 function scheduleToday(){scheduleDate=new Date();renderSchedule();}
 function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function getScheduleItems(dateStr){return schedules.filter(s=>s.date===dateStr);}
+function getScheduleItems(dateStr){
+    // 시간이 있는 일정이 시각순으로 먼저, 시간 없는 일정은 뒤로.
+    return schedules.filter(s=>s.date===dateStr).sort((a,b)=>{
+        const ta=a.startTime||'', tb=b.startTime||'';
+        if(ta&&tb) return ta.localeCompare(tb);
+        if(ta) return -1;
+        if(tb) return 1;
+        return 0;
+    });
+}
+// 일정의 시간 표기. 시작만 있으면 "09:00", 둘 다면 "09:00~10:40", 종일이면 "종일".
+function schTimeLabel(it){
+    if(!it) return '';
+    if(it.allDay) return '종일';
+    if(!it.startTime) return '';
+    return it.endTime ? it.startTime+'~'+it.endTime : it.startTime;
+}
+// 행사명 뒤에 붙일 시간 조각 (없으면 빈 문자열)
+function schTimeSuffix(it,cls){
+    const label=schTimeLabel(it);
+    return label ? ' <span class="'+(cls||'sch-time')+'">'+esc(label)+'</span>' : '';
+}
 function todayStr(){return fmtDate(new Date());}
 
 async function addScheduleItem(dateStr,text,manager,emoji,opts){
@@ -2432,6 +2482,9 @@ async function addScheduleItem(dateStr,text,manager,emoji,opts){
     pushUndo();
     const item={id:'sch_'+Date.now(),date:dateStr,text:text.trim(),manager:manager||'',emoji:emoji||''};
     if(opts){
+        if(opts.allDay) item.allDay=true;
+        if(opts.startTime) item.startTime=opts.startTime;
+        if(opts.endTime) item.endTime=opts.endTime;
         if(opts.detail) item.detail=opts.detail;
         if(opts.link) item.link=opts.link;
         if(opts.fileUrl){item.fileUrl=opts.fileUrl;item.fileName=opts.fileName;item.filePath=opts.filePath;}
@@ -2490,7 +2543,7 @@ function renderMonthView(el,titleEl){
         items.forEach(it=>{
             const hasExtra=it.link||it.fileUrl||it.gotoTab;
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
-                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
+                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}${schTimeSuffix(it)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
@@ -2529,7 +2582,7 @@ function renderWeekView(el,titleEl){
         html+=`<td class="${isToday}">`;
         items.forEach(it=>{
             html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
-                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}</span>`
+                +`<span>${it.emoji?'<span class="schedule-item-emoji">'+it.emoji+'</span>':''}${esc(it.text)}${schTimeSuffix(it)}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
@@ -2555,6 +2608,7 @@ function renderDayView(el,titleEl){
         html+=`<div class="day-detail-item" style="flex-wrap:wrap;">
             <button class="day-detail-emoji" onclick="toggleEmojiDropdown(this,'${it.id}')">${it.emoji||'😀'}</button>
             <input class="day-detail-input" value="${esc(it.text)}" onchange="updateScheduleItem('${it.id}','text',this.value)">
+            ${schTimeLabel(it)?'<span class="sch-time" style="font-size:13px;">'+esc(schTimeLabel(it))+'</span>':''}
             <input class="day-detail-manager" value="${esc(it.manager||'')}" placeholder="담당자" onchange="updateScheduleItem('${it.id}','manager',this.value)">
             <button class="item-action-btn" onclick="openScheduleEdit('${it.id}')" style="font-size:14px;" title="수정">✏️</button>
             <button class="item-action-btn delete" onclick="deleteScheduleItem('${it.id}')" style="font-size:14px;">🗑️</button>
@@ -2611,23 +2665,21 @@ function renderListView(el,titleEl){
             rowClass+=' row-empty';
         }
         const dowClass=dow===0?'dow-sun':dow===6?'dow-sat':'';
-        html+=`<tr class="${rowClass}">`;
-        html+=`<td class="col-date">${ds}</td>`;
-        html+=`<td class="col-dow ${dowClass}">${dayNames[dow]}</td>`;
+        // 한 날짜에 행사가 여러 개면 행사마다 행을 나눈다. 날짜·요일 칸만 rowspan 으로 묶는다.
+        const rowCount=Math.max(1,items.length);
+        const dateCells=`<td class="col-date" rowspan="${rowCount}">${ds}</td><td class="col-dow ${dowClass}" rowspan="${rowCount}">${dayNames[dow]}</td>`;
+        const trOpen=(idx)=>`<tr class="${rowClass}${idx===rowCount-1?' day-end':''}">`;
         if(items.length===0){
-            html+=`<td></td><td></td><td></td>`;
+            html+=trOpen(0)+dateCells+`<td></td><td></td><td></td></tr>`;
         } else {
-            // 행사: 행사명(text) 표시
-            const eventNames=items.map(it=>`<div class="event-name">${it.emoji?it.emoji+' ':''}${esc(it.text)}</div>`);
-            // 주요활동: 세부 내용(detail) 표시
-            const detailItems=items.map(it=>it.detail?`<div class="event-detail-line">${esc(it.detail)}</div>`:'').filter(Boolean);
-            html+=`<td class="col-event">${eventNames.join('')}</td>`;
-            html+=`<td class="col-detail">${detailItems.length?detailItems.join(''):'<span style="color:var(--text-light);">-</span>'}</td>`;
-            // 담당자
-            const managers=[...new Set(items.map(it=>it.manager).filter(Boolean))];
-            html+=`<td class="col-manager">${managers.map(mg=>`<span class="manager-line">${esc(mg)}</span>`).join('')||''}</td>`;
+            items.forEach((it,idx)=>{
+                html+=trOpen(idx)+(idx===0?dateCells:'');
+                html+=`<td class="col-event"><span class="event-name">${it.emoji?it.emoji+' ':''}${esc(it.text)}${schTimeSuffix(it)}</span></td>`;
+                html+=`<td class="col-detail">${it.detail?`<div class="event-detail-line">${esc(it.detail)}</div>`:'<span style="color:var(--text-light);">-</span>'}</td>`;
+                html+=`<td class="col-manager">${it.manager?`<span class="manager-line">${esc(it.manager)}</span>`:''}</td>`;
+                html+=`</tr>`;
+            });
         }
-        html+=`</tr>`;
     }
     html+=`</tbody></table></div>`;
     el.innerHTML=html;
@@ -2641,6 +2693,7 @@ function promptScheduleAdd(dateStr){
     const dayNames=['일','월','화','수','목','금','토'];
     document.getElementById('scheduleAddDateLabel').textContent=`${+m}월 ${+d}일 (${dayNames[dt.getDay()]})`;
     document.getElementById('scheduleAddText').value='';
+    schFillTime('Add',null);
     document.getElementById('scheduleAddDetail').value='';
     document.getElementById('scheduleAddManager').value='';
     document.getElementById('scheduleAddLink').value='';
@@ -2652,6 +2705,38 @@ function promptScheduleAdd(dateStr){
     ).join('');
     openModal('scheduleAddModal');
     setTimeout(()=>document.getElementById('scheduleAddText').focus(),100);
+}
+// 종일 체크 시 시간 칸을 잠그고 비운다.
+function schToggleAllDay(which){
+    const on=document.getElementById('schedule'+which+'AllDay').checked;
+    const s=document.getElementById('schedule'+which+'Start'), e=document.getElementById('schedule'+which+'End');
+    s.disabled=on; e.disabled=on;
+    if(on){ s.value=''; e.value=''; }
+}
+// 시간을 직접 넣으면 종일 체크를 푼다.
+function schAddTimeTouched(){
+    const s=document.getElementById('scheduleAddStart').value, e=document.getElementById('scheduleAddEnd').value;
+    if(s||e) document.getElementById('scheduleAddAllDay').checked=false;
+}
+function schEditTimeTouched(){
+    const s=document.getElementById('scheduleEditStart').value, e=document.getElementById('scheduleEditEnd').value;
+    if(s||e) document.getElementById('scheduleEditAllDay').checked=false;
+}
+// 모달에서 읽어 저장할 형태로 만든다. 끝이 시작보다 빠르면 끝을 버린다.
+function schReadTime(which){
+    const allDay=document.getElementById('schedule'+which+'AllDay').checked;
+    if(allDay) return {allDay:true,startTime:'',endTime:''};
+    const start=document.getElementById('schedule'+which+'Start').value||'';
+    let end=document.getElementById('schedule'+which+'End').value||'';
+    if(start&&end&&end<start) end='';
+    if(!start) end='';
+    return {allDay:false,startTime:start,endTime:end};
+}
+function schFillTime(which,item){
+    const s=document.getElementById('schedule'+which+'Start'), e=document.getElementById('schedule'+which+'End'), a=document.getElementById('schedule'+which+'AllDay');
+    a.checked=!!(item&&item.allDay);
+    s.value=(item&&item.startTime)||''; e.value=(item&&item.endTime)||'';
+    s.disabled=a.checked; e.disabled=a.checked;
 }
 function selectSchEmoji(e,el){
     selectedSchEmoji=e;
@@ -2727,6 +2812,7 @@ function openScheduleEdit(id){
     document.getElementById('scheduleEditId').value=id;
     document.getElementById('scheduleEditDate').value=item.date;
     document.getElementById('scheduleEditText').value=item.text;
+    schFillTime('Edit',item);
     document.getElementById('scheduleEditDetail').value=item.detail||'';
     document.getElementById('scheduleEditManager').value=item.manager||'';
     document.getElementById('scheduleEditLink').value=item.link||'';
@@ -2771,6 +2857,7 @@ async function submitScheduleEdit(){
     item.detail=document.getElementById('scheduleEditDetail').value.trim();
     item.manager=document.getElementById('scheduleEditManager').value;
     item.emoji=selectedEditEmoji;
+    Object.assign(item,schReadTime('Edit'));
     item.link=document.getElementById('scheduleEditLink').value.trim()||'';
     item.gotoTab=document.getElementById('scheduleEditGoto').value||'';
     // 파일 처리
