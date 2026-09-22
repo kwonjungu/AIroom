@@ -384,3 +384,8 @@ dialog::backdrop{background:#0006}
 .criteria dd span { display:block }
 .criteria dd span.step { padding-left:10px; text-indent:-10px }
 .criteria dd span + span { margin-top:2px }
+
+/* 위원 표의 QR 열 — 인사위원에게 그대로 보여 주거나 인쇄해서 배부한다. */
+.qr-col { width:124px; text-align:center }
+.qr-box { display:inline-block; line-height:0; border:1px solid var(--line,#e6e6e6); padding:4px; background:#fff }
+.qr-box svg { display:block }

@@ -207,10 +207,51 @@
         const who = admin ? '관리자' : `${esc(r.actor.name)} 위원 · ${stages[stage]}`;
         return `<header class="detail-head"><div><h2>${esc(r.title)}</h2><p class="muted small">${esc(r.school)} · ${esc(r.field)}</p></div><div class="actions"><span class="who">${who}</span>${admin ? '' : '<button class="ghost" data-action="refresh">새로고침</button><button class="ghost" data-action="exit">접속 종료</button>'}</div></header>${steps}${nextPanel(admin ? adminNext(r) : reviewerNext(r, stage))}<nav class="tabs" aria-label="채용 상세">${tabs.map(([id, name]) => `<button data-action="tab" data-tab="${id}" aria-pressed="${state.tab === id}">${name}</button>`).join('')}</nav>${({ overview, evaluation, results, exports: exportsPanel, history: historyPanel })[state.tab](r)}`;
     }
+    // 발급된 링크를 QR 로 그린다. 링크가 없으면 안내만 둔다.
+    // QR 이미지는 화면에 남지만 링크 원문과 마찬가지로 새로고침하면 사라진다(state.invites 가 메모리라서).
+    function qrCell(url) {
+        if (!url) return '<span class="muted small">링크 발급 후 표시</span>';
+        try { return `<div class="qr-box">${window.SimpleQR.toSVG(url, { size: 104 })}</div>`; }
+        catch (e) { return '<span class="muted small">QR 생성 실패</span>'; }
+    }
+
+    // 인사위원 배부용 인쇄 창 — 이름·직위·담당 전형·QR 을 한 장에 담는다.
+    function printQrSheet(r) {
+        const rows = r.reviewers.filter(v => state.invites[v.id]);
+        if (!rows.length) { notify('먼저 링크를 발급하세요.'); return; }
+        const cards = rows.map(v => {
+            let svg = '';
+            try { svg = window.SimpleQR.toSVG(state.invites[v.id], { size: 190 }); } catch (e) { svg = '<p>QR 생성 실패</p>'; }
+            return `<div class="card"><div class="name">${esc(v.name)}</div><div class="pos">${esc(v.position)}</div>`
+                + `<div class="stage">${v.stages.map(s => stages[s]).join(' · ')}</div>${svg}</div>`;
+        }).join('');
+        const win = window.open('', '_blank');
+        if (!win) { notify('팝업이 차단되었습니다. 허용 후 다시 눌러 주세요.'); return; }
+        win.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(r.title)} · 위원 배부표</title><style>
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{font-family:'Pretendard','Malgun Gothic',sans-serif;color:#262626;padding:24px}
+            h1{font-size:20px;font-weight:700;margin-bottom:4px}
+            .sub{font-size:13px;color:#6b6b6b;margin-bottom:6px}
+            .warn{font-size:12px;color:#6b6b6b;border:1px solid #e6e6e6;padding:10px 12px;margin-bottom:18px}
+            .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+            .card{border:1px solid #cccccc;padding:16px;text-align:center;break-inside:avoid}
+            .name{font-size:17px;font-weight:700}
+            .pos{font-size:13px;color:#6b6b6b;margin-top:2px}
+            .stage{font-size:12px;color:#3c3c3c;margin:6px 0 10px}
+            .card svg{width:100%;height:auto;max-width:190px}
+            @media print{body{padding:0}.grid{gap:10px}}
+        </style></head><body><h1>${esc(r.title)}</h1>
+            <div class="sub">${esc(r.school)} · ${esc(r.field)} · 서류 ${esc(r.documentDate)} · 면접 ${esc(r.interviewDate)}</div>
+            <div class="warn">각 QR 은 해당 위원 본인 전용입니다. 다른 사람이 스캔하면 그 위원 이름으로 채점됩니다. 발급일로부터 7일이 지나면 열리지 않으며, 다시 발급하면 이전 QR 은 즉시 막힙니다.</div>
+            <div class="grid">${cards}</div></body></html>`);
+        win.document.close();
+        setTimeout(() => win.print(), 300);
+    }
+
     function overview(r) {
         const admin = r.actor.role === 'admin', open = admin && r.status !== 'finalized';
         const issued = r.reviewers.filter(v => state.invites[v.id]);
-        return `<section class="panel"><h2>기본 정보</h2><dl class="facts"><div><dt>서류전형일</dt><dd>${esc(r.documentDate)}</dd></div><div><dt>면접일</dt><dd>${esc(r.interviewDate)}</dd></div><div><dt>최종 순위 기준</dt><dd>${r.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균'}</dd></div><div><dt>서류 가점</dt><dd>${r.rules.allowBonus ? '사용 · 최대 5점, 근거 입력' : '미사용'}</dd></div></dl></section>${guideDetails(r, 'document')}${guideDetails(r, 'interview', { guidance: false })}<section class="panel" id="focus-reviewers"><div class="split"><h2>평가위원</h2>${open ? `<div class="actions"><button class="secondary" data-action="invite-all">위원 전체 링크 발급</button>${issued.length ? '<button class="primary" data-action="copy-all">전체 링크 복사</button>' : ''}</div>` : ''}</div>${open ? '<p class="muted small">링크를 발급해 해당 위원에게만 전달하세요. 링크를 열면 바로 서명하고 채점할 수 있습니다.</p>' : ''}<div class="table-wrap"><table><thead><tr><th>위원</th><th>직위</th><th>담당 전형</th><th>평가 링크</th></tr></thead><tbody>${r.reviewers.map(v => `<tr><td>${esc(v.name)}</td><td>${esc(v.position)}</td><td>${v.stages.map(s => stages[s]).join(' · ')}</td><td>${open ? `<div class="actions"><button class="secondary" data-action="invite" data-id="${v.id}">${state.invites[v.id] ? '다시 발급' : '링크 발급'}</button>${state.invites[v.id] ? `<button class="secondary" data-action="copy-one" data-id="${v.id}">복사</button><a href="${esc(state.invites[v.id])}" target="_blank" rel="noopener noreferrer">열어보기</a>` : ''}</div>` : '배정 완료'}</td></tr>`).join('')}</tbody></table></div>${issued.length ? `<div class="invite-box"><strong>발급된 링크 · 7일 동안 유효</strong><p class="small">링크를 가진 사람은 그 위원으로 채점할 수 있으니 본인에게만 보내세요. 다시 발급하면 이전 링크는 바로 막힙니다. 메일은 자동으로 가지 않습니다. <b>화면을 새로 불러오면 이 목록은 사라집니다. 지금 복사해 두세요.</b></p><textarea id="invite-list" class="invite-list" readonly rows="${Math.min(10, issued.length * 3)}">${esc(issued.map(v => `${v.name} (${v.position})\n${state.invites[v.id]}`).join('\n\n'))}</textarea></div>` : ''}</section><section class="panel"><h2>지원자 ${r.candidates.length}명</h2><div class="table-wrap"><table><thead><tr><th>접수번호</th><th>성명</th><th>면접대상</th></tr></thead><tbody>${r.candidates.map(c => `<tr><td>${esc(c.code)}</td><td>${esc(c.name)}</td><td>${r.shortlist.includes(c.id) ? '<span class="tag ok">선정</span>' : '—'}</td></tr>`).join('')}</tbody></table></div></section>${r.actor.role === 'admin' ? `<section class="panel danger-zone"><h2>채용 삭제</h2><p class="muted small">지원자 명단, 위원 평가와 서명, 결과 문서와 처리 이력이 모두 사라집니다. 되돌릴 수 없습니다.${r.status === 'finalized' ? ' 결과 문서가 필요하면 문서 출력 탭에서 먼저 내려받으세요.' : ' 아직 결과가 확정되지 않은 채용입니다.'}</p><button class="danger" data-action="delete-recruitment">이 채용 삭제</button></section>` : ''}`;
+        return `<section class="panel"><h2>기본 정보</h2><dl class="facts"><div><dt>서류전형일</dt><dd>${esc(r.documentDate)}</dd></div><div><dt>면접일</dt><dd>${esc(r.interviewDate)}</dd></div><div><dt>최종 순위 기준</dt><dd>${r.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균'}</dd></div><div><dt>서류 가점</dt><dd>${r.rules.allowBonus ? '사용 · 최대 5점, 근거 입력' : '미사용'}</dd></div></dl></section>${guideDetails(r, 'document')}${guideDetails(r, 'interview', { guidance: false })}<section class="panel" id="focus-reviewers"><div class="split"><h2>평가위원</h2>${open ? `<div class="actions"><button class="secondary" data-action="invite-all">위원 전체 링크 발급</button>${issued.length ? '<button class="primary" data-action="copy-all">전체 링크 복사</button><button class="secondary" data-action="print-qr">QR 배부표 인쇄</button>' : ''}</div>` : ''}</div>${open ? '<p class="muted small">링크를 발급해 해당 위원에게만 전달하세요. 링크를 열면 바로 서명하고 채점할 수 있습니다.</p>' : ''}<div class="table-wrap"><table><thead><tr><th>위원</th><th>직위</th><th>담당 전형</th><th>평가 링크</th><th class="qr-col">QR</th></tr></thead><tbody>${r.reviewers.map(v => `<tr><td>${esc(v.name)}</td><td>${esc(v.position)}</td><td>${v.stages.map(s => stages[s]).join(' · ')}</td><td>${open ? `<div class="actions"><button class="secondary" data-action="invite" data-id="${v.id}">${state.invites[v.id] ? '다시 발급' : '링크 발급'}</button>${state.invites[v.id] ? `<button class="secondary" data-action="copy-one" data-id="${v.id}">복사</button><a href="${esc(state.invites[v.id])}" target="_blank" rel="noopener noreferrer">열어보기</a>` : ''}</div>` : '배정 완료'}</td><td class="qr-col">${qrCell(state.invites[v.id])}</td></tr>`).join('')}</tbody></table></div>${issued.length ? `<div class="invite-box"><strong>발급된 링크 · 7일 동안 유효</strong><p class="small">링크를 가진 사람은 그 위원으로 채점할 수 있으니 본인에게만 보내세요. 다시 발급하면 이전 링크는 바로 막힙니다. 메일은 자동으로 가지 않습니다. <b>화면을 새로 불러오면 이 목록은 사라집니다. 지금 복사해 두세요.</b></p><textarea id="invite-list" class="invite-list" readonly rows="${Math.min(10, issued.length * 3)}">${esc(issued.map(v => `${v.name} (${v.position})\n${state.invites[v.id]}`).join('\n\n'))}</textarea></div>` : ''}</section><section class="panel"><h2>지원자 ${r.candidates.length}명</h2><div class="table-wrap"><table><thead><tr><th>접수번호</th><th>성명</th><th>면접대상</th></tr></thead><tbody>${r.candidates.map(c => `<tr><td>${esc(c.code)}</td><td>${esc(c.name)}</td><td>${r.shortlist.includes(c.id) ? '<span class="tag ok">선정</span>' : '—'}</td></tr>`).join('')}</tbody></table></div></section>${r.actor.role === 'admin' ? `<section class="panel danger-zone"><h2>채용 삭제</h2><p class="muted small">지원자 명단, 위원 평가와 서명, 결과 문서와 처리 이력이 모두 사라집니다. 되돌릴 수 없습니다.${r.status === 'finalized' ? ' 결과 문서가 필요하면 문서 출력 탭에서 먼저 내려받으세요.' : ' 아직 결과가 확정되지 않은 채용입니다.'}</p><button class="danger" data-action="delete-recruitment">이 채용 삭제</button></section>` : ''}`;
     }
     function evaluation(r) {
         if (r.status === 'draft') return '<section class="panel"><h2>아직 채점을 열지 않았습니다.</h2><p class="muted">위 ‘평가 시작하기’를 누르면 위원 링크를 만들 수 있습니다.</p></section>';
@@ -340,6 +381,7 @@ ${r.title}`);
             }
             if (action === 'copy-one') { await navigator.clipboard.writeText(state.invites[button.dataset.id]); notify('링크를 복사했습니다.'); }
             if (action === 'copy-all') { await navigator.clipboard.writeText($('#invite-list').value); notify('전체 링크를 복사했습니다.'); }
+            if (action === 'print-qr') printQrSheet(state.current);
             if (action === 'submit-evaluation') { if (!$('#score-form').reportValidity()) return; if (!confirm('제출 후에는 점수를 수정할 수 없습니다. 제출할까요?')) return; const { stage, rows } = collectScores(); await mutate(`evaluations/${stage}/save`, { rows }); await mutate(`evaluations/${stage}/submit`); notify('평가 제출이 완료되었습니다.'); }
             if (action === 'reopen') { const reason = prompt('평가 재개방 사유를 입력하세요.'); if (reason === null) return; await mutate(`evaluations/${button.dataset.stage}/reopen`, { reviewerId: button.dataset.id, reason }); notify('평가 입력을 다시 열었습니다.'); }
             if (action === 'finalize') { if (!confirm('모든 평가를 확정하고 수정할 수 없는 결과 스냅샷을 저장합니다. 계속할까요?')) return; await mutate('finalize'); state.tab = 'exports'; render(); notify('결과 확정본 v1을 저장했습니다.'); }
