@@ -12,7 +12,7 @@
   * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
   body { font-family: 'Noto Sans KR', sans-serif; -webkit-text-size-adjust: 100%; background: #f3f4f6; }
   input[type="text"], input[type="date"], input[type="month"], input[type="password"], input[type="number"], input[type="tel"], textarea, select {
-    padding: 0.5rem 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; outline: none;
+    padding: 0.5rem 0.5rem; border: 1px solid #d1d5db; border-radius: 0; outline: none;
     font-size: 16px; background: #fff; min-height: 40px; width: 100%;
   }
   input:focus, textarea:focus, select:focus { border-color: #2563eb; }
@@ -37,7 +37,7 @@
   .meal-table input:focus { background: #eff6ff; }
   #sig-canvas { touch-action: none; cursor: crosshair; display: block; width: 100%; height: 200px; }
   .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; background: #f3f4f6; }
+  .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 0; font-size: 12px; font-weight: 700; cursor: pointer; background: #f3f4f6; }
   .cal-cell.has-draft { background: #fef3c7; color: #92400e; }
   .cal-cell.has-submitted { background: #fde68a; color: #78350f; }
   .cal-cell.has-approved { background: #6ee7b7; color: #064e3b; }
@@ -47,17 +47,17 @@
   #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
   .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9998; align-items: center; justify-content: center; padding: 1rem; }
   .modal.show { display: flex; }
-  .menu-dropzone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 18px 12px; background: #f9fafb; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+  .menu-dropzone { border: 2px dashed #cbd5e1; border-radius: 0; padding: 18px 12px; background: #f9fafb; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
   .menu-dropzone:hover { background: #f3f4f6; border-color: #9ca3af; }
   .menu-dropzone.is-dragover { background: #eff6ff; border-color: #2563eb; border-style: solid; }
   .menu-dropzone.has-file { background: #ecfdf5; border-color: #10b981; }
   .mr-row { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-bottom: 1px solid #f3f4f6; }
   .mr-row b { color: #1d4ed8; font-size: 12px; min-width: 86px; font-family: ui-monospace, monospace; }
-  .mr-row input { flex: 1; font-size: 12px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .mr-row input { flex: 1; font-size: 12px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 0; }
   .mr-row input:focus { border-color: #2563eb; }
-  .mr-row button { font-size: 11px; color: #ef4444; padding: 4px 8px; border-radius: 6px; }
+  .mr-row button { font-size: 11px; color: #ef4444; padding: 4px 8px; border-radius: 0; }
   .mr-add { display: flex; gap: 8px; padding: 10px 8px; border-top: 2px dashed #e5e7eb; margin-top: 6px; }
-  .mr-add input { font-size: 12px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .mr-add input { font-size: 12px; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 0; }
   /* 서명 모달은 다른 모달 위에서 열릴 수 있으므로 최상단 */
   #sig-modal { z-index: 10050; }
   #sig-modal > div { margin: auto; }
@@ -76,22 +76,22 @@
     <div class="text-center mb-8">
       <div class="flex items-center justify-center gap-3 flex-wrap">
         <h1 id="landing-title" class="text-3xl font-bold text-gray-800">🍱 급식일지</h1>
-        <button data-go="help" class="bg-white border-2 border-amber-300 hover:bg-amber-50 text-amber-800 font-bold text-sm px-4 py-2 rounded-full shadow-sm" title="사용방법 보기">📖 사용 방법</button>
+        <button data-go="help" class="bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-800 font-bold text-sm px-4 py-2 rounded-none shadow-none" title="사용방법 보기">📖 사용 방법</button>
       </div>
       <p class="text-sm text-gray-500 mt-1">비조리교 학교급식 일일 기록 시스템</p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-4xl">
-      <button data-go="menu" class="landing-btn bg-white hover:bg-amber-50 border-2 border-amber-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
+      <button data-go="menu" class="landing-btn bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-none p-8 shadow-none flex flex-col items-center gap-3">
         <span class="text-6xl">🍚</span>
         <span class="text-xl font-bold text-gray-800">월별 식단 입력하기</span>
         <span class="text-xs text-gray-500 text-center">HWPX 업로드 · AI 자동 추출</span>
       </button>
-      <button data-go="manager" class="landing-btn bg-white hover:bg-blue-50 border-2 border-blue-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
+      <button data-go="manager" class="landing-btn bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-none p-8 shadow-none flex flex-col items-center gap-3">
         <span class="text-6xl">📝</span>
         <span class="text-xl font-bold text-gray-800">담당자</span>
         <span class="text-xs text-gray-500 text-center">일지 작성 · 서명 · 제출</span>
       </button>
-      <button data-go="boss" class="landing-btn bg-white hover:bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3">
+      <button data-go="boss" class="landing-btn bg-white hover:bg-gray-50 border-2 border-gray-300 rounded-none p-8 shadow-none flex flex-col items-center gap-3">
         <span class="text-6xl">✅</span>
         <span class="text-xl font-bold text-gray-800">결재자(부장)</span>
         <span class="text-xs text-gray-500 text-center">결재 · 관리 · 다운로드</span>
@@ -105,28 +105,28 @@
 <div id="view-help" class="view">
   <div class="min-h-screen px-4 py-8 flex flex-col">
     <div class="max-w-2xl w-full mx-auto flex-1 flex flex-col">
-      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2 mb-4 self-start">← 처음으로</button>
+      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-none px-3 py-2 mb-4 self-start">← 처음으로</button>
 
       <!-- 진행 표시 -->
       <div class="flex items-center justify-between mb-2">
         <span class="text-xs font-semibold text-gray-500"><span id="help-cur">1</span> / <span id="help-total">5</span></span>
         <span id="help-skip" class="text-xs text-gray-400 cursor-pointer hover:text-gray-600" data-help-skip>건너뛰기 ✕</span>
       </div>
-      <div class="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-6">
-        <div id="help-bar" class="h-full bg-amber-400 transition-all duration-300" style="width:20%"></div>
+      <div class="h-1.5 bg-gray-200 rounded-none overflow-hidden mb-6">
+        <div id="help-bar" class="h-full bg-gray-100 transition-all duration-300" style="width:20%"></div>
       </div>
 
       <!-- 슬라이드 카드 -->
-      <div id="help-card" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-7 flex-1 flex flex-col transition-opacity duration-200 ease-out">
+      <div id="help-card" class="bg-white rounded-none border border-gray-200 shadow-none p-7 flex-1 flex flex-col transition-opacity duration-200 ease-out">
         <!-- JS로 주입됨 -->
       </div>
 
       <!-- 네비게이션 -->
       <div class="flex items-center justify-between gap-3 mt-6">
-        <button id="help-prev" data-help-prev class="flex-1 max-w-[130px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-3 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed">← 이전</button>
+        <button id="help-prev" data-help-prev class="flex-1 max-w-[130px] bg-white border-2 border-gray-300 text-gray-700 font-bold py-3 rounded-none disabled:opacity-40 disabled:cursor-not-allowed">← 이전</button>
         <!-- 인디케이터 점 -->
         <div id="help-dots" class="flex items-center gap-2"></div>
-        <button id="help-next" data-help-next class="flex-1 max-w-[130px] bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl">다음 →</button>
+        <button id="help-next" data-help-next class="flex-1 max-w-[130px] bg-gray-100 hover:bg-gray-100 text-white font-bold py-3 rounded-none">다음 →</button>
       </div>
     </div>
   </div>
@@ -136,17 +136,17 @@
 <div id="view-menu-upload" class="view">
   <div class="min-h-screen px-4 py-8">
     <div class="max-w-3xl mx-auto">
-      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2 mb-4">← 처음으로</button>
+      <button data-back class="text-sm text-gray-500 bg-white border border-gray-300 rounded-none px-3 py-2 mb-4">← 처음으로</button>
       <div class="text-center mb-6">
         <span class="text-5xl">🍚</span>
         <h2 class="text-2xl font-bold text-gray-800 mt-2">월별 식단 입력하기</h2>
         <p class="text-sm text-gray-500 mt-1">한글(HWPX) 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출해 저장합니다.</p>
       </div>
-      <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 mb-4 text-sm text-amber-900">
+      <div class="bg-gray-50 border border-gray-300 rounded-none p-3 mb-4 text-sm text-gray-800">
         <p class="font-bold">⚠️ HWPX 또는 PDF 형식만 가능합니다.</p>
         <p class="text-xs mt-1">한글 식단표는 <b>다른 이름으로 저장 → HWPX(*.hwpx)</b>, 또는 <b>PDF로 인쇄/저장</b> 한 파일이어야 합니다. 구버전 HWP, DOCX, 이미지(jpg/png)는 지원하지 않습니다.</p>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="bg-white rounded-none shadow-none p-4 mb-4">
         <div class="grid grid-cols-2 gap-2 mb-3">
           <div>
             <label class="text-xs font-bold text-gray-600">연도</label>
@@ -162,18 +162,18 @@
           <div class="text-center">
             <p class="text-sm font-bold text-gray-700">📂 파일을 여기로 <b>드래그</b>하거나 <u>클릭해서 선택</u></p>
             <p class="text-xs text-gray-500 mt-1">HWPX 또는 PDF (30MB 이하)</p>
-            <p class="text-xs text-amber-700 font-bold mt-2" data-dropzone-name></p>
+            <p class="text-xs text-gray-800 font-bold mt-2" data-dropzone-name></p>
           </div>
         </div>
-        <button data-action="mu-upload" class="w-full bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl">🤖 업로드 & AI 파싱</button>
+        <button data-action="mu-upload" class="w-full bg-gray-100 active:bg-gray-100 text-white font-bold py-3 rounded-none">🤖 업로드 & AI 파싱</button>
         <div id="mu-result" class="mt-3"></div>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4">
+      <div class="bg-white rounded-none shadow-none p-4">
         <div class="flex items-center justify-between mb-2">
           <h3 class="font-bold text-gray-800 text-sm">저장된 월별 식단 조회</h3>
           <div class="flex items-center gap-2">
             <input type="month" id="mu-view-month" class="!w-32">
-            <button data-action="mu-list" class="bg-gray-600 text-white font-bold py-2 px-3 rounded-lg text-xs">조회</button>
+            <button data-action="mu-list" class="bg-gray-600 text-white font-bold py-2 px-3 rounded-none text-xs">조회</button>
           </div>
         </div>
         <div id="mu-list" class="space-y-1 text-sm max-h-96 overflow-y-auto"></div>
@@ -185,15 +185,15 @@
 <!-- ════════ 1. 담당자 로그인 / 가입 ════════ -->
 <div id="view-manager-login" class="view">
   <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-    <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2">← 처음으로</button>
-    <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm">
+    <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-none px-3 py-2">← 처음으로</button>
+    <div class="bg-white rounded-none shadow-none p-6 w-full max-w-sm">
       <div class="text-center mb-4">
         <span class="text-4xl">📝</span>
         <h2 class="text-xl font-bold text-gray-800 mt-2">담당자</h2>
       </div>
-      <div class="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
-        <button data-mgr-tab="login"  class="mgr-tab-btn flex-1 py-2 rounded-md text-sm font-bold">로그인</button>
-        <button data-mgr-tab="signup" class="mgr-tab-btn flex-1 py-2 rounded-md text-sm font-bold">회원가입</button>
+      <div class="flex gap-1 bg-gray-100 rounded-none p-1 mb-4">
+        <button data-mgr-tab="login"  class="mgr-tab-btn flex-1 py-2 rounded-none text-sm font-bold">로그인</button>
+        <button data-mgr-tab="signup" class="mgr-tab-btn flex-1 py-2 rounded-none text-sm font-bold">회원가입</button>
       </div>
 
       <div id="mgr-tab-login" class="mgr-tab-pane space-y-3">
@@ -207,7 +207,7 @@
           <input type="password" id="mgr-login-pw" placeholder="비밀번호" autocomplete="current-password">
         </div>
         <p id="mgr-login-err" class="text-xs text-red-500 hidden"></p>
-        <button data-action="mgr-login" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl">로그인</button>
+        <button data-action="mgr-login" class="w-full bg-[#1c69d4] active:bg-[#1c69d4] text-white font-bold py-3 rounded-none">로그인</button>
       </div>
 
       <div id="mgr-tab-signup" class="mgr-tab-pane space-y-3 hidden">
@@ -224,7 +224,7 @@
           <input type="password" id="mgr-signup-pw2" placeholder="동일 비밀번호" autocomplete="new-password">
         </div>
         <p id="mgr-signup-err" class="text-xs text-red-500 hidden"></p>
-        <button data-action="mgr-signup" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl">가입 & 로그인</button>
+        <button data-action="mgr-signup" class="w-full bg-[#1c69d4] active:bg-[#1c69d4] text-white font-bold py-3 rounded-none">가입 & 로그인</button>
       </div>
     </div>
   </div>
@@ -235,14 +235,14 @@
   <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 print-hide">
     <div class="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
       <div class="flex items-center gap-2">
-        <button data-back class="text-xs text-gray-500 bg-white border border-gray-300 rounded-lg px-2 py-2">← 처음</button>
+        <button data-back class="text-xs text-gray-500 bg-white border border-gray-300 rounded-none px-2 py-2">← 처음</button>
         <span class="text-lg">📝</span>
         <span class="font-bold text-gray-800 text-sm">급식일지 · <span id="mgr-who"></span></span>
       </div>
       <div class="flex items-center gap-2">
-        <button data-action="mgr-new" class="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-2 rounded-lg">+ 새 일지</button>
-        <button data-action="open-mypage" class="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-2 rounded-lg">⚙️ 마이페이지</button>
-        <button data-action="mgr-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
+        <button data-action="mgr-new" class="text-xs bg-gray-50 text-[#1c69d4] font-bold px-3 py-2 rounded-none">+ 새 일지</button>
+        <button data-action="open-mypage" class="text-xs bg-gray-50 text-gray-800 font-bold px-3 py-2 rounded-none">⚙️ 마이페이지</button>
+        <button data-action="mgr-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-none">로그아웃</button>
       </div>
     </div>
     <!-- 담당자 하위 탭: 일지 작성 / 월별 현황 (결재자 캘린더와 동일한 데이터) -->
@@ -258,7 +258,7 @@
     <div id="mgr-main-tab-write" class="mgr-main-tab-content">
 
     <!-- 날짜 선택 & 내 일지 목록 -->
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+    <div class="bg-white rounded-none shadow-none p-4 mb-4">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
         <div>
           <label class="text-xs font-bold text-gray-600">급식일자</label>
@@ -268,28 +268,28 @@
           <label class="text-xs font-bold text-gray-600">연 급식회수</label>
           <input type="number" id="mgr-count" min="1" placeholder="예: 50">
         </div>
-        <button data-action="mgr-load" class="bg-gray-800 text-white font-bold py-2.5 rounded-xl">📅 해당 날짜 불러오기</button>
+        <button data-action="mgr-load" class="bg-gray-800 text-white font-bold py-2.5 rounded-none">📅 해당 날짜 불러오기</button>
       </div>
       <p id="mgr-status-line" class="text-xs text-gray-500 mt-2"></p>
     </div>
 
     <!-- 메뉴 (자동 채움) -->
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+    <div class="bg-white rounded-none shadow-none p-4 mb-4">
       <div class="flex items-center justify-between mb-2">
         <h3 class="font-bold text-gray-800 text-sm">🍚 식단명 (자동 불러오기)</h3>
-        <button data-action="mgr-reload-menu" class="text-xs text-blue-600 font-bold">↻ 다시 불러오기</button>
+        <button data-action="mgr-reload-menu" class="text-xs text-[#1c69d4] font-bold">↻ 다시 불러오기</button>
       </div>
       <textarea id="mgr-menu" rows="2" placeholder="예: 쌀밥, 미역국, 돈까스, 양배추샐러드, 김치"></textarea>
       <p class="text-[11px] text-gray-400 mt-1">관리자가 식단표지를 업로드한 경우 자동으로 채워집니다.</p>
     </div>
 
     <!-- 검식/급식량/급식인원 표 -->
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 overflow-x-auto">
+    <div class="bg-white rounded-none shadow-none p-4 mb-4 overflow-x-auto">
       <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
         <h3 class="font-bold text-gray-800 text-sm">📋 검식 · 급식량 · 급식인원</h3>
         <div class="no-print flex items-center gap-2">
-          <button data-action="bulk-check-ok" class="text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg px-3 py-1.5" title="검식내용을 전부 '양호'로 설정">✓ 일괄 양호</button>
-          <button data-action="bulk-amt-ok" class="text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 rounded-lg px-3 py-1.5" title="급식량을 전부 '적당'으로 설정">⚖ 일괄 적당</button>
+          <button data-action="bulk-check-ok" class="text-xs font-bold bg-gray-50 hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-none px-3 py-1.5" title="검식내용을 전부 '양호'로 설정">✓ 일괄 양호</button>
+          <button data-action="bulk-amt-ok" class="text-xs font-bold bg-gray-50 hover:bg-gray-50 text-[#1c69d4] border border-gray-300 rounded-none px-3 py-1.5" title="급식량을 전부 '적당'으로 설정">⚖ 일괄 적당</button>
         </div>
       </div>
       <table class="meal-table min-w-[520px]">
@@ -306,7 +306,7 @@
     </div>
 
     <!-- 일정표/점검사항 -->
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+    <div class="bg-white rounded-none shadow-none p-4 mb-4">
       <h3 class="font-bold text-gray-800 text-sm mb-3">🚚 일정표 & 점검사항</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
@@ -322,7 +322,7 @@
     </div>
 
     <!-- 급식종사자 위생 -->
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 overflow-x-auto">
+    <div class="bg-white rounded-none shadow-none p-4 mb-4 overflow-x-auto">
       <h3 class="font-bold text-gray-800 text-sm mb-2">👤 급식종사자 위생사항</h3>
       <table class="meal-table min-w-[440px]">
         <thead>
@@ -334,11 +334,11 @@
         </thead>
         <tbody id="mgr-staff-tbody"></tbody>
       </table>
-      <button data-action="mgr-add-staff" class="mt-2 text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">+ 종사자 추가</button>
+      <button data-action="mgr-add-staff" class="mt-2 text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-none">+ 종사자 추가</button>
     </div>
 
     <!-- 보존식 / 교육내용 -->
-    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 space-y-3">
+    <div class="bg-white rounded-none shadow-none p-4 mb-4 space-y-3">
       <div>
         <label class="text-xs font-bold text-gray-600">보존식 관리</label>
         <div class="flex gap-2 mt-1">
@@ -356,13 +356,13 @@
     </div>
 
     <!-- 담당자 서명 -->
-    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-4">
-      <h3 class="font-bold text-blue-800 text-sm mb-3">✍️ 담당자 서명</h3>
+    <div class="bg-gray-50 border border-gray-300 rounded-none p-4 mb-4">
+      <h3 class="font-bold text-[#1c69d4] text-sm mb-3">✍️ 담당자 서명</h3>
       <div class="flex items-center gap-3">
         <span class="text-sm font-bold">담당</span>
-        <div class="relative w-32 h-14 border border-gray-300 bg-white rounded-lg flex items-center justify-center">
+        <div class="relative w-32 h-14 border border-gray-300 bg-white rounded-none flex items-center justify-center">
           <img id="mgr-sig-img" class="absolute inset-0 w-full h-full object-contain hidden" src="">
-          <button id="mgr-sig-btn" data-sign="mgr-sig" class="text-blue-600 text-sm font-bold w-full h-full">(서명하기)</button>
+          <button id="mgr-sig-btn" data-sign="mgr-sig" class="text-[#1c69d4] text-sm font-bold w-full h-full">(서명하기)</button>
         </div>
         <button data-action="mgr-sig-clear" class="text-xs text-red-500">지우기</button>
       </div>
@@ -370,7 +370,7 @@
 
     <!-- 제출 버튼 -->
     <div class="sticky bottom-0 bg-white border-t border-gray-200 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 print-hide">
-      <button data-action="mgr-submit" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg">📤 결재자에게 제출하기</button>
+      <button data-action="mgr-submit" class="w-full bg-[#1c69d4] active:bg-[#1c69d4] text-white font-bold py-3.5 rounded-none shadow-none">📤 결재자에게 제출하기</button>
     </div>
 
     </div> <!-- /#mgr-main-tab-write -->
@@ -378,12 +378,12 @@
     <!-- 탭: 월별 현황 (결재자 캘린더와 동일한 데이터/렌더) -->
     <div id="mgr-main-tab-status" class="mgr-main-tab-content hidden">
       <div class="flex items-center gap-2 mb-3">
-        <button data-action="mgr-cal-prev" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&lt;</button>
+        <button data-action="mgr-cal-prev" class="bg-gray-200 px-3 py-2 rounded-none font-bold">&lt;</button>
         <input type="month" id="mgr-cal-month">
-        <button data-action="mgr-cal-next" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&gt;</button>
-        <button data-action="mgr-cal-reload" class="bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-sm">조회</button>
+        <button data-action="mgr-cal-next" class="bg-gray-200 px-3 py-2 rounded-none font-bold">&gt;</button>
+        <button data-action="mgr-cal-reload" class="bg-gray-100 text-white px-3 py-2 rounded-none font-bold text-sm">조회</button>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="bg-white rounded-none shadow-none p-4 mb-4">
         <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500">
           <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
         </div>
@@ -404,15 +404,15 @@
 <!-- ════════ 3. 결재자 로그인 / 가입 ════════ -->
 <div id="view-boss-login" class="view">
   <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-    <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg px-3 py-2">← 처음으로</button>
-    <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm">
+    <button data-back class="absolute top-4 left-4 text-sm text-gray-500 bg-white border border-gray-300 rounded-none px-3 py-2">← 처음으로</button>
+    <div class="bg-white rounded-none shadow-none p-6 w-full max-w-sm">
       <div class="text-center mb-4">
         <span class="text-4xl">🔒</span>
         <h2 class="text-xl font-bold text-gray-800 mt-2">결재자(부장)</h2>
       </div>
-      <div class="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4">
-        <button data-boss-tab="login"  class="boss-tab-btn flex-1 py-2 rounded-md text-sm font-bold">로그인</button>
-        <button data-boss-tab="signup" class="boss-tab-btn flex-1 py-2 rounded-md text-sm font-bold">회원가입</button>
+      <div class="flex gap-1 bg-gray-100 rounded-none p-1 mb-4">
+        <button data-boss-tab="login"  class="boss-tab-btn flex-1 py-2 rounded-none text-sm font-bold">로그인</button>
+        <button data-boss-tab="signup" class="boss-tab-btn flex-1 py-2 rounded-none text-sm font-bold">회원가입</button>
       </div>
 
       <div id="boss-tab-login" class="boss-tab-pane space-y-3">
@@ -426,7 +426,7 @@
           <input type="password" id="boss-login-pw" placeholder="비밀번호" autocomplete="current-password">
         </div>
         <p id="boss-login-err" class="text-xs text-red-500 hidden"></p>
-        <button data-action="boss-login" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl">로그인</button>
+        <button data-action="boss-login" class="w-full bg-gray-100 active:bg-gray-100 text-white font-bold py-3 rounded-none">로그인</button>
       </div>
 
       <div id="boss-tab-signup" class="boss-tab-pane space-y-3 hidden">
@@ -443,7 +443,7 @@
           <input type="password" id="boss-signup-pw2" placeholder="동일 비밀번호" autocomplete="new-password">
         </div>
         <p id="boss-signup-err" class="text-xs text-red-500 hidden"></p>
-        <button data-action="boss-signup" class="w-full bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl">가입 & 로그인</button>
+        <button data-action="boss-signup" class="w-full bg-gray-100 active:bg-gray-100 text-white font-bold py-3 rounded-none">가입 & 로그인</button>
       </div>
     </div>
   </div>
@@ -454,13 +454,13 @@
   <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 print-hide">
     <div class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
       <div class="flex items-center gap-2">
-        <button data-back class="text-xs text-gray-500 bg-white border border-gray-300 rounded-lg px-2 py-2">← 처음</button>
+        <button data-back class="text-xs text-gray-500 bg-white border border-gray-300 rounded-none px-2 py-2">← 처음</button>
         <span class="text-lg">✅</span>
         <span class="font-bold text-gray-800 text-sm">결재자 · <span id="boss-who"></span></span>
       </div>
       <div class="flex items-center gap-2">
-        <button data-action="open-mypage" class="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-2 rounded-lg">⚙️ 마이페이지</button>
-        <button data-action="boss-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-lg">로그아웃</button>
+        <button data-action="open-mypage" class="text-xs bg-gray-50 text-gray-800 font-bold px-3 py-2 rounded-none">⚙️ 마이페이지</button>
+        <button data-action="boss-logout" class="text-xs text-gray-500 border border-gray-300 px-3 py-2 rounded-none">로그아웃</button>
       </div>
     </div>
     <div class="max-w-5xl mx-auto flex gap-1 px-2 overflow-x-auto">
@@ -477,7 +477,7 @@
     <div id="tab-pending" class="boss-tab-content">
       <div class="flex items-center justify-between mb-3">
         <h2 class="font-bold text-gray-800">결재 대기 문서</h2>
-        <button data-action="boss-refresh" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">↻ 새로고침</button>
+        <button data-action="boss-refresh" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-none">↻ 새로고침</button>
       </div>
       <div id="pending-list" class="space-y-2"></div>
     </div>
@@ -485,12 +485,12 @@
     <!-- 탭: 캘린더 -->
     <div id="tab-calendar" class="boss-tab-content hidden">
       <div class="flex items-center gap-2 mb-3">
-        <button data-action="cal-prev" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&lt;</button>
+        <button data-action="cal-prev" class="bg-gray-200 px-3 py-2 rounded-none font-bold">&lt;</button>
         <input type="month" id="cal-month">
-        <button data-action="cal-next" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&gt;</button>
-        <button data-action="cal-reload" class="bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-sm">조회</button>
+        <button data-action="cal-next" class="bg-gray-200 px-3 py-2 rounded-none font-bold">&gt;</button>
+        <button data-action="cal-reload" class="bg-gray-100 text-white px-3 py-2 rounded-none font-bold text-sm">조회</button>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="bg-white rounded-none shadow-none p-4 mb-4">
         <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500">
           <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
         </div>
@@ -503,19 +503,19 @@
           <span><span class="inline-block w-3 h-3 rounded align-middle" style="background:#fee2e2"></span> 주말</span>
         </div>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4">
+      <div class="bg-white rounded-none shadow-none p-4">
         <h3 class="font-bold text-gray-800 text-sm mb-2">월별 일괄 다운로드</h3>
         <p class="text-xs text-gray-500 mb-3">선택한 월의 모든 결재완료 급식일지를 하나의 HTML로 묶어 다운로드합니다. (인쇄 가능)</p>
         <div class="flex flex-col sm:flex-row gap-2">
-          <button data-action="batch-download" class="bg-purple-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">📥 결재완료본 일괄 다운로드</button>
-          <button data-action="batch-download-all" class="bg-gray-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">📥 전체(대기 포함) 일괄 다운로드</button>
+          <button data-action="batch-download" class="bg-gray-100 text-white font-bold py-2.5 px-5 rounded-none text-sm">📥 결재완료본 일괄 다운로드</button>
+          <button data-action="batch-download-all" class="bg-gray-600 text-white font-bold py-2.5 px-5 rounded-none text-sm">📥 전체(대기 포함) 일괄 다운로드</button>
         </div>
       </div>
     </div>
 
     <!-- 탭: 식단표지 -->
     <div id="tab-menu" class="boss-tab-content hidden">
-      <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+      <div class="bg-white rounded-none shadow-none p-4 mb-4">
         <h3 class="font-bold text-gray-800 text-sm mb-2">📤 식단표지 HWPX/PDF 업로드 (월 1회)</h3>
         <p class="text-xs text-gray-500 mb-3">HWPX 또는 PDF 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출하여 저장합니다. 담당자가 일지 작성 시 자동으로 식단명이 채워집니다.</p>
         <div class="grid grid-cols-2 gap-2 mb-3">
@@ -533,18 +533,18 @@
           <div class="text-center">
             <p class="text-sm font-bold text-gray-700">📂 파일을 여기로 <b>드래그</b>하거나 <u>클릭해서 선택</u></p>
             <p class="text-xs text-gray-500 mt-1">HWPX 또는 PDF (30MB 이하)</p>
-            <p class="text-xs text-blue-700 font-bold mt-2" data-dropzone-name></p>
+            <p class="text-xs text-[#1c69d4] font-bold mt-2" data-dropzone-name></p>
           </div>
         </div>
-        <button data-action="menu-upload" class="bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm">🤖 업로드 & AI 파싱</button>
+        <button data-action="menu-upload" class="bg-[#1c69d4] text-white font-bold py-2.5 px-5 rounded-none text-sm">🤖 업로드 & AI 파싱</button>
         <div id="menu-result" class="mt-3"></div>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4">
+      <div class="bg-white rounded-none shadow-none p-4">
         <div class="flex items-center justify-between mb-2">
           <h3 class="font-bold text-gray-800 text-sm">저장된 월별 식단</h3>
           <div class="flex items-center gap-2">
             <input type="month" id="menu-view-month" class="!w-32">
-            <button data-action="menu-list" class="bg-gray-600 text-white font-bold py-2 px-3 rounded-lg text-xs">조회</button>
+            <button data-action="menu-list" class="bg-gray-600 text-white font-bold py-2 px-3 rounded-none text-xs">조회</button>
           </div>
         </div>
         <div id="menu-list" class="space-y-1 text-sm max-h-96 overflow-y-auto"></div>
@@ -553,7 +553,7 @@
 
     <!-- 탭: 서버 관리자 (일지 삭제) -->
     <div id="tab-admin" class="boss-tab-content hidden">
-      <details class="bg-white border border-gray-200 rounded-xl p-3 mb-3 text-xs text-gray-700" open>
+      <details class="bg-white border border-gray-200 rounded-none p-3 mb-3 text-xs text-gray-700" open>
         <summary class="font-bold text-sm text-gray-800 cursor-pointer select-none">📖 이 화면은 뭔가요? (사용법)</summary>
         <div class="mt-3 space-y-2 leading-relaxed">
           <p><b>서버 관리자</b>는 Firestore에 저장된 <b>급식일지 데이터를 직접 정리</b>하기 위한 운영자용 화면입니다. 일반적인 결재 흐름에서는 사용할 일이 거의 없고, 아래와 같은 상황에서만 씁니다.</p>
@@ -576,23 +576,23 @@
           </ul>
         </div>
       </details>
-      <div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-xs text-red-800">
+      <div class="bg-red-50 border border-red-200 rounded-none p-3 mb-3 text-xs text-red-800">
         ⚠️ 이 화면의 삭제는 <b>되돌릴 수 없습니다</b>. 결재 완료된 일지까지 영구 삭제됩니다. 신중히 사용하세요.
       </div>
       <div class="flex items-center gap-2 mb-3 flex-wrap">
-        <button data-action="admin-cal-prev" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&lt;</button>
+        <button data-action="admin-cal-prev" class="bg-gray-200 px-3 py-2 rounded-none font-bold">&lt;</button>
         <input type="month" id="admin-cal-month">
-        <button data-action="admin-cal-next" class="bg-gray-200 px-3 py-2 rounded-lg font-bold">&gt;</button>
-        <button data-action="admin-reload" class="bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-sm">조회</button>
-        <div class="ml-auto flex gap-1 bg-gray-100 p-1 rounded-lg">
-          <button class="admin-view-btn px-3 py-1.5 rounded-md text-xs font-bold" data-admin-view="calendar">📅 달력</button>
-          <button class="admin-view-btn px-3 py-1.5 rounded-md text-xs font-bold" data-admin-view="list">📋 나열식</button>
+        <button data-action="admin-cal-next" class="bg-gray-200 px-3 py-2 rounded-none font-bold">&gt;</button>
+        <button data-action="admin-reload" class="bg-gray-100 text-white px-3 py-2 rounded-none font-bold text-sm">조회</button>
+        <div class="ml-auto flex gap-1 bg-gray-100 p-1 rounded-none">
+          <button class="admin-view-btn px-3 py-1.5 rounded-none text-xs font-bold" data-admin-view="calendar">📅 달력</button>
+          <button class="admin-view-btn px-3 py-1.5 rounded-none text-xs font-bold" data-admin-view="list">📋 나열식</button>
         </div>
       </div>
 
       <!-- 달력 뷰 -->
       <div id="admin-view-calendar" class="admin-view">
-        <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <div class="bg-white rounded-none shadow-none p-4 mb-4">
           <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-gray-500">
             <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
           </div>
@@ -608,10 +608,10 @@
 
       <!-- 나열식 뷰 -->
       <div id="admin-view-list" class="admin-view hidden">
-        <div class="bg-white rounded-2xl shadow-sm p-3 mb-3">
+        <div class="bg-white rounded-none shadow-none p-3 mb-3">
           <div class="flex items-center justify-between mb-2">
             <div class="text-xs font-bold text-gray-700" id="admin-list-summary">—</div>
-            <button data-action="admin-bulk-delete" class="bg-red-600 active:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">선택 항목 삭제</button>
+            <button data-action="admin-bulk-delete" class="bg-red-600 active:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded-none">선택 항목 삭제</button>
           </div>
           <div id="admin-list" class="divide-y divide-gray-100"></div>
         </div>
@@ -623,39 +623,39 @@
 
 <!-- ════════ 서명 모달 ════════ -->
 <div id="sig-modal" class="modal">
-  <div class="bg-white rounded-2xl p-5 w-full max-w-sm">
+  <div class="bg-white rounded-none p-5 w-full max-w-sm">
     <h3 class="font-bold text-gray-800 mb-3 text-center">화면에 서명해주세요</h3>
-    <div class="border-2 border-dashed border-gray-400 rounded-xl bg-white mb-4 overflow-hidden" style="touch-action:none;">
+    <div class="border-2 border-dashed border-gray-400 rounded-none bg-white mb-4 overflow-hidden" style="touch-action:none;">
       <canvas id="sig-canvas"></canvas>
     </div>
     <div class="flex gap-2">
-      <button data-action="sig-clear" class="py-3 px-4 bg-gray-200 rounded-xl font-bold text-sm">지우기</button>
-      <button data-action="sig-cancel" class="py-3 px-4 bg-red-100 text-red-700 rounded-xl font-bold text-sm">취소</button>
-      <button data-action="sig-save" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-sm">완료</button>
+      <button data-action="sig-clear" class="py-3 px-4 bg-gray-200 rounded-none font-bold text-sm">지우기</button>
+      <button data-action="sig-cancel" class="py-3 px-4 bg-red-100 text-red-700 rounded-none font-bold text-sm">취소</button>
+      <button data-action="sig-save" class="flex-1 py-3 bg-gray-100 text-white rounded-none font-bold text-sm">완료</button>
     </div>
   </div>
 </div>
 
 <!-- ════════ 일지 미리보기 모달 ════════ -->
 <div id="preview-modal" class="modal">
-  <div class="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+  <div class="bg-white rounded-none w-full max-w-3xl max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-gray-200">
       <h3 class="font-bold text-gray-800 text-sm" id="preview-title">급식일지 미리보기</h3>
       <div class="flex items-center gap-2">
-        <button data-action="preview-download" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">📥 다운로드</button>
-        <button data-action="preview-print" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg">🖨️ 인쇄</button>
+        <button data-action="preview-download" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-none">📥 다운로드</button>
+        <button data-action="preview-print" class="text-xs bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-none">🖨️ 인쇄</button>
         <button data-action="preview-close" class="text-gray-500 font-bold px-2">✕</button>
       </div>
     </div>
     <div id="preview-body" class="flex-1 overflow-auto p-4 bg-gray-50"></div>
-    <div id="preview-approve-area" class="p-4 border-t border-gray-200 bg-emerald-50 hidden">
+    <div id="preview-approve-area" class="p-4 border-t border-gray-200 bg-gray-50 hidden">
       <div class="flex items-center gap-3 flex-wrap">
-        <span class="text-sm font-bold text-emerald-800">결재 서명:</span>
-        <div class="relative w-32 h-12 border border-gray-300 bg-white rounded-lg flex items-center justify-center">
+        <span class="text-sm font-bold text-gray-800">결재 서명:</span>
+        <div class="relative w-32 h-12 border border-gray-300 bg-white rounded-none flex items-center justify-center">
           <img id="boss-sig-img" class="absolute inset-0 w-full h-full object-contain hidden" src="">
-          <button id="boss-sig-btn" data-sign="boss-sig" class="text-emerald-700 text-sm font-bold w-full h-full">(서명하기)</button>
+          <button id="boss-sig-btn" data-sign="boss-sig" class="text-gray-800 text-sm font-bold w-full h-full">(서명하기)</button>
         </div>
-        <button data-action="preview-approve" class="bg-emerald-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm ml-auto">✅ 결재 승인</button>
+        <button data-action="preview-approve" class="bg-gray-100 text-white font-bold py-2.5 px-5 rounded-none text-sm ml-auto">✅ 결재 승인</button>
       </div>
     </div>
   </div>
@@ -663,12 +663,12 @@
 
 <!-- ════════ 마이페이지 모달 ════════ -->
 <div id="mypage-modal" class="modal">
-  <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+  <div class="bg-white rounded-none p-6 w-full max-w-md">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-bold text-gray-800 text-lg">⚙️ 마이페이지</h3>
       <button data-action="close-mypage" class="text-gray-500 font-bold px-2">✕</button>
     </div>
-    <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+    <div class="bg-gray-50 rounded-none p-3 mb-4 text-sm">
       <p><b>이름:</b> <span id="mp-name"></span></p>
       <p><b>역할:</b> <span id="mp-role"></span></p>
     </div>
@@ -687,28 +687,28 @@
         <input type="password" id="mp-new-pw2" autocomplete="new-password">
       </div>
       <p id="mp-err" class="text-xs text-red-500 hidden"></p>
-      <p id="mp-ok" class="text-xs text-green-600 hidden"></p>
-      <button data-action="mp-change-pw" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl">비밀번호 변경</button>
+      <p id="mp-ok" class="text-xs text-gray-800 hidden"></p>
+      <button data-action="mp-change-pw" class="w-full bg-[#1c69d4] text-white font-bold py-2.5 rounded-none">비밀번호 변경</button>
     </div>
     <hr class="my-4 border-gray-200">
     <div>
       <h4 class="font-bold text-sm text-red-600 mb-2">계정 삭제</h4>
       <p class="text-xs text-gray-500 mb-2">위의 <b>현재 비밀번호</b>를 입력한 뒤 클릭하세요. 복구 불가.</p>
-      <button data-action="mp-delete-account" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-xl text-sm">계정 영구 삭제</button>
+      <button data-action="mp-delete-account" class="w-full bg-red-600 text-white font-bold py-2.5 rounded-none text-sm">계정 영구 삭제</button>
     </div>
   </div>
 </div>
 
 <div id="loading">
-  <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-blue-600 mb-4"></div>
-  <div class="text-base font-bold text-gray-800 bg-white px-6 py-3 rounded-full shadow-lg" id="loading-text">처리 중...</div>
+  <div class="animate-spin rounded-none h-14 w-14 border-t-4 border-b-4 border-gray-300 mb-4"></div>
+  <div class="text-base font-bold text-gray-800 bg-white px-6 py-3 rounded-none shadow-none" id="loading-text">처리 중...</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════
      식단 검토 모달 (업로드 후 저장 전 수동 확인/수정)
 ═══════════════════════════════════════════════ -->
 <div id="menu-review-modal" class="modal">
-  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+  <div class="bg-white rounded-none w-full max-w-lg max-h-[90vh] flex flex-col">
     <div class="p-4 border-b border-gray-200">
       <h3 class="font-bold text-gray-800">🧐 식단 검토 및 수정</h3>
       <p class="text-xs text-gray-500 mt-1">AI가 추출한 결과입니다. <b>직접 확인·수정</b>한 뒤 저장하세요.<br>잘못된 부분이 있으면 <b>맨 아래 의견란</b>에 적고 "의견 반영해 다시 파싱"을 누르면 AI가 수정합니다.</p>
@@ -719,10 +719,10 @@
       <label class="text-xs font-bold text-gray-700">✏️ 검토 의견 (선택)</label>
       <textarea id="mr-feedback" rows="3" placeholder="예) 3월 19일, 20일 식단이 누락됐고 23일 자리에 20일 메뉴가 들어가 하루씩 밀렸어요." class="w-full text-xs"></textarea>
       <div class="grid grid-cols-2 gap-2">
-        <button data-action="mr-revise" class="bg-amber-500 active:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm">🔄 의견 반영해 다시 파싱</button>
-        <button data-action="mr-save" class="bg-blue-600 active:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm">✅ 확인, 서버에 저장</button>
+        <button data-action="mr-revise" class="bg-gray-100 active:bg-gray-100 text-white font-bold py-2.5 rounded-none text-sm">🔄 의견 반영해 다시 파싱</button>
+        <button data-action="mr-save" class="bg-[#1c69d4] active:bg-[#1c69d4] text-white font-bold py-2.5 rounded-none text-sm">✅ 확인, 서버에 저장</button>
       </div>
-      <button data-action="mr-cancel" class="w-full bg-gray-200 active:bg-gray-300 text-gray-800 font-bold py-2 rounded-xl text-xs">취소 (저장하지 않음)</button>
+      <button data-action="mr-cancel" class="w-full bg-gray-200 active:bg-gray-300 text-gray-800 font-bold py-2 rounded-none text-xs">취소 (저장하지 않음)</button>
     </div>
   </div>
 </div>
@@ -833,7 +833,7 @@ function showView(viewId) {
 // ═══════════════════════════════════════════════
 const HELP_SLIDES = [
   {
-    badge: { cls: 'bg-amber-100 text-amber-800', num: 1 },
+    badge: { cls: 'bg-gray-50 text-gray-800', num: 1 },
     icon: '🍚',
     title: '월별 식단 입력하기',
     sub: '로그인 불필요 · 한 달에 한 번',
@@ -844,11 +844,11 @@ const HELP_SLIDES = [
         <li>• 해당 월 선택 후 파일 업로드</li>
         <li>• 추출된 메뉴는 담당자 일지 작성 시 자동으로 불러와짐</li>
       </ul>
-      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">💡 이미 올린 달을 다시 업로드하면 <b>기존 메뉴는 전부 덮어쓰기</b>됩니다.</div>
+      <div class="bg-gray-50 border border-gray-300 rounded-none p-3 text-xs text-gray-800">💡 이미 올린 달을 다시 업로드하면 <b>기존 메뉴는 전부 덮어쓰기</b>됩니다.</div>
     `
   },
   {
-    badge: { cls: 'bg-blue-100 text-blue-800', num: 2 },
+    badge: { cls: 'bg-gray-50 text-[#1c69d4]', num: 2 },
     icon: '📝',
     title: '담당자 — 일지 작성·서명·제출',
     sub: '급식 담당 교직원용',
@@ -861,11 +861,11 @@ const HELP_SLIDES = [
         <li>서명란에 손글씨 서명</li>
         <li><b>제출</b> → 결재 대기 상태</li>
       </ol>
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900">💡 임시저장(초안)도 가능하고, 결재 전에는 언제든 수정해 재제출할 수 있습니다.</div>
+      <div class="bg-gray-50 border border-gray-300 rounded-none p-3 text-xs text-blue-900">💡 임시저장(초안)도 가능하고, 결재 전에는 언제든 수정해 재제출할 수 있습니다.</div>
     `
   },
   {
-    badge: { cls: 'bg-emerald-100 text-emerald-800', num: 3 },
+    badge: { cls: 'bg-gray-50 text-gray-800', num: 3 },
     icon: '✅',
     title: '결재자(부장) — 결재·관리',
     sub: '영양(교)사 / 부장용',
@@ -877,7 +877,7 @@ const HELP_SLIDES = [
         <li>• 월별 현황을 한눈에 파악(담당자별/상태별)</li>
         <li>• 필요 시 담당자 계정 관리</li>
       </ul>
-      <div class="bg-rose-50 border border-rose-200 rounded-lg p-3 text-xs text-rose-900"><b>⚠️ 승인된 일지는 수정·삭제 불가</b> (감사 목적 보존). 승인 전에 충분히 검토하세요.</div>
+      <div class="bg-rose-50 border border-rose-200 rounded-none p-3 text-xs text-rose-900"><b>⚠️ 승인된 일지는 수정·삭제 불가</b> (감사 목적 보존). 승인 전에 충분히 검토하세요.</div>
     `
   },
   {
@@ -887,25 +887,25 @@ const HELP_SLIDES = [
     sub: '결재완료 예시 미리보기',
     body: `
       <p class="text-gray-700 leading-relaxed mb-3">위 과정을 모두 마치면 아래와 같은 형태의 일지가 만들어집니다. 실제 다운로드되는 HTML과 동일한 화면입니다.</p>
-      <div class="rounded-lg border-2 border-gray-300 overflow-hidden bg-gray-50 mb-3" style="height:400px;">
+      <div class="rounded-none border-2 border-gray-300 overflow-hidden bg-gray-50 mb-3" style="height:400px;">
         <iframe src="/bap/sample.html" class="w-full h-full bg-white" style="border:0;" title="급식일지 완성 예시"></iframe>
       </div>
       <div class="flex items-center justify-between gap-2">
         <div class="text-xs text-gray-500">💡 담당자·결재자 서명까지 포함된 실제 예시</div>
-        <a href="/bap/sample.html" target="_blank" rel="noopener" class="text-xs text-blue-600 font-bold hover:underline">새 창으로 보기 ↗</a>
+        <a href="/bap/sample.html" target="_blank" rel="noopener" class="text-xs text-[#1c69d4] font-bold hover:underline">새 창으로 보기 ↗</a>
       </div>
     `
   },
   {
-    badge: { cls: 'bg-purple-100 text-purple-800', num: 5 },
+    badge: { cls: 'bg-gray-50 text-gray-800', num: 5 },
     icon: '📥',
     title: '다운로드 & PDF로 저장',
     sub: 'HTML 저장 → 인쇄 → PDF',
     body: `
       <p class="text-gray-700 leading-relaxed mb-3">일지는 <b>HTML 파일</b>로 다운로드됩니다. 개별 단건 또는 월 단위(결재완료만 / 전체)로 한 번에 받을 수 있습니다.</p>
-      <div class="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-3">
-        <p class="text-sm text-amber-900 font-bold mb-2">📄 PDF로 저장하려면?</p>
-        <ol class="text-xs text-amber-900 space-y-1 pl-4 list-decimal leading-relaxed">
+      <div class="bg-gray-50 border-2 border-gray-300 rounded-none p-4 mb-3">
+        <p class="text-sm text-gray-800 font-bold mb-2">📄 PDF로 저장하려면?</p>
+        <ol class="text-xs text-gray-800 space-y-1 pl-4 list-decimal leading-relaxed">
           <li>다운로드한 <b>HTML 파일을 브라우저로 열기</b></li>
           <li>키보드 <b>Ctrl + P</b> (또는 브라우저 메뉴 → 인쇄)</li>
           <li>프린터 선택에서 <b>"PDF로 저장"</b> 고르기</li>
@@ -923,10 +923,10 @@ const HELP_SLIDES = [
     body: `
       <p class="text-gray-700 leading-relaxed mb-4">달력 셀의 배경색으로 각 날짜의 진행 상태를 표시합니다.</p>
       <div class="space-y-3">
-        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-amber-200 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">임시저장</div><div class="text-xs text-gray-500">초안 상태 · 아직 제출 전</div></div></div>
-        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-amber-300 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">제출완료</div><div class="text-xs text-gray-500">결재 대기 중</div></div></div>
-        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-emerald-300 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">결재완료</div><div class="text-xs text-gray-500">수정·삭제 불가</div></div></div>
-        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-lg bg-red-200 opacity-60 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">주말</div><div class="text-xs text-gray-500">작성 불필요</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-none bg-gray-100 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">임시저장</div><div class="text-xs text-gray-500">초안 상태 · 아직 제출 전</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-none bg-gray-100 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">제출완료</div><div class="text-xs text-gray-500">결재 대기 중</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-none bg-gray-100 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">결재완료</div><div class="text-xs text-gray-500">수정·삭제 불가</div></div></div>
+        <div class="flex items-center gap-3"><span class="inline-block w-10 h-10 rounded-none bg-red-200 opacity-60 flex-shrink-0"></span><div><div class="font-bold text-sm text-gray-800">주말</div><div class="text-xs text-gray-500">작성 불필요</div></div></div>
       </div>
     `
   }
@@ -939,7 +939,7 @@ function initHelpSlides() {
   // 인디케이터 점 생성
   const dots = $('help-dots');
   dots.innerHTML = HELP_SLIDES.map((_, i) =>
-    `<button data-help-dot="${i}" class="help-dot w-2 h-2 rounded-full bg-gray-300 hover:bg-gray-400" aria-label="${i+1}단계로 이동"></button>`
+    `<button data-help-dot="${i}" class="help-dot w-2 h-2 rounded-none bg-gray-300 hover:bg-gray-400" aria-label="${i+1}단계로 이동"></button>`
   ).join('');
   helpRender();
 }
@@ -949,7 +949,7 @@ function helpRender() {
   const card = $('help-card');
   card.innerHTML = `
     <div class="flex items-center gap-3 mb-4">
-      <span class="${s.badge.cls} font-bold rounded-full w-11 h-11 flex items-center justify-center text-lg flex-shrink-0">${s.badge.num}</span>
+      <span class="${s.badge.cls} font-bold rounded-none w-11 h-11 flex items-center justify-center text-lg flex-shrink-0">${s.badge.num}</span>
       <div class="flex-1 min-w-0">
         <h3 class="text-xl font-bold text-gray-800 truncate">${s.icon} ${esc(s.title)}</h3>
         <p class="text-xs text-gray-500 mt-0.5">${esc(s.sub)}</p>
@@ -962,7 +962,7 @@ function helpRender() {
   $('help-bar').style.width = Math.round(((helpIdx + 1) / total) * 100) + '%';
   // 점 활성화
   document.querySelectorAll('.help-dot').forEach((d, i) => {
-    d.classList.toggle('bg-amber-400', i === helpIdx);
+    d.classList.toggle('bg-gray-100', i === helpIdx);
     d.classList.toggle('w-6', i === helpIdx);
     d.classList.toggle('bg-gray-300', i !== helpIdx);
   });
@@ -1250,8 +1250,8 @@ let currentUser = null; // {name, role}
 function setMgrTab(which) {
   document.querySelectorAll('.mgr-tab-btn').forEach(b => {
     b.classList.toggle('bg-white', b.dataset.mgrTab === which);
-    b.classList.toggle('text-blue-700', b.dataset.mgrTab === which);
-    b.classList.toggle('shadow-sm', b.dataset.mgrTab === which);
+    b.classList.toggle('text-[#1c69d4]', b.dataset.mgrTab === which);
+    b.classList.toggle('shadow-none', b.dataset.mgrTab === which);
     b.classList.toggle('text-gray-500', b.dataset.mgrTab !== which);
   });
   $('mgr-tab-login').classList.toggle('hidden', which !== 'login');
@@ -1639,8 +1639,8 @@ let currentBoss = null;
 function setBossTab(which) {
   document.querySelectorAll('.boss-tab-btn').forEach(b => {
     b.classList.toggle('bg-white', b.dataset.bossTab === which);
-    b.classList.toggle('text-emerald-700', b.dataset.bossTab === which);
-    b.classList.toggle('shadow-sm', b.dataset.bossTab === which);
+    b.classList.toggle('text-gray-800', b.dataset.bossTab === which);
+    b.classList.toggle('shadow-none', b.dataset.bossTab === which);
     b.classList.toggle('text-gray-500', b.dataset.bossTab !== which);
   });
   $('boss-tab-login').classList.toggle('hidden', which !== 'login');
@@ -1729,10 +1729,10 @@ async function bossLogout() {
 function switchBossTab(tab) {
   document.querySelectorAll('.boss-tab').forEach(b => {
     const active = b.dataset.tab === tab;
-    b.classList.toggle('border-blue-500', active);
-    // admin 탭은 강조색 유지(빨강). 다른 활성 탭만 text-blue-600 적용.
+    b.classList.toggle('border-gray-300', active);
+    // admin 탭은 강조색 유지(빨강). 다른 활성 탭만 text-[#1c69d4] 적용.
     if (b.dataset.tab !== 'admin') {
-      b.classList.toggle('text-blue-600', active);
+      b.classList.toggle('text-[#1c69d4]', active);
       b.classList.toggle('text-gray-500', !active);
     }
   });
@@ -1800,10 +1800,10 @@ async function loadAdminView() {
   listEl.innerHTML = items.map(it => {
     const status = it.status || '';
     const badge = status === 'approved'
-      ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">결재완료</span>'
+      ? '<span class="text-[10px] bg-gray-50 text-gray-800 font-bold px-2 py-0.5 rounded-none">결재완료</span>'
       : status === 'submitted'
-        ? '<span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">결재대기</span>'
-        : '<span class="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">작성중</span>';
+        ? '<span class="text-[10px] bg-gray-50 text-gray-800 font-bold px-2 py-0.5 rounded-none">결재대기</span>'
+        : '<span class="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-none">작성중</span>';
     const submittedAt = it.submittedAt ? new Date(it.submittedAt).toLocaleString('ko-KR') : '-';
     const approvedAt  = it.approvedAt  ? new Date(it.approvedAt).toLocaleString('ko-KR')  : '';
     return `<div class="flex items-center gap-2 py-2 flex-wrap">
@@ -1813,8 +1813,8 @@ async function loadAdminView() {
       <span class="text-xs text-gray-700">담당 ${esc(it.managerName || '-')}</span>
       ${it.bossName ? `<span class="text-xs text-gray-500">· 결재 ${esc(it.bossName)}</span>` : ''}
       <span class="text-[10px] text-gray-400 ml-auto">제출 ${submittedAt}${approvedAt ? ` · 승인 ${approvedAt}` : ''}</span>
-      <button type="button" class="text-xs bg-white border border-red-300 text-red-700 font-bold px-2 py-1 rounded-lg" data-action="admin-row-preview" data-date="${esc(it.date)}">미리보기</button>
-      <button type="button" class="text-xs bg-red-600 active:bg-red-700 text-white font-bold px-2 py-1 rounded-lg" data-action="admin-row-delete" data-date="${esc(it.date)}">삭제</button>
+      <button type="button" class="text-xs bg-white border border-red-300 text-red-700 font-bold px-2 py-1 rounded-none" data-action="admin-row-preview" data-date="${esc(it.date)}">미리보기</button>
+      <button type="button" class="text-xs bg-red-600 active:bg-red-700 text-white font-bold px-2 py-1 rounded-none" data-action="admin-row-delete" data-date="${esc(it.date)}">삭제</button>
     </div>`;
   }).join('');
 }
@@ -1870,7 +1870,7 @@ async function loadPendingList() {
     wrap.innerHTML = '';
     items.forEach(it => {
       const card = document.createElement('div');
-      card.className = 'bg-white border border-amber-300 rounded-xl p-4 flex items-center justify-between shadow-sm cursor-pointer active:bg-amber-50';
+      card.className = 'bg-white border border-gray-300 rounded-none p-4 flex items-center justify-between shadow-none cursor-pointer active:bg-gray-50';
       const menuStr = (it.data?.menu || '');
       const menuPreview = menuStr.slice(0, 40) + (menuStr.length > 40 ? '...' : '');
       card.innerHTML = `
@@ -1954,8 +1954,8 @@ function shiftCalMonth(dir, prefix = 'cal') {
 function setMgrMainTab(which) {
   document.querySelectorAll('.mgr-main-tab').forEach(b => {
     const active = b.dataset.mgrMainTab === which;
-    b.classList.toggle('border-blue-500', active);
-    b.classList.toggle('text-blue-600', active);
+    b.classList.toggle('border-gray-300', active);
+    b.classList.toggle('text-[#1c69d4]', active);
     b.classList.toggle('text-gray-500', !active);
   });
   document.querySelectorAll('.mgr-main-tab-content').forEach(el => el.classList.add('hidden'));
@@ -2015,7 +2015,7 @@ function renderJournalHtml(j) {
   const menuHtml = esc(d.menu || '-').replace(/\n/g, '<br>');
   return `
     <style>.pv-table{width:100%;border-collapse:collapse;font-size:13px;text-align:center}.pv-table th,.pv-table td{border:1px solid #6b7280;padding:6px 4px}.pv-table th{background:#f3f4f6}</style>
-    <div class="bg-white rounded-xl p-4 shadow-sm">
+    <div class="bg-white rounded-none p-4 shadow-none">
       <div class="text-center border-b-2 border-gray-800 pb-2 mb-3">
         <h1 class="text-lg font-bold">비조리교 학교급식 일지</h1>
       </div>
@@ -2195,7 +2195,7 @@ async function menuUpload() {
     });
   } catch(e) {
     hideLoading();
-    $('menu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
+    $('menu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-none p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
   }
 }
 
@@ -2226,7 +2226,7 @@ async function loadMenuList() {
     snap.forEach(d => {
       const data = d.data();
       if (data && data.lunch) {
-        rows.push(`<div class="flex items-center gap-2 py-1 border-b border-gray-100"><b class="text-xs text-blue-700 w-20">${esc(d.id)}</b><span class="text-xs">${esc(data.lunch)}</span></div>`);
+        rows.push(`<div class="flex items-center gap-2 py-1 border-b border-gray-100"><b class="text-xs text-[#1c69d4] w-20">${esc(d.id)}</b><span class="text-xs">${esc(data.lunch)}</span></div>`);
       }
     });
     rows.sort();
@@ -2355,7 +2355,7 @@ async function muUpload() {
     });
   } catch(e) {
     hideLoading();
-    $('mu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
+    $('mu-result').innerHTML = `<div class="bg-red-50 border border-red-200 rounded-none p-3 text-sm text-red-800">❌ ${esc(e.message)}</div>`;
   }
 }
 
@@ -2394,7 +2394,7 @@ function renderMenuReview() {
     <div class="mr-add">
       <input type="text" id="mr-add-date" placeholder="YYYY-MM-DD" maxlength="10" style="width:120px">
       <input type="text" id="mr-add-menu" placeholder="메뉴 (쉼표로 구분)" style="flex:1">
-      <button type="button" data-action="mr-add" class="bg-gray-200 active:bg-gray-300 px-3 rounded-lg text-xs">추가</button>
+      <button type="button" data-action="mr-add" class="bg-gray-200 active:bg-gray-300 px-3 rounded-none text-xs">추가</button>
     </div>
   `;
 }
@@ -2488,8 +2488,8 @@ async function mrSave() {
     }
     hideLoading();
     $('menu-review-modal').classList.remove('show');
-    $(s.resultElId).innerHTML = `<div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-      <p class="font-bold text-green-800">✅ ${entries.length}개 날짜 메뉴 저장 완료${orphanDates.length ? ` · 이전 잔여 ${orphanDates.length}건 삭제` : ''}</p>
+    $(s.resultElId).innerHTML = `<div class="bg-gray-50 border border-gray-300 rounded-none p-3 text-sm">
+      <p class="font-bold text-gray-800">✅ ${entries.length}개 날짜 메뉴 저장 완료${orphanDates.length ? ` · 이전 잔여 ${orphanDates.length}건 삭제` : ''}</p>
       <ul class="text-xs text-gray-600 mt-2 space-y-1 max-h-40 overflow-y-auto">
         ${entries.map(([d,m]) => `<li><b>${esc(d)}</b> · ${esc(m)}</li>`).join('')}
       </ul>
@@ -2574,7 +2574,7 @@ async function muList() {
     snap.forEach(d => {
       const data = d.data();
       if (data && data.lunch) {
-        rows.push(`<div class="flex items-start gap-2 py-1 border-b border-gray-100"><b class="text-xs text-blue-700 w-20 shrink-0">${esc(d.id)}</b><span class="text-xs">${esc(data.lunch)}</span></div>`);
+        rows.push(`<div class="flex items-start gap-2 py-1 border-b border-gray-100"><b class="text-xs text-[#1c69d4] w-20 shrink-0">${esc(d.id)}</b><span class="text-xs">${esc(data.lunch)}</span></div>`);
       }
     });
     rows.sort();

@@ -9,32 +9,32 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a1a;-webkit-text-size-adjust:100%;}
 .container{max-width:800px;margin:0 auto;padding:10px 8px 100px;}
-.card{background:white;border-radius:12px;padding:14px 12px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+.card{background:white;border-radius:0;padding:14px 12px;margin-bottom:10px;box-shadow:none;}
 
 .doc-header{text-align:center;padding:10px 0 4px;}
 .doc-header h1{font-size:17px;font-weight:800;margin-bottom:4px;}
-.doc-header .badge{display:inline-block;background:#e3f2fd;color:#1565c0;padding:3px 12px;border-radius:16px;font-size:11px;font-weight:600;}
+.doc-header .badge{display:inline-block;background:#e3f2fd;color:#1565c0;padding:3px 12px;border-radius:0;font-size:11px;font-weight:600;}
 .doc-header .manager{font-size:12px;color:#666;margin-top:4px;}
-.desc{background:#f0f7ff;padding:10px;border-radius:8px;font-size:13px;line-height:1.6;color:#333;}
+.desc{background:#f0f7ff;padding:10px;border-radius:0;font-size:13px;line-height:1.6;color:#333;}
 
 /* Start button */
-.start-btn{display:block;width:100%;padding:16px;margin:10px 0;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.start-btn{display:block;width:100%;padding:16px;margin:10px 0;background:linear-gradient(135deg,#1c69d4,#357abd);color:white;border:none;border-radius:0;font-size:16px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .start-btn:active{opacity:0.9;}
 
 /* PDF pages - view only */
-.pdf-page-wrap{position:relative;margin-bottom:12px;background:white;box-shadow:0 1px 8px rgba(0,0,0,0.1);border-radius:4px;overflow:visible;}
+.pdf-page-wrap{position:relative;margin-bottom:12px;background:white;box-shadow:none;border-radius:0;overflow:visible;}
 .pdf-page-wrap canvas{display:block;width:100%;height:auto;}
 .pdf-fields-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 .page-indicator{text-align:center;font-size:11px;color:#999;margin:4px 0;font-weight:600;}
 
 /* Field markers on PDF (tap targets) */
-.field-marker{position:absolute;border:2px solid #4A90D9;border-radius:3px;background:rgba(74,144,217,0.08);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:background .2s;}
+.field-marker{position:absolute;border:2px solid #1c69d4;border-radius:0;background:rgba(74,144,217,0.08);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:background .2s;}
 .field-marker:active{background:rgba(74,144,217,0.2);}
 .field-marker.sig-marker{border-color:#e53935;background:rgba(229,57,53,0.06);}
 .field-marker.sig-marker:active{background:rgba(229,57,53,0.15);}
 .field-marker .marker-val{font-size:10px;color:#1565c0;text-align:center;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:1px 3px;width:100%;}
 .field-marker .marker-val.filled{background:rgba(255,255,255,0.9);font-weight:600;}
-.field-marker .marker-num{position:absolute;top:-8px;left:-8px;width:16px;height:16px;background:#4A90D9;color:white;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.field-marker .marker-num{position:absolute;top:-8px;left:-8px;width:16px;height:16px;background:#1c69d4;color:white;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;pointer-events:none;}
 .field-marker.sig-marker .marker-num{background:#e53935;}
 .field-marker.done{border-color:#2e7d32;background:rgba(46,125,50,0.06);}
 .field-marker.done .marker-num{background:#2e7d32;}
@@ -44,7 +44,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 .input-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:white;display:none;flex-direction:column;}
 .input-modal.show{display:flex;}
 
-.im-header{background:#4A90D9;color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.im-header{background:#1c69d4;color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
 .im-header .im-step{font-size:13px;opacity:0.85;font-weight:600;}
 .im-header .im-title{font-size:16px;font-weight:700;flex:1;}
 .im-close{background:none;border:none;color:white;font-size:22px;cursor:pointer;padding:4px 8px;-webkit-tap-highlight-color:transparent;}
@@ -55,50 +55,50 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans
 
 .im-input-wrap{flex:1;display:flex;flex-direction:column;}
 .im-input-wrap input[type="text"],.im-input-wrap input[type="date"],.im-input-wrap select{
-    width:100%;padding:16px 18px;border:2px solid #ddd;border-radius:12px;font-size:18px;outline:none;background:white;
+    width:100%;padding:16px 18px;border:2px solid #ddd;border-radius:0;font-size:18px;outline:none;background:white;
     -webkit-appearance:none;transition:border-color .2s;
 }
-.im-input-wrap input:focus,.im-input-wrap select:focus{border-color:#4A90D9;box-shadow:0 0 0 3px rgba(74,144,217,0.15);}
+.im-input-wrap input:focus,.im-input-wrap select:focus{border-color:#1c69d4;box-shadow:0 0 0 3px rgba(74,144,217,0.15);}
 .im-input-wrap .im-hint{font-size:12px;color:#999;margin-top:8px;}
 
 /* Checkbox in modal */
-.im-checkbox-wrap{display:flex;align-items:center;gap:14px;padding:20px;background:#f8f9fa;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
-.im-checkbox-wrap input[type="checkbox"]{width:28px;height:28px;accent-color:#4A90D9;flex-shrink:0;cursor:pointer;}
+.im-checkbox-wrap{display:flex;align-items:center;gap:14px;padding:20px;background:#f8f9fa;border-radius:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.im-checkbox-wrap input[type="checkbox"]{width:28px;height:28px;accent-color:#1c69d4;flex-shrink:0;cursor:pointer;}
 .im-checkbox-wrap label{font-size:17px;cursor:pointer;line-height:1.5;}
 
 /* Signature in modal */
 .im-sig-area{flex:1;display:flex;flex-direction:column;min-height:200px;}
-.im-sig-canvas-wrap{flex:1;border:2px dashed #ccc;border-radius:12px;background:#fafafa;position:relative;overflow:hidden;touch-action:none;min-height:180px;}
+.im-sig-canvas-wrap{flex:1;border:2px dashed #ccc;border-radius:0;background:#fafafa;position:relative;overflow:hidden;touch-action:none;min-height:180px;}
 .im-sig-canvas-wrap canvas{display:block;width:100%;height:100%;}
 .im-sig-hint{text-align:center;font-size:13px;color:#999;margin-top:8px;}
-.im-sig-clear{align-self:flex-start;margin-top:8px;padding:8px 16px;border:1px solid #ddd;background:white;border-radius:8px;font-size:13px;cursor:pointer;}
+.im-sig-clear{align-self:flex-start;margin-top:8px;padding:8px 16px;border:1px solid #ddd;background:white;border-radius:0;font-size:13px;cursor:pointer;}
 
 /* Current value display */
-.im-current-val{margin-top:12px;padding:10px;background:#e8f5e9;border-radius:8px;font-size:13px;color:#2e7d32;display:none;}
+.im-current-val{margin-top:12px;padding:10px;background:#e8f5e9;border-radius:0;font-size:13px;color:#2e7d32;display:none;}
 .im-current-val.show{display:block;}
 
 .im-footer{padding:12px 16px;border-top:1px solid #eee;display:flex;gap:10px;flex-shrink:0;background:white;}
-.im-footer button{flex:1;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.im-footer button{flex:1;padding:14px;border:none;border-radius:0;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .im-footer button:active{opacity:0.85;}
 .im-prev{background:#f0f0f0;color:#333;}
-.im-next{background:#4A90D9;color:white;}
+.im-next{background:#1c69d4;color:white;}
 .im-done{background:#2e7d32;color:white;}
 
 /* ===== Submit ===== */
 .submit-section{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px 14px;box-shadow:0 -3px 16px rgba(0,0,0,0.1);z-index:90;}
 .submit-inner{max-width:800px;margin:0 auto;}
-.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#4A90D9,#357abd);color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;}
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#1c69d4,#357abd);color:white;border:none;border-radius:0;font-size:15px;font-weight:700;cursor:pointer;}
 .submit-btn:active{opacity:0.9;}
 .submit-btn:disabled{background:#ccc;cursor:not-allowed;}
 .submit-note{text-align:center;font-size:10px;color:#999;margin-top:4px;}
 
 /* Progress bar */
-.progress-bar{height:4px;background:#e0e0e0;border-radius:2px;margin:8px 0;overflow:hidden;}
-.progress-fill{height:100%;background:#4A90D9;border-radius:2px;transition:width .3s;}
+.progress-bar{height:4px;background:#e0e0e0;border-radius:0;margin:8px 0;overflow:hidden;}
+.progress-fill{height:100%;background:#1c69d4;border-radius:0;transition:width .3s;}
 
 /* Loading / Error / Success */
 .loading{text-align:center;padding:80px 20px;}
-.loading .spinner{width:36px;height:36px;border:3px solid #eee;border-top-color:#4A90D9;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+.loading .spinner{width:36px;height:36px;border:3px solid #eee;border-top-color:#1c69d4;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .error-page{text-align:center;padding:60px 20px;color:#666;}
 .error-page .emoji{font-size:48px;margin-bottom:12px;}
@@ -542,7 +542,7 @@ async function submitForm() {
             '<h2>제출 완료!</h2>' +
             '<p style="color:#666;margin-top:8px;font-size:14px;">감사합니다. 담당 교사에게 전달됩니다.</p>' +
             '<p style="font-size:11px;color:#999;margin-top:16px;">'+new Date().toLocaleString('ko-KR')+'</p>' +
-            '<div style="margin-top:20px;padding:14px;background:#f0f7ff;border-radius:10px;font-size:13px;color:#555;">' +
+            '<div style="margin-top:20px;padding:14px;background:#f0f7ff;border-radius:0;font-size:13px;color:#555;">' +
             '<strong>'+esc(docData.title)+'</strong><br>담당: '+esc(docData.manager||'')+'</div></div>';
     } catch(e) {
         alert('제출 실패: '+e.message);
