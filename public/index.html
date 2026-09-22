@@ -1987,10 +1987,10 @@
         <div class="modal-body">
             <input type="hidden" id="scheduleAddDate">
             <div class="form-group"><label>날짜</label><div id="scheduleAddDateLabel" style="font-weight:600;font-size:15px;"></div></div>
-            <div class="form-group"><label>부서</label>
+            <div class="form-group"><label>부서 <span style="font-size:11px;color:#c0392b;font-weight:400;">*필수</span></label>
                 <select id="scheduleAddDept" class="sch-dept-select"></select>
             </div>
-            <div class="form-group"><label>시간 <span style="font-size:11px;color:var(--text-light);font-weight:400;">비워 두면 시간 없이 등록됩니다</span></label>
+            <div class="form-group"><label>시간 <span style="font-size:11px;color:#c0392b;font-weight:400;">*필수</span> <span style="font-size:11px;color:var(--text-light);font-weight:400;">— 하루 종일이면 ‘종일’을 체크하세요</span></label>
                 <div class="sch-time-row">
                     <input type="time" id="scheduleAddStart" onchange="schAddTimeTouched()">
                     <span class="dash">~</span>
@@ -2019,10 +2019,10 @@
         <div class="modal-body">
             <input type="hidden" id="scheduleEditId">
             <div class="form-group"><label>날짜</label><input type="date" id="scheduleEditDate"></div>
-            <div class="form-group"><label>부서</label>
+            <div class="form-group"><label>부서 <span style="font-size:11px;color:#c0392b;font-weight:400;">*필수</span></label>
                 <select id="scheduleEditDept" class="sch-dept-select"></select>
             </div>
-            <div class="form-group"><label>시간 <span style="font-size:11px;color:var(--text-light);font-weight:400;">비워 두면 시간 없이 등록됩니다</span></label>
+            <div class="form-group"><label>시간 <span style="font-size:11px;color:#c0392b;font-weight:400;">*필수</span> <span style="font-size:11px;color:var(--text-light);font-weight:400;">— 하루 종일이면 ‘종일’을 체크하세요</span></label>
                 <div class="sch-time-row">
                     <input type="time" id="scheduleEditStart" onchange="schEditTimeTouched()">
                     <span class="dash">~</span>
@@ -2088,7 +2088,7 @@
 <script>
 const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
 // 일정 앞에 붙는 부서 태그. 화면·인쇄·AI 추출이 모두 이 목록을 쓴다.
-const SCH_DEPTS=['교무','특수','늘봄','돌봄','유치원','인성','기초학력','안전','체육','영양','보건','연구','나이스','영어','과학','도서','학운위','분교'];
+const SCH_DEPTS=['교무','특수','늘봄','돌봄','유치원','인성','기초학력','안전','체육','영양','보건','연구','나이스','영어','과학','도서','학운위','분교','기타'];
 // "[교무]본교 내빈방문(8명)" 에서 부서와 본문을 갈라낸다. 목록에 없는 대괄호는 본문으로 둔다.
 function splitDept(text){
     const m=String(text||'').match(/^\s*\[([^\]]+)\]\s*(.*)$/);
@@ -2107,8 +2107,10 @@ function deptBadge(text){
 }
 // 부서를 뗀 본문만.
 function deptBody(text){ return splitDept(text).body; }
+// 부서는 필수다. 첫 항목은 고르지 않은 상태를 알리는 안내문일 뿐 값이 없다.
 function deptOptions(sel){
-    return '<option value="">부서 없음</option>'+SCH_DEPTS.map(d=>'<option value="'+d+'"'+(d===sel?' selected':'')+'>'+d+'</option>').join('');
+    return '<option value="" disabled'+(sel?'':' selected')+'>부서 선택</option>'
+        +SCH_DEPTS.map(d=>'<option value="'+d+'"'+(d===sel?' selected':'')+'>'+d+'</option>').join('');
 }
 const CATEGORY_CSS=['cat-school','cat-admin','cat-class','cat-resource','cat-community','cat-etc'];
 const COLOR_BORDERS={'#FFF8E1':'#FFD54F','#E3F2FD':'#90CAF9','#E8F5E9':'#A5D6A7','#FFF0F0':'#FFCDD2','#F3E5F5':'#CE93D8','#E0F7FA':'#80DEEA','#FFFFFF':'#E0E0E0'};
@@ -2889,7 +2891,7 @@ function renderDayView(el,titleEl){
     });
     html+=`<div class="day-detail-item" style="border-bottom:none;">
         <select class="day-detail-dept" id="newScheduleDept">${deptOptions('')}</select>
-        <input class="day-detail-input" id="newScheduleText" placeholder="새 일정 입력 후 Enter" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
+        <input class="day-detail-input" id="newScheduleText" placeholder="새 일정 입력 후 Enter — 부서·시간 창이 열립니다" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
         <input class="day-detail-manager" id="newScheduleManager" placeholder="담당자" onkeydown="if(event.key==='Enter')submitDayAdd('${ds}')">
         <button class="item-action-btn" onclick="submitDayAdd('${ds}')" style="font-size:14px;">➕</button>
     </div>`;
@@ -3023,9 +3025,10 @@ function schFillTime(which,item){
     s.value=(item&&item.startTime)||''; e.value=(item&&item.endTime)||'';
     s.disabled=a.checked; e.disabled=a.checked;
 }
-// 일간 뷰에서 부서만 바꾼다(본문은 그대로).
+// 일간 뷰에서 부서만 바꾼다(본문은 그대로). 부서는 필수라 빈 값으로는 못 되돌린다.
 async function updateScheduleDept(id,dept){
     const item=schedules.find(s=>s.id===id);if(!item)return;
+    if(!dept){renderSchedule();return;}
     await updateScheduleItem(id,'text',joinDept(dept,splitDept(item.text).body));
     renderSchedule();
 }
@@ -3036,12 +3039,16 @@ async function updateScheduleBody(id,body){
 }
 function closeAllEmojiDropdowns(){document.querySelectorAll('.emoji-dropdown').forEach(d=>d.remove());}
 document.addEventListener('click',e=>{if(!e.target.closest('.day-detail-emoji')&&!e.target.closest('.emoji-dropdown'))closeAllEmojiDropdowns();});
+// 부서·시간이 필수가 되면서 이 줄에서는 다 받을 수 없다. 적어 둔 값을 들고 모달로 넘긴다.
 function submitDayAdd(ds){
     const text=document.getElementById('newScheduleText').value;
     const manager=document.getElementById('newScheduleManager').value;
     const dsel=document.getElementById('newScheduleDept');
-    addScheduleItem(ds,joinDept(dsel?dsel.value:'',text),manager,'');
-    if(dsel) dsel.value='';
+    promptScheduleAdd(ds);
+    if(text.trim()) document.getElementById('scheduleAddText').value=text.trim();
+    if(manager.trim()) document.getElementById('scheduleAddManager').value=manager.trim();
+    if(dsel&&dsel.value) document.getElementById('scheduleAddDept').value=dsel.value;
+    showToast('부서와 시간을 정하고 추가하세요','info');
 }
 async function submitScheduleAdd(){
     const dateStr=document.getElementById('scheduleAddDate').value;
@@ -3049,10 +3056,14 @@ async function submitScheduleAdd(){
     const detail=document.getElementById('scheduleAddDetail').value;
     const manager=document.getElementById('scheduleAddManager').value;
     const link=document.getElementById('scheduleAddLink').value.trim();
+    const dept=document.getElementById('scheduleAddDept').value;
+    if(!dept){showToast('부서를 선택하세요','error');return;}
+    const timeVal=schReadTime('Add');
+    if(!timeVal.allDay&&!timeVal.startTime){showToast('시간을 입력하세요 (하루 종일이면 종일 체크)','error');return;}
     if(!text.trim()){showToast('행사명을 입력하세요','error');return;}
     if(!detail.trim()){showToast('세부 내용을 입력하세요','error');return;}
     if(!manager.trim()){showToast('담당자를 입력하세요','error');return;}
-    const opts={detail:detail.trim(),link:link};
+    const opts={detail:detail.trim(),link:link,...timeVal};
     // 파일 처리
     if(schAddPendingFile&&firebaseStorage){
         const tempId='sch_'+Date.now();
@@ -3063,7 +3074,7 @@ async function submitScheduleAdd(){
         showToast('Firebase 미연결 — 파일 업로드 불가','error');
     }
     schAddPendingFile=null;
-    await addScheduleItem(dateStr,joinDept(document.getElementById('scheduleAddDept').value,text),manager,'',opts);
+    await addScheduleItem(dateStr,joinDept(dept,text),manager,'',opts);
     closeModal('scheduleAddModal');
 }
 
@@ -3112,13 +3123,18 @@ function removeSchEditFile(){
 async function submitScheduleEdit(){
     const id=document.getElementById('scheduleEditId').value;
     const item=schedules.find(s=>s.id===id);if(!item)return;
+    const editDept=document.getElementById('scheduleEditDept').value;
+    if(!editDept){showToast('부서를 선택하세요','error');return;}
+    const editTime=schReadTime('Edit');
+    if(!editTime.allDay&&!editTime.startTime){showToast('시간을 입력하세요 (하루 종일이면 종일 체크)','error');return;}
+    if(!document.getElementById('scheduleEditText').value.trim()){showToast('행사명을 입력하세요','error');return;}
     pushUndo();
     item.date=document.getElementById('scheduleEditDate').value;
-    item.text=joinDept(document.getElementById('scheduleEditDept').value,document.getElementById('scheduleEditText').value);
+    item.text=joinDept(editDept,document.getElementById('scheduleEditText').value);
     item.detail=document.getElementById('scheduleEditDetail').value.trim();
     item.manager=document.getElementById('scheduleEditManager').value;
     delete item.emoji;
-    Object.assign(item,schReadTime('Edit'));
+    Object.assign(item,editTime);
     item.link=document.getElementById('scheduleEditLink').value.trim()||'';
     item.gotoTab=document.getElementById('scheduleEditGoto').value||'';
     // 파일 처리
@@ -9843,8 +9859,8 @@ async function processSchAI(){
 
 ===일정===
 [
-  {"date":"${year}-MM-DD","text":"[부서]행사 내용","detail":"세부 내용","manager":"담당자"},
-  {"date":"${year}-MM-DD","text":"[부서]행사 내용","detail":"세부 내용","manager":"담당자"}
+  {"date":"${year}-MM-DD","text":"[부서]행사 내용","detail":"세부 내용","manager":"담당자","startTime":"09:00","endTime":"10:40"},
+  {"date":"${year}-MM-DD","text":"[부서]행사 내용","detail":"세부 내용","manager":"담당자","allDay":true}
 ]
 ===끝===
 
@@ -9853,7 +9869,9 @@ async function processSchAI(){
 - 월/일만 있으면 올해 ${year}년으로 설정
 - text는 "[부서]행사 내용" 형식 (예: "[교무]본교 내빈방문(8명)", "[인성]학부모 상담주간")
 - 부서는 반드시 다음 중 하나만 사용: 교무, 특수, 늘봄, 돌봄, 유치원, 인성, 기초학력, 안전, 체육, 영양, 보건, 연구, 나이스, 영어, 과학, 도서, 학운위, 분교
-- 목록에 없거나 판단이 어려우면 부서 없이 행사 내용만 작성
+- 목록에 없거나 판단이 어려우면 "기타" 를 쓸 것 (부서는 반드시 넣는다)
+- 시간도 반드시 넣을 것: 시각을 알면 startTime("HH:MM")·endTime, 하루 종일이면 allDay:true
+- 원문에 시각이 없으면 allDay:true 로 둘 것
 - detail은 세부 내용 (예: "3학년 대상, 오전 9시~12시"). 원문에서 관련 세부 정보를 추출. 없으면 행사명을 그대로 사용
 - manager는 담당자 (원문에서 추출 가능하면 입력, 없으면 빈 문자열 "")
 - 이모지는 절대 넣지 말 것
