@@ -115,6 +115,9 @@
         .school-info-inner{background:var(--surface-soft);border-radius:0;padding:20px 24px;box-shadow:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;font-weight:300;color:var(--muted);}
         .school-info-inner a{color:var(--link);}
         .school-info-inner span{display:flex;align-items:center;gap:4px;}
+        .school-links{display:flex;flex-wrap:wrap;gap:14px;padding:8px 24px 0;font-size:13px;}
+        .school-links a{color:var(--link);text-decoration:none;font-weight:500;}
+        .school-links a:hover{text-decoration:underline;}
 
         /* Main Tabs */
         .main-tabs{max-width:960px;margin:0 auto;padding:8px 24px 0;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--hairline);}
@@ -531,6 +534,7 @@
             .page{padding:12px 10px 40px;}
             .school-info{padding:8px 10px;}
             .school-info-inner{flex-direction:column;align-items:flex-start;padding:10px 14px;font-size:12px;}
+            .school-links{padding:6px 14px 0;font-size:12px;gap:10px;}
             .main-tabs-wrapper{padding:6px 0 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
             .main-tabs-wrapper::-webkit-scrollbar{display:none;}
             .main-tabs{padding:0 10px;gap:2px;flex-wrap:nowrap;min-width:max-content;}
@@ -927,6 +931,9 @@
                 <span class="wx-item" id="wxPm25Item">🌫️ 초미세먼지 <b id="wxPm25">-</b><span class="wx-dot" id="wxPm25Dot"></span></span>
                 <button class="wx-poster-btn" id="wxPosterBtn" onclick="openSafetyModal()" hidden>📢 안전수칙</button>
             </div>
+        </div>
+        <div class="school-links">
+            <a href="https://docs.google.com/spreadsheets/d/1NIq42hrXobsq8MUgywrXMRru8iGG73E71EgCi4uIuko/edit" target="_blank" rel="noopener">📊 학교 현황 바로 가기</a>
         </div>
     </div>
 
@@ -2092,7 +2099,7 @@
 <script>
 const ICONS=['📚','📝','📊','📋','💻','🖥️','📧','📞','🏫','👨‍🏫','👩‍🏫','👨‍🎓','📅','⏰','📎','📌','🔗','🌐','📁','📂','✏️','🎓','🏆','⭐','💡','🔔','📢','🎯','🗂️','📖','🖊️','📑'];
 // 일정 앞에 붙는 부서 태그. 화면·인쇄·AI 추출이 모두 이 목록을 쓴다.
-const SCH_DEPTS=['교무','특수','늘봄','돌봄','유치원','인성','기초학력','안전','체육','영양','보건','연구','나이스','영어','과학','도서','학운위','분교','기타'];
+const SCH_DEPTS=['교장','교감','교무','특수','늘봄','돌봄','유치원','인성','기초학력','안전','체육','영양','보건','연구','나이스','영어','과학','도서','학운위','분교','기타'];
 // "[교무]본교 내빈방문(8명)" 에서 부서와 본문을 갈라낸다. 목록에 없는 대괄호는 본문으로 둔다.
 function splitDept(text){
     const m=String(text||'').match(/^\s*\[([^\]]+)\]\s*(.*)$/);
@@ -9890,7 +9897,7 @@ async function processSchAI(){
 - date는 반드시 ${year}-MM-DD 형식 (올해 기준)
 - 월/일만 있으면 올해 ${year}년으로 설정
 - text는 "[부서]행사 내용" 형식 (예: "[교무]본교 내빈방문(8명)", "[인성]학부모 상담주간")
-- 부서는 반드시 다음 중 하나만 사용: 교무, 특수, 늘봄, 돌봄, 유치원, 인성, 기초학력, 안전, 체육, 영양, 보건, 연구, 나이스, 영어, 과학, 도서, 학운위, 분교
+- 부서는 반드시 다음 중 하나만 사용: 교장, 교감, 교무, 특수, 늘봄, 돌봄, 유치원, 인성, 기초학력, 안전, 체육, 영양, 보건, 연구, 나이스, 영어, 과학, 도서, 학운위, 분교
 - 목록에 없거나 판단이 어려우면 "기타" 를 쓸 것 (부서는 반드시 넣는다)
 - 시간도 반드시 넣을 것: 시각을 알면 startTime("HH:MM")·endTime, 하루 종일이면 allDay:true
 - 원문에 시각이 없으면 allDay:true 로 둘 것
