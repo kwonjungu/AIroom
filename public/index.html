@@ -457,6 +457,10 @@
         .day-detail-manager{width:80px;border:1px solid var(--border);border-radius:0;padding:8px;font-size:13px;text-align:center;outline:none;}
         .day-detail-manager:focus{border-color:var(--primary);}
         .sch-dept{color:var(--muted);font-weight:700;margin-right:4px;white-space:nowrap;}
+        /* 외부 링크가 걸린 일정 — 눌러서 바로 이동한다 */
+        .schedule-item.has-link{cursor:pointer;}
+        .schedule-item.has-link span{text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--hairline-strong);}
+        .list-table .event-link{color:inherit;text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--hairline-strong);cursor:pointer;}
         .sch-emoji-btn{display:none!important;}
         .sch-emoji-btn:hover{border-color:var(--primary);background:var(--primary-light);}
         .sch-emoji-btn.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 2px rgba(28,105,212,0.25);}
@@ -2002,7 +2006,7 @@
             <div class="form-group"><label>세부 내용 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddDetail" placeholder="세부 내용 입력" required></div>
             <div class="form-group"><label>담당자 <span style="font-size:11px;color:#e74c3c;font-weight:400;">*필수</span></label><input type="text" id="scheduleAddManager" placeholder="담당자 입력" required></div>
             <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
-            <div class="form-group"><label>🔗 외부 링크 (선택)</label><input type="url" id="scheduleAddLink" placeholder="https:// 공지사항 링크 등"></div>
+            <div class="form-group"><label>🔗 외부 링크 (선택) <span style="font-size:11px;color:var(--text-light);font-weight:400;">— 넣으면 일정을 눌렀을 때 이 주소로 바로 이동합니다</span></label><input type="url" id="scheduleAddLink" placeholder="https:// 공지사항 링크 등"></div>
             <div class="form-group"><label>📎 첨부파일 (선택)</label>
                 <div id="schAddFileArea" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     <input type="file" id="schAddFileInput" onchange="handleSchAddFile(event)" style="font-size:12px;">
@@ -2805,7 +2809,7 @@ function renderMonthView(el,titleEl){
         html+=`<div class="schedule-day-num ${dow===0?'sun':dow===6?'sat':''}">${d}${holidayName?`<span class="schedule-holiday-label">${esc(holidayName)}</span>`:''}</div>`;
         items.forEach(it=>{
             const hasExtra=it.link||it.fileUrl||it.gotoTab;
-            html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
+            html+=`<div class="schedule-item${it.link?' has-link':''}" title="${esc(it.link?it.link:(it.manager||''))}" onclick="openScheduleItem('${it.id}')">`
                 +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
@@ -2855,8 +2859,8 @@ function renderWeekView(el,titleEl){
             html+=`<div style="font-size:10px;color:#c62828;margin-bottom:4px;font-weight:600;">🔴 ${esc(holidayName)}</div>`;
         }
         items.forEach(it=>{
-            html+=`<div class="schedule-item" title="${esc(it.manager||'')}" onclick="openScheduleEdit('${it.id}')">`
-                +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}</span>`
+            html+=`<div class="schedule-item${it.link?' has-link':''}" title="${esc(it.link?it.link:(it.manager||''))}" onclick="openScheduleItem('${it.id}')">`
+                +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}${it.link?' <span style="font-size:9px;">🔗</span>':''}</span>`
                 +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
@@ -2963,7 +2967,10 @@ function renderListView(el,titleEl){
         } else {
             items.forEach(it=>{
                 html+=trOpen(line)+(line===0?dateCells:'');
-                html+=`<td class="col-event"><span class="event-name">${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}</span></td>`;
+                const evInner=`${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}`;
+                html+=`<td class="col-event">${it.link
+                    ? `<a class="event-name event-link" href="${esc(it.link)}" target="_blank" rel="noopener noreferrer" title="${esc(it.link)}">${evInner} <span style="font-size:10px;">🔗</span></a>`
+                    : `<span class="event-name">${evInner}</span>`}</td>`;
                 html+=`<td class="col-detail">${it.detail?`<div class="event-detail-line">${esc(it.detail)}</div>`:'<span style="color:var(--text-light);">-</span>'}</td>`;
                 html+=`<td class="col-manager">${it.manager?`<span class="manager-line">${esc(it.manager)}</span>`:''}</td>`;
                 html+=`</tr>`;
@@ -3024,6 +3031,21 @@ function schFillTime(which,item){
     a.checked=!!(item&&item.allDay);
     s.value=(item&&item.startTime)||''; e.value=(item&&item.endTime)||'';
     s.disabled=a.checked; e.disabled=a.checked;
+}
+// 일정을 클릭했을 때. 외부 링크가 걸려 있으면 새 창으로 열고, 없으면 수정 모달.
+// 관리 모드에서는 고치러 들어가야 하므로 링크가 있어도 수정 모달을 연다.
+function openScheduleItem(id){
+    const item=schedules.find(s=>s.id===id);
+    if(!item) return;
+    if(!isAdmin&&item.link){
+        window.open(item.link,'_blank','noopener,noreferrer');
+        return;
+    }
+    if(!isAdmin&&item.gotoTab){
+        const tab=tabsConfig.find(t=>t.id===item.gotoTab);
+        if(tab){ switchPage(item.gotoTab,document.querySelector('.main-tab')); return; }
+    }
+    openScheduleEdit(id);
 }
 // 일간 뷰에서 부서만 바꾼다(본문은 그대로). 부서는 필수라 빈 값으로는 못 되돌린다.
 async function updateScheduleDept(id,dept){
