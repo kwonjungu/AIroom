@@ -1488,7 +1488,7 @@ app.use('/api/vibe', (req, res, next) => {
     if (process.env.VIBE_V2_API !== '1') {
         return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'vibe v2 api disabled', retryable: false, retryAfterMs: null, requestId: '' } });
     }
-    _vibeRouterPromise ||= import('./lib/vibe/router.js').then(m => m.createVibeRouter(express));
+    _vibeRouterPromise ||= import('./lib/vibe/router.js').then(m => m.createVibeRouter(express, { redis, validateStaffSession: validateSession, env: process.env }));
     _vibeRouterPromise.then(r => r(req, res, next), next);
 });
 
