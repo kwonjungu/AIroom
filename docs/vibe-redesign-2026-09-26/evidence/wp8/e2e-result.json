@@ -1,0 +1,285 @@
+{
+  "ok": true,
+  "summary": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 1
+  },
+  "flows": [
+    {
+      "id": "cards-goal",
+      "status": "passed",
+      "ms": 23684,
+      "data": {
+        "say": "별에 도착했어!",
+        "screenshot": "cards-goal-done.png",
+        "keyboardUsed": false
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "cards-shape",
+      "status": "passed",
+      "ms": 24172,
+      "data": {
+        "wrongHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
+        "say": "예쁜 집이 완성됐어 — 나중에 찍은 세모가 위에 올라갔지?",
+        "screenshot": "cards-shape-done.png"
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "turtle-chips",
+      "status": "passed",
+      "ms": 27476,
+      "data": {
+        "source": "REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}",
+        "restored": true,
+        "stepResetDeterministic": {
+          "line": "2",
+          "hud": "⬆ 오른쪽을 봐요 90° · 앞으로 100만큼 그렸어지금 2번째 줄 · 반복 2/4",
+          "img": 19550
+        },
+        "screenshot": "turtle-square-done-1366.png"
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "pixel-drag",
+      "status": "passed",
+      "ms": 23988,
+      "data": {
+        "cellsPainted": 5,
+        "moveEvents": 2,
+        "undoOnceEmpties": true,
+        "screenshot": "pixel-drag-done-1366.png"
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "pixel-tap",
+      "status": "passed",
+      "ms": 22890,
+      "data": {
+        "source": "LED_ON 3 3",
+        "cellPx": 51
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "maze-if",
+      "status": "passed",
+      "ms": 24345,
+      "data": {
+        "bumpHint": "4번째 줄에서 토토 앞(오른쪽)이 벽이라 부딪혔어 — 그 앞 명령을 살펴봐.",
+        "screenshot": "maze-if-done-1366.png"
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "layout-1366x768",
+      "status": "passed",
+      "ms": 90706,
+      "data": {
+        "viewport": "1366x768",
+        "screens": [
+          {
+            "screen": "home-low",
+            "min": 56,
+            "low": true,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "cards-goal",
+            "min": 56,
+            "low": true,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "turtle",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "pixel",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "maze",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          }
+        ],
+        "screenshots": [
+          "turtle-1366x768.png",
+          "pixel-1366x768.png",
+          "maze-1366x768.png"
+        ],
+        "overflowScreens": [],
+        "smallControlsLearning": 0,
+        "smallControlsOther": 0
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "layout-1024x768",
+      "status": "passed",
+      "ms": 90575,
+      "data": {
+        "viewport": "1024x768",
+        "screens": [
+          {
+            "screen": "home-low",
+            "min": 56,
+            "low": true,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "cards-goal",
+            "min": 56,
+            "low": true,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "turtle",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "pixel",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "maze",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          }
+        ],
+        "screenshots": [
+          "turtle-1024x768.png",
+          "pixel-1024x768.png",
+          "maze-1024x768.png"
+        ],
+        "overflowScreens": [],
+        "smallControlsLearning": 0,
+        "smallControlsOther": 0
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "layout-768x1024",
+      "status": "passed",
+      "ms": 90536,
+      "data": {
+        "viewport": "768x1024",
+        "screens": [
+          {
+            "screen": "home-low",
+            "min": 56,
+            "low": true,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "cards-goal",
+            "min": 56,
+            "low": true,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "turtle",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "pixel",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          },
+          {
+            "screen": "maze",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
+          }
+        ],
+        "screenshots": [
+          "turtle-768x1024.png",
+          "pixel-768x1024.png",
+          "maze-768x1024.png"
+        ],
+        "overflowScreens": [],
+        "smallControlsLearning": 0,
+        "smallControlsOther": 0
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "dispose-100",
+      "status": "passed",
+      "ms": 22654,
+      "data": {
+        "cycles": 100,
+        "maxTimersDuringRun": 1,
+        "left": {
+          "timers": 0,
+          "raf": 0,
+          "listeners": 0,
+          "resizeObservers": 0,
+          "domLeft": 0
+        }
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "studio-template",
+      "status": "skipped",
+      "reason": "WP3 공방 병렬 개발 중 (E2E 제외)"
+    }
+  ],
+  "consoleErrorsTotal": 0,
+  "meta": {
+    "integrationShim": true,
+    "note": "integrationShim=true 이면 app.js에 학습 카탈로그가 아직 연결되지 않아 E2E가 응답에 두 줄을 끼워 넣었다",
+    "build": "7128144",
+    "started": "2026-09-26T03:28:57.090Z",
+    "finished": "2026-09-26T03:36:20.438Z",
+    "base": "http://127.0.0.1:57914",
+    "node": "v24.15.0",
+    "chrome": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+  }
+}

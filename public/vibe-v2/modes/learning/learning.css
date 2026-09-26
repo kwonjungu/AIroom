@@ -1,0 +1,102 @@
+/* 3~6학년 학습 모드(거북이·픽셀·미로) — WP8. 공통 styles/는 WP1 소유라 이 파일만 쓴다. 모든 선택자는 .vl 아래. */
+.vl {
+  --tap: 48px; --gap: 8px; --fs: 18px; --fs-sub: 16px; --radius: 12px;
+  --ink: #17202E; --muted: #4A5568; --line: #767F8F; --soft: #EDF0F4; --bg: #FFFFFF;
+  --accent: #B23C0B; --accent-ink: #FFFFFF; --sel: #1A237E; --ok: #1B6E33; --warn: #B3261E; --run: #F9A825;
+  --focus: #0B57D0; --code-lh: 30px;
+  color: var(--ink); font-size: var(--fs); line-height: 1.55; box-sizing: border-box; max-width: 100%;
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+.vl *, .vl *::before, .vl *::after { box-sizing: inherit; }
+.vl.is-low { --tap: 56px; --gap: 12px; --fs: 20px; --fs-sub: 18px; }
+.vl button, .vl textarea, .vl summary { font: inherit; color: inherit; }
+.vl :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.vl-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.vl-btn {
+  min-height: var(--tap); min-width: var(--tap); padding: 6px 14px;
+  border: 2px solid var(--line); border-radius: var(--radius); background: var(--bg);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: var(--fs-sub); font-weight: 700; cursor: pointer; touch-action: manipulation;
+}
+.vl-btn:hover:not(:disabled) { background: var(--soft); }
+.vl-btn:disabled { opacity: .5; cursor: not-allowed; border-style: dashed; }
+.vl-btn[aria-pressed="true"] { background: var(--sel); border-color: var(--sel); color: #FFF; }
+.vl-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.vl-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+.vl-linkbtn { min-height: var(--tap); background: none; border: 0; padding: 4px 0; text-align: left; text-decoration: underline; cursor: pointer; }
+
+/* ── 무대 ── */
+.vl-stage { display: flex; flex-direction: column; gap: var(--gap); padding: 8px 0; }
+.vl-mission { display: flex; gap: 10px; align-items: center; }
+.vl-micon { font-size: 32px; line-height: 1; }
+.vl-desc { margin: 0; color: var(--muted); font-size: var(--fs-sub); }
+.vl-hud { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+.vl-hudtext { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.vl-big { font-size: calc(var(--fs) + 6px); }
+.vl-compass { width: 56px; height: 56px; border-radius: 50%; background: #1a1a2e; color: #FFD166; display: grid; place-items: center; font-size: 30px; flex: none; }
+.vl-compass span { display: inline-block; transition: transform .2s; }
+@media (prefers-reduced-motion: reduce) { .vl-compass span { transition: none; } }
+.vl-chip-now { background: #FFF3C4; border: 2px solid var(--run); border-radius: 999px; padding: 0 10px; font-weight: 700; font-size: var(--fs-sub); }
+.vl-tools { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; }
+.vl-seg { display: inline-flex; gap: 4px; }
+.vl-colors { position: relative; }
+.vl-colors > summary { list-style: none; }
+.vl-colors > summary::-webkit-details-marker { display: none; }
+.vl-colorgrid { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; display: grid; grid-template-columns: repeat(3, minmax(96px, 1fr)); gap: 6px; padding: 8px; background: var(--bg); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.vl-color { min-height: var(--tap); display: flex; align-items: center; gap: 8px; padding: 4px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--bg); cursor: pointer; }
+.vl-color[aria-pressed="true"] { outline: 3px solid var(--sel); }
+.vl-swatch { width: 24px; height: 24px; border-radius: 6px; border: 2px solid #555; flex: none; display: inline-block; }
+.vl-canvases { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+.vl-canvases.is-stacked { flex-direction: column; }
+.vl-canvases canvas { display: block; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.16); max-width: 100%; }
+.vl-paintable { touch-action: none; cursor: crosshair; }
+.vl-fig { margin: 0; }
+.vl-fig figcaption { font-weight: 700; margin-bottom: 4px; font-size: var(--fs-sub); }
+.vl-fitnote { margin: 0; width: 100%; color: var(--muted); font-size: var(--fs-sub); }
+.vl-events { display: flex; gap: var(--gap); flex-wrap: wrap; }
+.vl-evt { min-width: 120px; }
+.vl-result { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius); font-weight: 700; }
+.vl-result.is-ok { background: #E8F5E9; border: 2px solid var(--ok); }
+.vl-result.is-try { background: #FFF8E1; border: 2px solid var(--run); }
+.vl-badge { background: #fff; border: 2px solid var(--ok); border-radius: 999px; padding: 0 8px; }
+
+/* ── 편집 ── */
+.vl-editor { display: flex; flex-direction: column; gap: var(--gap); padding: 8px 0 16px; }
+.vl-label { font-weight: 700; margin: 0; }
+.vl-label small { font-weight: 400; color: var(--muted); }
+.vl-code { display: flex; border: 2px solid var(--line); border-radius: var(--radius); background: #FBFBFD; overflow: hidden; }
+.vl-code:focus-within { border-color: var(--focus); }
+.vl-gutter { flex: none; width: 52px; padding: 8px 6px 8px 0; text-align: right; background: var(--soft); color: var(--muted); font: 16px/var(--code-lh) ui-monospace, "Cascadia Mono", Consolas, monospace; overflow: hidden; max-height: 360px; user-select: none; }
+.vl-gutter span { display: block; height: var(--code-lh); }
+.vl-gutter .is-err { color: var(--warn); font-weight: 700; }
+.vl-gutter .is-now { color: #000; background: #FFE08A; font-weight: 700; }
+.vl-codebox { position: relative; flex: 1; min-width: 0; }
+.vl-ta {
+  display: block; width: 100%; min-height: 240px; height: 300px; max-height: 360px; resize: vertical;
+  padding: 8px 10px; margin: 0; border: 0; background: transparent; position: relative; z-index: 1;
+  font: 18px/var(--code-lh) ui-monospace, "Cascadia Mono", Consolas, monospace !important; white-space: pre; overflow: auto; tab-size: 2;
+}
+.vl-ta:focus-visible { outline: none; }
+.vl-linehl { position: absolute; left: 0; right: 0; top: 0; height: var(--code-lh); background: rgba(249,168,37,.28); border-left: 6px solid var(--run); pointer-events: none; z-index: 0; }
+.vl-linehl[data-kind="error"] { background: rgba(179,38,30,.14); border-left-color: var(--warn); }
+.vl-diags { margin: 0; padding: 0 0 0 4px; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.vl-diags .is-err { color: var(--warn); }
+.vl-diags .is-warn { color: #8A4B00; }
+.vl-chips { display: flex; flex-wrap: wrap; gap: var(--gap); }
+.vl-chipbtn { flex-direction: column; align-items: flex-start; gap: 0; padding: 4px 12px; }
+.vl-chipbtn code { font-size: 14px; color: var(--muted); font-weight: 400; }
+.vl-chipbtn:hover code { color: inherit; }
+
+/* ── 도움 ── */
+.vl-assist { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+.vl-h2 { margin: 0; font-size: calc(var(--fs) + 4px); }
+.vl-story { margin: 0; background: #FFF3E0; border-radius: var(--radius); padding: 10px 12px; }
+.vl-hint { margin: 0; background: #FFF8E1; border: 2px solid var(--run); border-radius: var(--radius); padding: 10px 12px; }
+.vl-tip { margin: 0; background: #E8F5E9; border-radius: var(--radius); padding: 10px 12px; }
+.vl-teacher { font-size: var(--fs-sub); color: var(--muted); }
+.vl-teacher summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; }
+
+/* ── 실행 영역 ── */
+.vl-runbar { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; justify-content: center; }
+.vl-runbar .vl-primary { min-width: 120px; }
