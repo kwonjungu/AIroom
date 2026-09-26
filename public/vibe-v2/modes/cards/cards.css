@@ -137,3 +137,17 @@
 @media (prefers-reduced-motion: no-preference) {
   .vc2c-card > .vc2c-cardrow > .vc2c-cardbtn { transition: background-color .2s, border-color .2s; }
 }
+
+/* ── 실제 셸(WP1) 안에서 ── */
+.vc2c-mission.is-compact .vc2c-micon { font-size: 28px; }
+.vc2c-mission.is-compact .vc2c-desc { margin: 0; color: var(--ink); font-weight: 600; }
+.vc2c-dock { width: 100%; padding: 0; }
+.vc2c-dock .vc2c-runbar { border-top: 0; padding: 0; justify-content: center; }
+.vc2c-stage { padding: 0; }
+.vc2c-canvases.is-stacked { align-items: center; }
+.vc2c-headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--gap); }
+.vc2c-headrow .vc2c-mission { flex: 1 1 260px; }
+.vc2c-stage.in-shell .vc2c-demo { padding: 6px 10px; gap: 10px; }
+.vc2c-stage.in-shell .vc2c-demo figure { display: flex; align-items: center; gap: 6px; }
+.vc2c-stage.in-shell .vc2c-demo p { font-size: var(--fs-sub); line-height: 1.35; }
+.vc2c-stage.in-shell .vc2c-fig figcaption { margin-bottom: 2px; }

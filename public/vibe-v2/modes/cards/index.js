@@ -38,7 +38,8 @@ export function createMode(ctx) {
   const on = (el, type, fn, opts = {}) => el.addEventListener(type, fn, { ...opts, signal: ac.signal });
   const timers = new Set();
   let rafId = 0, ro = null, unsub = null, entered = false, disposed = false;
-  let stageEl = null, editorEl = null, editorInner = null, liveEl = null;
+  let stageEl = null, editorEl = null, editorInner = null, liveEl = null, dockEl = null, stagePane = null;
+  const hasDock = typeof shell.dockSlot === 'function';
   const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const ui = {
@@ -162,7 +163,15 @@ export function createMode(ctx) {
   }
 
   // ── 문구 ──
-  function say(text, tone = 'info', actions) { try { shell.say({ text, tone, actions }); } catch { /* 셸 없음 */ } }
+  /** 셸은 한 번에 한 문장만 보여 준다 → 여러 문장은 ' — '로 이어 한 문장으로 */
+  function oneSentence(text) {
+    const parts = String(text ?? '').trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+    if (parts.length < 2) return parts[0] || '';
+    return parts.map((x, i) => (i < parts.length - 1 ? x.replace(/[.!?]+$/, '') : x)).join(' — ');
+  }
+  function say(text, tone = 'info', actions) { try { shell.say({ text: oneSentence(text), tone, actions }); } catch { /* 셸 없음 */ } }
+  function showPane(k) { try { shell.showPane?.(k); } catch { /* 기본 셸 */ } }
+  const narrow = () => shell.getLayout?.()?.layout === 'tabs';
   function announce(text) { if (liveEl) liveEl.textContent = text; }
   function hintAt(nodeId, text) { ui.hint = { nodeId, text }; say(text, 'hint'); render(); }
   function cardName(n) {
@@ -197,6 +206,7 @@ export function createMode(ctx) {
     ui.hint = null; ui.result = null;
     ui.run = buildRun();
     shell.setStep?.('try');
+    if (narrow()) showPane('stage'); // 좁은 화면: 실행하면 무대를 앞으로
     if (!ui.run.steps.length) { ui.run.done = true; finishRun(); return; }
     ui.run.paused = stepOnly;
     advance();
@@ -232,6 +242,7 @@ export function createMode(ctx) {
       else {
         const d = res.differences[0];
         hintAt(d?.nodeId ?? null, res.studentHint);
+        if (narrow()) showPane('editor'); // 힌트가 붙은 카드를 보여 준다
       }
       return;
     }
@@ -239,7 +250,7 @@ export function createMode(ctx) {
     ui.result = { complete: t.result === 'goal', text: t.explanation.text, trace: t };
     if (t.result === 'goal' && mission?.id) succeed();
     else if (t.result === 'goal') { say(t.explanation.text, 'success'); render(); }
-    else hintAt(t.explanation.nodeId, t.explanation.text);
+    else { hintAt(t.explanation.nodeId, t.explanation.text); if (narrow()) showPane('editor'); }
   }
   function succeed() {
     const p = project();
@@ -247,8 +258,8 @@ export function createMode(ctx) {
     const prog = markDone(prefs.get('cards.progress'), mission.id);
     prefs.set('cards.progress', prog);
     const nxt = nextMission(mission.id);
-    say(mission.success, 'success', nxt ? [{ label: '다음 미션', onClick: () => goMission(nxt) }] : []);
-    shell.setStep?.('save');
+    shell.setStep?.('save'); // setStep은 안내 문장을 바꾸므로 성공 문장보다 먼저
+    say(mission.success, 'success', nxt ? [{ label: '다음 미션 ▶', onClick: () => goMission(nxt) }] : []);
     render();
   }
   function goMission(m) {
@@ -280,12 +291,13 @@ export function createMode(ctx) {
     const m = mission;
     const low = ctx.grade === 'low';
     const res = ui.result;
-    const head = `<div class="vc2c-mission"><span class="vc2c-micon" aria-hidden="true">${esc(m?.icon || (mode === 'goal' ? '⭐' : '🎨'))}</span>
-      <div><h2 class="vc2c-title">${esc(m?.title || project().title)}</h2><p class="vc2c-desc">${esc(m?.description || '카드를 눌러 마음대로 만들어 봐.')}</p></div></div>`;
+    // 실제 셸은 헤더에 제목·단계를 보여 주므로 여기서는 아이콘 + 설명 한 줄만
+    const head = `<div class="vc2c-mission${hasDock ? ' is-compact' : ''}"><span class="vc2c-micon" aria-hidden="true">${esc(m?.icon || (mode === 'goal' ? '⭐' : '🎨'))}</span>
+      <div>${hasDock ? '' : `<h2 class="vc2c-title">${esc(m?.title || project().title)}</h2>`}<p class="vc2c-desc">${esc(m?.description || '카드를 눌러 마음대로 만들어 봐.')}</p></div></div>`;
     const demo = mode === 'shape' && m?.conceptDemo ? `<div class="vc2c-demo" role="note">
         <figure><canvas data-demo="0" aria-label="${esc(m.target.map(stampName).join(' 다음 '))} 순서로 찍은 그림"></canvas><figcaption>${esc(m.target.map(s => SHAPE_NAMES[s.shape]).join(' → '))}</figcaption></figure>
         <figure><canvas data-demo="1" aria-label="${esc([...m.target].reverse().map(stampName).join(' 다음 '))} 순서로 찍은 그림"></canvas><figcaption>${esc([...m.target].reverse().map(s => SHAPE_NAMES[s.shape]).join(' → '))}</figcaption></figure>
-        <p><b>나중에 찍은 도형이 위를 덮어요.</b> ${esc(m.story)}</p></div>` : '';
+        <p><b>나중에 찍은 도형이 위를 덮어요.</b>${hasDock ? '' : ' ' + esc(m.story)}</p></div>` : '';
     let body = '';
     if (mode === 'shape') {
       const views = [['side', '나란히'], ['overlay', '겹쳐 보기'], ['diff', '다른 부분']];
@@ -299,22 +311,33 @@ export function createMode(ctx) {
           ? `<figure class="vc2c-fig"><figcaption>내가 만든 그림</figcaption><canvas data-canvas="mine" role="img" aria-label="내가 만든 그림"></canvas></figure>`
           : `<figure class="vc2c-fig"><figcaption>${view === 'overlay' ? '내 그림 + 만들 그림(흐리게)' : '내 그림에서 다른 부분'}</figcaption><canvas data-canvas="${view}" role="img" aria-label="${view === 'overlay' ? '겹쳐 보기' : '다른 부분 보기'}"></canvas></figure>`;
       const legend = view === 'diff' ? '<p class="vc2c-legend"><span class="vc2c-hatch" aria-hidden="true"></span> 빗금 = 만들 그림과 다른 부분</p>' : '';
-      body = `${bar}<div class="vc2c-canvases" data-view="${view}">${figs}</div>${legend}`;
+      body = `${hasDock ? '' : bar}<div class="vc2c-canvases" data-view="${view}">${figs}</div>${legend}`;
     } else {
       body = `<div class="vc2c-boardwrap"><canvas data-canvas="board" role="img" aria-label="별까지 가는 길 지도"></canvas></div>`;
     }
     // 실패는 카드 아래 힌트 한 줄로만 알린다(모달·큰 상자 없음). 성공·자유 작품만 결과 상자.
     const resultBox = res && (res.complete || res.free) ? `<div class="vc2c-result ${res.complete ? 'is-ok' : 'is-try'}" role="status">
         <span aria-hidden="true">${res.complete ? '🎉' : '💡'}</span> <span>${esc(res.complete ? (mission?.success || res.text) : res.text)}</span>
-        ${res.complete && mission && nextMission(mission.id) ? '<button type="button" class="vc2c-btn vc2c-primary" data-action="next">다음 미션 ▶</button>' : ''}
+        ${res.complete && mission && nextMission(mission.id) && !hasDock ? '<button type="button" class="vc2c-btn vc2c-primary" data-action="next">다음 미션 ▶</button>' : ''}
       </div>` : '';
-    const teacher = mode === 'shape' && m ? `<details class="vc2c-teacher" ${ui.teacher ? 'open' : ''}><summary data-action="teacher">선생님 보기</summary>
+    const teacher = teacherHtml();
+    stageEl.className = `vc2c vc2c-stage${low ? ' is-low' : ''}${hasDock ? ' in-shell' : ''}`;
+    // 실제 셸: 비교 방법 버튼을 설명 줄 오른쪽에 붙여 캔버스 높이를 아낀다
+    const headRow = hasDock && mode === 'shape' && m
+      ? `<div class="vc2c-headrow">${head}<div class="vc2c-viewbar" role="group" aria-label="비교 방법">${[['side', '나란히'], ['overlay', '겹쳐 보기'], ['diff', '다른 부분']].map(([v, t]) =>
+        `<button type="button" class="vc2c-btn vc2c-seg" data-action="view" data-view="${v}" aria-pressed="${ui.view === v}">${t}</button>`).join('')}</div></div>`
+      : head;
+    stageEl.innerHTML = headRow + demo + body + resultBox + (hasDock ? '' : teacher);
+    scheduleDraw();
+  }
+
+  /** 교사/고급 보기: 퍼센트·차이 목록 (학생 기본 화면에서는 접혀 있음) */
+  function teacherHtml() {
+    const m = mission, res = ui.result;
+    return mode === 'shape' && m ? `<details class="vc2c-teacher" ${ui.teacher ? 'open' : ''}><summary data-action="teacher">선생님 보기</summary>
         <p>일치율 ${res && 'percent' in res ? res.percent + '%' : '(실행 후 표시)'} · 차이 ${res?.differences?.length ?? '-'}개 · 학습 개념: ${esc(m.concept)}</p>
         ${res?.differences?.length ? `<ul>${res.differences.map(d => `<li>${esc(d.kind)} — 목표 ${d.targetIndex ?? '-'}번 / 카드 ${esc(d.nodeId ?? '-')}</li>`).join('')}</ul>` : ''}
       </details>` : '';
-    stageEl.className = `vc2c vc2c-stage${low ? ' is-low' : ''}`;
-    stageEl.innerHTML = head + demo + body + resultBox + teacher;
-    scheduleDraw();
   }
 
   function cardHtml(entry, hl) {
@@ -425,6 +448,19 @@ export function createMode(ctx) {
     const r = ui.run;
     const running = r && !r.done && !r.paused;
     const st = store.getState();
+    if (hasDock) { // 고정 실행 영역: 한 줄에 들어가도록 짧은 이름 + 빠르기는 버튼 하나로 번갈아
+      const other = ui.speed === 'slow' ? 'normal' : 'slow';
+      return `<div class="vc2c-runbar" role="toolbar" aria-label="실행">
+        <button type="button" class="vc2c-btn vc2c-primary vc2c-run" data-action="run">${r && !r.done && r.paused ? '▶ 계속' : '▶ 실행'}</button>
+        <button type="button" class="vc2c-btn" data-action="step">한 단계</button>
+        <button type="button" class="vc2c-btn" data-action="pause" ${running ? '' : 'disabled'}>⏸ 멈춤</button>
+        <button type="button" class="vc2c-btn" data-action="reset" ${r ? '' : 'disabled'}>⟲ 처음</button>
+        <button type="button" class="vc2c-btn" data-action="speed" data-speed="${other}" aria-label="빠르기 바꾸기 (지금 ${ui.speed === 'slow' ? '천천히' : '보통'})">${ui.speed === 'slow' ? '🐢 천천히' : '🐇 보통'}</button>
+        <button type="button" class="vc2c-btn" data-action="undo" ${st.canUndo ? '' : 'disabled'}>↶ 되돌리기</button>
+        <button type="button" class="vc2c-btn" data-action="redo" ${st.canRedo ? '' : 'disabled'} aria-label="다시하기">↷ 다시</button>
+        ${fixedPlaced() ? '' : `<button type="button" class="vc2c-btn vc2c-danger" data-action="clear" ${program().nodes.length ? '' : 'disabled'} aria-label="전체 비우기">비우기</button>`}
+      </div>`;
+    }
     return `<div class="vc2c-runbar" role="toolbar" aria-label="실행">
         <button type="button" class="vc2c-btn vc2c-primary vc2c-run" data-action="run">${r && !r.done && r.paused ? '▶ 계속' : '▶ 실행'}</button>
         <button type="button" class="vc2c-btn" data-action="step">한 단계씩</button>
@@ -461,26 +497,57 @@ export function createMode(ctx) {
       ${toolsHtml()}
       ${panelHtml()}
       <div class="vc2c-palette" aria-label="카드 상자">${trayHtml()}</div>
-      ${runbarHtml()}`;
+      ${hasDock ? teacherHtml() : runbarHtml()}`;
+    if (dockEl) {
+      const dk = focusSnapshot(dockEl);
+      dockEl.className = `vc2c vc2c-dock${low ? ' is-low' : ''}`;
+      dockEl.innerHTML = runbarHtml();
+      restoreFocus(dk, dockEl);
+    }
     restoreFocus(focusKey);
   }
 
-  function focusSnapshot() {
+  function focusSnapshot(host = editorInner) {
     const a = document.activeElement;
-    if (!a || !editorEl.contains(a)) return null;
+    if (!a || !host || !host.contains(a)) return null;
     return { action: a.dataset.action, id: a.dataset.id, delta: a.dataset.delta, key: a.dataset.key, val: a.dataset.val, kind: a.dataset.kind, tray: a.dataset.tray, speed: a.dataset.speed };
   }
-  function restoreFocus(k) {
+  function restoreFocus(k, host = editorInner) {
     if (!k) return;
     const sel = Object.entries(k).filter(([, v]) => v !== undefined).map(([key, v]) => `[data-${key}="${CSS.escape(v)}"]`).join('');
-    let el = sel && editorEl.querySelector(sel);
-    if ((!el || el.disabled) && k.action === 'select' && ui.selectedId) el = editorEl.querySelector(`[data-action="select"][data-id="${CSS.escape(ui.selectedId)}"]`);
+    let el = sel && host.querySelector(sel);
+    if ((!el || el.disabled) && k.action === 'select' && ui.selectedId) el = host.querySelector(`[data-action="select"][data-id="${CSS.escape(ui.selectedId)}"]`);
     if (el && !el.disabled) el.focus({ preventScroll: false });
   }
 
   // ── 캔버스 ──
-  function stageWidth() { return Math.max(200, Math.floor(stageEl.clientWidth || 360)); }
-  function canvasCap() { return Math.max(200, Math.min(380, Math.floor((typeof innerHeight === 'number' ? innerHeight : 800) * 0.5))); }
+  /**
+   * 무대 패널의 실제 가용 크기. 패널 높이가 화면에 고정된 배치(fit=viewport)는 패널 아래 끝까지,
+   * 문서 흐름 배치는 보이는 화면 높이의 일부를 쓴다(캔버스가 커지면 패널도 커지는 되먹임 방지).
+   * @param {Element} area  캔버스가 들어갈 요소
+   */
+  function available(area) {
+    const pane = stagePane || stageEl;
+    const cs = getComputedStyle(pane);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const W = Math.max(200, Math.floor(pane.clientWidth - padX));
+    const vh = (typeof visualViewport !== 'undefined' && visualViewport?.height) || innerHeight;
+    const dockH = dockEl?.parentElement?.getBoundingClientRect().height || 0;
+    let H;
+    const fit = shell.getLayout?.()?.fit;
+    // 캔버스 아래에 오는 요소(범례·결과·선생님 보기) 높이
+    let below = 0;
+    for (let el = area?.nextElementSibling; el; el = el.nextElementSibling) below += el.getBoundingClientRect().height + 8;
+    if (fit === 'viewport' && area) {
+      H = pane.getBoundingClientRect().bottom - parseFloat(cs.paddingBottom) - area.getBoundingClientRect().top - below - 4;
+    } else {
+      const layout = shell.getLayout?.()?.layout;
+      const share = layout === 'tabs' ? 0.62 : layout === 'stack' ? 0.42 : 0.5;
+      H = (vh - dockH) * share;
+    }
+    ui.lastAvail = { W, H: Math.floor(H), fit, below };
+    return { W, H: Math.max(200, Math.floor(H)) };
+  }
 
   function shownStamps() {
     const p = program();
@@ -493,13 +560,25 @@ export function createMode(ctx) {
 
   function drawCanvases() {
     if (disposed || !stageEl) return;
-    const W = stageWidth(), cap = canvasCap();
     if (mode === 'shape') {
+      // 개념 그림을 먼저 그린다 — 크기를 잡기 전의 기본 캔버스(300×150)가 아래 영역 위치를 밀어 계산을 틀리게 한다
+      stageEl.querySelectorAll('canvas[data-demo]').forEach(cv => {
+        const s = hasDock ? 56 : Math.min(120, Math.floor((stageEl.clientWidth || 360) / 3));
+        const c2 = fitCanvas(cv, s, s, CANVAS, CANVAS);
+        drawBackground(c2, { grid: false });
+        drawStamps(c2, cv.dataset.demo === '0' ? mission.target : [...mission.target].reverse());
+      });
+      const area = stageEl.querySelector('.vc2c-canvases');
+      const { W, H } = available(area);
+      const capH = H - 34; // 그림 제목 줄
       const view = mission ? ui.view : 'mine';
       const side = view === 'side';
-      const stacked = side && W < 2 * 200 + 16;
-      const size = side ? Math.min(cap, stacked ? W : Math.floor((W - 16) / 2)) : Math.min(Math.max(cap, 280), W);
-      stageEl.querySelector('.vc2c-canvases')?.classList.toggle('is-stacked', stacked);
+      const sideSize = Math.floor((W - 16) / 2);
+      // 나란히가 200px 미만이면 위아래로 (위아래면 높이를 둘로 나눔)
+      const stacked = side && sideSize < 200;
+      const size = Math.max(200, Math.min(560, side ? (stacked ? Math.min(W, Math.floor(capH / 2) - 17) : Math.min(sideSize, capH)) : Math.min(W, capH)));
+      area?.classList.toggle('is-stacked', stacked);
+      ui.canvasPx = size;
       const r = ui.run;
       const badge = r && r.kind === 'shape' && r.i >= 0 ? { stampIndex: r.i, label: r.steps[r.i].label } : null;
       const mine = shownStamps();
@@ -512,17 +591,13 @@ export function createMode(ctx) {
         else if (kind === 'overlay') { drawStamps(ctx2, mine, { badge }); drawStamps(ctx2, mission.target, { alpha: 0.35 }); }
         else if (kind === 'diff') drawDiff(ctx2, mine, mission.target);
       }
-      stageEl.querySelectorAll('canvas[data-demo]').forEach(cv => {
-        const s = Math.min(120, Math.floor(W / 3));
-        const c2 = fitCanvas(cv, s, s, CANVAS, CANVAS);
-        drawBackground(c2, { grid: false });
-        drawStamps(c2, cv.dataset.demo === '0' ? mission.target : [...mission.target].reverse());
-      });
       return;
     }
     const cv = stageEl.querySelector('canvas[data-canvas="board"]'); if (!cv) return;
     const map = parseMap(mission);
-    const cell = Math.max(40, Math.min(96, Math.floor(Math.min(W / map.width, (cap + 80) / map.height))));
+    const { W, H } = available(stageEl.querySelector('.vc2c-boardwrap'));
+    const cell = Math.max(40, Math.min(160, Math.floor(Math.min(W / map.width, H / map.height))));
+    ui.canvasPx = cell;
     const c2 = fitCanvas(cv, cell * map.width, cell * map.height, map.width * CELL, map.height * CELL);
     const r = ui.run;
     const start = { r: map.start.r, c: map.start.c, dir: map.startDir };
@@ -546,7 +621,7 @@ export function createMode(ctx) {
   // ── 이벤트(위임, 한 번만 등록) ──
   function onEditorClick(e) {
     const b = e.target.closest('[data-action]');
-    if (!b || !editorEl.contains(b) || b.disabled) return;
+    if (!b || !(editorEl.contains(b) || dockEl?.contains(b)) || b.disabled) return;
     if (ui.drag?.moved) return;
     const a = b.dataset.action;
     const running = ui.run && !ui.run.done;
@@ -585,6 +660,7 @@ export function createMode(ctx) {
       case 'undo': ui.draft = null; store.undo(); break;
       case 'redo': ui.draft = null; store.redo(); break;
       case 'clear': clearAll(); break;
+      case 'teacher': later(() => { const d = editorEl?.querySelector('.vc2c-teacher'); if (d) { ui.teacher = d.open; prefs.set('cards.teacher', ui.teacher); } }, 0); break;
       default: break;
     }
   }
@@ -729,6 +805,13 @@ export function createMode(ctx) {
       editorEl.append(editorInner, liveEl);
       stageSlot.append(stageEl);
       editorSlot.append(editorEl);
+      stagePane = shell.stageSlot ? stageSlot : null;
+      if (hasDock) {
+        dockEl = document.createElement('div');
+        dockEl.dataset.cardsMode = mode;
+        shell.dockSlot().append(dockEl);
+        on(dockEl, 'click', onEditorClick);
+      }
       on(editorEl, 'click', onEditorClick);
       on(editorEl, 'keydown', onEditorKey);
       on(editorEl, 'pointerdown', onPointerDown);
@@ -737,8 +820,9 @@ export function createMode(ctx) {
       on(editorEl, 'pointercancel', e => endDrag(e, true));
       on(editorEl, 'lostpointercapture', e => { if (ui.drag && !ui.drag.moved) return; if (ui.drag && e.pointerId === ui.drag.pointerId && ui.drag.ghost?.isConnected) endDrag(e, true); });
       on(stageEl, 'click', onStageClick);
-      if (typeof ResizeObserver === 'function') { ro = new ResizeObserver(() => scheduleDraw()); ro.observe(stageEl); }
-      else on(window, 'resize', scheduleDraw);
+      // 무대 패널(셸 소유) 크기를 본다 — 캔버스가 커져 바뀌는 stageEl 자신을 보면 되먹임이 생긴다
+      if (typeof ResizeObserver === 'function') { ro = new ResizeObserver(() => scheduleDraw()); ro.observe(stagePane || stageEl); if (stagePane) ro.observe(stageEl); } // 크기 계산은 stageEl 높이에 의존하지 않아 되먹임이 수렴한다
+      on(window, 'resize', scheduleDraw);
       unsub = store.subscribe(onStore);
       shell.setStep?.('make');
       if (mission) say(mission.story || mission.description, 'info');
@@ -759,8 +843,8 @@ export function createMode(ctx) {
       unsub?.(); unsub = null;
       ui.drag?.ghost?.remove();
       ui.drag = null; ui.run = null;
-      stageEl?.remove(); editorEl?.remove();
-      stageEl = editorEl = editorInner = liveEl = null;
+      stageEl?.remove(); editorEl?.remove(); dockEl?.remove();
+      stageEl = editorEl = editorInner = liveEl = dockEl = stagePane = null;
     },
     /** 테스트·점검용 (계약 밖): 현재 리소스 수 */
     _debug() { return { timers: timers.size, raf: rafId, disposed, listenersAborted: ac.signal.aborted, ui: { ...ui, drag: !!ui.drag } }; },
