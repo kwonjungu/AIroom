@@ -1,0 +1,5258 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "a4a7a4a1f9f526c7",
+  "generatedBy": "lib/vibe/assets/build-manifest.js",
+  "stylePack": "toto-world-v1",
+  "urls": {
+    "bg-meadow": "/assets/vibe/bg-stage-meadow.jpg",
+    "bg-ruins": "/assets/vibe/bg-maze.jpg",
+    "bg-space": "/assets/vibe/bg-stage-space.jpg",
+    "bg:canvas": "/assets/vibe/bg-canvas.jpg",
+    "bg:canvas-chalk": "/assets/vibe/bg-canvas-chalk.jpg",
+    "bg:canvas-ocean": "/assets/vibe/bg-canvas-ocean.jpg",
+    "bg:canvas-purple": "/assets/vibe/bg-canvas-purple.jpg",
+    "bg:map": "/assets/vibe/bg-map.jpg",
+    "bg:maze": "/assets/vibe/bg-maze.jpg",
+    "bg:shape-canvas": "/assets/vibe/shape-canvas-bg.png",
+    "bg:space": "/assets/vibe/bg-space.jpg",
+    "bg:stage-meadow": "/assets/vibe/bg-stage-meadow.jpg",
+    "bg:stage-space": "/assets/vibe/bg-stage-space.jpg",
+    "bg:story-city": "/assets/vibe/bg-story-city.jpg",
+    "bg:story-ruin": "/assets/vibe/bg-story-ruin.jpg",
+    "bg:story-studio": "/assets/vibe/bg-story-studio.jpg",
+    "bg:title-hero": "/assets/vibe/title-hero.jpg",
+    "card:gate-choice": "/assets/vibe/gate-choice.png",
+    "card:gate-exam": "/assets/vibe/gate-exam.png",
+    "card:gate-loop": "/assets/vibe/gate-loop.png",
+    "card:gate-seq": "/assets/vibe/gate-seq.png",
+    "card:goal-star": "/assets/vibe/card-goal-star.png",
+    "card:maze": "/assets/vibe/card-maze.jpg",
+    "card:move": "/assets/vibe/card-move.png",
+    "card:pixel": "/assets/vibe/card-pixel.jpg",
+    "card:planet-atelier": "/assets/vibe/planet-atelier.png",
+    "card:planet-billboard": "/assets/vibe/planet-billboard.png",
+    "card:planet-crystal": "/assets/vibe/planet-crystal.png",
+    "card:planet-lava": "/assets/vibe/planet-lava.png",
+    "card:planet-mirror": "/assets/vibe/planet-mirror.png",
+    "card:planet-neon": "/assets/vibe/planet-neon.png",
+    "card:planet-path": "/assets/vibe/planet-path.png",
+    "card:planet-puzzle": "/assets/vibe/planet-puzzle.png",
+    "card:planet-rainbow": "/assets/vibe/planet-rainbow.png",
+    "card:planet-shapes": "/assets/vibe/planet-shapes.png",
+    "card:planet-sprout": "/assets/vibe/planet-sprout.png",
+    "card:planet-studio": "/assets/vibe/planet-studio.png",
+    "card:planet-village": "/assets/vibe/planet-village.png",
+    "card:repeat": "/assets/vibe/card-repeat.png",
+    "card:studio": "/assets/vibe/card-studio.jpg",
+    "card:turn-left": "/assets/vibe/card-turn-left.png",
+    "card:turn-right": "/assets/vibe/card-turn-right.png",
+    "card:turtle": "/assets/vibe/card-turtle.jpg",
+    "sprite:alien": "/assets/vibe/it-alien.png",
+    "sprite:apple": "/assets/vibe/it-apple.png",
+    "sprite:bomb": "/assets/vibe/it-bomb.png",
+    "sprite:candy": "/assets/vibe/it-candy.png",
+    "sprite:cat": "/assets/vibe/sp-cat.png",
+    "sprite:coin": "/assets/vibe/it-coin.png",
+    "sprite:fish": "/assets/vibe/sp-fish.png",
+    "sprite:flower": "/assets/vibe/it-flower.png",
+    "sprite:gem": "/assets/vibe/it-gem.png",
+    "sprite:pixel-hello": "/assets/vibe/pixel-hello.svg",
+    "sprite:pixel-success": "/assets/vibe/pixel-success.svg",
+    "sprite:pixel-think": "/assets/vibe/pixel-think.svg",
+    "sprite:robot": "/assets/vibe/sp-robot.png",
+    "sprite:rocket": "/assets/vibe/sp-rocket.png",
+    "sprite:rover": "/assets/vibe/rover-top.png",
+    "sprite:rover-hello": "/assets/vibe/rover-hello.png",
+    "sprite:rover-hint": "/assets/vibe/rover-hint.png",
+    "sprite:rover-success": "/assets/vibe/rover-success.png",
+    "sprite:star": "/assets/vibe/it-star.png",
+    "sprite:toto-cheer": "/assets/vibe/toto-cheer.svg",
+    "sprite:toto-hello": "/assets/vibe/toto-hello.svg",
+    "sprite:toto-success": "/assets/vibe/toto-success.svg",
+    "sprite:toto-think": "/assets/vibe/toto-think.svg",
+    "sprite:turtle": "/assets/vibe/sp-turtle.png",
+    "sprite:turtle-top": "/assets/vibe/turtle-top.png",
+    "sprite:unicorn": "/assets/vibe/sp-unicorn.png",
+    "tile:floor": "/assets/vibe/tile-floor.png",
+    "tile:gem": "/assets/vibe/tile-gem.png",
+    "tile:goal": "/assets/vibe/tile-goal.png",
+    "tile:portal": "/assets/vibe/tile-portal.png",
+    "tile:rock": "/assets/vibe/tile-rock.png",
+    "tile:start": "/assets/vibe/tile-start.png",
+    "tile:wall": "/assets/vibe/tile-wall.png",
+    "ui:anchor-dot": "/assets/vibe/anchor-dot.png",
+    "ui:arrow-scroll": "/assets/vibe/arrow-scroll.png",
+    "ui:check": "/assets/vibe/ui-check.png",
+    "ui:flag-chapter": "/assets/vibe/flag-chapter.png",
+    "ui:lock": "/assets/vibe/ui-lock.png",
+    "ui:shape-circle": "/assets/vibe/shape-circle.png",
+    "ui:shape-rect": "/assets/vibe/shape-rect.png",
+    "ui:shape-rhombus": "/assets/vibe/shape-rhombus.png",
+    "ui:shape-target-frame": "/assets/vibe/shape-target-frame.png",
+    "ui:shape-tri": "/assets/vibe/shape-tri.png",
+    "ui:star": "/assets/vibe/ui-star.png",
+    "ui:star-empty": "/assets/vibe/ui-star-empty.png",
+    "ui:trophy": "/assets/vibe/ui-trophy.png",
+    "ui:trophy-glow": "/assets/vibe/ui-trophy-glow.png"
+  },
+  "entries": {
+    "bg-meadow": {
+      "key": "bg-meadow",
+      "kind": "background",
+      "aliasOf": "bg:stage-meadow",
+      "src": "/assets/vibe/bg-stage-meadow.jpg",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "초원",
+        "풀밭",
+        "들판"
+      ],
+      "color": "#CDEFB8",
+      "sha256": "7035056fb862e02b0b8e3dd82cef2cd38a322998f118aa6660fd129636be90f2",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "bg-ruins": {
+      "key": "bg-ruins",
+      "kind": "background",
+      "aliasOf": "bg:maze",
+      "src": "/assets/vibe/bg-maze.jpg",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "유적",
+        "미로"
+      ],
+      "color": "#E9DDC4",
+      "sha256": "7cc8f1a046bae87d6a3b7241c4c16cbb6bdc2d029a633f6384a50290b7a435b5",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "bg-sky": {
+      "key": "bg-sky",
+      "kind": "background",
+      "category": "color",
+      "src": null,
+      "color": "#BFE6FF",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "하늘",
+        "파란 하늘",
+        "낮"
+      ],
+      "provenance": {
+        "type": "color",
+        "label": "단색(렌더러 기본색)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "bg-space": {
+      "key": "bg-space",
+      "kind": "background",
+      "aliasOf": "bg:stage-space",
+      "src": "/assets/vibe/bg-stage-space.jpg",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "우주",
+        "밤하늘"
+      ],
+      "color": "#141B3A",
+      "sha256": "13b5d02aac0da1024772536a37ac40af14af142ff6bf573b5ef6032c97a2c458",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "bg:canvas": {
+      "key": "bg:canvas",
+      "kind": "background",
+      "category": "canvas",
+      "src": "/assets/vibe/bg-canvas.jpg",
+      "file": "bg-canvas.jpg",
+      "mime": "image/jpeg",
+      "width": 1200,
+      "height": 686,
+      "bytes": 8177,
+      "sha256": "66065966574733efeb3c6f0eedb04a47d15d680ad75a89d4325706f4674c979b",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "밤",
+        "어두운"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:canvas-chalk": {
+      "key": "bg:canvas-chalk",
+      "kind": "background",
+      "category": "canvas",
+      "src": "/assets/vibe/bg-canvas-chalk.jpg",
+      "file": "bg-canvas-chalk.jpg",
+      "mime": "image/jpeg",
+      "width": 1200,
+      "height": 686,
+      "bytes": 19501,
+      "sha256": "2dd43a3a15a21019477cccb52661ec443399711d4d39922c6a5838c62d274b6e",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "칠판",
+        "교실"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:canvas-ocean": {
+      "key": "bg:canvas-ocean",
+      "kind": "background",
+      "category": "canvas",
+      "src": "/assets/vibe/bg-canvas-ocean.jpg",
+      "file": "bg-canvas-ocean.jpg",
+      "mime": "image/jpeg",
+      "width": 1200,
+      "height": 686,
+      "bytes": 16040,
+      "sha256": "bd2981f41ab0c49029c3ff95b665dcb76406a7139fdc1ddac154afefa7c1112d",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "바다",
+        "바닷속",
+        "물속",
+        "해저"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:canvas-purple": {
+      "key": "bg:canvas-purple",
+      "kind": "background",
+      "category": "canvas",
+      "src": "/assets/vibe/bg-canvas-purple.jpg",
+      "file": "bg-canvas-purple.jpg",
+      "mime": "image/jpeg",
+      "width": 1200,
+      "height": 686,
+      "bytes": 11836,
+      "sha256": "bb485174107fa5602d97453ad7640c43f2258ec2fb7e991f7673763fc9d1443c",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "보라",
+        "신비"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:map": {
+      "key": "bg:map",
+      "kind": "background",
+      "category": "story",
+      "src": "/assets/vibe/bg-map.jpg",
+      "file": "bg-map.jpg",
+      "mime": "image/jpeg",
+      "width": 900,
+      "height": 1233,
+      "bytes": 38289,
+      "sha256": "fb237c2433625c98ee785f2ce7cc9526305b8434d157f8a66bfcf7c64e666f88",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "지도",
+        "모험 지도"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:maze": {
+      "key": "bg:maze",
+      "kind": "background",
+      "category": "stage",
+      "src": "/assets/vibe/bg-maze.jpg",
+      "file": "bg-maze.jpg",
+      "mime": "image/jpeg",
+      "width": 1200,
+      "height": 686,
+      "bytes": 39011,
+      "sha256": "7cc8f1a046bae87d6a3b7241c4c16cbb6bdc2d029a633f6384a50290b7a435b5",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "유적",
+        "미로",
+        "동굴",
+        "고대"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:shape-canvas": {
+      "key": "bg:shape-canvas",
+      "kind": "background",
+      "category": "canvas",
+      "src": "/assets/vibe/shape-canvas-bg.png",
+      "file": "shape-canvas-bg.png",
+      "mime": "image/png",
+      "width": 512,
+      "height": 512,
+      "bytes": 160977,
+      "sha256": "c375b1444321ee5ef95473e87ad89549cdcdea9cf824db665eb446d8c04560ae",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "모눈",
+        "격자"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:space": {
+      "key": "bg:space",
+      "kind": "background",
+      "category": "story",
+      "src": "/assets/vibe/bg-space.jpg",
+      "file": "bg-space.jpg",
+      "mime": "image/jpeg",
+      "width": 1200,
+      "height": 686,
+      "bytes": 23641,
+      "sha256": "df9c235cd2ba053004357cbfa91cb898ea30c54ef6ee8f32b8e4addd6ddce5c6",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "우주",
+        "은하",
+        "별하늘"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:stage-meadow": {
+      "key": "bg:stage-meadow",
+      "kind": "background",
+      "category": "stage",
+      "src": "/assets/vibe/bg-stage-meadow.jpg",
+      "file": "bg-stage-meadow.jpg",
+      "mime": "image/jpeg",
+      "width": 900,
+      "height": 657,
+      "bytes": 21110,
+      "sha256": "7035056fb862e02b0b8e3dd82cef2cd38a322998f118aa6660fd129636be90f2",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "초원",
+        "들판",
+        "풀밭",
+        "숲"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:stage-space": {
+      "key": "bg:stage-space",
+      "kind": "background",
+      "category": "stage",
+      "src": "/assets/vibe/bg-stage-space.jpg",
+      "file": "bg-stage-space.jpg",
+      "mime": "image/jpeg",
+      "width": 900,
+      "height": 657,
+      "bytes": 21266,
+      "sha256": "13b5d02aac0da1024772536a37ac40af14af142ff6bf573b5ef6032c97a2c458",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "우주",
+        "달나라",
+        "밤하늘",
+        "달"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:story-city": {
+      "key": "bg:story-city",
+      "kind": "background",
+      "category": "story",
+      "src": "/assets/vibe/bg-story-city.jpg",
+      "file": "bg-story-city.jpg",
+      "mime": "image/jpeg",
+      "width": 920,
+      "height": 526,
+      "bytes": 51738,
+      "sha256": "bd957901075466eb33bbc16aab77385443b3f7b5e027d6053a4a57918e94e75c",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "도시",
+        "마을",
+        "거리"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:story-ruin": {
+      "key": "bg:story-ruin",
+      "kind": "background",
+      "category": "story",
+      "src": "/assets/vibe/bg-story-ruin.jpg",
+      "file": "bg-story-ruin.jpg",
+      "mime": "image/jpeg",
+      "width": 920,
+      "height": 526,
+      "bytes": 57974,
+      "sha256": "334708b28471045412beeac9c611315c5018b7b717e3e953ce801db150ede376",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "유적",
+        "폐허",
+        "고대"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:story-studio": {
+      "key": "bg:story-studio",
+      "kind": "background",
+      "category": "story",
+      "src": "/assets/vibe/bg-story-studio.jpg",
+      "file": "bg-story-studio.jpg",
+      "mime": "image/jpeg",
+      "width": 920,
+      "height": 526,
+      "bytes": 100901,
+      "sha256": "88f96261ea8e399fbd47f770b8a0f84cc4ab87826700ef90c0c5701f13148d11",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "공방",
+        "작업실",
+        "스튜디오"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "bg:title-hero": {
+      "key": "bg:title-hero",
+      "kind": "background",
+      "category": "keyart",
+      "src": "/assets/vibe/title-hero.jpg",
+      "file": "title-hero.jpg",
+      "mime": "image/jpeg",
+      "width": 1600,
+      "height": 914,
+      "bytes": 208865,
+      "sha256": "17d58b4508ceb0ff21bec08bc1fee413cead1b498f5e0fd0450b14e3fe0037fe",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "타이틀"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 307200,
+        "maxBytes": 512000,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "card:gate-choice": {
+      "key": "card:gate-choice",
+      "kind": "card",
+      "category": "gate",
+      "src": "/assets/vibe/gate-choice.png",
+      "file": "gate-choice.png",
+      "mime": "image/png",
+      "width": 181,
+      "height": 192,
+      "bytes": 16308,
+      "sha256": "bd8a7a668a7f82c099aa0cc25753452a1d0b4dde63b918ac39b9e6725536e13e",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "관문"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:gate-exam": {
+      "key": "card:gate-exam",
+      "kind": "card",
+      "category": "gate",
+      "src": "/assets/vibe/gate-exam.png",
+      "file": "gate-exam.png",
+      "mime": "image/png",
+      "width": 176,
+      "height": 192,
+      "bytes": 12868,
+      "sha256": "7b10568c95aa173dbbbab95e8f665610b0b95293e5670b5d6b8ce2db02a281ac",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "관문",
+        "시험"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:gate-loop": {
+      "key": "card:gate-loop",
+      "kind": "card",
+      "category": "gate",
+      "src": "/assets/vibe/gate-loop.png",
+      "file": "gate-loop.png",
+      "mime": "image/png",
+      "width": 192,
+      "height": 160,
+      "bytes": 12357,
+      "sha256": "cda7e622e53970b2fac5c7a6b6897533c7af362b9ed92e9579ac64db588e6b54",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "관문"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:gate-seq": {
+      "key": "card:gate-seq",
+      "kind": "card",
+      "category": "gate",
+      "src": "/assets/vibe/gate-seq.png",
+      "file": "gate-seq.png",
+      "mime": "image/png",
+      "width": 190,
+      "height": 192,
+      "bytes": 20351,
+      "sha256": "17ee35b35be636a9acf713ac6e8fb022f88a6a8a077669ac91ae889c647d2865",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "관문"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:goal-star": {
+      "key": "card:goal-star",
+      "kind": "card",
+      "category": "coding-card",
+      "src": "/assets/vibe/card-goal-star.png",
+      "file": "card-goal-star.png",
+      "mime": "image/png",
+      "width": 139,
+      "height": 256,
+      "bytes": 12647,
+      "sha256": "0d116a03ca21273c87779ecbca0b8f853c0d143e923143fcd3fb3a483c059a39",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "별 도착"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:maze": {
+      "key": "card:maze",
+      "kind": "card",
+      "category": "mode",
+      "src": "/assets/vibe/card-maze.jpg",
+      "file": "card-maze.jpg",
+      "mime": "image/jpeg",
+      "width": 800,
+      "height": 533,
+      "bytes": 75851,
+      "sha256": "ffa2036e3ec162c7fd6f6a6db3404b842820d21c54a07f71a7706ce27ee477a2",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "미로"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:move": {
+      "key": "card:move",
+      "kind": "card",
+      "category": "coding-card",
+      "src": "/assets/vibe/card-move.png",
+      "file": "card-move.png",
+      "mime": "image/png",
+      "width": 200,
+      "height": 256,
+      "bytes": 23395,
+      "sha256": "fb0884489cbf7853107531a0d66fba551604f0ab1995d72b5e366665d0d583fd",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "앞으로"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:pixel": {
+      "key": "card:pixel",
+      "kind": "card",
+      "category": "mode",
+      "src": "/assets/vibe/card-pixel.jpg",
+      "file": "card-pixel.jpg",
+      "mime": "image/jpeg",
+      "width": 800,
+      "height": 533,
+      "bytes": 77676,
+      "sha256": "910b898d1ee6875f402e5fbcb6f43e81b172d17e2150940495e40c607adb2e79",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "픽셀",
+        "전광판"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-atelier": {
+      "key": "card:planet-atelier",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-atelier.png",
+      "file": "planet-atelier.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 230,
+      "bytes": 21640,
+      "sha256": "47ed277b25ec90b76e4bc36d2a721d4d4d399d26d68935a7aff380159b7ea53d",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "행성",
+        "팔레트 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-billboard": {
+      "key": "card:planet-billboard",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-billboard.png",
+      "file": "planet-billboard.png",
+      "mime": "image/png",
+      "width": 167,
+      "height": 256,
+      "bytes": 18520,
+      "sha256": "47292071742eb274a7ed13f949fe11b0911eab7a8fd761d73d428900e31ece99",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "행성",
+        "전광판"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-crystal": {
+      "key": "card:planet-crystal",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-crystal.png",
+      "file": "planet-crystal.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 251,
+      "bytes": 32474,
+      "sha256": "3f604341cb8f16981f70fc6f697ec011e093fc8a53b34a210b1bb39a17505830",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "얼음 행성",
+        "크리스탈",
+        "얼음"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-lava": {
+      "key": "card:planet-lava",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-lava.png",
+      "file": "planet-lava.png",
+      "mime": "image/png",
+      "width": 173,
+      "height": 256,
+      "bytes": 19646,
+      "sha256": "ca6c020050edc3890661fd28f696f6a1f6baa482018a833c860e6bb6b70d7411",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "용암",
+        "화산",
+        "용암 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-mirror": {
+      "key": "card:planet-mirror",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-mirror.png",
+      "file": "planet-mirror.png",
+      "mime": "image/png",
+      "width": 252,
+      "height": 256,
+      "bytes": 23984,
+      "sha256": "6ef77ae99279fecc9be5c3e481aedc5a0185504b8854723a475ea2e9cf7592b8",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "거울 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-neon": {
+      "key": "card:planet-neon",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-neon.png",
+      "file": "planet-neon.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 251,
+      "bytes": 29287,
+      "sha256": "e6315655fcb12397a7e9c092b5225a27cc75186685eb4ac00c5fb7da4e0b7a0d",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "네온",
+        "네온 도시"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-path": {
+      "key": "card:planet-path",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-path.png",
+      "file": "planet-path.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 220,
+      "bytes": 17562,
+      "sha256": "c52887156440ce668e9a063ad101ce3e70a98cf994322e831d1f62bc01acdbb0",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "길 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-puzzle": {
+      "key": "card:planet-puzzle",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-puzzle.png",
+      "file": "planet-puzzle.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 253,
+      "bytes": 26793,
+      "sha256": "e9f3fa9dc045242718f4ab5aaa0ea1c413ade4f1c0fad5bba01f2ed141f80f67",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "퍼즐"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-rainbow": {
+      "key": "card:planet-rainbow",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-rainbow.png",
+      "file": "planet-rainbow.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 157,
+      "bytes": 15439,
+      "sha256": "2e22fc80bedf5b61eab1f9d4f31a281bd4f53d59d3e1ee6f2bd19c51400b9c83",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "무지개"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-shapes": {
+      "key": "card:planet-shapes",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-shapes.png",
+      "file": "planet-shapes.png",
+      "mime": "image/png",
+      "width": 190,
+      "height": 256,
+      "bytes": 21182,
+      "sha256": "ddb40797eccdccd5a5e61b098549cedf6b8cc12f5d5f5cfad967b25d23923838",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "도형 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-sprout": {
+      "key": "card:planet-sprout",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-sprout.png",
+      "file": "planet-sprout.png",
+      "mime": "image/png",
+      "width": 189,
+      "height": 256,
+      "bytes": 22999,
+      "sha256": "d0137194763c7886adef2f25681346d621ae4d9274f6f7f8fbe81987256b734a",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "새싹",
+        "식물"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-studio": {
+      "key": "card:planet-studio",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-studio.png",
+      "file": "planet-studio.png",
+      "mime": "image/png",
+      "width": 192,
+      "height": 187,
+      "bytes": 10888,
+      "sha256": "55bae5a6d1aa08cc1e8543690c0967f39bfd9e7b388bcca9b36736ebfc3b3838",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "공방 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:planet-village": {
+      "key": "card:planet-village",
+      "kind": "card",
+      "category": "planet",
+      "src": "/assets/vibe/planet-village.png",
+      "file": "planet-village.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 256,
+      "bytes": 34828,
+      "sha256": "33ca0c7d005742039436c760872705137a42fa72b798ebea01a40b9b099dd732",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "마을 행성"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:repeat": {
+      "key": "card:repeat",
+      "kind": "card",
+      "category": "coding-card",
+      "src": "/assets/vibe/card-repeat.png",
+      "file": "card-repeat.png",
+      "mime": "image/png",
+      "width": 251,
+      "height": 256,
+      "bytes": 24884,
+      "sha256": "7370827300ea883b974de87d7d1bfe5c73ae0318c2a5913c30b3a0dc356f441f",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "반복"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:studio": {
+      "key": "card:studio",
+      "kind": "card",
+      "category": "mode",
+      "src": "/assets/vibe/card-studio.jpg",
+      "file": "card-studio.jpg",
+      "mime": "image/jpeg",
+      "width": 800,
+      "height": 533,
+      "bytes": 84898,
+      "sha256": "f39b9f7b859526c05f60193617ac60c2d2b9d9b385a6d3ebf93bfaa3c99690a6",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "공방",
+        "게임"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:turn-left": {
+      "key": "card:turn-left",
+      "kind": "card",
+      "category": "coding-card",
+      "src": "/assets/vibe/card-turn-left.png",
+      "file": "card-turn-left.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 196,
+      "bytes": 18227,
+      "sha256": "a385935e8891d6c648ca60a4623e5c394e5bea775b30c5f622710763616189a2",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "왼쪽"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:turn-right": {
+      "key": "card:turn-right",
+      "kind": "card",
+      "category": "coding-card",
+      "src": "/assets/vibe/card-turn-right.png",
+      "file": "card-turn-right.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 223,
+      "bytes": 20157,
+      "sha256": "fd60472ab4a5437c70795a4b23bee9f964625fdee07a8cff4a90fdc030441fb6",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "오른쪽"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "card:turtle": {
+      "key": "card:turtle",
+      "kind": "card",
+      "category": "mode",
+      "src": "/assets/vibe/card-turtle.jpg",
+      "file": "card-turtle.jpg",
+      "mime": "image/jpeg",
+      "width": 800,
+      "height": 533,
+      "bytes": 65125,
+      "sha256": "33f3eae9003e7f6e6aee2e6182ee94d86bb9300197a7af65b799a3f3e2fef6c7",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "거북이 그림"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "emoji:☀️": {
+      "key": "emoji:☀️",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "☀️",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "해",
+        "태양"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:☁️": {
+      "key": "emoji:☁️",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "☁️",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "구름"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:☄️": {
+      "key": "emoji:☄️",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "☄️",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "운석",
+        "혜성",
+        "별똥별"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:⚡": {
+      "key": "emoji:⚡",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "⚡",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "번개"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:⚽": {
+      "key": "emoji:⚽",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "⚽",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "축구공",
+        "공"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:⛵": {
+      "key": "emoji:⛵",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "⛵",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "배",
+        "돛단배"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:✈️": {
+      "key": "emoji:✈️",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "✈️",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "비행기"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:❄️": {
+      "key": "emoji:❄️",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "❄️",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "눈송이",
+        "눈"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:❤️": {
+      "key": "emoji:❤️",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "❤️",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "하트",
+        "마음"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:⭐": {
+      "key": "emoji:⭐",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "⭐",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "별"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌈": {
+      "key": "emoji:🌈",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌈",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "무지개"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌙": {
+      "key": "emoji:🌙",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌙",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "달",
+        "초승달"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌟": {
+      "key": "emoji:🌟",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌟",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "반짝별"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌳": {
+      "key": "emoji:🌳",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌳",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "나무"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌵": {
+      "key": "emoji:🌵",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌵",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "선인장"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌸": {
+      "key": "emoji:🌸",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌸",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "꽃",
+        "벚꽃"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🌻": {
+      "key": "emoji:🌻",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🌻",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "해바라기"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍀": {
+      "key": "emoji:🍀",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍀",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "네잎클로버",
+        "클로버"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍄": {
+      "key": "emoji:🍄",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍄",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "버섯"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍇": {
+      "key": "emoji:🍇",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍇",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "포도"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍉": {
+      "key": "emoji:🍉",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍉",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "수박"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍊": {
+      "key": "emoji:🍊",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍊",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "귤",
+        "오렌지"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍌": {
+      "key": "emoji:🍌",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍌",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "바나나"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍎": {
+      "key": "emoji:🍎",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍎",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "사과"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍒": {
+      "key": "emoji:🍒",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍒",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "체리"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍓": {
+      "key": "emoji:🍓",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍓",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "딸기"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍔": {
+      "key": "emoji:🍔",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍔",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "햄버거"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍕": {
+      "key": "emoji:🍕",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍕",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "피자"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍦": {
+      "key": "emoji:🍦",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍦",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "아이스크림"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍩": {
+      "key": "emoji:🍩",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍩",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "도넛"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍪": {
+      "key": "emoji:🍪",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍪",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "쿠키",
+        "과자"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍬": {
+      "key": "emoji:🍬",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍬",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "사탕",
+        "캔디"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍭": {
+      "key": "emoji:🍭",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍭",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "막대사탕"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🍰": {
+      "key": "emoji:🍰",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🍰",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "케이크"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🎁": {
+      "key": "emoji:🎁",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🎁",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "선물",
+        "상자"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🎈": {
+      "key": "emoji:🎈",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🎈",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "풍선"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🏀": {
+      "key": "emoji:🏀",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🏀",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "농구공"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🏠": {
+      "key": "emoji:🏠",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🏠",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "집"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🏰": {
+      "key": "emoji:🏰",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🏰",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "성"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐉": {
+      "key": "emoji:🐉",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐉",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "용",
+        "드래곤"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐍": {
+      "key": "emoji:🐍",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐍",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "뱀"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐔": {
+      "key": "emoji:🐔",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐔",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "닭",
+        "병아리"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐙": {
+      "key": "emoji:🐙",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐙",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "문어"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐝": {
+      "key": "emoji:🐝",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐝",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "벌",
+        "꿀벌"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐞": {
+      "key": "emoji:🐞",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐞",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "무당벌레"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐟": {
+      "key": "emoji:🐟",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐟",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "물고기",
+        "생선",
+        "고기"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐠": {
+      "key": "emoji:🐠",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐠",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "열대어"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐢": {
+      "key": "emoji:🐢",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐢",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "거북이",
+        "거북",
+        "토토"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐦": {
+      "key": "emoji:🐦",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐦",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "새",
+        "참새"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐧": {
+      "key": "emoji:🐧",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐧",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "펭귄"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐬": {
+      "key": "emoji:🐬",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐬",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "돌고래"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐮": {
+      "key": "emoji:🐮",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐮",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "소",
+        "젖소"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐯": {
+      "key": "emoji:🐯",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐯",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "호랑이",
+        "호랭이"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐰": {
+      "key": "emoji:🐰",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐰",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "토끼"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐱": {
+      "key": "emoji:🐱",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐱",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "고양이",
+        "냥이",
+        "야옹이",
+        "캣"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐳": {
+      "key": "emoji:🐳",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐳",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "고래"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐵": {
+      "key": "emoji:🐵",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐵",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "원숭이"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐶": {
+      "key": "emoji:🐶",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐶",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "강아지",
+        "개",
+        "멍멍이",
+        "댕댕이"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐷": {
+      "key": "emoji:🐷",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐷",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "돼지"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐸": {
+      "key": "emoji:🐸",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐸",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "개구리"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐻": {
+      "key": "emoji:🐻",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐻",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "곰",
+        "곰돌이"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🐼": {
+      "key": "emoji:🐼",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🐼",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "판다"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:👑": {
+      "key": "emoji:👑",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "👑",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "왕관"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:👸": {
+      "key": "emoji:👸",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "👸",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "공주"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:👻": {
+      "key": "emoji:👻",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "👻",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "유령",
+        "귀신"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:👾": {
+      "key": "emoji:👾",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "👾",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "외계인",
+        "몬스터",
+        "괴물"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:💎": {
+      "key": "emoji:💎",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "💎",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "보석",
+        "다이아몬드"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:💣": {
+      "key": "emoji:💣",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "💣",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "폭탄"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:💧": {
+      "key": "emoji:💧",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "💧",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "물방울"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:💰": {
+      "key": "emoji:💰",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "💰",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "돈주머니",
+        "돈"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🔑": {
+      "key": "emoji:🔑",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🔑",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "열쇠"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🔥": {
+      "key": "emoji:🔥",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🔥",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "불",
+        "불꽃"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🚀": {
+      "key": "emoji:🚀",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🚀",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로켓",
+        "우주선"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🚁": {
+      "key": "emoji:🚁",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🚁",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "헬리콥터"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🚌": {
+      "key": "emoji:🚌",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🚌",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "버스"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🚗": {
+      "key": "emoji:🚗",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🚗",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "자동차",
+        "차"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🚲": {
+      "key": "emoji:🚲",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🚲",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "자전거"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🛸": {
+      "key": "emoji:🛸",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🛸",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "비행접시",
+        "UFO",
+        "유에프오"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🤖": {
+      "key": "emoji:🤖",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🤖",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로봇",
+        "픽셀"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🤴": {
+      "key": "emoji:🤴",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🤴",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "왕자"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🥕": {
+      "key": "emoji:🥕",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🥕",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "당근"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🥷": {
+      "key": "emoji:🥷",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🥷",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "닌자"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦀": {
+      "key": "emoji:🦀",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦀",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "게",
+        "꽃게"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦁": {
+      "key": "emoji:🦁",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦁",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "사자"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦄": {
+      "key": "emoji:🦄",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦄",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "유니콘"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦈": {
+      "key": "emoji:🦈",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦈",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "상어"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦉": {
+      "key": "emoji:🦉",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦉",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "부엉이",
+        "올빼미"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦊": {
+      "key": "emoji:🦊",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦊",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "여우"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦋": {
+      "key": "emoji:🦋",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦋",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "나비"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦖": {
+      "key": "emoji:🦖",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦖",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "공룡",
+        "티라노"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🦸": {
+      "key": "emoji:🦸",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🦸",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "영웅",
+        "슈퍼히어로"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🧙": {
+      "key": "emoji:🧙",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🧙",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "마법사"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🧚": {
+      "key": "emoji:🧚",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🧚",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "요정"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🪙": {
+      "key": "emoji:🪙",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🪙",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "동전",
+        "코인",
+        "금화"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "emoji:🪨": {
+      "key": "emoji:🪨",
+      "kind": "sprite",
+      "category": "emoji",
+      "src": null,
+      "emoji": "🪨",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "바위",
+        "돌"
+      ],
+      "provenance": {
+        "type": "system-emoji",
+        "label": "시스템 이모지 글꼴(기기마다 모양 다름)"
+      },
+      "license": "OS 이모지 글꼴"
+    },
+    "sfx:click": {
+      "key": "sfx:click",
+      "kind": "sfx",
+      "category": "ui-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 50,
+      "gameEvent": null,
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "딸깍",
+        "클릭"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:fail": {
+      "key": "sfx:fail",
+      "kind": "sfx",
+      "category": "game-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 520,
+      "gameEvent": "lose",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "실패",
+        "짐",
+        "아야",
+        "부딪힘"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:hit": {
+      "key": "sfx:hit",
+      "kind": "sfx",
+      "category": "game-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 260,
+      "gameEvent": "hit",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "쿵",
+        "충돌",
+        "맞음"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:pop": {
+      "key": "sfx:pop",
+      "kind": "sfx",
+      "category": "ui-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 90,
+      "gameEvent": null,
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "뽁",
+        "톡"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:run": {
+      "key": "sfx:run",
+      "kind": "sfx",
+      "category": "game-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 220,
+      "gameEvent": "start",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "휙",
+        "출발",
+        "시작"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:star": {
+      "key": "sfx:star",
+      "kind": "sfx",
+      "category": "game-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 300,
+      "gameEvent": "collect",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "별",
+        "점수",
+        "획득",
+        "먹기"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:success": {
+      "key": "sfx:success",
+      "kind": "sfx",
+      "category": "game-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 580,
+      "gameEvent": "win",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "성공",
+        "승리",
+        "이김"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sfx:unlock": {
+      "key": "sfx:unlock",
+      "kind": "sfx",
+      "category": "game-sound",
+      "src": null,
+      "synth": true,
+      "durationMs": 540,
+      "gameEvent": null,
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "열림",
+        "반짝",
+        "잠금 해제"
+      ],
+      "bytes": 0,
+      "provenance": {
+        "type": "synth",
+        "label": "손제작(WebAudio 합성, v1 playSfx 이식)"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용"
+    },
+    "sprite:alien": {
+      "key": "sprite:alien",
+      "kind": "sprite",
+      "category": "hazard",
+      "src": "/assets/vibe/it-alien.png",
+      "file": "it-alien.png",
+      "mime": "image/png",
+      "width": 101,
+      "height": 128,
+      "bytes": 7253,
+      "sha256": "c1e7780e9d019dbf9bd4c9e192181d187256ce3792906f71d39ce2ec78158956",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "외계인",
+        "에일리언",
+        "몬스터",
+        "괴물"
+      ],
+      "emoji": "👾",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:apple": {
+      "key": "sprite:apple",
+      "kind": "sprite",
+      "category": "item",
+      "src": "/assets/vibe/it-apple.png",
+      "file": "it-apple.png",
+      "mime": "image/png",
+      "width": 113,
+      "height": 128,
+      "bytes": 8274,
+      "sha256": "8c02125bc4780c7a72b52361277713bf920b847e0cfe105d9c82bb5eb344302b",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "사과",
+        "과일"
+      ],
+      "emoji": "🍎",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:bomb": {
+      "key": "sprite:bomb",
+      "kind": "sprite",
+      "category": "hazard",
+      "src": "/assets/vibe/it-bomb.png",
+      "file": "it-bomb.png",
+      "mime": "image/png",
+      "width": 97,
+      "height": 128,
+      "bytes": 7994,
+      "sha256": "21a7dcc8860def188ad1cf9d623044878e512da1da5cd32f909035d9ab84fbb3",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "폭탄"
+      ],
+      "emoji": "💣",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:candy": {
+      "key": "sprite:candy",
+      "kind": "sprite",
+      "category": "item",
+      "src": "/assets/vibe/it-candy.png",
+      "file": "it-candy.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 79,
+      "bytes": 7010,
+      "sha256": "023f044261ec2b3cd1f7875c7312d72f3412c4bcd18fbcc29a129004f44533eb",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "사탕",
+        "캔디",
+        "과자"
+      ],
+      "emoji": "🍬",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:cat": {
+      "key": "sprite:cat",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/sp-cat.png",
+      "file": "sp-cat.png",
+      "mime": "image/png",
+      "width": 107,
+      "height": 160,
+      "bytes": 11898,
+      "sha256": "a0e14690f2b56c0fef635e70eb7e94e46fbd49a3f2eb843b9267d0a5e461ad54",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "고양이",
+        "냥이",
+        "야옹이",
+        "캣"
+      ],
+      "emoji": "🐱",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:coin": {
+      "key": "sprite:coin",
+      "kind": "sprite",
+      "category": "item",
+      "src": "/assets/vibe/it-coin.png",
+      "file": "it-coin.png",
+      "mime": "image/png",
+      "width": 124,
+      "height": 128,
+      "bytes": 8773,
+      "sha256": "677b566d664f41d9c597b8f7b7038bd73c27dddc998b24f2fd546ba1e186d4af",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "동전",
+        "코인",
+        "금화",
+        "돈"
+      ],
+      "emoji": "🪙",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:fish": {
+      "key": "sprite:fish",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/sp-fish.png",
+      "file": "sp-fish.png",
+      "mime": "image/png",
+      "width": 160,
+      "height": 119,
+      "bytes": 10126,
+      "sha256": "74c5f388592e08a455d7833c44a8bbe31260eac514bc582adda920d04e9c452a",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "물고기",
+        "생선",
+        "고기",
+        "붕어",
+        "금붕어"
+      ],
+      "emoji": "🐟",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:flower": {
+      "key": "sprite:flower",
+      "kind": "sprite",
+      "category": "item",
+      "src": "/assets/vibe/it-flower.png",
+      "file": "it-flower.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 122,
+      "bytes": 8820,
+      "sha256": "6898584e80c10efbb3737449cf440feeebe55bc25268db7a03a7b102340a2e5c",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "꽃",
+        "벚꽃",
+        "꽃잎"
+      ],
+      "emoji": "🌸",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:gem": {
+      "key": "sprite:gem",
+      "kind": "sprite",
+      "category": "item",
+      "src": "/assets/vibe/it-gem.png",
+      "file": "it-gem.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 113,
+      "bytes": 7897,
+      "sha256": "6431910f59c94624da8716cd47dca9bfad5f6c4bbae02431c7c8c30417bef9e9",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "보석",
+        "다이아몬드",
+        "다이아",
+        "수정"
+      ],
+      "emoji": "💎",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:pixel-hello": {
+      "key": "sprite:pixel-hello",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/pixel-hello.svg",
+      "file": "pixel-hello.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2119,
+      "sha256": "7a28bb7c08d9362d466f31d178b7d2f4496a9bb8090dbab0ac876f75c9437dc5",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "픽셀",
+        "로봇"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:pixel-success": {
+      "key": "sprite:pixel-success",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/pixel-success.svg",
+      "file": "pixel-success.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2373,
+      "sha256": "21863a7ecb147c1c8c2ffd1b3a524fd5e8caac69312edea07154de0316bc14c8",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "픽셀"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:pixel-think": {
+      "key": "sprite:pixel-think",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/pixel-think.svg",
+      "file": "pixel-think.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2128,
+      "sha256": "f86d9f318e4b010fef6edaadb490ddd4d71997d27d1cd4efb0daf9bbecb2f00d",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "픽셀"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:robot": {
+      "key": "sprite:robot",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/sp-robot.png",
+      "file": "sp-robot.png",
+      "mime": "image/png",
+      "width": 138,
+      "height": 160,
+      "bytes": 12411,
+      "sha256": "7cb1b70c1a7bacf4d4a8599c758c4f6ff3aab9b0f5b646bb092e0d51c94f6de5",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로봇",
+        "픽셀",
+        "안드로이드"
+      ],
+      "emoji": "🤖",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:rocket": {
+      "key": "sprite:rocket",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/sp-rocket.png",
+      "file": "sp-rocket.png",
+      "mime": "image/png",
+      "width": 101,
+      "height": 160,
+      "bytes": 8680,
+      "sha256": "0ee57ed615fe085934bb17d9e96a040b8f9013140a7fc9168b4b62f75d69b6f3",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로켓",
+        "우주선",
+        "비행선"
+      ],
+      "emoji": "🚀",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:rover": {
+      "key": "sprite:rover",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/rover-top.png",
+      "file": "rover-top.png",
+      "mime": "image/png",
+      "width": 123,
+      "height": 128,
+      "bytes": 9410,
+      "sha256": "c8bd3f41661c4eac36ddedc90d79569b5c2c9b2961fa6523c660fd541c5db0f1",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로버",
+        "탐사차",
+        "탐사선"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:rover-hello": {
+      "key": "sprite:rover-hello",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/rover-hello.png",
+      "file": "rover-hello.png",
+      "mime": "image/png",
+      "width": 241,
+      "height": 256,
+      "bytes": 24939,
+      "sha256": "2d3b0c31d492ce0a9a94cd36e9c6b22427f914cddb8ebaa3f03431034b4b4d21",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로버",
+        "탐사 로봇"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:rover-hint": {
+      "key": "sprite:rover-hint",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/rover-hint.png",
+      "file": "rover-hint.png",
+      "mime": "image/png",
+      "width": 243,
+      "height": 256,
+      "bytes": 25711,
+      "sha256": "751912fe15e118b43d6ee7409ec7864c4f0413112c8fe05816cb32df99ee8ecb",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로버"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:rover-success": {
+      "key": "sprite:rover-success",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/rover-success.png",
+      "file": "rover-success.png",
+      "mime": "image/png",
+      "width": 222,
+      "height": 256,
+      "bytes": 25446,
+      "sha256": "2aed7ed2ef967d7266af90df4a21c932adad3ba744ba80431cd56a33da0a87b6",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "로버"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:star": {
+      "key": "sprite:star",
+      "kind": "sprite",
+      "category": "item",
+      "src": "/assets/vibe/it-star.png",
+      "file": "it-star.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 125,
+      "bytes": 9239,
+      "sha256": "00de2d2ab78185a1fb2272bc1f21a4219f020ecb18db9c6a2f9afd344f0b925f",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "별",
+        "별님",
+        "스타"
+      ],
+      "emoji": "⭐",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:toto-cheer": {
+      "key": "sprite:toto-cheer",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/toto-cheer.svg",
+      "file": "toto-cheer.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2585,
+      "sha256": "a584d1209483dbcea86d19bfa0378fec45c15943ec17375d4a283ad2b44d2fe7",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "토토"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:toto-hello": {
+      "key": "sprite:toto-hello",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/toto-hello.svg",
+      "file": "toto-hello.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2590,
+      "sha256": "bacfcf224863306da31caf3a91e40de4161fd1490cf090fe0e5eed1daf568c16",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "토토",
+        "거북이"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:toto-success": {
+      "key": "sprite:toto-success",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/toto-success.svg",
+      "file": "toto-success.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2721,
+      "sha256": "d0be0c74ac53a3ab42cd8d3c620755f3c48cd38af0a814de37f635914b063bff",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "토토"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:toto-think": {
+      "key": "sprite:toto-think",
+      "kind": "sprite",
+      "category": "character",
+      "src": "/assets/vibe/toto-think.svg",
+      "file": "toto-think.svg",
+      "mime": "image/svg+xml",
+      "width": 200,
+      "height": 200,
+      "bytes": 2889,
+      "sha256": "2c9575f9d30707616eae54191c213ef7a26b972a63c81a93ec05b2de584a7dc5",
+      "provenance": {
+        "type": "hand",
+        "label": "손제작",
+        "provider": null,
+        "model": null,
+        "batch": null,
+        "note": "SVG 손제작 캐릭터",
+        "commit": "ed5d2db"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "토토"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1",
+      "dimensionsFrom": "svg-viewBox"
+    },
+    "sprite:turtle": {
+      "key": "sprite:turtle",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/sp-turtle.png",
+      "file": "sp-turtle.png",
+      "mime": "image/png",
+      "width": 115,
+      "height": 160,
+      "bytes": 11739,
+      "sha256": "5e06747b2653659a166a45708f7b3bf10c0d6dab7546f77ca5c9fc283bca8394",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "거북이",
+        "거북",
+        "토토"
+      ],
+      "emoji": "🐢",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:turtle-top": {
+      "key": "sprite:turtle-top",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/turtle-top.png",
+      "file": "turtle-top.png",
+      "mime": "image/png",
+      "width": 149,
+      "height": 160,
+      "bytes": 11669,
+      "sha256": "b182162f888fc5b08a2e58bd21c1588f0b7f692ad78b3719cab4428863bafc11",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "거북이",
+        "거북"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "sprite:unicorn": {
+      "key": "sprite:unicorn",
+      "kind": "sprite",
+      "category": "hero",
+      "src": "/assets/vibe/sp-unicorn.png",
+      "file": "sp-unicorn.png",
+      "mime": "image/png",
+      "width": 160,
+      "height": 132,
+      "bytes": 10356,
+      "sha256": "7e61eb416d42c3da1ad9802311cb951cf97ac7a84d5deaba7a4214f216edcc09",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "유니콘",
+        "말",
+        "조랑말"
+      ],
+      "emoji": "🦄",
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:floor": {
+      "key": "tile:floor",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-floor.png",
+      "file": "tile-floor.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 128,
+      "bytes": 23079,
+      "sha256": "669f64949ab253555f5113947102d66cf2240d6a6885597071ca7b80d1817fd1",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "바닥"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:gem": {
+      "key": "tile:gem",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-gem.png",
+      "file": "tile-gem.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 116,
+      "bytes": 9860,
+      "sha256": "e50f727be9a9beea378c90bcfcb205e8965685556d26381ee6716bec482a0718",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "보석"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:goal": {
+      "key": "tile:goal",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-goal.png",
+      "file": "tile-goal.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 128,
+      "bytes": 29308,
+      "sha256": "267568b9f56aa7df12742b72203f199205ed55825e0ebb31e10db7733559025c",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "도착",
+        "목표",
+        "깃발"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:portal": {
+      "key": "tile:portal",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-portal.png",
+      "file": "tile-portal.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 128,
+      "bytes": 11007,
+      "sha256": "2f7f4406c1219ef5056123bdaafd983504e2a7ae000a6cc6d6f9769aa3d29a4c",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "포털",
+        "포탈",
+        "문",
+        "차원문"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:rock": {
+      "key": "tile:rock",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-rock.png",
+      "file": "tile-rock.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 122,
+      "bytes": 10071,
+      "sha256": "e1f3b76e21f1769c7cacc8460973c13974a9008b91059a1f1f591c2b43360e24",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 be4c360: 메시지 표기 \"상용 에셋 27종\" — 출처 문구 재확인 권장",
+        "commit": "be4c360"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "바위",
+        "돌"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:start": {
+      "key": "tile:start",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-start.png",
+      "file": "tile-start.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 128,
+      "bytes": 24061,
+      "sha256": "af51961c4e1b6cbb3f2c6233806a0cee82ab2e85af4409af9aa987acbbdb8844",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "출발"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "tile:wall": {
+      "key": "tile:wall",
+      "kind": "sprite",
+      "category": "tile",
+      "src": "/assets/vibe/tile-wall.png",
+      "file": "tile-wall.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 128,
+      "bytes": 22624,
+      "sha256": "d4c48543eb50d797bfb5b2815e6a8e04106657545a45a140d33ab5443691e033",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": true,
+      "ko": [
+        "벽",
+        "벽돌"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": "toto-world-v1"
+    },
+    "ui:anchor-dot": {
+      "key": "ui:anchor-dot",
+      "kind": "ui",
+      "category": "shape",
+      "src": "/assets/vibe/anchor-dot.png",
+      "file": "anchor-dot.png",
+      "mime": "image/png",
+      "width": 96,
+      "height": 96,
+      "bytes": 6580,
+      "sha256": "baa0bfdc7f87bb3d22155e47baddba4f26d2d4be104f7e00e2662ef85990cd77",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "점"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:arrow-scroll": {
+      "key": "ui:arrow-scroll",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/arrow-scroll.png",
+      "file": "arrow-scroll.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 112,
+      "bytes": 7535,
+      "sha256": "9975c5a8ca90391e20ec8ca65c54724c58c80f6674fae975002648ca86a15f0e",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "화살표"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:check": {
+      "key": "ui:check",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/ui-check.png",
+      "file": "ui-check.png",
+      "mime": "image/png",
+      "width": 165,
+      "height": 192,
+      "bytes": 17438,
+      "sha256": "f15108e24e504eb51536ee93f18d83503cb105e31e9cf2d4d547dceb24781c20",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "체크"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:flag-chapter": {
+      "key": "ui:flag-chapter",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/flag-chapter.png",
+      "file": "flag-chapter.png",
+      "mime": "image/png",
+      "width": 138,
+      "height": 160,
+      "bytes": 7713,
+      "sha256": "56a49d0b6c02c431d716bdeacca0dc079ae34834a2fe1f4151aa88f9e94df5d7",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "깃발"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:lock": {
+      "key": "ui:lock",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/ui-lock.png",
+      "file": "ui-lock.png",
+      "mime": "image/png",
+      "width": 155,
+      "height": 192,
+      "bytes": 16542,
+      "sha256": "da38c627801dffc7b175d96a05b852ebbc994269b502002f7a993c33f903d3bc",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "자물쇠"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:shape-circle": {
+      "key": "ui:shape-circle",
+      "kind": "ui",
+      "category": "shape",
+      "src": "/assets/vibe/shape-circle.png",
+      "file": "shape-circle.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 256,
+      "bytes": 29008,
+      "sha256": "872fd74ce8e25031ab5397add344f09550d871dfad26ceabdc9eae17ca82ff11",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "원"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:shape-rect": {
+      "key": "ui:shape-rect",
+      "kind": "ui",
+      "category": "shape",
+      "src": "/assets/vibe/shape-rect.png",
+      "file": "shape-rect.png",
+      "mime": "image/png",
+      "width": 176,
+      "height": 256,
+      "bytes": 21020,
+      "sha256": "0229fe17e36cb910dcbec64a599a4bc097a274f6b4df92d35c40cba8e1d18371",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "사각형"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:shape-rhombus": {
+      "key": "ui:shape-rhombus",
+      "kind": "ui",
+      "category": "shape",
+      "src": "/assets/vibe/shape-rhombus.png",
+      "file": "shape-rhombus.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 255,
+      "bytes": 23180,
+      "sha256": "5609020bba279c17aef59f38c06a7f62e15a287244b7e568229c8533e78e0def",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "마름모"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:shape-target-frame": {
+      "key": "ui:shape-target-frame",
+      "kind": "ui",
+      "category": "shape",
+      "src": "/assets/vibe/shape-target-frame.png",
+      "file": "shape-target-frame.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 253,
+      "bytes": 27938,
+      "sha256": "da96c09e0c7a8eab05f4dbddd0fd46db9fe2bf136f3d23155d69d6a104166403",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "액자"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:shape-tri": {
+      "key": "ui:shape-tri",
+      "kind": "ui",
+      "category": "shape",
+      "src": "/assets/vibe/shape-tri.png",
+      "file": "shape-tri.png",
+      "mime": "image/png",
+      "width": 256,
+      "height": 242,
+      "bytes": 30015,
+      "sha256": "7c0a817cacc2f2a43df3ede8a59453a539c1e71dad0f3eb4ec3da6021e39e1d2",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 8차)",
+        "provider": "google-gemini",
+        "model": "gemini-2.5-flash-image",
+        "batch": 8,
+        "note": "커밋 c39f95d, gen-assets8/8b/8c",
+        "commit": "c39f95d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "삼각형"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:star": {
+      "key": "ui:star",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/ui-star.png",
+      "file": "ui-star.png",
+      "mime": "image/png",
+      "width": 192,
+      "height": 183,
+      "bytes": 15318,
+      "sha256": "1f23a75316db9a74e977bc42442244eeaba78c795243ce9f178ec7a5c945f0a7",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "별"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:star-empty": {
+      "key": "ui:star-empty",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/ui-star-empty.png",
+      "file": "ui-star-empty.png",
+      "mime": "image/png",
+      "width": 64,
+      "height": 62,
+      "bytes": 3394,
+      "sha256": "0812d400c31a740dc71e08d1dbefb03b0a27fd751808900ec4e6c37eee3bab01",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "빈 별"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:trophy": {
+      "key": "ui:trophy",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/ui-trophy.png",
+      "file": "ui-trophy.png",
+      "mime": "image/png",
+      "width": 192,
+      "height": 153,
+      "bytes": 13266,
+      "sha256": "a5596c1c6393dd62222a09d3cb075856946b6f4a1d956c77f0fecda55f021e5e",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 차수 미기록)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": null,
+        "note": "커밋 533d04e: 배치 API 검수 승인분 20종",
+        "commit": "533d04e"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "트로피"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    },
+    "ui:trophy-glow": {
+      "key": "ui:trophy-glow",
+      "kind": "ui",
+      "category": "ui",
+      "src": "/assets/vibe/ui-trophy-glow.png",
+      "file": "ui-trophy-glow.png",
+      "mime": "image/png",
+      "width": 184,
+      "height": 192,
+      "bytes": 12167,
+      "sha256": "24361ec0f4042f3ffe315b188efed40398c9242003dcd1bfc9dd72b272f10f80",
+      "provenance": {
+        "type": "ai",
+        "label": "AI 생성(Nano Banana, 배치 7차)",
+        "provider": "google-gemini",
+        "model": "nano-banana",
+        "batch": 7,
+        "note": "커밋 27f049d",
+        "commit": "27f049d"
+      },
+      "license": "AIroom 내부 제작물 — 이 서비스 수업용으로만 사용",
+      "approval": "approved",
+      "usableInGame": false,
+      "ko": [
+        "트로피"
+      ],
+      "emoji": null,
+      "budget": {
+        "targetBytes": 102400,
+        "maxBytes": 204800,
+        "withinTarget": true,
+        "withinMax": true
+      },
+      "derivatives": [],
+      "styleCompatible": null
+    }
+  },
+  "budget": {
+    "overMax": [],
+    "overTarget": [],
+    "gameSpriteMaxBytes": 12411,
+    "templateBackgroundMaxBytes": 39011,
+    "note": "첫 화면 = 배경 1 + 스프라이트 2~3. 원본이 이미 예산 안이라 파생본 없이 원본을 전달한다."
+  }
+}
