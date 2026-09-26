@@ -62,7 +62,7 @@ VIBE_V2_API=1 VIBE_SESSION_SECRET=<32자+> PORT=3000 node server.js   # /api/vib
 ## 5. 다음 할 일 (순서대로)
 
 > **진행 기록 (2026-09-26 클라우드 세션)**
-> - WP3·WP8 WIP 브랜치(`vibe/wp3-studio`, `vibe/wp8-learning`)가 원격에 없어 로컬 PC에서 push 대기 중.
+> - WP8은 PC 세션에서 병합·홈 연결 완료(`2b827a1`, `0f3b69f`). WP3 WIP(`vibe/wp3-studio` `ade3a32`)는 원격에 올라옴 → 클라우드에서 마무리.
 > - 1번의 WIP 무관 부분 완료: `public/vibe-v2/services/generation-client.js` — `connectVibeApi()`(health→세션 확보, 없으면 연습 세션 발급) +
 >   HTTP GenerationClient(start/get?after=/watch/cancel/**apply**) + mock 폴백(`withLocalApply`). app.js 연결:
 >   서버가 켜져 있으면 persistence에 `createProjectApi()`를 붙여 학급 서버 동기화, store에 `instantiate` 주입.
