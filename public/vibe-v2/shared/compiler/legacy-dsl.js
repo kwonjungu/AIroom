@@ -347,8 +347,9 @@ export function legacyToProject(text, meta = {}) {
       if (falls.has(emoji)) { W('LEGACY_SPAWN_MERGED', null, `${emoji} placed and dropped; placed copies dropped from conversion`, '같은 물건을 놓기와 떨어뜨리기로 둘 다 써서 떨어뜨리기만 옮겼어요.'); continue; }
       const e = entity(emoji);
       const cnt = clamp(n, 1, 40);
-      W('LEGACY_SCATTER_POSITIONS', null, `${emoji} x${n}: fixed positions become random; refilled every 10s`, '보석 자리는 무작위로 바뀌고 10초마다 다시 채워져요.');
-      nodes.push({ id: `${e}-spot`, kind: 'spawner', args: { entity: e, appearance: `${e}.appearance`, pattern: 'scatter', intervalMs: 10000, speed: 0, maxAlive: cnt, count: cnt, radius: 20 }, children: [] });
+      W('LEGACY_SCATTER_POSITIONS', null, `${emoji} x${n}: fixed positions become random`, '보석 자리는 무작위로 바뀌어요.');
+      // v1처럼 다시 생기지 않는다 (계약 v1.1 refill:false)
+      nodes.push({ id: `${e}-spot`, kind: 'spawner', args: { entity: e, appearance: `${e}.appearance`, pattern: 'scatter', intervalMs: 10000, speed: 0, maxAlive: cnt, count: cnt, radius: 20, refill: false }, children: [] });
     }
     for (const [emoji, effects] of touches) {
       if (!entityOf.has(emoji)) { W('LEGACY_TOUCH_WITHOUT_SPAWN', null, `ON_TOUCH ${emoji} but it is never spawned`, '닿으면 규칙이 있지만 그 물건이 나오지 않아요.'); }

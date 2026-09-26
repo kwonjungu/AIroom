@@ -216,6 +216,32 @@ test('legacyToProject: 주인공이 없으면 원문만 보관(legacy-1), fixtur
   assertDiagShape(r.diagnostics);
 });
 
+test('legacyToProject: 고정 SPAWN은 refill:false scatter로(v1처럼 다시 생기지 않음), 보충 경고 없음', () => {
+  const src = `PLAYER 🐢 200 150
+ON_KEY UP { MOVE_Y -20 }
+SPAWN 💎 50 50
+SPAWN 💎 300 60
+SPAWN 💎 350 250
+ON_TOUCH 💎 { SCORE 1
+REMOVE }
+ON_SCORE 3 { END_WIN }`;
+  const r = legacyToProject(src, { now: '2026-09-26T00:00:00.000Z' });
+  assert.deepEqual(errors(r.diagnostics), []);
+  const sp = r.project.program.nodes.find(n => n.id === 'gem-spot');
+  assert.equal(sp.args.refill, false);
+  assert.equal(sp.args.count, 3);
+  const w = r.diagnostics.find(d => d.code === 'LEGACY_SCATTER_POSITIONS');
+  assert.ok(w && !/refill/i.test(w.message) && !w.studentHint.includes('다시 채워'));
+  assert.equal(r.project.program.nodes.find(n => n.kind === 'player').args.movement, 'fourWay');
+});
+
+test('V2: refill:false인데 count 0이면 아무것도 나오지 않는다는 오류', () => {
+  const p = withNodes(ns => { Object.assign(ns.find(n => n.id === 'fish-fall').args, { refill: false, count: 0 }); });
+  assert.ok(codes(errors(checkStudioSemantics(p))).includes('SPAWNER_NEVER_SPAWNS'));
+  const q = withNodes(ns => { Object.assign(ns.find(n => n.id === 'fish-fall').args, { refill: false, count: 5 }); });
+  assert.deepEqual(errors(checkStudioSemantics(q)), []);
+});
+
 test('legacyToProject: 빈 입력·20000자 초과도 원문 보존', () => {
   const empty = legacyToProject('', { now: '2026-09-26T00:00:00.000Z' });
   assert.equal(empty.original, '');

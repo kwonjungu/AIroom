@@ -226,12 +226,14 @@ export function instantiateTemplate(templateId, params = {}, project = null) {
 }
 
 /**
- * patch-apply.js opts.instantiate 시그니처. 알 수 없는 템플릿·잘못된 params면 null
- * (applyPatch는 이를 UNKNOWN_TEMPLATE로 보고한다 — 정확한 이유는 instantiateTemplate/checkTemplateParams로 조회).
+ * patch-apply.js opts.instantiate 시그니처 (계약 v1.1).
+ * 모르는 템플릿 → null (applyPatch가 UNKNOWN_TEMPLATE로 보고),
+ * params·모드·의미 오류 → {diagnostics} (applyPatch가 그대로 전달).
  */
 export function instantiate(templateId, params, project) {
+  if (!TEMPLATES[templateId]) return null;
   const r = instantiateTemplate(templateId, params, project);
-  return r.ok ? r.result : null;
+  return r.ok ? r.result : { diagnostics: r.diagnostics };
 }
 
 /** 새 작품 한 벌 (새 게임 만들기·테스트용). */

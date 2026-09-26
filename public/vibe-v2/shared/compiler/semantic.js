@@ -72,7 +72,10 @@ export function checkStudioSemantics(projectOrProgram) {
     if (a.pattern === 'scatter' && a.count > a.maxAlive) {
       E('SCATTER_COUNT_OVER_MAX', s, '.args.count', `count ${a.count} > maxAlive ${a.maxAlive}; refill waits until below maxAlive`, '처음 개수가 최대 개수보다 많아요.', 'warning');
     }
-    if (a.pattern === 'scatter' && a.count === 0 && a.maxAlive > 0) {
+    if (a.refill === false && a.count === 0) {
+      E('SPAWNER_NEVER_SPAWNS', s, '.args.count', 'refill:false with count 0 never spawns anything', '처음 개수가 0이고 다시 채우지도 않아서 물건이 하나도 안 나와요.');
+    }
+    if (a.pattern === 'scatter' && a.count === 0 && a.refill !== false) {
       E('SCATTER_STARTS_EMPTY', s, '.args.count', `scatter starts empty; first refill after ${a.intervalMs}ms`, '처음에는 물건이 없다가 조금 뒤에 나타나요.', 'warning');
     }
   }
