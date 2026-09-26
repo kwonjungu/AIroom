@@ -15,11 +15,15 @@ const LETTERBOX = '#0E1116';
 const WALL = '#5D4E3C', GOAL = '#FFD54F';
 
 /**
- * 슬롯 → 그릴 것. 프로젝트 assets와 (선택) manifest {assetId|preset: url}로 만든다.
+ * 슬롯 → 그릴 것. 프로젝트 assets와 (선택) url 맵으로 만든다.
+ * 두 번째 인자는 평평한 맵 {assetId|preset: url}(예: swap.js mergeResolverMap 결과)이거나
+ * WP6 manifest.json 전체({schemaVersion, urls:{...}, entries})여도 된다 — 후자면 urls를 쓴다.
  * @returns {(slotId:string|null) => (string|{src:string}|null)}
  */
-export function createAssetResolver(assets = [], manifest = {}) {
+export function createAssetResolver(assets = [], manifestOrUrls = {}) {
   const bySlot = new Map(assets.map(a => [a.slotId, a]));
+  const m = manifestOrUrls || {};
+  const manifest = m.urls && typeof m.urls === 'object' && !Array.isArray(m.urls) ? m.urls : m;
   return slotId => {
     const a = bySlot.get(slotId);
     if (!a) return null;
@@ -27,6 +31,14 @@ export function createAssetResolver(assets = [], manifest = {}) {
     if (a.preset && manifest[a.preset]) return { src: manifest[a.preset] };
     return a.preset || null;
   };
+}
+
+/** 이미지 원본 비율을 유지해 size×size 상자 안에 들어가는 크기 (크기를 모르면 정사각형) */
+export function containBox(img, size) {
+  const iw = img.naturalWidth || img.width || 0, ih = img.naturalHeight || img.height || 0;
+  if (!(iw > 0 && ih > 0)) return { w: size, h: size };
+  const k = size / Math.max(iw, ih);
+  return { w: iw * k, h: ih * k };
 }
 
 function hashColor(s) {
@@ -97,7 +109,12 @@ export function createRenderer(canvas, opts = {}) {
     const src = look && typeof look === 'object' ? look.src : null;
     if (src) {
       const rec = image(src);
-      if (rec.status === 'ok' && rec.img) { ctx.drawImage(rec.img, x - r, y - r, r * 2, r * 2); return; }
+      if (rec.status === 'ok' && rec.img) {
+        // 비율 유지(contain): 충돌 원(r)은 그대로, 그림만 r*2 상자 안에 맞춘다
+        const { w, h } = containBox(rec.img, r * 2);
+        ctx.drawImage(rec.img, x - w / 2, y - h / 2, w, h);
+        return;
+      }
     }
     placeholder(x, y, r, key); // 로딩 중·실패·모르는 preset
   }
