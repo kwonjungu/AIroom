@@ -1,0 +1,101 @@
+/* v2 디자인 토큰 — WP1 소유.
+ * 기본값 = 3~6학년. [data-grade="low"] 스코프 = 1~2학년(글자·조작 더 크게).
+ * 색 대비는 tests/vibe/unit/wp1-contrast.test.js가 이 파일을 직접 읽어 계산한다.
+ * 색을 바꾸면 테스트를 다시 돌릴 것. (--c-* 이름은 테스트가 참조한다)
+ */
+:root {
+  /* 글꼴: 외부 CDN 없이 기기 글꼴만. 읽기용 1종(+같은 계열 굵기로 제목) */
+  --font-body: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Noto Sans CJK KR", system-ui, sans-serif;
+  --font-title: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Noto Sans CJK KR", system-ui, sans-serif;
+
+  /* 글자 크기 */
+  --fs-body: 18px;
+  --lh-body: 1.55;
+  --fs-small: 16px;           /* 보조 설명 */
+  --fs-title-card: 18px;      /* 미션 카드 제목 */
+  --fs-h1: 28px;
+  --fs-h2: 22px;
+  --fs-step: 22px;            /* 현재 단계 큰 제목 */
+
+  /* 조작 크기 */
+  --tap-min: 48px;            /* 색·위치·닫기 등 최소 조작 */
+  --btn-h: 48px;              /* 일반 버튼 */
+  --btn-h-primary: 56px;      /* 중요 버튼 */
+  --btn-gap: 8px;
+
+  /* 간격 단위 4/8/12/16/24/32 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  /* 미션 카드 */
+  --mission-min-w: 104px;
+  --mission-min-h: 120px;
+  --mission-icon: 64px;
+  --template-min-w: 240px;
+
+  /* 색: 밝은 중립 배경 + 진한 본문 + 모드별 강조색 1개 */
+  --c-bg: #F5F6F8;
+  --c-surface: #FFFFFF;
+  --c-surface-2: #EDF0F4;
+  --c-text: #17202E;
+  --c-text-muted: #4A5568;
+  --c-border: #767F8F;        /* 필수 UI 경계 (3:1 이상) */
+  --c-border-soft: #D5DAE1;   /* 장식용 구분선 */
+  --c-focus: #0B57D0;
+  --c-success: #1B6E33;
+  --c-warn: #8A4B00;
+  --c-danger: #B3261E;
+  --c-on-accent: #FFFFFF;
+
+  /* 모드별 강조색 — 한 화면에 하나만 쓴다 */
+  --c-accent-cards: #0B6E5B;  /* 그림 카드(저학년) */
+  --c-accent-make: #4338CA;   /* 말과 블록(공방) */
+  --c-accent-learn: #B23C0B;  /* 거북이·픽셀·미로 (주황 계열, 흰 글자 대비 보정값) */
+  --c-accent: var(--c-accent-make);
+  --c-accent-soft: #ECEBFB;
+
+  /* 움직임 */
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-success: 900ms;       /* 성공 효과 0.6~1.2초 */
+  --focus-ring: 3px solid var(--c-focus);
+  --focus-offset: 2px;
+
+  --shadow-1: 0 1px 2px rgba(23, 32, 46, .08), 0 2px 8px rgba(23, 32, 46, .06);
+}
+
+[data-grade="low"] {
+  --fs-body: 20px;
+  --lh-body: 1.6;
+  --fs-small: 18px;
+  --fs-title-card: 20px;
+  --fs-h1: 30px;
+  --fs-h2: 24px;
+  --fs-step: 24px;
+
+  --tap-min: 56px;
+  --btn-h: 56px;
+  --btn-h-primary: 64px;
+  --btn-gap: 12px;
+
+  --mission-min-w: 112px;
+  --mission-min-h: 128px;
+  --mission-icon: 88px;
+}
+
+[data-accent="cards"] { --c-accent: var(--c-accent-cards); --c-accent-soft: #E3F3EF; }
+[data-accent="make"]  { --c-accent: var(--c-accent-make);  --c-accent-soft: #ECEBFB; }
+[data-accent="learn"] { --c-accent: var(--c-accent-learn); --c-accent-soft: #FBEDE6; }
+
+/* 움직임 줄이기: 설정(data-motion) 우선, 설정이 없으면 기기 설정 */
+[data-motion="reduce"] { --dur-fast: 0ms; --dur-base: 0ms; --dur-success: 0ms; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) { --dur-fast: 0ms; --dur-base: 0ms; --dur-success: 0ms; }
+}
