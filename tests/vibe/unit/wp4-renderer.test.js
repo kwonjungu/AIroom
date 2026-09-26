@@ -1,7 +1,8 @@
 // WP4 캔버스 렌더러: letterbox·DPR 상한·포인터 역변환·emoji/이미지/실패 placeholder. Node에서는 가짜 canvas로 검사.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRenderer, createAssetResolver } from '../../../public/vibe-v2/shared/runtime/canvas-renderer.js';
+import { readFileSync } from 'node:fs';
+import { createRenderer, createAssetResolver, containBox } from '../../../public/vibe-v2/shared/runtime/canvas-renderer.js';
 import { simulate } from '../../../public/vibe-v2/shared/runtime/simulate.js';
 import { catchGame } from '../../../public/vibe-v2/shared/contracts/fixtures.js';
 import { createTemplateProject } from '../../../public/vibe-v2/shared/templates/index.js';
@@ -90,4 +91,45 @@ test('미로 스냅샷은 벽·도착 칸을 그린다', () => {
   const rects = c.calls.filter(x => x[0] === 'fillRect');
   const walls = project.program.nodes.find(n => n.kind === 'mazeMap').args.rows.join('').split('').filter(ch => ch === '#').length;
   assert.ok(rects.length >= walls + 1);
+});
+
+test('이미지 스프라이트는 비율 유지(contain): 107×160이면 r*2 상자 안에 세로 꽉, 가로 가운데', () => {
+  const c = fakeCanvas({ left: 0, top: 0, width: 800, height: 600 });
+  const r = createRenderer(c, { devicePixelRatio: 1, loadImage: (src, done) => { done(true); return { src, naturalWidth: 107, naturalHeight: 160 }; } });
+  const snap = { tick: 0, state: 'playing', score: 0, lives: 0, background: null, maze: null, events: [], diagnostics: [],
+    entities: [{ id: 'player', entity: 'player', x: 200, y: 300, r: 40, slot: 'player.appearance' }] };
+  const resolve = createAssetResolver([{ slotId: 'player.appearance', assetId: null, preset: 'sprite:cat' }], { 'sprite:cat': '/assets/vibe/sp-cat.png' });
+  r.render(snap, resolve);
+  const [, , dx, dy, dw, dh] = c.calls.find(x => x[0] === 'drawImage');
+  assert.equal(dh, 80);
+  assert.ok(Math.abs(dw - 80 * 107 / 160) < 1e-9);
+  assert.ok(Math.abs(dx + dw / 2 - 200) < 1e-9 && Math.abs(dy + dh / 2 - 300) < 1e-9, '가운데 정렬');
+  assert.deepEqual(containBox({ width: 300, height: 100 }, 60), { w: 60, h: 20 });
+  assert.deepEqual(containBox({}, 60), { w: 60, h: 60 }, '크기를 모르면 정사각형');
+});
+
+test('createAssetResolver: 실제 WP6 manifest.json(전체·urls 둘 다)으로 preset·assetId 해석', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../../public/vibe-v2/assets/manifest.json', import.meta.url), 'utf8'));
+  assert.equal(typeof manifest.urls, 'object');
+  const gid = 'ga_0123456789abcdef0123456789abcdef';
+  const assets = [
+    { slotId: 'bg.main', assetId: null, preset: 'bg-meadow' },
+    { slotId: 'player.appearance', assetId: null, preset: 'sprite:cat' },
+    { slotId: 'apple.appearance', assetId: null, preset: 'emoji:🍎' },
+    { slotId: 'sky', assetId: null, preset: 'bg-sky' },
+    { slotId: 'gen', assetId: gid, preset: 'sprite:robot' },
+  ];
+  for (const m of [manifest, manifest.urls]) {
+    const resolve = createAssetResolver(assets, m);
+    assert.deepEqual(resolve('bg.main'), { src: manifest.urls['bg-meadow'] });
+    assert.match(resolve('bg.main').src, /^\/assets\/vibe\/.+\.(jpg|png)$/);
+    assert.deepEqual(resolve('player.appearance'), { src: '/assets/vibe/sp-cat.png' });
+    assert.equal(resolve('apple.appearance'), 'emoji:🍎');
+    assert.equal(resolve('sky'), 'bg-sky', 'manifest에 없는 배경 preset은 색으로');
+    assert.deepEqual(resolve('gen'), { src: manifest.urls['sprite:robot'] }, '생성 에셋이 아직 없으면 preset 이미지');
+    assert.equal(resolve('nope'), null);
+  }
+  const arrived = createAssetResolver(assets, { ...manifest.urls, [gid]: `/api/vibe/assets/files/${gid}` });
+  assert.match(arrived('gen').src, /^\/api\/vibe\/assets\/files\/ga_/);
+  for (const k of ['bg-meadow', 'bg-ruins', 'bg-space']) assert.ok(manifest.urls[k], `템플릿 배경 ${k}`);
 });
