@@ -1,0 +1,700 @@
+{
+  "report": {
+    "low-1366x768": {
+      "home": {
+        "scrollWidth": 1351,
+        "clientWidth": 1366,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "path": {
+        "scrollWidth": 1351,
+        "clientWidth": 1366,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": "157x198",
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "workspace": {
+        "scrollWidth": 1351,
+        "clientWidth": 1366,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "two",
+        "fit": "viewport",
+        "headerRows": [
+          56,
+          56
+        ],
+        "headerH": 138,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    "low-1024x768": {
+      "home": {
+        "scrollWidth": 1009,
+        "clientWidth": 1024,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "path": {
+        "scrollWidth": 1009,
+        "clientWidth": 1024,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": "153x198",
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "workspace": {
+        "scrollWidth": 1009,
+        "clientWidth": 1024,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "two",
+        "fit": "viewport",
+        "headerRows": [
+          56,
+          56
+        ],
+        "headerH": 138,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "errors": []
+    },
+    "low-768x1024": {
+      "home": {
+        "scrollWidth": 753,
+        "clientWidth": 768,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "path": {
+        "scrollWidth": 753,
+        "clientWidth": 768,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": "171x198",
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "workspace": {
+        "scrollWidth": 753,
+        "clientWidth": 768,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "stack",
+        "fit": "flow",
+        "headerRows": [
+          56,
+          64
+        ],
+        "headerH": 146,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "errors": []
+    },
+    "low-820x1180": {
+      "home": {
+        "scrollWidth": 805,
+        "clientWidth": 820,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "path": {
+        "scrollWidth": 805,
+        "clientWidth": 820,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": "184x198",
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "workspace": {
+        "scrollWidth": 805,
+        "clientWidth": 820,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "stack",
+        "fit": "flow",
+        "headerRows": [
+          56,
+          64
+        ],
+        "headerH": 146,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "errors": []
+    },
+    "low-390x844": {
+      "home": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "path": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": "173x198",
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "workspace": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "tabs",
+        "fit": "flow",
+        "headerRows": [
+          56,
+          69
+        ],
+        "headerH": 151,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "errors": []
+    },
+    "low-1440x900": {
+      "home": {
+        "scrollWidth": 1425,
+        "clientWidth": 1440,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "path": {
+        "scrollWidth": 1425,
+        "clientWidth": 1440,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": "157x198",
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "workspace": {
+        "scrollWidth": 1425,
+        "clientWidth": 1440,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "three",
+        "fit": "viewport",
+        "headerRows": [
+          56,
+          56
+        ],
+        "headerH": 138,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "20px"
+      },
+      "errors": []
+    },
+    "mid-1366x768": {
+      "home": {
+        "scrollWidth": 1351,
+        "clientWidth": 1366,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "path": {
+        "scrollWidth": 1351,
+        "clientWidth": 1366,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": 280,
+        "bodyFont": "18px"
+      },
+      "workspace": {
+        "scrollWidth": 1351,
+        "clientWidth": 1366,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "two",
+        "fit": "viewport",
+        "headerRows": [
+          48,
+          48
+        ],
+        "headerH": 122,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "errors": []
+    },
+    "mid-1024x768": {
+      "home": {
+        "scrollWidth": 1009,
+        "clientWidth": 1024,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "path": {
+        "scrollWidth": 1009,
+        "clientWidth": 1024,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": 315,
+        "bodyFont": "18px"
+      },
+      "workspace": {
+        "scrollWidth": 1009,
+        "clientWidth": 1024,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "two",
+        "fit": "viewport",
+        "headerRows": [
+          48,
+          48
+        ],
+        "headerH": 122,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "errors": []
+    },
+    "mid-768x1024": {
+      "home": {
+        "scrollWidth": 753,
+        "clientWidth": 768,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "path": {
+        "scrollWidth": 753,
+        "clientWidth": 768,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": 353,
+        "bodyFont": "18px"
+      },
+      "workspace": {
+        "scrollWidth": 753,
+        "clientWidth": 768,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "stack",
+        "fit": "flow",
+        "headerRows": [
+          48,
+          48
+        ],
+        "headerH": 122,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "errors": []
+    },
+    "mid-820x1180": {
+      "home": {
+        "scrollWidth": 805,
+        "clientWidth": 820,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "path": {
+        "scrollWidth": 805,
+        "clientWidth": 820,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": 379,
+        "bodyFont": "18px"
+      },
+      "workspace": {
+        "scrollWidth": 805,
+        "clientWidth": 820,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "stack",
+        "fit": "flow",
+        "headerRows": [
+          48,
+          48
+        ],
+        "headerH": 122,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "errors": []
+    },
+    "mid-390x844": {
+      "home": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "path": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": 358,
+        "bodyFont": "18px"
+      },
+      "workspace": {
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "tabs",
+        "fit": "flow",
+        "headerRows": [
+          48,
+          61
+        ],
+        "headerH": 135,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "errors": []
+    },
+    "mid-1440x900": {
+      "home": {
+        "scrollWidth": 1425,
+        "clientWidth": 1440,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "path": {
+        "scrollWidth": 1425,
+        "clientWidth": 1440,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": null,
+        "fit": null,
+        "headerRows": null,
+        "headerH": null,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": 280,
+        "bodyFont": "18px"
+      },
+      "workspace": {
+        "scrollWidth": 1425,
+        "clientWidth": 1440,
+        "overflowX": false,
+        "overflowEls": [],
+        "layout": "three",
+        "fit": "viewport",
+        "headerRows": [
+          48,
+          48
+        ],
+        "headerH": 122,
+        "smallTargets": [],
+        "smallCount": 0,
+        "missionCard": null,
+        "tplCard": null,
+        "bodyFont": "18px"
+      },
+      "errors": []
+    }
+  },
+  "checks": {
+    "firstTab": "v2-skip",
+    "focusAfterPath": "v2-main",
+    "dialog": {
+      "opened": {
+        "modal": "true",
+        "labelled": true,
+        "focusInside": true,
+        "bgInert": true
+      },
+      "tabEscapes": 0,
+      "mutedPref": "true",
+      "htmlMuted": "true",
+      "closedByEsc": true,
+      "focusReturned": "설정",
+      "bgInertAfter": false
+    },
+    "shellApi": {
+      "cur": "try",
+      "ai": "🧩AI 조립 중",
+      "aiHiddenIdle": true,
+      "sayText": "네모를 먼저 놓아요.",
+      "saveLabel": "⚠️저장 안 됨다시 저장",
+      "inDlg": true,
+      "backFocus": true,
+      "back": [
+        2
+      ],
+      "gone": true
+    },
+    "tabKeyboard": {
+      "focused": "assist",
+      "assistVisible": true,
+      "newsCleared": true
+    },
+    "ime": {
+      "early": 0,
+      "afterShift": 0,
+      "final": 1,
+      "draftEditable": true,
+      "whileBusy": 1,
+      "cancelVisible": true
+    },
+    "resize": [
+      {
+        "w": 1366,
+        "layout": "two",
+        "draft": "초안 보존 확인",
+        "overflowX": false
+      },
+      {
+        "w": 1440,
+        "layout": "three",
+        "draft": "초안 보존 확인",
+        "overflowX": false
+      },
+      {
+        "w": 800,
+        "layout": "stack",
+        "draft": "초안 보존 확인",
+        "overflowX": false
+      },
+      {
+        "w": 390,
+        "layout": "tabs",
+        "draft": "초안 보존 확인",
+        "overflowX": false
+      },
+      {
+        "w": 1024,
+        "layout": "two",
+        "draft": "초안 보존 확인",
+        "overflowX": false
+      }
+    ],
+    "homeRestoredView": "말과 블록으로 만들기",
+    "errors": [],
+    "reducedMotion": {
+      "attr": "reduce",
+      "transition": "1e-05s"
+    }
+  }
+}
