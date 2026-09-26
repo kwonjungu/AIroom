@@ -10,7 +10,7 @@ const clone = v => JSON.parse(JSON.stringify(v));
 /**
  * @param {object} project  현재 프로젝트 (검증된 상태여야 함)
  * @param {object} patch    PatchSchema 형태
- * @param {{ now?: string, instantiate?: (templateId:string, params:object, project:object) => ({nodes:object[], entrypoints:string[], assets?:object[]}|null) }} [opts]
+ * @param {{ now?: string, instantiate?: (templateId:string, params:object, project:object) => ({nodes:object[], entrypoints:string[], assets?:object[]}|{diagnostics:object[]}|null) }} [opts]
  * @returns {{ ok:true, project:object, changes:string[], diagnostics:object[] } | { ok:false, diagnostics:object[] }}
  */
 export function applyPatch(project, patch, opts = {}) {
@@ -87,6 +87,7 @@ export function applyPatch(project, patch, opts = {}) {
         if (typeof opts.instantiate !== 'function') return fail('TEMPLATE_UNAVAILABLE', i);
         const made = opts.instantiate(op.templateId, op.params, clone(next));
         if (!made) return fail('UNKNOWN_TEMPLATE', i, { message: op.templateId, studentHint: '아직 준비되지 않은 게임 종류예요.' });
+        if (Array.isArray(made.diagnostics) && !made.nodes) return { ok: false, diagnostics: made.diagnostics }; // v1.1: 실패 이유 전달
         next.program = { nodes: made.nodes, entrypoints: made.entrypoints };
         nodes.length = 0; nodes.push(...next.program.nodes); next.program.nodes = nodes;
         if (made.assets) next.assets = made.assets;

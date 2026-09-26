@@ -70,6 +70,11 @@
  * @property {{id:string, entity:string, x:number, y:number, r:number, slot:string}[]} entities
  * @property {{type:string, tick:number, [k:string]: any}[]} events    이번 step에서 발생한 이벤트 (collect, hit, win …)
  * @property {object[]} diagnostics
+ * @property {number|null} [timeLeftMs]      v1.1 확장 (HUD용)
+ * @property {boolean} [invincible]
+ * @property {boolean} [livesEnabled]
+ * @property {string|null} [background]
+ * @property {object|null} [maze]
  */
 
 export {};

@@ -60,12 +60,13 @@ export const STUDIO_NODES = {
     entity: ENTITY,
     appearance: SLOT,
     pattern: { enum: ['fallFromTop', 'scatter'] },
-    intervalMs: { type: 'integer', minimum: 200, maximum: 10000 }, // scatter는 0이 아닌 재생성 간격, 초기 배치는 count
-    speed: { type: 'number', minimum: 0, maximum: 600 },
+    intervalMs: { type: 'integer', minimum: 200, maximum: 10000 }, // 생성·보충 간격
+    speed: { type: 'number', minimum: 0, maximum: 600 },          // fallFromTop: 낙하 px/s, scatter: 8방향 표류 후 벽 반사(0=정지)
     maxAlive: { type: 'integer', minimum: 1, maximum: 40 },
     count: { type: 'integer', minimum: 0, maximum: 40 },         // 시작 시 배치 수
     radius: { type: 'number', minimum: 8, maximum: 80 },
-  })),
+    refill: { type: 'boolean' },                                  // v1.1 선택값. false면 보충하지 않음(기본 true)
+  }, ['entity', 'appearance', 'pattern', 'intervalMs', 'speed', 'maxAlive', 'count', 'radius'])),
   onTouch: node('onTouch', obj({
     entity: ENTITY,
     effects: { type: 'array', minItems: 1, maxItems: 4, items: EFFECT },
@@ -76,7 +77,7 @@ export const STUDIO_NODES = {
   })),
   winWhen: node('winWhen', obj({
     stat: { enum: ['score', 'survivedSec', 'reachedExit'] },
-    value: { type: 'integer', minimum: 0, maximum: 9999 },
+    value: { type: 'integer', minimum: 0, maximum: 9999 },       // reachedExit에서는 무시(0 권장)
   })),
   loseWhen: node('loseWhen', obj({
     stat: { enum: ['livesZero', 'timeUp'] },
@@ -131,7 +132,7 @@ export const MODE_NODES = {
 export const EDITABLE_PARAMS = {
   world: ['timeLimitSec'],
   player: ['x', 'y', 'speed', 'radius', 'movement'],
-  spawner: ['pattern', 'intervalMs', 'speed', 'maxAlive', 'count', 'radius'],
+  spawner: ['pattern', 'intervalMs', 'speed', 'maxAlive', 'count', 'radius', 'refill'],
   stats: ['lives', 'invincibleMs'],
   winWhen: ['stat', 'value'],
   loseWhen: ['stat'],

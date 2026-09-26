@@ -4,7 +4,7 @@
 import { validate } from './validate.js';
 import { MODE_NODES, EDITABLE_PARAMS, SINGLETON_KINDS } from './nodes.js';
 
-export const CONTRACT_VERSION = '1.0.0';
+export const CONTRACT_VERSION = '1.1.0';
 export const PROJECT_SCHEMA_VERSION = 2;
 export const PATCH_SCHEMA_VERSION = 1;
 
@@ -177,7 +177,7 @@ export const ASSET_JOB_STATES = ['queued', 'generating', 'validating', 'processi
 // ── API 오류 (§3.1) ──
 export const API_ERROR_CODES = {
   BAD_REQUEST: 400, UNAUTHENTICATED: 401, FORBIDDEN: 403, NOT_FOUND: 404,
-  REVISION_CONFLICT: 409, TOO_LARGE: 413, RATE_LIMITED: 429, QUOTA_EXCEEDED: 429,
+  REVISION_CONFLICT: 409, JOB_NOT_APPLICABLE: 409, TOO_LARGE: 413, RATE_LIMITED: 429, QUOTA_EXCEEDED: 429,
   PROVIDER_UNAVAILABLE: 503, INTERNAL: 500,
 };
 export const ApiErrorSchema = {
@@ -192,6 +192,11 @@ export const ApiErrorSchema = {
         retryable: { type: 'boolean' },
         retryAfterMs: { type: ['integer', 'null'], minimum: 0 },
         requestId: { type: 'string', maxLength: 64 },
+        // v1.1 선택값: 409의 최신 revision, 검증 진단 등 (학생 원문·개인정보 금지)
+        details: { type: 'object', additionalProperties: false, properties: {
+          latestRevision: { type: 'integer', minimum: 0 },
+          diagnostics: { type: 'array', maxItems: 20, items: { $ref: 'Diagnostic' } },
+        } },
       },
     },
   },
@@ -270,6 +275,6 @@ export function validatePatchShape(patch) {
 
 export function validateJob(job) { return validate(JobSchema, job, { defs: DEFS }); }
 export function validateAssetBrief(b) { return validate(AssetBriefSchema, b); }
-export function validateApiError(e) { return validate(ApiErrorSchema, e); }
+export function validateApiError(e) { return validate(ApiErrorSchema, e, { defs: DEFS }); }
 
 export { EDITABLE_PARAMS };

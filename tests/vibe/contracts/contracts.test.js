@@ -95,3 +95,15 @@ test('Job·AssetBrief·ApiError 스키마', () => {
   assert.deepEqual(validateAssetBrief({ schemaVersion: 1, projectId: 'p_demo', baseRevision: 8, slotId: 'player.appearance', kind: 'sprite', subject: '파란 목도리를 한 고양이', stylePack: 'toto-world-v1', dimensions: { width: 512, height: 512 }, transparent: true, pose: 'front-idle', paletteId: 'warm-adventure', textInImage: false }), []);
   assert.deepEqual(validateApiError({ error: { code: 'REVISION_CONFLICT', message: '작품이 바뀌었어요', retryable: false, retryAfterMs: null, requestId: 'r1' } }), []);
 });
+
+test('v1.1: spawner.refill 선택값, ApiError.details, instantiate 실패 진단 전달', async () => {
+  const p = catchGame(); p.program.nodes[2].args.refill = false;
+  assert.deepEqual(errors(validateProject(p)), []);
+  const q = catchGame(); q.program.nodes[2].args.refill = 'no';
+  assert.ok(errors(validateProject(q)).length > 0);
+  assert.deepEqual(validateApiError({ error: { code: 'REVISION_CONFLICT', message: 'x', retryable: false, retryAfterMs: null, requestId: 'r', details: { latestRevision: 4 } } }), []);
+  assert.ok(validateApiError({ error: { code: 'REVISION_CONFLICT', message: 'x', retryable: false, retryAfterMs: null, requestId: 'r', details: { studentText: 'x' } } }).length > 0);
+  const r = applyPatch(catchGame(), { schemaVersion: 1, baseRevision: 0, summary: 't', operations: [{ op: 'instantiateTemplate', templateId: 'catch', params: {} }], assetRequests: [] },
+    { instantiate: () => ({ diagnostics: [{ code: 'TEMPLATE_PARAM_INVALID', severity: 'error', nodeId: null, path: '', message: 'x', studentHint: '' }] }) });
+  assert.equal(r.diagnostics[0].code, 'TEMPLATE_PARAM_INVALID');
+});

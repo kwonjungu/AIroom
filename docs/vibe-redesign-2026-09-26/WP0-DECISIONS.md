@@ -66,3 +66,14 @@ npm run test:vibe:integration
 - worktree에서 자기 소유 경로만 수정. `server.js`, `package*.json`, `vercel.json`, `public/vibecoding.html`, `shared/contracts/*`, `state/*`는 통합 담당만.
 - 새 테스트는 `tests/vibe/<unit|integration|contracts>/<wp>-*.test.js` 파일명으로 추가(충돌 방지).
 - 보고: 변경 파일, 실행한 명령과 결과(통과/실패 수), mock/실제 구분, 남은 제약.
+
+## 6. 계약 변경 이력
+
+### v1.1.0 (2026-09-26, WP4·WP7 제안 반영)
+- `spawner.refill`(boolean, 선택, 기본 true) 추가 — 보충 없는 고정 배치 표현. scatter의 `speed`는 "8방향 표류 후 벽 반사, 0=정지"로 확정.
+- `winWhen.value`는 `reachedExit`에서 무시(0 권장).
+- `ApiError.error.details`(선택): `latestRevision`, `diagnostics`만 허용. 오류 코드 `JOB_NOT_APPLICABLE`(409) 추가.
+- `opts.instantiate`가 `{diagnostics}`를 돌려주면 applyPatch가 그 진단을 그대로 전달.
+- RuntimeSnapshot 선택 확장: `timeLeftMs`, `invincible`, `livesEnabled`, `background`, `maze`.
+- 런타임 해석 규칙(WP4 확정): onTouch 효과는 enter 때만, 동시 종료 우선순위 livesZero > win > timeUp, `timeUp` 규칙 없이 timeLimitSec만 있으면 제한 없음(경고), 미로는 S 칸에서 시작.
+- 교사 식별: 현 교사 세션에 개인 id가 없어 담당 학급은 학급 생성 브라우저의 서명 쿠키(`vibe2_t`)로 구분 — 사용자 결정 대기.
