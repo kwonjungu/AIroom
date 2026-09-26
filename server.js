@@ -1481,6 +1481,17 @@ app.post('/api/import', requireAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── 바이브코딩 v2 API (preview) — VIBE_V2_API=1 일 때만 /api/vibe/* 활성 ──
+// 기존 /api/vibe-progress·/api/ai/chat 경로와 별개. 세부는 lib/vibe/router.js (ESM, 지연 로드).
+let _vibeRouterPromise = null;
+app.use('/api/vibe', (req, res, next) => {
+    if (process.env.VIBE_V2_API !== '1') {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'vibe v2 api disabled', retryable: false, retryAfterMs: null, requestId: '' } });
+    }
+    _vibeRouterPromise ||= import('./lib/vibe/router.js').then(m => m.createVibeRouter(express));
+    _vibeRouterPromise.then(r => r(req, res, next), next);
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
     const status = { server: true, redis: false, timestamp: new Date().toISOString() };
