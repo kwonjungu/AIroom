@@ -55,6 +55,9 @@ export function createHttpGenerationClient(o) {
   const base = o.base || '/api/vibe';
   const cursors = new Map();   // jobId → 마지막으로 받은 이벤트 seq
   const remoteOf = new Map();  // jobId → 서버 projectId
+  const reqOf = new Map();     // jobId → 시작 요청 {projectId(로컬), baseRevision, requestId}
+  // 서버는 작품 id를 새로 발급한다. 모드는 로컬 id로 결과를 대조하므로(mock과 같은 모양) Job의 projectId를 로컬 id로 돌려준다.
+  const asLocal = job => (job && reqOf.has(job.jobId) ? { ...job, projectId: reqOf.get(job.jobId).projectId } : job);
 
   async function call(method, path, body, signal) {
     let res;
@@ -78,7 +81,7 @@ export function createHttpGenerationClient(o) {
     const after = cursors.get(jobId) || 0;
     const r = await call('GET', `/generations/${encodeURIComponent(jobId)}?after=${after}`, undefined, opts.signal);
     if (Number.isInteger(r.cursor)) cursors.set(jobId, r.cursor);
-    return { ...r.job, events: r.events || [] };
+    return { ...asLocal(r.job), events: r.events || [] };
   }
 
   return {
@@ -94,7 +97,8 @@ export function createHttpGenerationClient(o) {
           requestId: req.requestId, intentText: req.intentText, mode: req.mode,
         });
         remoteOf.set(r.jobId, target.projectId);
-        return r.job;
+        reqOf.set(r.jobId, { projectId: req.projectId, baseRevision: req.baseRevision, requestId: req.requestId });
+        return asLocal(r.job);
       } catch (e) { return failedJob(req, e); }
     },
 
@@ -102,7 +106,7 @@ export function createHttpGenerationClient(o) {
 
     async cancel(jobId) {
       if (!jobId) return null;
-      try { return (await call('POST', `/generations/${encodeURIComponent(jobId)}/cancel`, {})).job; } catch (e) {
+      try { return asLocal((await call('POST', `/generations/${encodeURIComponent(jobId)}/cancel`, {})).job); } catch (e) {
         if (e?.status === 404) return null;
         throw e;
       }
@@ -121,7 +125,7 @@ export function createHttpGenerationClient(o) {
           if (e?.name === 'AbortError') throw e;
           // 잠깐 끊김은 몇 번 기다려 본다. 계속 실패하면 실패 Job으로 끝낸다(작품은 그대로).
           if (++failures > 4 || (e?.status >= 400 && e?.status < 500 && e?.status !== 429)) {
-            const fj = failedJob({ projectId: remoteOf.get(jobId) || null, baseRevision: null, requestId: null }, e);
+            const fj = { ...failedJob(reqOf.get(jobId) || { projectId: null, baseRevision: null, requestId: null }, e), jobId };
             onUpdate?.(fj);
             return fj;
           }

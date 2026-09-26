@@ -11,6 +11,7 @@ import { createPersistence } from '../../../public/vibe-v2/persistence/index.js'
 import { createMemoryStorage } from '../../../public/vibe-v2/persistence/storage.js';
 import { createProjectApi } from '../../../public/vibe-v2/persistence/api-client.js';
 import { connectVibeApi, createGenerationClient } from '../../../public/vibe-v2/services/generation-client.js';
+import { decideAiResult } from '../../../public/vibe-v2/modes/studio/flow.js';
 import { startGenApp, GROQ_TEST_KEY } from './wp5-helpers.js';
 
 const BOMB_OUTPUT = EXAMPLES.find(e => e.id === 'ex-rule-bomb').output;
@@ -67,6 +68,11 @@ describe('HTTP GenerationClient 종단 (mock 공급자)', () => {
     const done = await w.generation.watch(job.jobId, j => seen.push(j.status), { intervalMs: 5 });
     assert.equal(done.status, 'ready', JSON.stringify(done));
     assert.ok(done.candidate?.hash);
+    assert.equal(job.projectId, w.localId, 'Job은 로컬 id로 돌려준다 (서버 id는 내부에만)');
+    assert.equal(done.projectId, w.localId);
+    // WP3 공방의 결과 판정이 서버 Job을 무시하지 않고 비교 화면으로 보낸다
+    const request = { projectId: w.localId, baseRevision: p.revision, requestId: job.requestId, jobId: job.jobId };
+    assert.equal(decideAiResult({ job: done, request, current: w.store.getProject() }).action, 'compare');
 
     const meta0 = w.persistence.getMeta();
     const a = await w.generation.apply(done);

@@ -327,17 +327,17 @@ export function createMode(ctx) {
     if (disposed || request !== ai.req) return;
     ai.req = null;
     aiInput.setBusy(false);
-    handleDecision(decideAiResult({ job, error, request, current: project(), grade }), request);
+    handleDecision(decideAiResult({ job, error, request, current: project(), grade }), request, job);
   }
 
-  function handleDecision(d, request) {
+  function handleDecision(d, request, job = null) {
     setStatusText('');
     switch (d.action) {
       case 'ignore':
         shell.setAiStatus?.('idle');
         break;
       case 'compare':
-        ai.compare = { patch: d.patch, summary: d.summary, baseRevision: d.patch.baseRevision, text: request.text, message: d.message };
+        ai.compare = { patch: d.patch, summary: d.summary, baseRevision: d.patch.baseRevision, text: request.text, message: d.message, job };
         shell.setAiStatus?.('done');
         showPane('assist');
         say(oneLine(d.summary), 'info');
@@ -377,10 +377,21 @@ export function createMode(ctx) {
     setNote('info', AI_MESSAGES.cancelled);
     renderAi();
   }
-  function applyAi() {
+  async function applyAi() {
     const c = ai.compare; if (!c) return;
-    const r = applyCandidate(store, c.patch);
-    ai.compare = null;
+    ai.compare = null;                 // 두 번 누르기 방지 (비교 화면을 먼저 닫는다)
+    let r;
+    if (c.job && typeof generation?.apply === 'function') {
+      // 서버가 켜져 있으면 서버가 보관한 후보로 반영(멱등) → 같은 patch를 store에도 적용. mock이면 store에만.
+      renderAi(); setStatusText('작품에 넣는 중…');
+      const a = await generation.apply(c.job).catch(err => ({ ok: false, reason: 'server', error: err }));
+      if (disposed) return;
+      setStatusText('');
+      r = a.ok ? { ok: true, revision: project().revision }
+        : { ok: false, conflict: a.reason === 'conflict', message: a.reason === 'conflict' ? AI_MESSAGES.conflict : a.reason === 'server' ? AI_MESSAGES.network : AI_MESSAGES.invalid };
+    } else {
+      r = applyCandidate(store, c.patch);
+    }
     if (!r.ok) {
       setNote('warn', r.message, r.conflict ? [{ label: '다시 요청하기', run: () => submitAi(c.text) }] : []);
       shell.setAiStatus?.('idle');
@@ -735,7 +746,7 @@ export function createMode(ctx) {
   function convertLegacy() {
     const info = legacyInfo(project());
     if (!info.converted || typeof ctx.openProject !== 'function') return;
-    ctx.openProject(info.project);
+    ctx.openProject(info.project, { saveNow: true });   // 변환본은 바로 저장 (원본은 그대로)
   }
 
   // ── 렌더: AI ─────────────────────────────────────────

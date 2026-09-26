@@ -12,6 +12,7 @@ import { connectVibeApi, createGenerationClient } from './services/generation-cl
 import { instantiate } from './shared/templates/index.js';
 import { getCatalog } from './modes/cards/catalog.js';
 import { getLearningCatalog } from './modes/learning/catalog.js';
+import { getStudioCatalog } from './modes/studio/catalog.js';
 import * as fixtures from './shared/contracts/fixtures.js';
 
 const MODE_LOADERS = {
@@ -70,12 +71,13 @@ async function showHome() {
     onGrade: g => { prefs.set('grade', g); showHome(); },
     onStart: projectFactory => openProject(projectFactory()),
     fixtures,
-    catalog: [...getCatalog(prefs.get('cards.progress')), ...getLearningCatalog(prefs.get('learning.progress'))],
+    catalog: [...getCatalog(prefs.get('cards.progress')), ...getStudioCatalog(), ...getLearningCatalog(prefs.get('learning.progress'))],
     recent,
   });
 }
 
-async function openProject(project) {
+/** @param {{saveNow?: boolean}} [opts] saveNow: 편집 전이라도 바로 저장 (옛 게임 변환처럼 새로 생긴 작품을 잃지 않게) */
+async function openProject(project, opts = {}) {
   await disposeActive();
   const seq = ++openSeq;
   // 같은 id의 로컬 저장본이 더 최신이면 그것을 연다 (미션 다시 열기·새로고침 복구)
@@ -97,10 +99,12 @@ async function openProject(project) {
   const mode = createMode({
     store, grade: grade(), shell, prefs, mission: null,
     generation: createGenerationClient({ conn, store, persistence }),
+    save: () => persistence.flush(),   // 도크 💾 저장 버튼 (자동 저장과 같은 경로, 즉시 실행)
     openProject,              // 다음 미션 등 다른 프로젝트로 이동 (셸 제목·저장 대상까지 새로 연결)
     goHome: showHome,
   });
   active.mode = mode;
+  if (opts.saveNow && !saved) persistence.flush();
   mode.enter(shell.stageSlot().closest('[data-workspace]') || root);
 }
 

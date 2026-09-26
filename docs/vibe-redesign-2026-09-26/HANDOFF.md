@@ -62,7 +62,14 @@ VIBE_V2_API=1 VIBE_SESSION_SECRET=<32자+> PORT=3000 node server.js   # /api/vib
 ## 5. 다음 할 일 (순서대로)
 
 > **진행 기록 (2026-09-26 클라우드 세션)**
-> - WP8은 PC 세션에서 병합·홈 연결 완료(`2b827a1`, `0f3b69f`). WP3 WIP(`vibe/wp3-studio` `ade3a32`)는 원격에 올라옴 → 클라우드에서 마무리.
+> - WP8은 PC 세션에서 병합·홈 연결 완료(`2b827a1`, `0f3b69f`).
+> - **WP3 병합 완료**(`vibe/wp3-studio` `ade3a32`): 홈 "말과 블록으로 만들기" 경로에 `getStudioCatalog()`(학습 챕터보다 앞), `ctx.save`=persistence.flush(도크 💾),
+>   AI 후보 적용은 `generation.apply(job)` 경유(없으면 기존 `applyCandidate`). HTTP 클라이언트는 Job의 `projectId`를 **로컬 id로** 돌려준다
+>   — 서버는 id를 새로 발급하는데 `decideAiResult`가 로컬 id로 대조하므로, 안 바꾸면 서버 결과가 전부 조용히 무시된다.
+>   옛 게임 변환(`convertLegacy`)은 `openProject(p, {saveNow:true})`로 즉시 저장 — 편집 없이 탭을 닫아도 변환본이 남는다.
+> - 브라우저 확인(evidence/integration-cloud/): 서버 경로 `POST /generations 202 → GET 200 → POST /projects/:id/apply 200`(apply 뒤 재PUT 없음),
+>   mock 경로(API 끔) 동일 흐름, 1366×768·1024×768·768×1024 가로 넘침 0·콘솔 오류 0, 옛 게임(v1 사과 예제) 변환 → 새 무대 실행·원본 보존.
+> - 이 컨테이너에는 Python Playwright가 없어 `npm run test:vibe:e2e`는 0건 실행(결과 파일은 PC 결과 유지). E2E 재실행은 PC에서.
 > - 1번의 WIP 무관 부분 완료: `public/vibe-v2/services/generation-client.js` — `connectVibeApi()`(health→세션 확보, 없으면 연습 세션 발급) +
 >   HTTP GenerationClient(start/get?after=/watch/cancel/**apply**) + mock 폴백(`withLocalApply`). app.js 연결:
 >   서버가 켜져 있으면 persistence에 `createProjectApi()`를 붙여 학급 서버 동기화, store에 `instantiate` 주입.
@@ -72,10 +79,10 @@ VIBE_V2_API=1 VIBE_SESSION_SECRET=<32자+> PORT=3000 node server.js   # /api/vib
 > - Node 22 호환: `lib/vibe/assets/pipeline.js`의 `AbortSignal.timeout`이 이벤트 루프를 붙잡지 않아 WP6 테스트 13개가 cancelled(`npm test` exit 1)
 >   → 일반 타이머 + 해제로 교체. Vercel 기본 런타임이 Node 22일 수 있어 코드 쪽을 고쳤다.
 
-1. **WP3 마무리**: `vibe/wp3-studio` WIP를 확인·완성(아래 §7 원 지시문 기준) → `vibe/redesign`에 병합. 병합 시 통합 작업:
+1. ~~**WP3 마무리**~~ (완료, 위 기록): `vibe/wp3-studio` WIP를 확인·완성(아래 §7 원 지시문 기준) → `vibe/redesign`에 병합. 병합 시 통합 작업:
    - `app.js`에서 `modes/studio/catalog.js`의 `getStudioCatalog()`를 홈 catalog에 합치기.
    - `createMockGenerationClient()` 대신, `/api/vibe/health`가 ok면 **HTTP GenerationClient**(POST /generations, GET /generations/:id?after=, POST cancel, POST /projects/:id/apply)를 쓰고 아니면 mock으로 폴백하는 클라이언트를 `public/vibe-v2/services/`에 작성. persistence의 `attachRemote`로 서버 동기화 연결.
-2. **WP8 마무리**: `vibe/wp8-learning` WIP 완성(§7 원 지시문) → 병합, `modes/learning/catalog.js` 홈 연결, `npm run test:vibe:e2e` 실행 결과 기록.
+2. ~~**WP8 마무리**~~ (PC에서 완료): `vibe/wp8-learning` WIP 완성(§7 원 지시문) → 병합, `modes/learning/catalog.js` 홈 연결, `npm run test:vibe:e2e` 실행 결과 기록.
 3. **최종 통합 검증**: 생성→수정→실행→저장→재접속을 실제 브라우저로(ACCEPTANCE §2 UI/SH/ST/OP). 1366×768·1024×768·768×1024 스크린샷, 가로 넘침·터치 크기·콘솔 오류.
 4. **사용자 승인 필요 항목** (§6) 처리 후 preview 배포 → 선정 학급 파일럿(ACCEPTANCE §5·§6).
 
