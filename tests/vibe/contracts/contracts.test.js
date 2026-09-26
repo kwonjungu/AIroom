@@ -107,3 +107,9 @@ test('v1.1: spawner.refill 선택값, ApiError.details, instantiate 실패 진�
     { instantiate: () => ({ diagnostics: [{ code: 'TEMPLATE_PARAM_INVALID', severity: 'error', nodeId: null, path: '', message: 'x', studentHint: '' }] }) });
   assert.equal(r.diagnostics[0].code, 'TEMPLATE_PARAM_INVALID');
 });
+
+test('v1.2: setParameter boolean 값 (spawner.refill)', () => {
+  const r = applyPatch(catchGame(), { schemaVersion: 1, baseRevision: 0, summary: '다시 채우지 않기', operations: [{ op: 'setParameter', nodeId: 'fish-fall', parameter: 'refill', value: false }], assetRequests: [] });
+  assert.equal(r.ok, true, JSON.stringify(r.diagnostics));
+  assert.equal(r.project.program.nodes.find(n => n.id === 'fish-fall').args.refill, false);
+});

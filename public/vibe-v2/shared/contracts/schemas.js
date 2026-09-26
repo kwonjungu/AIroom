@@ -4,7 +4,7 @@
 import { validate } from './validate.js';
 import { MODE_NODES, EDITABLE_PARAMS, SINGLETON_KINDS } from './nodes.js';
 
-export const CONTRACT_VERSION = '1.1.0';
+export const CONTRACT_VERSION = '1.2.0';
 export const PROJECT_SCHEMA_VERSION = 2;
 export const PATCH_SCHEMA_VERSION = 1;
 
@@ -73,7 +73,7 @@ export const ProjectSchema = {
 const OPS = [
   { type: 'object', additionalProperties: false, required: ['op', 'nodeId', 'parameter', 'value'],
     properties: { op: { const: 'setParameter' }, nodeId: NODE_ID, parameter: { type: 'string', maxLength: 30 },
-      value: { type: ['number', 'string', 'array'] } } },
+      value: { type: ['number', 'string', 'array', 'boolean'] } } },
   { type: 'object', additionalProperties: false, required: ['op', 'parentId', 'node'],
     properties: { op: { const: 'addBehavior' }, parentId: { type: ['string', 'null'], maxLength: 40 },
       node: { type: 'object' } } },

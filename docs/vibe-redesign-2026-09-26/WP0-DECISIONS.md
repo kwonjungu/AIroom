@@ -77,3 +77,8 @@ npm run test:vibe:integration
 - RuntimeSnapshot 선택 확장: `timeLeftMs`, `invincible`, `livesEnabled`, `background`, `maze`.
 - 런타임 해석 규칙(WP4 확정): onTouch 효과는 enter 때만, 동시 종료 우선순위 livesZero > win > timeUp, `timeUp` 규칙 없이 timeLimitSec만 있으면 제한 없음(경고), 미로는 S 칸에서 시작.
 - 교사 식별: 현 교사 세션에 개인 id가 없어 담당 학급은 학급 생성 브라우저의 서명 쿠키(`vibe2_t`)로 구분 — 사용자 결정 대기.
+
+### v1.2.0 (WP5 제안)
+- Patch `setParameter.value`에 boolean 허용 (`spawner.refill` 수정 가능).
+- 라우터 mount 순서: 생성 라우트(WP5) → WP7 api → 에셋(WP6). `createVibeApi`에 WP4 `instantiate` 주입.
+- 기본 Groq 모델은 v1 실제 동작과 같은 `openai/gpt-oss-120b`/`gpt-oss-20b` (llama-3.x는 2026-09 목록에서 사라졌다는 v1 주석). env `VIBE_GROQ_MODEL_PRIMARY/_LIGHT`로 교체. 키는 `GROQ_API_KEY` 하나만 사용(키 회전 안 함).
