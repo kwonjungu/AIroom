@@ -3,9 +3,48 @@
   "screens": [
     {
       "viewport": "1366x768",
+      "goalOpen": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "441x441"
+        ],
+        "stagePane": "724x524",
+        "layout": "two"
+      },
+      "goalNextAction": "다음 미션 ▶",
+      "afterNextTitle": "조금 더",
+      "goalSizes": {
+        "controls": 20,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      },
+      "shapeAfterRun": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "296x296",
+          "296x296"
+        ],
+        "stagePane": "724x524",
+        "layout": "two"
+      },
       "shapeHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
-      "sizes": {
-        "controls": 19,
+      "shellSay": "네모는 잘 놓았어 — 세모를 나중에 찍어 볼까?",
+      "shapeSizes": {
+        "controls": 17,
         "under56": [],
         "bodyPx": 20,
         "gaps": [
@@ -18,9 +57,48 @@
     },
     {
       "viewport": "768x1024",
+      "goalOpen": {
+        "scrollY": 0,
+        "docScroll": true,
+        "runTop": 892,
+        "runBottom": 948,
+        "runInView": true,
+        "canvases": [
+          "369x369"
+        ],
+        "stagePane": "721x449",
+        "layout": "stack"
+      },
+      "goalNextAction": "다음 미션 ▶",
+      "afterNextTitle": "조금 더",
+      "goalSizes": {
+        "controls": 20,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      },
+      "shapeAfterRun": {
+        "scrollY": 0,
+        "docScroll": true,
+        "runTop": 892,
+        "runBottom": 948,
+        "runInView": true,
+        "canvases": [
+          "334x334",
+          "334x334"
+        ],
+        "stagePane": "721x560",
+        "layout": "stack"
+      },
       "shapeHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
-      "sizes": {
-        "controls": 19,
+      "shellSay": "네모는 잘 놓았어 — 세모를 나중에 찍어 볼까?",
+      "shapeSizes": {
+        "controls": 17,
         "under56": [],
         "bodyPx": 20,
         "gaps": [
@@ -33,9 +111,48 @@
     },
     {
       "viewport": "1024x768",
+      "goalOpen": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "441x441"
+        ],
+        "stagePane": "534x524",
+        "layout": "two"
+      },
+      "goalNextAction": "다음 미션 ▶",
+      "afterNextTitle": "조금 더",
+      "goalSizes": {
+        "controls": 20,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      },
+      "shapeAfterRun": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "225x225",
+          "225x225"
+        ],
+        "stagePane": "534x524",
+        "layout": "two"
+      },
       "shapeHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
-      "sizes": {
-        "controls": 19,
+      "shellSay": "네모는 잘 놓았어 — 세모를 나중에 찍어 볼까?",
+      "shapeSizes": {
+        "controls": 17,
         "under56": [],
         "bodyPx": 20,
         "gaps": [
@@ -49,15 +166,15 @@
   ],
   "checks": {
     "SH05": {
-      "start": 2,
+      "start": 0,
       "drops": 20,
       "afterDrops": 20,
       "uniqueAfterDrops": 20,
-      "undos": 18,
-      "afterUndo": 2,
-      "afterOneTap": 3,
+      "undos": 20,
+      "afterUndo": 0,
+      "afterOneTap": 1,
       "reorderFirstId": "c21",
-      "reorderCount": 3,
+      "reorderCount": 1,
       "afterMissionSwitch": {
         "count": 2,
         "unique": 2,
@@ -76,7 +193,7 @@
         ],
         [
           "1",
-          "1-1"
+          "1-2"
         ],
         [
           "1",
@@ -116,12 +233,12 @@
     },
     "SH07_dpr2": [
       {
-        "css": 380,
-        "buf": 760
+        "css": 217,
+        "buf": 434
       },
       {
-        "css": 380,
-        "buf": 760
+        "css": 217,
+        "buf": 434
       }
     ]
   },

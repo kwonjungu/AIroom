@@ -5,7 +5,7 @@
 - SH05: 손잡이 드래그 20회 → 되돌리기 20회 → 미션 변경 후 카드 수·중복 id 확인
 - SH08: 한 단계씩 실행 시 강조 카드 번호 = 캔버스 번호, 실행 후 dispose 누수 확인
 - UI01/저학년 규격: 조작 최소 크기·본문 글자 크기 측정, DPR 2 백버퍼 확인
-외부 API 호출 없음(v2 미리보기는 fixture만 사용).
+외부 API 호출 없음. 해상도별 흐름은 실제 앱(/vibe-v2/, WP1 셸)으로, SH05·SH06·SH08은 모드를 최소 셸에 직접 붙여 점검.
 """
 
 import json
@@ -18,10 +18,29 @@ OUT = Path(__file__).resolve().parent
 VIEWPORTS = [("1366x768", 1366, 768), ("768x1024", 768, 1024), ("1024x768", 1024, 768)]
 
 
-def open_fixture(page, name):
+def open_real(page, path_mission):
+    """실제 앱: 홈 → 그림 카드로 시작 → (챕터 이동) → 지금 할 미션."""
+    chapter_steps = {"goal": 0, "shape": 2}[path_mission]
     page.goto(BASE + "/vibe-v2/")
-    page.get_by_role("button", name=name, exact=True).click()
-    page.wait_for_selector(".vc2c-editor .vc2c-runbar")
+    page.click('.path-card[data-path="cards"]')
+    page.wait_for_selector(".mission")
+    for _ in range(chapter_steps):
+        page.get_by_role("button", name="다음 ▶").click()
+    page.click('.mission[data-status="current"]')
+    page.wait_for_selector(".vc2c-dock .vc2c-runbar")
+    page.wait_for_timeout(300)
+
+
+def run_visible(page):
+    """실행 버튼이 스크롤 없이 화면 안에 보이는가 + 무대 캔버스 크기"""
+    return page.evaluate("""() => {
+      const b = document.querySelector('.vc2c [data-action="run"]').getBoundingClientRect();
+      const cv = [...document.querySelectorAll('canvas[data-canvas]')].map(c => Math.round(c.getBoundingClientRect().width) + 'x' + Math.round(c.getBoundingClientRect().height));
+      const st = document.querySelector('.ws-stage').getBoundingClientRect();
+      return { scrollY, docScroll: document.documentElement.scrollHeight > innerHeight, runTop: Math.round(b.top), runBottom: Math.round(b.bottom),
+        runInView: b.top >= 0 && b.bottom <= innerHeight, canvases: cv, stagePane: Math.round(st.width) + 'x' + Math.round(st.height),
+        layout: document.querySelector('[data-workspace]')?.dataset.layout };
+    }""")
 
 
 def mount_mission(page, mission_id, grade="low"):
@@ -74,9 +93,9 @@ def sizes(page):
       const vis = els.filter(e => e.offsetParent !== null);
       const small = vis.map(e => { const r = e.getBoundingClientRect(); return { t: (e.textContent || e.className).trim().slice(0, 20), w: Math.round(r.width), h: Math.round(r.height) }; })
         .filter(x => x.w < 56 || x.h < 56);
-      const body = parseFloat(getComputedStyle(document.querySelector('.vc2c-desc')).fontSize);
+      const body = parseFloat(getComputedStyle(document.querySelector('.vc2c-desc') || document.body).fontSize);
       const gaps = [...document.querySelectorAll('.vc2c-runbar, .vc2c-palette, .vc2c-tools')].map(e => getComputedStyle(e).columnGap);
-      return { controls: vis.length, under56: small, bodyPx: body, gaps, hScroll: document.documentElement.scrollWidth > innerWidth };
+      return { controls: vis.length, under56: small, bodyPx: body, gaps, hScroll: document.documentElement.scrollWidth > document.documentElement.clientWidth };
     }""")
 
 
@@ -90,43 +109,54 @@ def main():
             page.on("console", lambda m: m.type == "error" and report["console"].append(m.text))
             page.on("pageerror", lambda e: report["console"].append(str(e)))
 
-            # 도형: 집 짓기 — 순서를 뒤집어 실행 → 카드 아래 힌트
-            open_fixture(page, "shapeHouse")
-            page.click('.vc2c-editor [data-action="select"][data-id="s2"]')
-            page.click('.vc2c-editor [data-action="move"][data-delta="-1"]')
-            page.click('.vc2c-editor [data-action="run"]')
-            page.wait_for_selector(".vc2c-editor .vc2c-hint", timeout=5000)
-            page.screenshot(path=str(OUT / f"shape-hint-{label}.png"), full_page=True)
-            hint = page.inner_text(".vc2c-editor .vc2c-hint")
-            page.click('.vc2c-stage [data-action="view"][data-view="diff"]')
-            page.wait_for_timeout(200)
-            page.screenshot(path=str(OUT / f"shape-diffview-{label}.png"), full_page=True)
-            page.click('.vc2c-stage [data-action="view"][data-view="overlay"]')
-            page.wait_for_timeout(200)
-            page.screenshot(path=str(OUT / f"shape-overlay-{label}.png"), full_page=True)
-            page.click('.vc2c-stage [data-action="view"][data-view="side"]')
-            # 되돌리기 → 정답 순서 → 실행 → 성공
-            page.click('.vc2c-editor [data-action="undo"]')
-            page.click('.vc2c-editor [data-action="run"]')
-            page.wait_for_selector(".vc2c-result.is-ok", timeout=5000)
-            page.click('.vc2c-stage [data-action="view"][data-view="diff"]')
-            page.screenshot(path=str(OUT / f"shape-success-{label}.png"), full_page=True)
-            report["screens"].append({"viewport": label, "shapeHint": hint, "sizes": sizes(page)})
+            # 별까지 가기(실제 앱): 홈 → 미션 1 → 카드 탭 → 한 단계 → 실행
+            open_real(page, "goal")
+            pre = run_visible(page)
+            page.wait_for_timeout(250); page.screenshot(path=str(OUT / f"goal-open-{label}.png"))
+            page.click('.vc2c [data-action="add"][data-kind="move"]')
+            page.click('.vc2c [data-action="add"][data-kind="move"]')
+            page.click('.vc2c [data-action="step"]')
+            page.wait_for_timeout(250); page.screenshot(path=str(OUT / f"goal-step-{label}.png"))
+            page.click('.vc2c [data-action="run"]')
+            page.wait_for_selector(".ws-say__actions button", timeout=5000)
+            page.wait_for_timeout(250); page.screenshot(path=str(OUT / f"goal-done-{label}.png"))
+            goal_next = page.inner_text(".ws-say__actions")
+            goal_sizes = sizes(page)
+            # 셸의 "다음 미션" → 미션 2가 열린다
+            page.click(".ws-say__actions button")
+            page.wait_for_timeout(600)
+            next_title = page.inner_text(".ws-title")
 
-            # 별까지 가기: 한 단계 실행 중 화면
-            open_fixture(page, "goalCards")
-            page.click('.vc2c-editor [data-action="step"]')
-            page.screenshot(path=str(OUT / f"goal-step-{label}.png"), full_page=True)
-            page.click('.vc2c-editor [data-action="run"]')
-            page.wait_for_selector(".vc2c-result", timeout=5000)
-            page.screenshot(path=str(OUT / f"goal-done-{label}.png"), full_page=True)
+            # 도형(실제 앱): 집 짓기 — 카드 상자 순서대로(세모→네모) 누르면 틀림 → 힌트 → 고쳐서 성공
+            open_real(page, "shape")
+            page.click('.vc2c [data-action="add"][data-tray="0"]')
+            page.click('.vc2c [data-action="add"][data-tray="1"]')
+            page.click('.vc2c [data-action="run"]')
+            page.wait_for_selector(".vc2c-editor .vc2c-hint", timeout=5000)
+            shape_run = run_visible(page)
+            hint = page.inner_text(".vc2c-editor .vc2c-hint")
+            say_hint = page.inner_text(".ws-say__text")
+            page.wait_for_timeout(250); page.screenshot(path=str(OUT / f"shape-hint-{label}.png"))
+            if page.evaluate("() => !document.querySelector('.ws-stage').hidden"):
+                page.click('.vc2c-stage [data-action="view"][data-view="diff"]')
+                page.wait_for_timeout(200)
+                page.wait_for_timeout(250); page.screenshot(path=str(OUT / f"shape-diffview-{label}.png"))
+                page.click('.vc2c-stage [data-action="view"][data-view="side"]')
+            page.click('.vc2c [data-action="select"][data-id="s2"]')
+            page.click('.vc2c [data-action="move"][data-delta="-1"]')
+            page.click('.vc2c [data-action="run"]')
+            page.wait_for_selector(".ws-say__actions button", timeout=5000)
+            page.wait_for_timeout(250); page.screenshot(path=str(OUT / f"shape-success-{label}.png"))
+            report["screens"].append({"viewport": label, "goalOpen": pre, "goalNextAction": goal_next, "afterNextTitle": next_title,
+                                      "goalSizes": goal_sizes, "shapeAfterRun": shape_run, "shapeHint": hint, "shellSay": say_hint,
+                                      "shapeSizes": sizes(page)})
             ctx.close()
 
         # ── SH05: 드래그 20회·undo 20회·미션 변경 ──
         ctx = browser.new_context(viewport={"width": 1366, "height": 768})
         page = ctx.new_page()
         page.on("pageerror", lambda e: report["console"].append(str(e)))
-        open_fixture(page, "goalCards")
+        mount_mission(page, "goal-1")
         before = cards_state(page)
         drops = 0
         for _ in range(20):
@@ -152,8 +182,7 @@ def main():
         drag(page, last, first)
         after_reorder = cards_state(page)
         # 미션 변경: 홈으로 → 도형
-        page.click("[data-back]")
-        open_fixture(page, "shapeHouse")
+        mount_mission(page, "shape-9")
         after_switch = cards_state(page)
         leftovers = page.evaluate("() => document.querySelectorAll('.vc2c-dragghost, .vc2c-dropmark').length")
         report["checks"]["SH05"] = {
@@ -164,8 +193,10 @@ def main():
         }
 
         # ── SH08: 한 단계씩 — 강조 카드 번호 = 무대 번호 ──
-        page.click("[data-back]")
-        open_fixture(page, "goalRepeat")
+        mount_mission(page, "goal-7")
+        page.click('.vc2c [data-action="add"][data-kind="repeat"]')
+        page.click('.vc2c [data-action="add"][data-kind="move"]')
+        page.click('.vc2c [data-action="add"][data-kind="move"]')
         steps = []
         for _ in range(3):
             page.click('.vc2c-editor [data-action="step"]')
@@ -173,7 +204,7 @@ def main():
         page.click('.vc2c-editor [data-action="reset"]')
         running_after_reset = page.evaluate("() => document.querySelectorAll('.vc2c-card.is-running').length")
         page.click('.vc2c-editor [data-action="run"]')
-        page.click("[data-back]")  # 실행 중 나가기 → dispose
+        page.evaluate("() => window.__m.dispose()")  # 실행 중 나가기 → dispose
         page.wait_for_timeout(1500)
         report["checks"]["SH08"] = {"highlightPerStep": steps, "runningAfterReset": running_after_reset,
                                     "vc2cNodesAfterDispose": page.evaluate("() => document.querySelectorAll('.vc2c').length"),
@@ -220,8 +251,7 @@ def main():
         # ── DPR 2 ──
         ctx = browser.new_context(viewport={"width": 1024, "height": 768}, device_scale_factor=2)
         page = ctx.new_page()
-        open_fixture(page, "shapeHouse")
-        page.wait_for_timeout(300)
+        open_real(page, "shape")
         report["checks"]["SH07_dpr2"] = page.evaluate("""() => [...document.querySelectorAll('canvas[data-canvas]')].map(c => ({ css: c.getBoundingClientRect().width, buf: c.width }))""")
         page.screenshot(path=str(OUT / "shape-dpr2-1024x768.png"))
         ctx.close()
