@@ -14,6 +14,7 @@
 //   spawner   fallFromTop: intervalMs마다 (살아 있는 수 < maxAlive이면) 1개를 위쪽 밖에서 만들고 speed px/s로 낙하,
 //                          화면 아래로 완전히 나가면 제거 + 'miss' 이벤트. count개는 시작 시 화면 위쪽 밖에 엇갈려 배치.
 //             scatter:     시작 시 count개를 무작위 배치(주인공과 겹치지 않게, 미로면 빈 길 칸), intervalMs마다 maxAlive까지 보충.
+//             refill:false(v1.1)면 두 패턴 모두 타이머 없이 시작 배치(count)만 쓴다.
 //                          speed>0이면 8방향 중 하나로 떠다니며 벽·무대 끝에서 튕긴다.
 //   onTouch   주인공과 entity가 새로 닿는 순간(enter) effects를 순서대로 1회 실행.
 //             addScore → 'collect', loseLife → 'hit'(무적 중이면 'shielded'), removeOther → 'remove', win/lose → 즉시 종료
@@ -152,6 +153,7 @@ export function createGameRuntime(options = {}) {
     }
     clampPlayer();
     config.spawners.forEach((sp, i) => {
+      if (sp.refill === false) return;   // v1.1: 보충 없음 → 시작 배치(count)만
       S.timers.push({ spawner: i, next: sp.intervalTicks, period: sp.intervalTicks });
     });
     config.spawners.forEach((sp, i) => {

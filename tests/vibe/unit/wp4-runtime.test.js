@@ -199,6 +199,33 @@ test('substep: 서로 마주 보고 빠르게(상대 20px/tick > 두 반지름 �
   }
 });
 
+test('refill:false(v1.1): 시작 배치만 쓰고 보충 타이머가 없다, 기본(true)은 보충', () => {
+  const make = refill => prog([
+    N('player', 'player', { appearance: 'p', x: 400, y: 300, speed: 300, radius: 20, movement: 'fourWay' }),
+    N('g', 'spawner', { entity: 'gem', appearance: 'g', pattern: 'scatter', intervalMs: 500, speed: 0, maxAlive: 3, count: 3, radius: 20, ...(refill === undefined ? {} : { refill }) }),
+    N('f', 'spawner', { entity: 'rock', appearance: 'r', pattern: 'fallFromTop', intervalMs: 500, speed: 300, maxAlive: 5, count: 2, radius: 10, ...(refill === undefined ? {} : { refill }) }),
+    N('tg', 'onTouch', { entity: 'gem', effects: [{ do: 'addScore', amount: 1 }, { do: 'removeOther' }] }),
+    N('tr', 'onTouch', { entity: 'rock', effects: [{ do: 'removeOther' }] }),
+    N('win', 'winWhen', { stat: 'score', value: 99 }),
+  ]);
+  const policy = s => {
+    const me = s.entities[0]; const g = s.entities.find(e => e.entity === 'gem');
+    return g ? { left: g.x < me.x - 4, right: g.x > me.x + 4, up: g.y < me.y - 4, down: g.y > me.y + 4 } : {};
+  };
+  const rt = createGameRuntime();
+  assert.deepEqual(errors(rt.load(make(false), [], 1)), []);
+  assert.equal(rt.debugStats().timers, 0);
+  rt.dispose();
+  const off = recordInputs({ program: make(false) }, { seed: 3, ticks: 1800, policy }).result;
+  assert.equal(count(off.trace, 'spawn'), 5, '시작 배치 3+2개만');
+  assert.equal(count(off.trace, 'collect'), 3);
+  assert.equal(off.finalSnapshot.entities.filter(e => e.entity === 'gem').length, 0, '모은 보석은 다시 생기지 않는다');
+  const on = recordInputs({ program: make(undefined) }, { seed: 3, ticks: 1800, policy }).result;
+  assert.ok(count(on.trace, 'spawn') > 5);
+  assert.ok(count(on.trace, 'collect') > 3);
+  const r2 = createGameRuntime(); r2.load(make(true), [], 1); assert.equal(r2.debugStats().timers, 2); r2.dispose();
+});
+
 // ── RT05 ──
 test('RT05: reset/pause/resume 100회 후에도 타이머가 쌓이지 않고, dispose 후 잔여 0·입력 무시', () => {
   const p = tpl('collect', { hazard: 'bomb' });

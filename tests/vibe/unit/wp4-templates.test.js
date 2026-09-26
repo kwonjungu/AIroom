@@ -88,7 +88,10 @@ test('params 범위 검사: 모르는 키·범위 밖·잘못된 선택지·장�
   assert.ok(checkTemplateParams('avoid', { hero: 'dragon' }).some(d => d.code === 'TEMPLATE_PARAM_INVALID'));
   assert.ok(checkTemplateParams('catch', { goal: 50, timeLimitSec: 10 }).some(d => d.code === 'TEMPLATE_GOAL_TOO_HIGH'));
   assert.ok(checkTemplateParams('jump', {}).some(d => d.code === 'UNKNOWN_TEMPLATE'));
-  assert.equal(instantiate('catch', { goal: 999 }, catchGame()), null);
+  const bad = instantiate('catch', { goal: 999 }, catchGame());
+  assert.ok(Array.isArray(bad.diagnostics) && !bad.nodes, 'v1.1: params 오류는 null이 아니라 {diagnostics}');
+  assert.equal(bad.diagnostics[0].code, 'TEMPLATE_PARAM_OUT_OF_RANGE');
+  assert.ok(instantiate('maze', {}, { ...catchGame(), mode: 'goal' }).diagnostics.some(d => d.code === 'TEMPLATE_MODE_MISMATCH'));
   assert.equal(instantiate('jump', {}, catchGame()), null);
   const r = instantiateTemplate('avoid', { lives: 0 });
   assert.equal(r.ok, false);
@@ -110,7 +113,11 @@ test('applyPatch({instantiate}): 템플릿 교체 → 계약·의미 통과, rev
   assert.equal(base.templateId, 'catch');
   // 알 수 없는 템플릿·잘못된 params·instantiate 미제공
   assert.equal(applyPatch(base, patch(base, [{ op: 'instantiateTemplate', templateId: 'jump', params: {} }]), { instantiate }).diagnostics[0].code, 'UNKNOWN_TEMPLATE');
-  assert.equal(applyPatch(base, patch(base, [{ op: 'instantiateTemplate', templateId: 'catch', params: { goal: -1 } }]), { instantiate }).ok, false);
+  const badParams = applyPatch(base, patch(base, [{ op: 'instantiateTemplate', templateId: 'catch', params: { goal: -1 } }]), { instantiate });
+  assert.equal(badParams.ok, false);
+  assert.equal(badParams.diagnostics[0].code, 'TEMPLATE_PARAM_OUT_OF_RANGE', 'applyPatch가 실패 이유를 그대로 전달');
+  assert.equal(badParams.diagnostics[0].path, '$.params.goal');
+  assert.ok(badParams.diagnostics[0].studentHint.includes('1부터 50'));
   assert.equal(applyPatch(base, patch(base, [{ op: 'instantiateTemplate', templateId: 'catch', params: {} }])).diagnostics[0].code, 'TEMPLATE_UNAVAILABLE');
 });
 
