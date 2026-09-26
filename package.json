@@ -5,7 +5,13 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:vibe:unit && npm run test:vibe:contracts",
+    "test:vibe:unit": "node --test \"tests/vibe/unit/**/*.test.js\"",
+    "test:vibe:contracts": "node --test \"tests/vibe/contracts/**/*.test.js\"",
+    "test:vibe:integration": "node --test \"tests/vibe/integration/**/*.test.js\"",
+    "test:vibe:e2e": "node tests/vibe/e2e/run.js",
+    "eval:vibe:mock": "node --test \"tests/vibe/evals/mock/**/*.test.js\"",
+    "eval:vibe:live": "node tests/vibe/evals/live.js",
     "test:recruitment": "node --test tests/recruitment/*.test.js"
   },
   "repository": {

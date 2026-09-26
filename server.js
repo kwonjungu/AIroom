@@ -1481,6 +1481,19 @@ app.post('/api/import', requireAdmin, async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── 바이브코딩 v2 API (preview) — VIBE_V2_API=1 일 때만 /api/vibe/* 활성 ──
+// 기존 /api/vibe-progress·/api/ai/chat 경로와 별개. 세부는 lib/vibe/router.js (ESM, 지연 로드).
+let _vibeRouterPromise = null;
+app.use('/api/vibe', (req, res, next) => {
+    if (process.env.VIBE_V2_API !== '1') {
+        // health는 꺼져 있어도 200으로 답한다 — 클라이언트가 "서버 저장 없음(로컬만)"을 판단하는 정상 경로라 404 콘솔 오류를 내지 않게
+        if (req.method === 'GET' && req.path === '/health') return res.json({ ok: false, enabled: false });
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'vibe v2 api disabled', retryable: false, retryAfterMs: null, requestId: '' } });
+    }
+    _vibeRouterPromise ||= import('./lib/vibe/router.js').then(m => m.createVibeRouter(express, { redis, validateStaffSession: validateSession, env: process.env }));
+    _vibeRouterPromise.then(r => r(req, res, next), next);
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
     const status = { server: true, redis: false, timestamp: new Date().toISOString() };

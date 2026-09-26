@@ -1,0 +1,356 @@
+{
+  "base": "http://localhost:4833/vibe-v2/",
+  "when": "2026-09-26 12:30:43",
+  "scenarios": {
+    "ST01 네 장르 플레이·재시작·결과 화면": {
+      "pass": true,
+      "genres": {
+        "fixture-catch": {
+          "tickAfterPlay": 85,
+          "stateAfterPlay": "playing",
+          "tickAfterRestart": 15,
+          "running": true,
+          "held": []
+        },
+        "catch": {
+          "tickAfterPlay": 86,
+          "stateAfterPlay": "playing",
+          "tickAfterRestart": 15,
+          "running": true,
+          "held": []
+        },
+        "avoid": {
+          "tickAfterPlay": 84,
+          "stateAfterPlay": "playing",
+          "tickAfterRestart": 15,
+          "running": true,
+          "held": []
+        },
+        "collect": {
+          "tickAfterPlay": 86,
+          "stateAfterPlay": "playing",
+          "tickAfterRestart": 15,
+          "running": true,
+          "held": []
+        },
+        "maze": {
+          "tickAfterPlay": 86,
+          "stateAfterPlay": "playing",
+          "tickAfterRestart": 15,
+          "running": true,
+          "held": []
+        }
+      },
+      "endScreen": "다시 해 볼까? /  / 목숨을 다 썼어요. 점수 0 /  / ↺ 다시 하기 / ✏️ 만들기로",
+      "afterAgain": {
+        "running": true,
+        "tick": 23
+      }
+    },
+    "ST02 수동 변경 보존 + 적용 전 비교 + 한 번에 되돌리기": {
+      "pass": true,
+      "revisionAfterManual": 1,
+      "compare": "AI가 이렇게 바꾸려고 해요 /  / “생선이 조금 더 천천히 떨어지게” → 조금 더 천천히 떨어져요. /  / 바뀔 것 / 🐟 생선 떨어지는 속도: 보통쯤 → 느리게쯤 (120→84) / 그대로인 것 / 🏁 점수 15이면 성공 / ⌛ 시간이 끝나면 실패 / 🤝 🐟에 닿으면 점수 +1, 생선은 사라져요 / 🕹️ 주인공 🐱는 좌우로 움직여요 · 속도 보통 / … 그 밖에 1가지 / 적용하기 / 안 할래",
+      "speed": [
+        120,
+        84,
+        120
+      ],
+      "goalKept": 15,
+      "aiBusyAfterSubmit": true,
+      "playDuringAi": true
+    },
+    "ST05 새로고침 후 로컬 저장 복구": {
+      "pass": true,
+      "savedRevision": 3,
+      "reopenedRevision": 3,
+      "goal": 15,
+      "badge": "✏️\n저장 안 됨"
+    },
+    "ST02b 생성 중 수동 변경 → 충돌 안내, AI 결과 적용 0": {
+      "pass": true,
+      "note": "⚠️ 그 사이 작품이 바뀌었어요. 다시 요청해 볼까? /  / 다시 요청하기",
+      "speed": 120,
+      "goal": 20
+    },
+    "ST03 규칙 추가 후 속도만 변경 — 나머지 규칙·에셋·목표 유지": {
+      "pass": true,
+      "compare": "AI가 이렇게 바꾸려고 해요 /  / “생선이 조금 더 천천히 떨어지게” → 조금 더 천천히 떨어져요. /  / 바뀔 것 / 🐟 생선 떨어지는 속도: 보통쯤 → 느리게쯤 (120→84) / 그대로인 것 / 🏁 점수 10이면 성공 / ⌛ 시간이 끝나면 실패 / 💔 목숨이 0이면 실패 / ❤️ 목숨 3개 · 부딪힌 뒤 보통쯤 무적 / … 그 밖에 5가지 / 적용하기 / 안 할래",
+      "nodes": [
+        "world",
+        "player",
+        "fish-fall",
+        "touch-fish",
+        "stats",
+        "win",
+        "lose",
+        "bomb-fall",
+        "touch-bomb",
+        "lose-lives"
+      ],
+      "fishSpeed": 84,
+      "lives": 3
+    },
+    "ST04 실패 응답·검증 오류 → 기존 작품 유지, 1클릭 재플레이": {
+      "pass": true,
+      "cases": {
+        "invalid": {
+          "note": "⚠️ 고친 게임이 제대로 안 돌아가서 적용하지 않았어요. /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+          "aiBadge": "⚠️\nAI가 못 만들었어요",
+          "unchanged": true,
+          "replay": true,
+          "compareShown": false
+        },
+        "providerDown": {
+          "note": "⚠️ AI가 잠깐 바빠요. 블록으로 직접 바꿔 볼까? /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+          "aiBadge": "⚠️\nAI가 못 만들었어요",
+          "unchanged": true,
+          "replay": true,
+          "compareShown": false
+        },
+        "timeout": {
+          "note": "⚠️ 시간이 너무 오래 걸렸어요. 지금 작품은 그대로예요. /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+          "aiBadge": "⚠️\nAI가 못 만들었어요",
+          "unchanged": true,
+          "replay": true,
+          "compareShown": false
+        }
+      }
+    },
+    "ST06 생성 중 작품 이동·뒤로가기 → 다른 작품 적용 0": {
+      "pass": true,
+      "projectA": "p_fixture_catch",
+      "revA": [
+        0,
+        0
+      ],
+      "projectB": "p_catch_muhu5um6pn8w61",
+      "revB": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "spawnerSpeedB": [
+        140,
+        140
+      ],
+      "aiBusyInB": false,
+      "disposedMode": {
+        "disposed": true,
+        "raf": 0,
+        "listenersAborted": true,
+        "aiBusy": false,
+        "runtime": null
+      },
+      "console": []
+    },
+    "옛 게임 — 원문 보존·읽기 전용·조용히 버리지 않음": {
+      "pass": true,
+      "text": "📜 예전에 만든 게임이에요 /  / 원래 코드는 지우지 않고 그대로 보관해요. 이 화면에서는 읽기만 할 수 있어요. /  / ⚠️ 새 무대로 옮길 수 있는 규칙을 찾지 못했어요. 원문은 그대로 보관돼요. 아래 \"새 게임 만들기\"로 비슷한 게임을 만들어 볼 수 있어요. /  / 원문 코드 (읽기 전용) / SPRITE 🐱 200 250 / ON_KEY LEFT { /   MOVE_X -10 / }"
+    },
+    "5~6학년 수치 편집 (슬라이더·키보드), 입력 중 게임 키 비활성": {
+      "pass": true,
+      "speed": 110,
+      "revision": 1,
+      "texts": [
+        "🕹️ 주인공 🐱는 좌우로 움직여요 · 속도 320",
+        "🐟 생선이 0.9초마다 떨어져요 · 속도 110",
+        "🤝 🐟에 닿으면 점수 +1, 생선은 사라져요"
+      ],
+      "small": []
+    }
+  },
+  "views": {
+    "1366x768": {
+      "make": {
+        "layout": "two",
+        "fit": "viewport",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "688x442",
+        "padVisible": false,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "▶ 해보기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "play": {
+        "layout": "two",
+        "fit": "viewport",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "688x442",
+        "padVisible": false,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "⏸ 멈추기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "compare": {
+        "layout": "two",
+        "fit": "viewport",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "688x442",
+        "padVisible": false,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "▶ 시작하기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "padPressRelease": null,
+      "console": []
+    },
+    "1024x768": {
+      "make": {
+        "layout": "two",
+        "fit": "viewport",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "498x442",
+        "padVisible": false,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "▶ 해보기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "play": {
+        "layout": "two",
+        "fit": "viewport",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "498x318",
+        "padVisible": true,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "⏸ 멈추기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "compare": {
+        "layout": "two",
+        "fit": "viewport",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "498x310",
+        "padVisible": true,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "▶ 시작하기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "padPressRelease": true,
+      "console": []
+    },
+    "768x1024": {
+      "make": {
+        "layout": "stack",
+        "fit": "flow",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "685x514",
+        "padVisible": false,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "▶ 해보기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "play": {
+        "layout": "stack",
+        "fit": "flow",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "685x514",
+        "padVisible": true,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "⏸ 멈추기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "compare": {
+        "layout": "stack",
+        "fit": "flow",
+        "overflowX": false,
+        "overflowEls": [],
+        "smallCount": 0,
+        "small": [],
+        "canvas": "685x514",
+        "padVisible": true,
+        "padOverlapsEditor": false,
+        "dockButtons": [
+          "▶ 시작하기",
+          "↺ 처음부터",
+          "↶ 되돌리기"
+        ],
+        "bodyFont": "18px"
+      },
+      "padPressRelease": true,
+      "console": []
+    }
+  },
+  "console": [],
+  "perf": {
+    "seconds": 60,
+    "mode": {
+      "n": 3544,
+      "intervalP50": 16.7,
+      "intervalP95": 16.8,
+      "intervalMax": 17,
+      "workP50": 0.2,
+      "workP95": 0.3
+    },
+    "pageRaf": {
+      "n": 3542,
+      "p50": 16.7,
+      "p95": 16.8,
+      "p99": 16.8,
+      "max": 17,
+      "over20ms": 0
+    },
+    "endState": "playing",
+    "tick": 3547,
+    "note": "headless Chrome, 1366x768, DPR1, 데스크톱 PC. 실제 저사양 크롬북 측정을 대체하지 않는다."
+  },
+  "consoleErrorCount": 0,
+  "allPass": true
+}

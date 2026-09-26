@@ -1,0 +1,246 @@
+{
+  "base": "http://localhost:3917",
+  "screens": [
+    {
+      "viewport": "1366x768",
+      "goalOpen": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "441x441"
+        ],
+        "stagePane": "724x524",
+        "layout": "two"
+      },
+      "goalNextAction": "다음 미션 ▶",
+      "afterNextTitle": "조금 더",
+      "goalSizes": {
+        "controls": 20,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      },
+      "shapeAfterRun": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "296x296",
+          "296x296"
+        ],
+        "stagePane": "724x524",
+        "layout": "two"
+      },
+      "shapeHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
+      "shellSay": "네모는 잘 놓았어 — 세모를 나중에 찍어 볼까?",
+      "shapeSizes": {
+        "controls": 17,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      }
+    },
+    {
+      "viewport": "768x1024",
+      "goalOpen": {
+        "scrollY": 0,
+        "docScroll": true,
+        "runTop": 892,
+        "runBottom": 948,
+        "runInView": true,
+        "canvases": [
+          "369x369"
+        ],
+        "stagePane": "721x449",
+        "layout": "stack"
+      },
+      "goalNextAction": "다음 미션 ▶",
+      "afterNextTitle": "조금 더",
+      "goalSizes": {
+        "controls": 20,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      },
+      "shapeAfterRun": {
+        "scrollY": 0,
+        "docScroll": true,
+        "runTop": 892,
+        "runBottom": 948,
+        "runInView": true,
+        "canvases": [
+          "334x334",
+          "334x334"
+        ],
+        "stagePane": "721x560",
+        "layout": "stack"
+      },
+      "shapeHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
+      "shellSay": "네모는 잘 놓았어 — 세모를 나중에 찍어 볼까?",
+      "shapeSizes": {
+        "controls": 17,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      }
+    },
+    {
+      "viewport": "1024x768",
+      "goalOpen": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "441x441"
+        ],
+        "stagePane": "534x524",
+        "layout": "two"
+      },
+      "goalNextAction": "다음 미션 ▶",
+      "afterNextTitle": "조금 더",
+      "goalSizes": {
+        "controls": 20,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      },
+      "shapeAfterRun": {
+        "scrollY": 0,
+        "docScroll": false,
+        "runTop": 704,
+        "runBottom": 760,
+        "runInView": true,
+        "canvases": [
+          "225x225",
+          "225x225"
+        ],
+        "stagePane": "534x524",
+        "layout": "two"
+      },
+      "shapeHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
+      "shellSay": "네모는 잘 놓았어 — 세모를 나중에 찍어 볼까?",
+      "shapeSizes": {
+        "controls": 17,
+        "under56": [],
+        "bodyPx": 20,
+        "gaps": [
+          "12px",
+          "12px",
+          "12px"
+        ],
+        "hScroll": false
+      }
+    }
+  ],
+  "checks": {
+    "SH05": {
+      "start": 0,
+      "drops": 20,
+      "afterDrops": 20,
+      "uniqueAfterDrops": 20,
+      "undos": 20,
+      "afterUndo": 0,
+      "afterOneTap": 1,
+      "reorderFirstId": "c21",
+      "reorderCount": 1,
+      "afterMissionSwitch": {
+        "count": 2,
+        "unique": 2,
+        "ids": [
+          "s1",
+          "s2"
+        ]
+      },
+      "leftoverDragUi": 0
+    },
+    "SH08": {
+      "highlightPerStep": [
+        [
+          "1",
+          "1-1"
+        ],
+        [
+          "1",
+          "1-2"
+        ],
+        [
+          "1",
+          "1-1"
+        ]
+      ],
+      "runningAfterReset": 0,
+      "vc2cNodesAfterDispose": 0,
+      "cssLinks": 1
+    },
+    "SH06": {
+      "shape9Colors": [
+        "#8D6E63",
+        "#E53935"
+      ],
+      "lastSay": [
+        "알록달록 집이 됐어!"
+      ],
+      "shape12Order": [
+        "s2",
+        "s1"
+      ],
+      "shape12AfterTwoUndo": [
+        {
+          "shape": "rect",
+          "anchor": 8,
+          "color": "#43A047",
+          "size": "S"
+        }
+      ],
+      "disposeLeak": {
+        "timers": 0,
+        "raf": 0,
+        "aborted": true,
+        "nodes": 0
+      }
+    },
+    "SH07_dpr2": [
+      {
+        "css": 217,
+        "buf": 434
+      },
+      {
+        "css": 217,
+        "buf": 434
+      }
+    ]
+  },
+  "console": []
+}

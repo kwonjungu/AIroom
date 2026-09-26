@@ -1,0 +1,44 @@
+const { chromium } = require(process.env.PW);
+(async () => {
+  const [port, out, w, h] = [process.argv[2], process.argv[3], +(process.argv[4]||1366), +(process.argv[5]||768)];
+  const b = await chromium.launch();
+  const p = await b.newPage({ viewport: { width: w, height: h } });
+  const errs = []; const api = [];
+  p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
+  p.on('pageerror', e => errs.push(String(e)));
+  p.on('response', r => { if (r.url().includes('/api/vibe')) api.push(r.request().method() + ' ' + new URL(r.url()).pathname.replace(/[pj]_[\w-]+/g, ':id') + ' ' + r.status()); });
+  await p.goto(`http://127.0.0.1:${port}/vibe-v2/`, { waitUntil: 'networkidle' });
+  await p.getByRole('button', { name: /3~4학년/ }).click();
+  await p.waitForTimeout(300);
+  await p.getByText('말과 블록으로 만들기').click();
+  await p.waitForTimeout(500);
+  const btns = await p.$$eval('button', bs => bs.map(b => b.textContent.trim().replace(/\s+/g,' ').slice(0,40)).filter(Boolean));
+  console.log('make path', JSON.stringify(btns.slice(5, 20)));
+  await p.screenshot({ path: out + '-path.png' });
+  await p.getByRole('button', { name: /받기|사과/ }).first().click();
+  await p.waitForTimeout(1500);
+  await p.screenshot({ path: out + '-studio.png' });
+  const inputs = await p.$$eval('textarea, input[type=text]', xs => xs.map(x => x.getAttribute('aria-label') || x.placeholder));
+  console.log('inputs', JSON.stringify(inputs));
+  await p.getByRole('tab', { name: /AI 도움/ }).or(p.getByRole('button', { name: /AI 도움/ })).first().click(); await p.waitForTimeout(300);
+  const ta = p.locator('textarea').first();
+  await ta.fill('생선이 조금 더 천천히 떨어지게 해줘');
+  await ta.press('Enter');
+  const sendBtn = p.getByRole('button', { name: /부탁|보내/ }).first();
+  if (await sendBtn.isVisible().catch(()=>false) && await sendBtn.isEnabled().catch(()=>false)) await sendBtn.click().catch(()=>{});
+  await p.waitForTimeout(4000);
+  await p.screenshot({ path: out + '-compare.png' });
+  const applyBtn = p.locator('[data-cmp=apply]');
+  console.log('compare visible', await applyBtn.isVisible().catch(() => false));
+  if (await applyBtn.isVisible().catch(() => false)) { await applyBtn.click(); await p.waitForTimeout(2500); }
+  await p.screenshot({ path: out + '-applied.png' });
+  const texts = await p.locator('[role=status], [aria-live]').allTextContents();
+  console.log('status', JSON.stringify(texts.map(t => t.trim()).filter(Boolean).slice(0, 8)));
+  const dock = p.locator('[data-dock=save]');
+  if (await dock.isVisible().catch(()=>false)) { await dock.click(); await p.waitForTimeout(1200); console.log('dock', await dock.textContent()); }
+  const overflow = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  console.log('overflowX', overflow);
+  console.log('api', JSON.stringify(api));
+  console.log('errors', JSON.stringify(errs));
+  await b.close();
+})();

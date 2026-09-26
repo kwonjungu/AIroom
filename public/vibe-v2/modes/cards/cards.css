@@ -1,0 +1,153 @@
+/* 저학년 카드 코딩 모드 (WP2). 공통 styles/는 WP1 소유라 이 파일만 쓴다. 모든 선택자는 .vc2c 아래. */
+.vc2c {
+  --tap: 48px; --gap: 8px; --fs: 18px; --fs-sub: 16px; --radius: 14px;
+  --ink: #1F2328; --muted: #57606A; --line: #D0D7DE; --bg: #FFFFFF; --soft: #F6F8FA;
+  --accent: #D84315; --accent-ink: #FFFFFF; --sel: #1A237E; --run: #F9A825; --ok: #2E7D32; --warn: #B3261E;
+  --focus: #0B57D0;
+  color: var(--ink); font-size: var(--fs); line-height: 1.55;
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  box-sizing: border-box; max-width: 100%;
+}
+.vc2c *, .vc2c *::before, .vc2c *::after { box-sizing: inherit; }
+.vc2c.is-low { --tap: 56px; --gap: 12px; --fs: 20px; --fs-sub: 18px; line-height: 1.6; }
+.vc2c[data-cards-mode="goal"] { --accent: #00796B; }
+
+.vc2c button { font: inherit; color: inherit; }
+.vc2c :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.vc2c-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.vc2c-btn {
+  min-height: var(--tap); min-width: var(--tap); padding: 6px 16px;
+  border: 2px solid var(--line); border-radius: var(--radius); background: var(--bg);
+  cursor: pointer; font-size: var(--fs-sub); font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.vc2c-btn:hover:not(:disabled) { border-color: var(--muted); }
+.vc2c-btn:disabled { opacity: .45; cursor: not-allowed; }
+.vc2c-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.vc2c-danger { color: var(--warn); }
+.vc2c-ghostbtn { border-style: dashed; background: transparent; }
+.vc2c-seg[aria-pressed="true"] { background: var(--sel); border-color: var(--sel); color: #FFF; }
+.vc2c-mini { min-width: var(--tap); padding: 0; font-size: 24px; }
+
+/* ── 무대 ── */
+.vc2c-stage { display: flex; flex-direction: column; gap: var(--gap); padding: 12px 0; }
+.vc2c-mission { display: flex; gap: 12px; align-items: center; }
+.vc2c-micon { font-size: 40px; line-height: 1; }
+.vc2c-title { margin: 0; font-size: calc(var(--fs) + 4px); }
+.vc2c-desc { margin: 2px 0 0; color: var(--muted); }
+.vc2c-demo { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; padding: 10px; background: #FFF3E0; border-radius: var(--radius); }
+.vc2c-demo figure { margin: 0; text-align: center; font-size: var(--fs-sub); }
+.vc2c-demo canvas { display: block; border-radius: 10px; }
+.vc2c-demo p { margin: 0; flex: 1 1 200px; }
+.vc2c-viewbar { display: flex; flex-wrap: wrap; gap: var(--gap); }
+.vc2c-canvases { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.vc2c-canvases.is-stacked { flex-direction: column; }
+.vc2c-fig { margin: 0; }
+.vc2c-fig figcaption { font-weight: 700; margin-bottom: 4px; }
+.vc2c-fig canvas, .vc2c-boardwrap canvas { display: block; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.14); max-width: 100%; }
+.vc2c-boardwrap { display: flex; justify-content: flex-start; }
+.vc2c-legend { margin: 0; display: flex; align-items: center; gap: 8px; font-size: var(--fs-sub); }
+.vc2c-hatch { width: 28px; height: 20px; border: 2px solid #AD1457; background: repeating-linear-gradient(-45deg, #AD1457 0 3px, rgba(216,27,96,.35) 3px 8px); }
+.vc2c-result { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius); font-weight: 600; }
+.vc2c-result.is-ok { background: #E8F5E9; border: 2px solid var(--ok); }
+.vc2c-result.is-try { background: #FFF8E1; border: 2px solid var(--run); }
+.vc2c-teacher { font-size: var(--fs-sub); color: var(--muted); }
+.vc2c-teacher summary { cursor: pointer; min-height: 32px; }
+
+/* ── 카드 줄 ── */
+.vc2c-editor { display: flex; flex-direction: column; gap: var(--gap); padding: 8px 0 16px; position: relative; }
+.vc2c-editor > div { display: flex; flex-direction: column; gap: var(--gap); }
+.vc2c-trackhead { display: flex; justify-content: space-between; gap: 8px; font-size: var(--fs-sub); color: var(--muted); font-weight: 600; }
+.vc2c-trackhead span:first-child::after { content: " →"; }
+.vc2c-count { color: var(--ink); }
+.vc2c-track { list-style: none; margin: 0; padding: 10px; display: flex; flex-wrap: wrap; gap: var(--gap); align-items: flex-start;
+  background: var(--soft); border: 2px dashed var(--line); border-radius: var(--radius); min-height: calc(var(--tap) + 24px); }
+.vc2c-body { flex-direction: column; flex-wrap: nowrap; background: #FFF; padding: 8px; min-width: 180px; }
+.vc2c-card { display: flex; flex-direction: column; gap: 6px; }
+.vc2c-cardrow { display: flex; align-items: stretch; }
+.vc2c-cardbtn {
+  min-height: calc(var(--tap) + 16px); min-width: calc(var(--tap) * 2); padding: 6px 10px 6px 6px;
+  display: flex; align-items: center; gap: 8px; text-align: left;
+  border: 3px solid var(--line); border-right-width: 0; border-radius: var(--radius) 0 0 var(--radius); background: #FFF; cursor: pointer;
+}
+.vc2c-cardname { display: flex; flex-direction: column; font-weight: 700; font-size: var(--fs-sub); line-height: 1.25; }
+.vc2c-cardname small { font-weight: 500; color: var(--muted); font-size: calc(var(--fs-sub) - 2px); }
+.vc2c-num { min-width: 32px; height: 32px; border-radius: 16px; background: #ECEFF1; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; padding: 0 6px; }
+.vc2c-gicon { font-size: 30px; width: 44px; text-align: center; }
+.vc2c-grip {
+  width: 36px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--muted);
+  border: 3px solid var(--line); border-left: 2px dashed var(--line); border-radius: 0 var(--radius) var(--radius) 0; background: #FAFAFA;
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.vc2c.is-low .vc2c-grip { width: 56px; }
+.vc2c-card.is-selected > .vc2c-cardrow > .vc2c-cardbtn, .vc2c-card.is-selected > .vc2c-cardrow > .vc2c-grip { border-color: var(--sel); }
+.vc2c-card.is-selected > .vc2c-cardrow > .vc2c-cardbtn { box-shadow: inset 0 0 0 2px var(--sel); }
+.vc2c-card.is-selected > .vc2c-cardrow .vc2c-num { background: var(--sel); color: #FFF; }
+.vc2c-card.is-running > .vc2c-cardrow > .vc2c-cardbtn { background: #FFF8E1; border-color: var(--run); }
+.vc2c-card.is-running > .vc2c-cardrow .vc2c-num { background: #1A237E; color: #FFF; outline: 3px solid var(--run); }
+.vc2c-card.is-repeat { background: #FFF3E0; border-radius: var(--radius); padding: 6px; }
+.vc2c-repeat { display: flex; flex-direction: column; gap: 6px; }
+.vc2c-times { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.vc2c-empty { color: var(--muted); font-size: var(--fs-sub); padding: 4px; max-width: 220px; }
+.vc2c-endslot { align-self: center; }
+.vc2c-hint { margin: 0; padding: 8px 12px; background: #FFF8E1; border: 2px solid var(--run); border-radius: 12px; font-size: var(--fs-sub); font-weight: 600; max-width: 320px; }
+.vc2c-dropmark { width: 6px; align-self: stretch; min-height: var(--tap); background: var(--sel); border-radius: 3px; list-style: none; }
+.vc2c-body .vc2c-dropmark { width: auto; height: 6px; min-height: 6px; }
+.vc2c-dragghost { position: fixed; left: 0; top: 0; z-index: 50; pointer-events: none; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
+  background: #FFF; border: 3px solid var(--sel); border-radius: 14px; box-shadow: 0 6px 16px rgba(0,0,0,.25); font-size: 28px; }
+.vc2c-editor.is-dragging { user-select: none; }
+
+/* ── 선택 카드 도구 / 속성 패널 ── */
+.vc2c-tools { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; padding: 8px 10px; border: 2px solid var(--sel); border-radius: var(--radius); background: #E8EAF6; }
+.vc2c-toolname { font-weight: 800; margin-right: 4px; }
+.vc2c-panel { border: 3px solid var(--sel); border-radius: var(--radius); padding: 12px; background: #FFF; display: flex; flex-direction: column; gap: var(--gap); }
+.vc2c-panelhead { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.vc2c-panel fieldset { border: 0; margin: 0; padding: 0; }
+.vc2c-panel legend { font-weight: 800; margin-bottom: 6px; }
+.vc2c-opts { display: flex; flex-wrap: wrap; gap: var(--gap); }
+.vc2c-opt {
+  position: relative; min-width: var(--tap); min-height: var(--tap); padding: 4px 12px;
+  display: inline-flex; align-items: center; gap: 6px; border: 3px solid var(--line); border-radius: 12px; background: #FFF; cursor: pointer; font-weight: 600; font-size: var(--fs-sub);
+}
+.vc2c-opt[aria-pressed="true"] { border-color: var(--sel); background: #E8EAF6; }
+.vc2c-check { position: absolute; top: -10px; right: -10px; width: 26px; height: 26px; border-radius: 13px; background: var(--sel); color: #FFF; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.vc2c-swatch { width: 28px; height: 28px; border-radius: 14px; border: 2px solid #616161; flex: none; }
+.vc2c-size { flex-direction: column; padding: 4px 10px; }
+.vc2c-grid9 { display: grid; grid-template-columns: repeat(3, minmax(var(--tap), 1fr)); gap: var(--gap); max-width: 420px; }
+.vc2c-cell { justify-content: center; text-align: center; font-size: calc(var(--fs-sub) - 2px); line-height: 1.2; }
+.vc2c-panelfoot { display: flex; gap: var(--gap); }
+
+/* ── 카드 상자 / 실행 ── */
+.vc2c-palette { display: flex; flex-wrap: wrap; gap: var(--gap); padding: 10px; border-radius: var(--radius); background: #FFF3E0; }
+.vc2c[data-cards-mode="goal"] .vc2c-palette { background: #E0F2F1; }
+.vc2c-pal { display: flex; align-items: stretch; }
+.vc2c-palbtn { border-radius: var(--radius) 0 0 var(--radius); min-height: calc(var(--tap) + 8px); flex-direction: row; }
+.vc2c-pal .vc2c-grip { border-width: 2px; }
+.vc2c-pal.is-used .vc2c-palbtn { border-radius: var(--radius); }
+.vc2c-palbtn small { font-weight: 500; color: var(--ok); }
+.vc2c-note { margin: 0; color: var(--muted); }
+.vc2c-runbar { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; padding-top: 4px; border-top: 2px solid var(--line); }
+.vc2c-seggroup { display: inline-flex; gap: 4px; }
+.vc2c-run { font-size: var(--fs); min-width: 120px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vc2c *, .vc2c *::before, .vc2c *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vc2c-card > .vc2c-cardrow > .vc2c-cardbtn { transition: background-color .2s, border-color .2s; }
+}
+
+/* ── 실제 셸(WP1) 안에서 ── */
+.vc2c-mission.is-compact .vc2c-micon { font-size: 28px; }
+.vc2c-mission.is-compact .vc2c-desc { margin: 0; color: var(--ink); font-weight: 600; }
+.vc2c-dock { width: 100%; padding: 0; }
+.vc2c-dock .vc2c-runbar { border-top: 0; padding: 0; justify-content: center; }
+.vc2c-stage { padding: 0; }
+.vc2c-canvases.is-stacked { align-items: center; }
+.vc2c-headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--gap); }
+.vc2c-headrow .vc2c-mission { flex: 1 1 260px; }
+.vc2c-stage.in-shell .vc2c-demo { padding: 6px 10px; gap: 10px; }
+.vc2c-stage.in-shell .vc2c-demo figure { display: flex; align-items: center; gap: 6px; }
+.vc2c-stage.in-shell .vc2c-demo p { font-size: var(--fs-sub); line-height: 1.35; }
+.vc2c-stage.in-shell .vc2c-fig figcaption { margin-bottom: 2px; }

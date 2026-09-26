@@ -1,0 +1,171 @@
+{
+  "source": "https://a-iroom.vercel.app/vibecoding.html",
+  "method": "Existing production UI; programmatic mode/mission selection; no student identity; all API calls blocked except mocked AI status. Not an authenticated backend or live model test.",
+  "results": [
+    {
+      "mode": "shape",
+      "missions": 12,
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "nodes": [
+        {
+          "class": "stage-track",
+          "w": 2164,
+          "h": 262,
+          "font": "16px"
+        },
+        {
+          "class": "sn-circle",
+          "w": 66,
+          "h": 66,
+          "font": "16px"
+        },
+        {
+          "class": "sn-title",
+          "w": 104,
+          "h": 16,
+          "font": "13px"
+        }
+      ],
+      "viewportName": "desktop",
+      "emptyVsFirstTarget": 79.9
+    },
+    {
+      "mode": "studio",
+      "missions": 4,
+      "bodyWidth": 1440,
+      "viewport": 1440,
+      "nodes": [
+        {
+          "class": "stage-track",
+          "w": 940,
+          "h": 262,
+          "font": "16px"
+        },
+        {
+          "class": "sn-circle",
+          "w": 66,
+          "h": 66,
+          "font": "16px"
+        },
+        {
+          "class": "sn-title",
+          "w": 104,
+          "h": 16,
+          "font": "13px"
+        }
+      ],
+      "viewportName": "desktop"
+    },
+    {
+      "mode": "shape",
+      "missions": 12,
+      "bodyWidth": 768,
+      "viewport": 768,
+      "nodes": [
+        {
+          "class": "stage-track",
+          "w": 2164,
+          "h": 262,
+          "font": "16px"
+        },
+        {
+          "class": "sn-circle",
+          "w": 66,
+          "h": 66,
+          "font": "16px"
+        },
+        {
+          "class": "sn-title",
+          "w": 104,
+          "h": 16,
+          "font": "13px"
+        }
+      ],
+      "viewportName": "tablet",
+      "emptyVsFirstTarget": 79.9
+    },
+    {
+      "mode": "studio",
+      "missions": 4,
+      "bodyWidth": 768,
+      "viewport": 768,
+      "nodes": [
+        {
+          "class": "stage-track",
+          "w": 940,
+          "h": 262,
+          "font": "16px"
+        },
+        {
+          "class": "sn-circle",
+          "w": 66,
+          "h": 66,
+          "font": "16px"
+        },
+        {
+          "class": "sn-title",
+          "w": 104,
+          "h": 16,
+          "font": "13px"
+        }
+      ],
+      "viewportName": "tablet"
+    },
+    {
+      "mode": "shape",
+      "missions": 12,
+      "bodyWidth": 390,
+      "viewport": 390,
+      "nodes": [
+        {
+          "class": "stage-track",
+          "w": 2164,
+          "h": 262,
+          "font": "16px"
+        },
+        {
+          "class": "sn-circle",
+          "w": 66,
+          "h": 66,
+          "font": "16px"
+        },
+        {
+          "class": "sn-title",
+          "w": 104,
+          "h": 16,
+          "font": "13px"
+        }
+      ],
+      "viewportName": "mobile",
+      "emptyVsFirstTarget": 79.9
+    },
+    {
+      "mode": "studio",
+      "missions": 4,
+      "bodyWidth": 390,
+      "viewport": 390,
+      "nodes": [
+        {
+          "class": "stage-track",
+          "w": 940,
+          "h": 262,
+          "font": "16px"
+        },
+        {
+          "class": "sn-circle",
+          "w": 66,
+          "h": 66,
+          "font": "16px"
+        },
+        {
+          "class": "sn-title",
+          "w": 104,
+          "h": 16,
+          "font": "13px"
+        }
+      ],
+      "viewportName": "mobile"
+    }
+  ]
+}
