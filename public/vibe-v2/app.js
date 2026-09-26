@@ -8,6 +8,7 @@ import { createPersistence, readLocalProject } from './persistence/index.js';
 import { defaultStorage } from './persistence/storage.js';
 import { createMockGenerationClient } from './mocks/generation-mock.js';
 import { getCatalog } from './modes/cards/catalog.js';
+import { getLearningCatalog } from './modes/learning/catalog.js';
 import * as fixtures from './shared/contracts/fixtures.js';
 
 const MODE_LOADERS = {
@@ -66,7 +67,7 @@ async function showHome() {
     onGrade: g => { prefs.set('grade', g); showHome(); },
     onStart: projectFactory => openProject(projectFactory()),
     fixtures,
-    catalog: getCatalog(prefs.get('cards.progress')),
+    catalog: [...getCatalog(prefs.get('cards.progress')), ...getLearningCatalog(prefs.get('learning.progress'))],
     recent,
   });
 }

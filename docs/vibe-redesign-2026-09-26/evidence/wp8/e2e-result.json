@@ -9,7 +9,7 @@
     {
       "id": "cards-goal",
       "status": "passed",
-      "ms": 23684,
+      "ms": 23763,
       "data": {
         "say": "별에 도착했어!",
         "screenshot": "cards-goal-done.png",
@@ -21,7 +21,7 @@
     {
       "id": "cards-shape",
       "status": "passed",
-      "ms": 24172,
+      "ms": 24349,
       "data": {
         "wrongHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
         "say": "예쁜 집이 완성됐어 — 나중에 찍은 세모가 위에 올라갔지?",
@@ -33,7 +33,7 @@
     {
       "id": "turtle-chips",
       "status": "passed",
-      "ms": 27476,
+      "ms": 27450,
       "data": {
         "source": "REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}",
         "restored": true,
@@ -50,7 +50,7 @@
     {
       "id": "pixel-drag",
       "status": "passed",
-      "ms": 23988,
+      "ms": 24101,
       "data": {
         "cellsPainted": 5,
         "moveEvents": 2,
@@ -63,7 +63,7 @@
     {
       "id": "pixel-tap",
       "status": "passed",
-      "ms": 22890,
+      "ms": 23208,
       "data": {
         "source": "LED_ON 3 3",
         "cellPx": 51
@@ -74,7 +74,7 @@
     {
       "id": "maze-if",
       "status": "passed",
-      "ms": 24345,
+      "ms": 25114,
       "data": {
         "bumpHint": "4번째 줄에서 토토 앞(오른쪽)이 벽이라 부딪혔어 — 그 앞 명령을 살펴봐.",
         "screenshot": "maze-if-done-1366.png"
@@ -85,7 +85,7 @@
     {
       "id": "layout-1366x768",
       "status": "passed",
-      "ms": 90706,
+      "ms": 90957,
       "data": {
         "viewport": "1366x768",
         "screens": [
@@ -140,7 +140,7 @@
     {
       "id": "layout-1024x768",
       "status": "passed",
-      "ms": 90575,
+      "ms": 90523,
       "data": {
         "viewport": "1024x768",
         "screens": [
@@ -195,7 +195,7 @@
     {
       "id": "layout-768x1024",
       "status": "passed",
-      "ms": 90536,
+      "ms": 90413,
       "data": {
         "viewport": "768x1024",
         "screens": [
@@ -250,7 +250,7 @@
     {
       "id": "dispose-100",
       "status": "passed",
-      "ms": 22654,
+      "ms": 22718,
       "data": {
         "cycles": 100,
         "maxTimersDuringRun": 1,
@@ -273,12 +273,12 @@
   ],
   "consoleErrorsTotal": 0,
   "meta": {
-    "integrationShim": true,
+    "integrationShim": false,
     "note": "integrationShim=true 이면 app.js에 학습 카탈로그가 아직 연결되지 않아 E2E가 응답에 두 줄을 끼워 넣었다",
-    "build": "7128144",
-    "started": "2026-09-26T03:28:57.090Z",
-    "finished": "2026-09-26T03:36:20.438Z",
-    "base": "http://127.0.0.1:57914",
+    "build": "2b827a1",
+    "started": "2026-09-26T03:37:18.333Z",
+    "finished": "2026-09-26T03:44:43.512Z",
+    "base": "http://127.0.0.1:49361",
     "node": "v24.15.0",
     "chrome": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
   }
