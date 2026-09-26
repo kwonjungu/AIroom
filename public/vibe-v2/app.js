@@ -1,9 +1,13 @@
 // v2 조립·라우팅·모드 생명주기 — 통합 담당 소유.
 // 화면: 홈(ui/shell.mountHome) → 작업 화면(ui/shell.mountWorkspace + modes/*/createMode).
+// 저장: persistence(IndexedDB, 800ms debounce). 서버 동기화는 /api/vibe가 켜진 배포에서 attachRemote로 연결 예정.
 
 import { mountHome, mountWorkspace } from './ui/shell.js';
 import { createProjectStore } from './state/store.js';
+import { createPersistence, readLocalProject } from './persistence/index.js';
+import { defaultStorage } from './persistence/storage.js';
 import { createMockGenerationClient } from './mocks/generation-mock.js';
+import { getCatalog } from './modes/cards/catalog.js';
 import * as fixtures from './shared/contracts/fixtures.js';
 
 const MODE_LOADERS = {
@@ -21,36 +25,76 @@ const prefs = {
 };
 
 const root = document.getElementById('app');
-let active = null; // { mode, shell }
+const storage = defaultStorage();
+let active = null; // { mode, shell, persistence, unsubscribe }
+let openSeq = 0;
 
 function grade() { return prefs.get('grade') || 'low'; }
 
-function disposeActive() {
+async function disposeActive() {
   if (!active) return;
-  try { active.mode?.dispose(); } catch (e) { console.error(e); }
-  try { active.shell?.destroy(); } catch (e) { console.error(e); }
-  active = null;
+  const a = active; active = null;
+  try { a.mode?.dispose(); } catch (e) { console.error(e); }
+  try { await a.persistence?.flush(); } catch (e) { console.error(e); }   // 떠나기 전 마지막 편집 저장
+  try { a.persistence?.dispose(); } catch (e) { console.error(e); }
+  try { a.unsubscribe?.(); } catch (e) { console.error(e); }
+  try { a.shell?.destroy(); } catch (e) { console.error(e); }
   root.replaceChildren();
 }
 
-function showHome() {
-  disposeActive();
+async function recentProjects() {
+  try {
+    const keys = (await storage.keys()).filter(k => k.startsWith('project:'));
+    const recs = (await Promise.all(keys.map(k => readLocalProject(storage, k.slice('project:'.length))))).filter(Boolean);
+    return recs
+      .sort((a, b) => String(b.project.updatedAt).localeCompare(String(a.project.updatedAt)))
+      .slice(0, 6)
+      .map(r => ({ title: r.project.title, saveState: 'savedLocal', updatedAt: r.project.updatedAt, open: () => openProject(r.project) }));
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+}
+
+async function showHome() {
+  await disposeActive();
+  const seq = ++openSeq;
+  const recent = await recentProjects();
+  if (seq !== openSeq) return;
   mountHome(root, {
     grade: grade(),
     onGrade: g => { prefs.set('grade', g); showHome(); },
-    // 경로·미션 선택 → 프로젝트 생성은 각 모드의 미션 카탈로그가 담당할 때까지 fixture로 연결
     onStart: projectFactory => openProject(projectFactory()),
     fixtures,
+    catalog: getCatalog(prefs.get('cards.progress')),
+    recent,
   });
 }
 
 async function openProject(project) {
-  disposeActive();
-  const store = createProjectStore(project);
-  const shell = mountWorkspace(root, { grade: grade(), title: project.title, onBack: showHome });
-  const { createMode } = await MODE_LOADERS[project.mode]();
-  const mode = createMode({ store, grade: grade(), shell, generation: createMockGenerationClient(), prefs, mission: null });
-  active = { mode, shell };
+  await disposeActive();
+  const seq = ++openSeq;
+  // 같은 id의 로컬 저장본이 더 최신이면 그것을 연다 (미션 다시 열기·새로고침 복구)
+  const saved = await readLocalProject(storage, project.id).catch(() => null);
+  if (seq !== openSeq) return;
+  const start = saved && saved.project.revision >= project.revision ? saved.project : project;
+
+  const store = createProjectStore(start);
+  const shell = mountWorkspace(root, { grade: grade(), title: start.title, mode: start.mode, onBack: showHome });
+  const persistence = createPersistence({ store, api: null, storage, onError: e => console.error(e) });
+  const unsubscribe = store.subscribe((ev, st) => shell.setSaveState?.(st.saveState));
+  shell.onSaveAction?.(() => persistence.flush());
+  active = { shell, persistence, unsubscribe, mode: null };
+
+  const { createMode } = await MODE_LOADERS[start.mode]();
+  if (seq !== openSeq) return;
+  const mode = createMode({
+    store, grade: grade(), shell, prefs, mission: null,
+    generation: createMockGenerationClient(),
+    openProject,              // 다음 미션 등 다른 프로젝트로 이동 (셸 제목·저장 대상까지 새로 연결)
+    goHome: showHome,
+  });
+  active.mode = mode;
   mode.enter(shell.stageSlot().closest('[data-workspace]') || root);
 }
 

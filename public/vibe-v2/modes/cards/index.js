@@ -253,6 +253,7 @@ export function createMode(ctx) {
   }
   function goMission(m) {
     const mm = m.map ? 'goal' : 'shape';
+    if (typeof ctx.openProject === 'function') { ctx.openProject(makeMissionProject(mm, m)); return; }
     const r = store.load(makeMissionProject(mm, m));
     if (!r.ok) say('다음 미션을 열 수 없어.', 'warn');
   }
