@@ -26,8 +26,8 @@
 
 | 명령 | 결과 |
 |---|---|
-| `npm test` (unit+contracts) | 202 + 11 통과, 실패 0 |
-| `node --test "tests/vibe/integration/**/*.test.js"` | 43 통과 |
+| `npm test` (unit+contracts) | 202 + 11 통과, 실패 0 (Node 22에서도) |
+| `node --test "tests/vibe/integration/**/*.test.js"` | 48 통과 |
 | `npm run eval:vibe:mock` | 35 통과 (AI01~AI08) |
 | `node lib/vibe/assets/build-manifest.js --check` | manifest 194항목 일치 |
 
@@ -60,6 +60,17 @@ VIBE_V2_API=1 VIBE_SESSION_SECRET=<32자+> PORT=3000 node server.js   # /api/vib
 - ⚠ Windows Git Bash에서 curl `-d`에 한글을 넣으면 깨진다 — 한글 요청은 Node fetch 스크립트로 시험할 것.
 
 ## 5. 다음 할 일 (순서대로)
+
+> **진행 기록 (2026-09-26 클라우드 세션)**
+> - WP3·WP8 WIP 브랜치(`vibe/wp3-studio`, `vibe/wp8-learning`)가 원격에 없어 로컬 PC에서 push 대기 중.
+> - 1번의 WIP 무관 부분 완료: `public/vibe-v2/services/generation-client.js` — `connectVibeApi()`(health→세션 확보, 없으면 연습 세션 발급) +
+>   HTTP GenerationClient(start/get?after=/watch/cancel/**apply**) + mock 폴백(`withLocalApply`). app.js 연결:
+>   서버가 켜져 있으면 persistence에 `createProjectApi()`를 붙여 학급 서버 동기화, store에 `instantiate` 주입.
+>   **모드는 후보 적용 시 `ctx.generation.apply(job)`를 쓴다** (서버 apply → 같은 patch를 로컬 store에 적용해 undo 유지 → `attachRemote`로 재PUT 방지).
+>   요청 뒤 직접 편집이 있으면 apply는 `{ok:false, reason:'conflict'}`. 테스트: `tests/vibe/integration/int-generation-client.test.js`.
+> - 브라우저 확인(1366×768): API 켠 서버에서 카드 미션 편집 → `POST /projects 201 → PUT 200`, 배지 "학급에 저장됨". API 끈 서버는 health 404 → 로컬 저장.
+> - Node 22 호환: `lib/vibe/assets/pipeline.js`의 `AbortSignal.timeout`이 이벤트 루프를 붙잡지 않아 WP6 테스트 13개가 cancelled(`npm test` exit 1)
+>   → 일반 타이머 + 해제로 교체. Vercel 기본 런타임이 Node 22일 수 있어 코드 쪽을 고쳤다.
 
 1. **WP3 마무리**: `vibe/wp3-studio` WIP를 확인·완성(아래 §7 원 지시문 기준) → `vibe/redesign`에 병합. 병합 시 통합 작업:
    - `app.js`에서 `modes/studio/catalog.js`의 `getStudioCatalog()`를 홈 catalog에 합치기.

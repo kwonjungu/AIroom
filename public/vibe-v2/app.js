@@ -1,12 +1,15 @@
 // v2 조립·라우팅·모드 생명주기 — 통합 담당 소유.
 // 화면: 홈(ui/shell.mountHome) → 작업 화면(ui/shell.mountWorkspace + modes/*/createMode).
-// 저장: persistence(IndexedDB, 800ms debounce). 서버 동기화는 /api/vibe가 켜진 배포에서 attachRemote로 연결 예정.
+// 저장: persistence(IndexedDB, 800ms debounce). /api/vibe가 켜진 배포면 학생(연습) 세션을 잡고 서버에도 동기화한다.
+// 생성: services/generation-client — 서버가 켜져 있으면 HTTP, 아니면 mock. 모드는 후보 적용에 generation.apply(job)를 쓴다.
 
 import { mountHome, mountWorkspace } from './ui/shell.js';
 import { createProjectStore } from './state/store.js';
 import { createPersistence, readLocalProject } from './persistence/index.js';
 import { defaultStorage } from './persistence/storage.js';
-import { createMockGenerationClient } from './mocks/generation-mock.js';
+import { createProjectApi } from './persistence/api-client.js';
+import { connectVibeApi, createGenerationClient } from './services/generation-client.js';
+import { instantiate } from './shared/templates/index.js';
 import { getCatalog } from './modes/cards/catalog.js';
 import { getLearningCatalog } from './modes/learning/catalog.js';
 import * as fixtures from './shared/contracts/fixtures.js';
@@ -80,9 +83,11 @@ async function openProject(project) {
   if (seq !== openSeq) return;
   const start = saved && saved.project.revision >= project.revision ? saved.project : project;
 
-  const store = createProjectStore(start);
+  const conn = await connectVibeApi();
+  if (seq !== openSeq) return;
+  const store = createProjectStore(start, { instantiate });
   const shell = mountWorkspace(root, { grade: grade(), title: start.title, mode: start.mode, onBack: showHome });
-  const persistence = createPersistence({ store, api: null, storage, onError: e => console.error(e) });
+  const persistence = createPersistence({ store, api: conn.ok ? createProjectApi() : null, storage, onError: e => console.error(e) });
   const unsubscribe = store.subscribe((ev, st) => shell.setSaveState?.(st.saveState));
   shell.onSaveAction?.(() => persistence.flush());
   active = { shell, persistence, unsubscribe, mode: null };
@@ -91,7 +96,7 @@ async function openProject(project) {
   if (seq !== openSeq) return;
   const mode = createMode({
     store, grade: grade(), shell, prefs, mission: null,
-    generation: createMockGenerationClient(),
+    generation: createGenerationClient({ conn, store, persistence }),
     openProject,              // 다음 미션 등 다른 프로젝트로 이동 (셸 제목·저장 대상까지 새로 연결)
     goHome: showHome,
   });
