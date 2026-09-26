@@ -5154,13 +5154,19 @@ function _removeCardAtPath(pathStr){
 }
 
 // --- 드롭존 배선: 컨테이너 위에 드롭 시 끝에(또는 근처에) 삽입 ---
+// #cardTrack은 렌더마다 innerHTML만 비워져 리스너가 남는 지속 요소라 매번 addEventListener하면
+// 드롭 1회에 핸들러가 누적 개수만큼 실행됨(카드 여러 장 추가 버그). 리스너는 요소당 1회만 등록하고,
+// undo/미션 전환 시 배열이 재할당되므로 대상 배열은 _dropCtx로 매 렌더 갱신한다.
 function _wireDropZone(container, list, isRepeatBody){
+  container._dropCtx={list, isRepeatBody};
+  if(container._dropWired) return;
+  container._dropWired=true;
   container.addEventListener('dragover',e=>{ e.preventDefault(); e.stopPropagation(); if(e.dataTransfer)e.dataTransfer.dropEffect=(_dragData&&_dragData.source==='track')?'move':'copy'; container.classList.add('drop-hint'); });
   container.addEventListener('dragleave',e=>{ if(e.target===container) container.classList.remove('drop-hint'); });
   container.addEventListener('drop',e=>{
     e.preventDefault(); e.stopPropagation();
     container.classList.remove('drop-hint');
-    _handleDrop(list, isRepeatBody, e);
+    _handleDrop(container._dropCtx.list, container._dropCtx.isRepeatBody, e);
   });
 }
 
