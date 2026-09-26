@@ -1,0 +1,52 @@
+{
+  "정상: 편집 → 학급 서버 저장": {
+    "pass": true,
+    "badge": "☁️ 학급에 저장됨"
+  },
+  "서버 500: 편집은 이 기기에 저장, 학급 저장으로 표시하지 않음": {
+    "pass": true,
+    "badge": "💾 이 기기에 저장됨"
+  },
+  "오프라인: AI 요청 실패 안내, 작품 그대로": {
+    "pass": true,
+    "note": "⚠️ 인터넷 연결이 불안정해요. 지금 작품은 그대로예요. /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+    "badge": "💾 이 기기에 저장됨"
+  },
+  "복구: online 이벤트로 밀린 저장이 학급 서버에 반영": {
+    "pass": true,
+    "badge": "☁️ 학급에 저장됨"
+  },
+  "AI 429: 기다리라는 안내, 작품 그대로": {
+    "pass": true,
+    "note": "⚠️ AI 요청이 많아요. 잠시 뒤에 다시 해 보세요. /  / 다시 부탁하기 / 직접 규칙 바꾸기"
+  },
+  "AI 서버 경로: 비교 → 적용 → 학급 저장": {
+    "pass": true,
+    "revision": 4
+  },
+  "재접속: 같은 작품·같은 서버 id로 이어서 저장": {
+    "pass": true,
+    "reopenBadge": "☁️ 학급에 저장됨",
+    "posts": [
+      1,
+      1
+    ]
+  },
+  "_api": [
+    "GET /health 200",
+    "GET /session/me 401",
+    "POST /session 201",
+    "POST /projects 201",
+    "PUT /projects/:id 200",
+    "PUT /projects/:id 500",
+    "PUT /projects/:id 200",
+    "POST /generations 429",
+    "POST /generations 202",
+    "GET /generations/:id 200",
+    "POST /projects/:id/apply 200",
+    "GET /health 200",
+    "GET /session/me 200",
+    "PUT /projects/:id 200"
+  ],
+  "_consoleErrors": []
+}

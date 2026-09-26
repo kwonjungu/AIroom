@@ -28,6 +28,7 @@
 |---|---|
 | `npm test` (unit+contracts) | 202 + 11 통과, 실패 0 (Node 22에서도) |
 | `node --test "tests/vibe/integration/**/*.test.js"` | 48 통과 |
+| `npm run test:vibe:e2e` | 14 통과 · 건너뜀 0 (공방 4흐름 포함) |
 | `npm run eval:vibe:mock` | 35 통과 (AI01~AI08) |
 | `node lib/vibe/assets/build-manifest.js --check` | manifest 194항목 일치 |
 
@@ -69,7 +70,19 @@ VIBE_V2_API=1 VIBE_SESSION_SECRET=<32자+> PORT=3000 node server.js   # /api/vib
 >   옛 게임 변환(`convertLegacy`)은 `openProject(p, {saveNow:true})`로 즉시 저장 — 편집 없이 탭을 닫아도 변환본이 남는다.
 > - 브라우저 확인(evidence/integration-cloud/): 서버 경로 `POST /generations 202 → GET 200 → POST /projects/:id/apply 200`(apply 뒤 재PUT 없음),
 >   mock 경로(API 끔) 동일 흐름, 1366×768·1024×768·768×1024 가로 넘침 0·콘솔 오류 0, 옛 게임(v1 사과 예제) 변환 → 새 무대 실행·원본 보존.
-> - 이 컨테이너에는 Python Playwright가 없어 `npm run test:vibe:e2e`는 0건 실행(결과 파일은 PC 결과 유지). E2E 재실행은 PC에서.
+> - **3번 최종 통합 검증(자동화 가능한 범위) 완료**:
+>   - E2E `flows.py`에 공방 흐름 4개 추가(studio-template/ai/fail/conflict) + layout 3해상도에 공방 화면 → **14/14 통과, 건너뜀 0, 콘솔 오류 0**
+>     (Linux chromium, `pip install playwright` 후 `npm run test:vibe:e2e`). 결과: evidence/wp8/e2e-result.json
+>   - 서버 API 켠 네트워크 고장 검사 `evidence/integration-cloud/network_check.py` 7/7: 서버 500 → "이 기기에 저장됨"(학급으로 거짓 표시 없음),
+>     오프라인 편집·AI 요청(작품 그대로), online 복구 → 학급 동기화, AI 429 안내, 서버 AI 적용, 새로고침 재접속 시 같은 서버 id로 PUT.
+>   - OP07: 기존 로그인·staff/schedules/tabs/vibe-progress/patrol-log·/, /posting, /calandar, /rental, /vibecoding.html 정상(API 켬/끔).
+> - 검증 중 고친 것: ① 홈 "만들기" 상단 공방 카드가 fixture 데모(생선 받기+변환 안 되는 옛 게임)였고 실제 네 장르는 챕터 목록 1/15에 숨어 있었음
+>   → `studioTemplateCards(catalog)`로 네 장르 카드, 공방은 챕터 목록에서 제외. ② API를 끈 서버의 `/api/vibe/health` 404가 콘솔 오류로
+>   잡힘 → 꺼져 있어도 200 `{ok:false, enabled:false}`. ③ 저장본을 다시 열면 배지가 "저장 안 됨" → 실제 위치(이 기기/학급)로 시작.
+>   ④ 서버에 닿지 못한 AI 요청은 `jobId:null`이라 공방의 `watch(null)`이 백오프로 최대 30초 매달림 → 로컬 실패 Job(`j_local*`) 즉시 반환.
+>   ⑤ WP0에서 package.json scripts를 덮으며 사라진 `test:recruitment` 복구.
+> - 남은 3번: 실기기(iPad·Android·크롬북) 터치·가상 키보드·IME, 200% 확대, 실제 저사양 성능 — 사람이 기기로 해야 함.
+> - `main` 병합 완료(2026-09-26). production 브랜치(`claude/school-admin-portal-APgza`)에는 **아직 안 올림** — v2는 `/vibe-v2/`, API는 `VIBE_V2_API=1`일 때만 켜짐.
 > - 1번의 WIP 무관 부분 완료: `public/vibe-v2/services/generation-client.js` — `connectVibeApi()`(health→세션 확보, 없으면 연습 세션 발급) +
 >   HTTP GenerationClient(start/get?after=/watch/cancel/**apply**) + mock 폴백(`withLocalApply`). app.js 연결:
 >   서버가 켜져 있으면 persistence에 `createProjectApi()`를 붙여 학급 서버 동기화, store에 `instantiate` 주입.
@@ -83,7 +96,7 @@ VIBE_V2_API=1 VIBE_SESSION_SECRET=<32자+> PORT=3000 node server.js   # /api/vib
    - `app.js`에서 `modes/studio/catalog.js`의 `getStudioCatalog()`를 홈 catalog에 합치기.
    - `createMockGenerationClient()` 대신, `/api/vibe/health`가 ok면 **HTTP GenerationClient**(POST /generations, GET /generations/:id?after=, POST cancel, POST /projects/:id/apply)를 쓰고 아니면 mock으로 폴백하는 클라이언트를 `public/vibe-v2/services/`에 작성. persistence의 `attachRemote`로 서버 동기화 연결.
 2. ~~**WP8 마무리**~~ (PC에서 완료): `vibe/wp8-learning` WIP 완성(§7 원 지시문) → 병합, `modes/learning/catalog.js` 홈 연결, `npm run test:vibe:e2e` 실행 결과 기록.
-3. **최종 통합 검증**: 생성→수정→실행→저장→재접속을 실제 브라우저로(ACCEPTANCE §2 UI/SH/ST/OP). 1366×768·1024×768·768×1024 스크린샷, 가로 넘침·터치 크기·콘솔 오류.
+3. (자동화 범위 완료, 실기기 남음) **최종 통합 검증**: 생성→수정→실행→저장→재접속을 실제 브라우저로(ACCEPTANCE §2 UI/SH/ST/OP). 1366×768·1024×768·768×1024 스크린샷, 가로 넘침·터치 크기·콘솔 오류.
 4. **사용자 승인 필요 항목** (§6) 처리 후 preview 배포 → 선정 학급 파일럿(ACCEPTANCE §5·§6).
 
 ## 6. 사용자 결정·승인 대기

@@ -116,6 +116,12 @@ describe('HTTP GenerationClient 종단 (mock 공급자)', () => {
     const job = await w.generation.start({ projectId: p.id, baseRevision: p.revision, requestId: rid(), intentText: RULE_TEXT, mode: 'studio', project: p });
     assert.equal(job.status, 'failed');
     assert.match(job.studentMessage, /[가-힣]/);
+    // 서버에 닿지 못한 실패 Job도 jobId가 있고, watch는 폴링 없이 바로 끝난다 (공방은 start 뒤 항상 watch를 부른다)
+    assert.match(job.jobId, /^j_local/);
+    const t0 = Date.now();
+    const w2 = await w.generation.watch(job.jobId, null, { intervalMs: 5 });
+    assert.equal(w2.status, 'failed');
+    assert.ok(Date.now() - t0 < 100, 'watch 즉시 종료');
     assert.equal(w.store.getProject().revision, p.revision, '작품 그대로');
     w.persistence.dispose();
   });

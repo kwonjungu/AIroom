@@ -55,6 +55,13 @@ export function createHttpGenerationClient(o) {
   const base = o.base || '/api/vibe';
   const cursors = new Map();   // jobId → 마지막으로 받은 이벤트 seq
   const remoteOf = new Map();  // jobId → 서버 projectId
+  const localFailed = new Map(); // 서버에 닿지 못한 요청의 실패 Job (jobId j_local*) — get/watch가 폴링 없이 바로 돌려준다
+  let localSeq = 0;
+  const failLocal = (req, err) => {
+    const job = { ...failedJob(req, err), jobId: `j_local${++localSeq}` };
+    localFailed.set(job.jobId, job);
+    return job;
+  };
   const reqOf = new Map();     // jobId → 시작 요청 {projectId(로컬), baseRevision, requestId}
   // 서버는 작품 id를 새로 발급한다. 모드는 로컬 id로 결과를 대조하므로(mock과 같은 모양) Job의 projectId를 로컬 id로 돌려준다.
   const asLocal = job => (job && reqOf.has(job.jobId) ? { ...job, projectId: reqOf.get(job.jobId).projectId } : job);
@@ -78,6 +85,7 @@ export function createHttpGenerationClient(o) {
   }
 
   async function get(jobId, opts = {}) {
+    if (localFailed.has(jobId)) return { ...localFailed.get(jobId), events: [] };
     const after = cursors.get(jobId) || 0;
     const r = await call('GET', `/generations/${encodeURIComponent(jobId)}?after=${after}`, undefined, opts.signal);
     if (Number.isInteger(r.cursor)) cursors.set(jobId, r.cursor);
@@ -89,8 +97,8 @@ export function createHttpGenerationClient(o) {
 
     async start(req) {
       let target;
-      try { target = await o.remote(); } catch (e) { return failedJob(req, e); }
-      if (!target) return failedJob(req, Object.assign(new Error('not synced'), { status: 0, code: 'NETWORK' }));
+      try { target = await o.remote(); } catch (e) { return failLocal(req, e); }
+      if (!target) return failLocal(req, Object.assign(new Error('not synced'), { status: 0, code: 'NETWORK' }));
       try {
         const r = await call('POST', '/generations', {
           projectId: target.projectId, baseRevision: target.baseRevision,
@@ -99,13 +107,14 @@ export function createHttpGenerationClient(o) {
         remoteOf.set(r.jobId, target.projectId);
         reqOf.set(r.jobId, { projectId: req.projectId, baseRevision: req.baseRevision, requestId: req.requestId });
         return asLocal(r.job);
-      } catch (e) { return failedJob(req, e); }
+      } catch (e) { return failLocal(req, e); }
     },
 
     get,
 
     async cancel(jobId) {
       if (!jobId) return null;
+      if (localFailed.has(jobId)) return localFailed.get(jobId);
       try { return asLocal((await call('POST', `/generations/${encodeURIComponent(jobId)}/cancel`, {})).job); } catch (e) {
         if (e?.status === 404) return null;
         throw e;
@@ -113,6 +122,7 @@ export function createHttpGenerationClient(o) {
     },
 
     async watch(jobId, onUpdate, opts = {}) {
+      if (localFailed.has(jobId)) { const j = localFailed.get(jobId); onUpdate?.(j); return j; }
       let last = '';
       let failures = 0;
       for (;;) {

@@ -4,7 +4,7 @@
 import { h, createCleanupBag, isImagePath, ASSET_BASE } from './dom.js';
 import {
   PATHS, recommendedPath, describeMission, chapterSummary, chapterNav, initialChapterIndex,
-  chaptersForPath, demoCatalog, templateCards,
+  chaptersForPath, demoCatalog, templateCards, studioTemplateCards,
 } from './catalog.js';
 import { openDialog } from './dialog.js';
 import { openSettings, createMuteToggle } from './settings.js';
@@ -112,15 +112,17 @@ export function mountHome(root, opts) {
       h('button', { type: 'button', class: 'v2-btn', onclick: () => go('start') }, '← 처음 화면'),
       h('h1', { class: 'home-h1' }, p.title));
     const out = [head];
+    // 공방은 순서 학습이 아니라 갤러리 → 챕터 목록이 아니라 위쪽 템플릿 카드로 보여 준다(카탈로그가 없으면 fixture 데모)
+    const studioTpls = id === 'make' ? studioTemplateCards(catalog) : [];
     if (id === 'make') {
-      const tpls = templateCards(opts.fixtures);
+      const tpls = studioTpls.length ? studioTpls : templateCards(opts.fixtures);
       if (tpls.length) {
         out.push(h('section', { class: 'home-section', 'aria-labelledby': 'tpl-h' },
           h('h2', { id: 'tpl-h', class: 'home-h2' }, '게임 공방 — 무엇을 만들까요?'),
           h('div', { class: 'tpl-grid' }, tpls.map(templateCard))));
       }
     }
-    const chapters = chaptersForPath(catalog || demoCatalog(opts.fixtures), id);
+    const chapters = chaptersForPath(catalog || demoCatalog(opts.fixtures), id).filter(ch => !(studioTpls.length && ch.mode === 'studio'));
     if (chapters.length) out.push(chapterSection(id, chapters));
     else if (id === 'cards') out.push(emptyNote('아직 준비된 카드 미션이 없어요.'));
     return out;

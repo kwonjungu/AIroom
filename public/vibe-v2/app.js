@@ -91,6 +91,10 @@ async function openProject(project, opts = {}) {
   const shell = mountWorkspace(root, { grade: grade(), title: start.title, mode: start.mode, onBack: showHome });
   const persistence = createPersistence({ store, api: conn.ok ? createProjectApi() : null, storage, onError: e => console.error(e) });
   const unsubscribe = store.subscribe((ev, st) => shell.setSaveState?.(st.saveState));
+  // 저장본에서 열었으면 "저장 안 됨"이 아니라 실제 위치로 표시 (학급 서버와 revision이 같으면 학급, 아니면 이 기기)
+  if (saved && start === saved.project) {
+    store.setSaveState(saved.remoteId && saved.serverRevision === start.revision && !saved.dirty ? 'savedClass' : 'savedLocal');
+  }
   shell.onSaveAction?.(() => persistence.flush());
   active = { shell, persistence, unsubscribe, mode: null };
 

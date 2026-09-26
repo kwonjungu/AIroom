@@ -1,15 +1,15 @@
 {
   "ok": true,
   "summary": {
-    "passed": 10,
+    "passed": 14,
     "failed": 0,
-    "skipped": 1
+    "skipped": 0
   },
   "flows": [
     {
       "id": "cards-goal",
       "status": "passed",
-      "ms": 23763,
+      "ms": 2008,
       "data": {
         "say": "별에 도착했어!",
         "screenshot": "cards-goal-done.png",
@@ -21,7 +21,7 @@
     {
       "id": "cards-shape",
       "status": "passed",
-      "ms": 24349,
+      "ms": 2974,
       "data": {
         "wrongHint": "💡 네모는 잘 놓았어. 세모를 나중에 찍어 볼까?",
         "say": "예쁜 집이 완성됐어 — 나중에 찍은 세모가 위에 올라갔지?",
@@ -33,14 +33,14 @@
     {
       "id": "turtle-chips",
       "status": "passed",
-      "ms": 27450,
+      "ms": 6048,
       "data": {
         "source": "REPEAT 4 {\nFORWARD 100\nRIGHT 90\n}",
         "restored": true,
         "stepResetDeterministic": {
           "line": "2",
           "hud": "⬆ 오른쪽을 봐요 90° · 앞으로 100만큼 그렸어지금 2번째 줄 · 반복 2/4",
-          "img": 19550
+          "img": 21222
         },
         "screenshot": "turtle-square-done-1366.png"
       },
@@ -50,7 +50,7 @@
     {
       "id": "pixel-drag",
       "status": "passed",
-      "ms": 24101,
+      "ms": 2758,
       "data": {
         "cellsPainted": 5,
         "moveEvents": 2,
@@ -63,7 +63,7 @@
     {
       "id": "pixel-tap",
       "status": "passed",
-      "ms": 23208,
+      "ms": 1609,
       "data": {
         "source": "LED_ON 3 3",
         "cellPx": 51
@@ -74,7 +74,7 @@
     {
       "id": "maze-if",
       "status": "passed",
-      "ms": 25114,
+      "ms": 2881,
       "data": {
         "bumpHint": "4번째 줄에서 토토 앞(오른쪽)이 벽이라 부딪혔어 — 그 앞 명령을 살펴봐.",
         "screenshot": "maze-if-done-1366.png"
@@ -85,7 +85,7 @@
     {
       "id": "layout-1366x768",
       "status": "passed",
-      "ms": 90957,
+      "ms": 7152,
       "data": {
         "viewport": "1366x768",
         "screens": [
@@ -123,12 +123,20 @@
             "low": false,
             "overflowX": 0,
             "small": []
+          },
+          {
+            "screen": "studio",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
           }
         ],
         "screenshots": [
           "turtle-1366x768.png",
           "pixel-1366x768.png",
-          "maze-1366x768.png"
+          "maze-1366x768.png",
+          "studio-1366x768.png"
         ],
         "overflowScreens": [],
         "smallControlsLearning": 0,
@@ -140,7 +148,7 @@
     {
       "id": "layout-1024x768",
       "status": "passed",
-      "ms": 90523,
+      "ms": 7193,
       "data": {
         "viewport": "1024x768",
         "screens": [
@@ -178,12 +186,20 @@
             "low": false,
             "overflowX": 0,
             "small": []
+          },
+          {
+            "screen": "studio",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
           }
         ],
         "screenshots": [
           "turtle-1024x768.png",
           "pixel-1024x768.png",
-          "maze-1024x768.png"
+          "maze-1024x768.png",
+          "studio-1024x768.png"
         ],
         "overflowScreens": [],
         "smallControlsLearning": 0,
@@ -195,7 +211,7 @@
     {
       "id": "layout-768x1024",
       "status": "passed",
-      "ms": 90413,
+      "ms": 7048,
       "data": {
         "viewport": "768x1024",
         "screens": [
@@ -233,12 +249,20 @@
             "low": false,
             "overflowX": 0,
             "small": []
+          },
+          {
+            "screen": "studio",
+            "min": 48,
+            "low": false,
+            "overflowX": 0,
+            "small": []
           }
         ],
         "screenshots": [
           "turtle-768x1024.png",
           "pixel-768x1024.png",
-          "maze-768x1024.png"
+          "maze-768x1024.png",
+          "studio-768x1024.png"
         ],
         "overflowScreens": [],
         "smallControlsLearning": 0,
@@ -250,7 +274,7 @@
     {
       "id": "dispose-100",
       "status": "passed",
-      "ms": 22718,
+      "ms": 1596,
       "data": {
         "cycles": 100,
         "maxTimersDuringRun": 1,
@@ -267,19 +291,103 @@
     },
     {
       "id": "studio-template",
-      "status": "skipped",
-      "reason": "WP3 공방 병렬 개발 중 (E2E 제외)"
+      "status": "passed",
+      "ms": 10690,
+      "data": {
+        "받기 게임": {
+          "tickPlay": 71,
+          "tickRestart": 14,
+          "running": true,
+          "held": []
+        },
+        "피하기 게임": {
+          "tickPlay": 70,
+          "tickRestart": 14,
+          "running": true,
+          "held": []
+        },
+        "모으기 게임": {
+          "tickPlay": 71,
+          "tickRestart": 13,
+          "running": true,
+          "held": []
+        },
+        "미로 탈출": {
+          "tickPlay": 71,
+          "tickRestart": 13,
+          "running": true,
+          "held": []
+        },
+        "screenshot": "studio-maze-play.png"
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "studio-ai",
+      "status": "passed",
+      "ms": 5064,
+      "data": {
+        "compare": "AI가 이렇게 바꾸려고 해요 /  / “조금 더 천천히 떨어지게 해줘” → 조금 더 천천히 떨어져요. /  / 바뀔 것 / 🍎 사과 떨어지는 속도: 보통 → 느리게쯤 (140→98) / 그대로인 것 / 🏁 점수 15이면 성공 / ⌛ 시간이 끝나면 실패 / 🤝 🍎에 닿으면 점수 +1, 사과는 사라져요 / 🕹️ 주인공 🐱는 좌우로 움직여요 · 속도 보통 / … 그 밖에 1가지 / 적용하기 / 안 할래",
+        "speed": [
+          140,
+          98,
+          140
+        ],
+        "revisionAfterReload": 3,
+        "badge": "💾\n이 기기에 저장됨",
+        "screenshot": "studio-reopened.png"
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "studio-fail",
+      "status": "passed",
+      "ms": 6495,
+      "data": {
+        "invalid": {
+          "note": "⚠️ 고친 게임이 제대로 안 돌아가서 적용하지 않았어요. /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+          "unchanged": true,
+          "replay": true,
+          "compare": false
+        },
+        "providerDown": {
+          "note": "⚠️ AI가 잠깐 바빠요. 블록으로 직접 바꿔 볼까? /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+          "unchanged": true,
+          "replay": true,
+          "compare": false
+        },
+        "timeout": {
+          "note": "⚠️ 시간이 너무 오래 걸렸어요. 지금 작품은 그대로예요. /  / 다시 부탁하기 / 직접 규칙 바꾸기",
+          "unchanged": true,
+          "replay": true,
+          "compare": false
+        }
+      },
+      "error": null,
+      "consoleErrors": []
+    },
+    {
+      "id": "studio-conflict",
+      "status": "passed",
+      "ms": 4002,
+      "data": {
+        "note": "⚠️ 그 사이 작품이 바뀌었어요. 다시 요청해 볼까? /  / 다시 요청하기"
+      },
+      "error": null,
+      "consoleErrors": []
     }
   ],
   "consoleErrorsTotal": 0,
   "meta": {
     "integrationShim": false,
     "note": "integrationShim=true 이면 app.js에 학습 카탈로그가 아직 연결되지 않아 E2E가 응답에 두 줄을 끼워 넣었다",
-    "build": "2b827a1",
-    "started": "2026-09-26T03:37:18.333Z",
-    "finished": "2026-09-26T03:44:43.512Z",
-    "base": "http://127.0.0.1:49361",
-    "node": "v24.15.0",
+    "build": "a8654fc",
+    "started": "2026-09-26T04:07:43.170Z",
+    "finished": "2026-09-26T04:08:51.230Z",
+    "base": "http://127.0.0.1:43617",
+    "node": "v22.22.2",
     "chrome": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
   }
 }

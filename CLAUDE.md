@@ -26,6 +26,15 @@ Claude Code 대화를 이어갈 때 빠르게 맥락을 잡기 위한 메모. �
 
 ---
 
+## 바이브코딩 v2 (/vibe-v2/) — 2026-09 재설계
+
+v1(`public/vibecoding.html`)과 별개인 새 앱. **상태·다음 할 일은 `docs/vibe-redesign-2026-09-26/HANDOFF.md`가 단일 기준** — 먼저 읽을 것.
+- 클라이언트 `public/vibe-v2/`(ES 모듈, 빌드 없음), 서버 `lib/vibe/`(ESM, `server.js`가 `/api/vibe`에 지연 mount). **API는 `VIBE_V2_API=1`일 때만** 켜지고,
+  꺼져 있으면 `/api/vibe/health`만 200 `{ok:false}` — 클라이언트는 로컬(IndexedDB) 저장 + mock AI로 동작한다.
+- 모드: 카드(1~2학년 별까지 가기·도형) / 게임 공방(studio) / 거북이·픽셀·미로(learning). 조립은 `public/vibe-v2/app.js`.
+- AI 후보 적용은 모드가 `ctx.generation.apply(job)` — 서버 멱등 반영 후 로컬 store에도 적용(undo 유지). 서버가 발급한 작품 id는 클라이언트에 노출하지 않는다(Job.projectId는 로컬 id).
+- 검사: `npm test`, `npm run test:vibe:integration`, `npm run eval:vibe:mock`, `npm run test:vibe:e2e`(Python Playwright 필요). Node 22에서도 통과해야 한다.
+
 ## 순찰일지 탭 (patrol, 2026-07)
 
 방학 중 교내 순찰 대장(구글시트 「순 찰 일지」 대체). DEFAULT_TABS order 15, 빌트인.

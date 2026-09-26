@@ -4,8 +4,9 @@ import { describeSaveState, describeAiStatus, describeState, josa } from '../../
 import { SAVE_STATES } from '../../../public/vibe-v2/state/store.js';
 import { STEPS, describeStep, firstSentence } from '../../../public/vibe-v2/ui/steps.js';
 import {
-  describeMission, chapterNav, chapterSummary, initialChapterIndex, demoCatalog, templateCards, chaptersForPath, recommendedPath,
+  describeMission, chapterNav, chapterSummary, initialChapterIndex, demoCatalog, templateCards, studioTemplateCards, chaptersForPath, recommendedPath,
 } from '../../../public/vibe-v2/ui/catalog.js';
+import { getStudioCatalog } from '../../../public/vibe-v2/modes/studio/catalog.js';
 import { createPrefStore, readSettings, effectiveReduceMotion, PREF_PREFIX } from '../../../public/vibe-v2/ui/prefs.js';
 import { createCleanupBag } from '../../../public/vibe-v2/ui/dom.js';
 import { nextTrapIndex } from '../../../public/vibe-v2/ui/dialog.js';
@@ -104,6 +105,20 @@ test('catalog 없을 때 fixtures 데모 카드와 공방 템플릿', () => {
   assert.ok(tpl.every(t => t.makeProject().mode === 'studio'));
   assert.equal(recommendedPath('low'), 'cards');
   assert.equal(recommendedPath('high'), 'make');
+});
+
+test('공방 카탈로그 → 홈 템플릿 카드 네 장르 (카탈로그 없으면 빈 배열)', () => {
+  const cards = studioTemplateCards(getStudioCatalog());
+  assert.equal(cards.length, 4);
+  for (const t of cards) {
+    assert.ok(t.title && t.hero && t.controls, JSON.stringify(t));
+    assert.equal(t.legacy, false);
+    const a = t.makeProject(), b = t.makeProject();
+    assert.equal(a.mode, 'studio');
+    assert.notEqual(a.id, b.id, '누를 때마다 새 작품');
+  }
+  assert.deepEqual(studioTemplateCards(null), []);
+  assert.deepEqual(studioTemplateCards([{ id: 'x', mode: 'goal', missions: [] }]), []);
 });
 
 test('설정 저장: app.js와 같은 vibe2_pref_* 규칙', () => {

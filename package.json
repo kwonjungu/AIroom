@@ -11,7 +11,8 @@
     "test:vibe:integration": "node --test \"tests/vibe/integration/**/*.test.js\"",
     "test:vibe:e2e": "node tests/vibe/e2e/run.js",
     "eval:vibe:mock": "node --test \"tests/vibe/evals/mock/**/*.test.js\"",
-    "eval:vibe:live": "node tests/vibe/evals/live.js"
+    "eval:vibe:live": "node tests/vibe/evals/live.js",
+    "test:recruitment": "node --test tests/recruitment/*.test.js"
   },
   "repository": {
     "type": "git",

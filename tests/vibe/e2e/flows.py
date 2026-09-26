@@ -9,7 +9,10 @@
 #   maze-if          미로 벽탐지: 코드 입력 → 완료, 오답은 충돌 줄 안내
 #   layout-*         1366×768·1024×768·768×1024 에서 가로 넘침·작은 조작·콘솔 오류
 #   dispose-100      학습 모드 생성→실행→dispose 100회 후 남은 타이머·rAF·리스너 0
-#   studio-*         (건너뜀) WP3 공방 병렬 개발 중 — 구현되면 함수만 추가
+#   studio-template  (ST01) 홈 공방 카드 네 장르 → 해보기 → 조작 → 처음부터
+#   studio-ai        (ST02·ST05) 규칙 직접 변경 → AI 변경 비교·적용(직접 변경 보존) → 되돌리기 → 새로고침 뒤 복구
+#   studio-fail      (ST04) AI 실패 3종(mock 주입) → 작품 그대로, 1클릭 재플레이
+#   studio-conflict  (AI06) 생성 중 직접 변경 → 충돌 안내, AI 결과 적용 0
 #
 # 홈 카탈로그에 학습 미션이 아직 연결되지 않은 빌드(app.js 통합 전)에서는 app.js 응답에
 # getLearningCatalog 연결 두 줄을 끼워 넣고, 결과에 integrationShim=true 로 표시한다.
@@ -309,6 +312,15 @@ def flow_layout(browser, vw, vh):
             shots.append(shot(page, "%s-%s.png" % (name, tag)))
         finally:
             ctx.close()
+    # 3~6학년 게임 공방
+    ctx, page = studio_page(browser, vw=vw, vh=vh)
+    try:
+        open_studio(page)
+        page.wait_for_timeout(400)
+        screens.append(dict(screen="studio", **measure(page)))
+        shots.append(shot(page, "studio-%s.png" % tag))
+    finally:
+        ctx.close()
     overflow = [s for s in screens if s["overflowX"] > 0]
     small_learning = [s for s in screens if s["screen"] in ("turtle", "pixel", "maze") and s["small"]]
     small_other = [s for s in screens if s["screen"] not in ("turtle", "pixel", "maze") and s["small"]]
@@ -385,6 +397,158 @@ def flow_dispose(browser):
         ctx.close()
 
 
+# ── 게임 공방 (WP3) ─────────────────────────────
+STUDIO_GENRES = [("받기 게임", ["ArrowLeft"]), ("피하기 게임", ["ArrowLeft"]), ("모으기 게임", ["ArrowRight", "ArrowDown"]), ("미로 탈출", ["ArrowRight", "ArrowDown"])]
+
+
+def studio_page(browser, query="", vw=1366, vh=768):
+    ctx, page = new_page(browser, vw, vh, prefs={"grade": "mid"}, flow="studio")
+    page.goto(APP + "?studioDebug=1" + query, wait_until="networkidle")
+    page.wait_for_selector(".home-main")
+    return ctx, page
+
+
+def open_studio(page, title="받기 게임"):
+    open_path(page, "make")
+    page.get_by_role("button", name="%s 만들기 시작" % title).click()
+    page.wait_for_selector(".st-rule")
+
+
+def studio_tab(page, pane):
+    tab = page.locator(".ws-tab[data-pane=%s]" % pane)
+    if tab.is_visible() and tab.get_attribute("aria-selected") != "true":
+        tab.click()
+
+
+def sdbg(page):
+    return page.evaluate("__vibeStudio.debug()")
+
+
+def sproj(page):
+    return page.evaluate("__vibeStudio.store.getProject()")
+
+
+def kind(p, k):
+    return next(n for n in p["program"]["nodes"] if n["kind"] == k)
+
+
+def ask(page, text):
+    studio_tab(page, "assist")
+    page.locator(".st-ai textarea").fill(text)
+    page.get_by_role("button", name="AI에게 부탁하기").click()
+
+
+def flow_studio_template(browser):
+    ctx, page = studio_page(browser)
+    out = {}
+    try:
+        for title, keys in STUDIO_GENRES:
+            page.goto(APP + "?studioDebug=1", wait_until="networkidle")
+            open_studio(page, title)
+            page.locator("[data-dock=play]").click()
+            page.wait_for_selector(".st-overlay:not([hidden])")
+            page.keyboard.down(keys[0]); page.wait_for_timeout(600)
+            for k in keys[1:]:
+                page.keyboard.down(k)
+            page.wait_for_timeout(600)
+            for k in keys:
+                page.keyboard.up(k)
+            d1 = sdbg(page)
+            page.locator("[data-dock=restart]").click(); page.wait_for_timeout(250)
+            d2 = sdbg(page)
+            out[title] = {"tickPlay": d1["runtime"]["tick"], "tickRestart": d2["runtime"]["tick"], "running": d2["running"], "held": d1["held"]}
+            assert d1["runtime"]["tick"] > 30, "%s: 실행 안 됨 %s" % (title, d1["runtime"])
+            assert d2["runtime"]["tick"] < d1["runtime"]["tick"] and d2["running"], "%s: 처음부터 실패" % title
+            assert not d1["held"], "%s: 키 고착 %s" % (title, d1["held"])
+        out["screenshot"] = shot(page, "studio-maze-play.png")
+        return out
+    finally:
+        ctx.close()
+
+
+def flow_studio_ai(browser):
+    ctx, page = studio_page(browser)
+    try:
+        open_studio(page)
+        p0 = sproj(page)
+        win_id, sp_id = kind(p0, "winWhen")["id"], kind(p0, "spawner")["id"]
+        speed0 = kind(p0, "spawner")["args"]["speed"]
+        studio_tab(page, "editor")
+        page.locator(".st-rule[data-node=%s] button" % win_id, has_text="15점").first.click()
+        assert kind(sproj(page), "winWhen")["args"]["value"] == 15
+        ask(page, "조금 더 천천히 떨어지게 해줘")
+        page.wait_for_selector(".st-compare:not([hidden])", timeout=15000)
+        cmp_text = page.locator(".st-compare").inner_text()
+        shot(page, "studio-compare.png")
+        page.locator("[data-cmp=apply]").click()
+        page.wait_for_function("s => __vibeStudio.store.getProject().program.nodes.find(n => n.kind === 'spawner').args.speed !== s", arg=speed0, timeout=10000)
+        p1 = sproj(page)
+        speed1 = kind(p1, "spawner")["args"]["speed"]
+        assert speed1 < speed0, "속도가 줄지 않음 %s → %s" % (speed0, speed1)
+        assert kind(p1, "winWhen")["args"]["value"] == 15, "직접 바꾼 목표가 사라짐"
+        page.get_by_role("button", name="바꾸기 전으로").click()
+        p2 = sproj(page)
+        assert kind(p2, "spawner")["args"]["speed"] == speed0 and kind(p2, "winWhen")["args"]["value"] == 15, "되돌리기 실패"
+        # ST05: 자동 저장(800ms) 뒤 새로고침 → 이어서 만들기
+        page.wait_for_timeout(1500)
+        rev = sproj(page)["revision"]
+        page.goto(APP + "?studioDebug=1", wait_until="networkidle")
+        page.get_by_role("button", name="이어서 만들기").click()
+        page.wait_for_selector(".st-rule")
+        p3 = sproj(page)
+        assert p3["id"] == p0["id"] and p3["revision"] == rev and kind(p3, "winWhen")["args"]["value"] == 15, "새로고침 뒤 복구 실패"
+        badge = page.locator(".v2-savebadge").inner_text()
+        assert "저장됨" in badge, "다시 연 저장본을 '저장 안 됨'으로 표시: %r" % badge
+        return {"compare": cmp_text.replace("\n", " / ")[:300], "speed": [speed0, speed1, kind(p2, "spawner")["args"]["speed"]], "revisionAfterReload": p3["revision"],
+                "badge": page.locator(".v2-savebadge").inner_text().strip(), "screenshot": shot(page, "studio-reopened.png")}
+    finally:
+        ctx.close()
+
+
+def flow_studio_fail(browser):
+    out = {}
+    for sc in ["invalid", "providerDown", "timeout"]:
+        ctx, page = studio_page(browser, query="&studioMock=%s&studioMockDelay=100" % sc)
+        try:
+            open_studio(page)
+            before = sproj(page)
+            ask(page, "조금 더 천천히 떨어지게 해줘")
+            page.wait_for_selector(".st-note[data-tone=warn]:not([hidden])", state="attached", timeout=15000)
+            note = page.locator(".st-note").inner_text()
+            after = sproj(page)
+            studio_tab(page, "stage")
+            page.locator("[data-dock=play]").click()
+            page.locator(".st-overlay [data-act=start]").click()
+            page.wait_for_timeout(400)
+            d = sdbg(page)
+            out[sc] = {"note": note.replace("\n", " / ")[:120], "unchanged": before == after, "replay": d["running"], "compare": bool(d["compare"])}
+            assert before == after and d["running"] and not d["compare"], "%s: %s" % (sc, out[sc])
+        finally:
+            ctx.close()
+    return out
+
+
+def flow_studio_conflict(browser):
+    ctx, page = studio_page(browser, query="&studioMock=slow&studioMockDelay=200")
+    try:
+        open_studio(page)
+        p0 = sproj(page)
+        win_id = kind(p0, "winWhen")["id"]
+        ask(page, "조금 더 천천히 떨어지게 해줘")
+        page.wait_for_timeout(400)
+        studio_tab(page, "editor")
+        page.locator(".st-rule[data-node=%s] button" % win_id, has_text="20점").first.click()
+        page.wait_for_selector(".st-note[data-tone=warn]:not([hidden])", state="attached", timeout=15000)
+        studio_tab(page, "assist")
+        note = page.locator(".st-note").inner_text()
+        p1 = sproj(page)
+        assert kind(p1, "spawner")["args"]["speed"] == kind(p0, "spawner")["args"]["speed"], "AI 결과가 적용됨"
+        assert kind(p1, "winWhen")["args"]["value"] == 20, "직접 변경이 사라짐"
+        return {"note": note.replace("\n", " / ")[:160]}
+    finally:
+        ctx.close()
+
+
 FLOWS = [
     ("cards-goal", flow_cards_goal),
     ("cards-shape", flow_cards_shape),
@@ -396,7 +560,10 @@ FLOWS = [
     ("layout-1024x768", lambda b: flow_layout(b, 1024, 768)),
     ("layout-768x1024", lambda b: flow_layout(b, 768, 1024)),
     ("dispose-100", flow_dispose),
-    ("studio-template", None),  # WP3 병렬 개발 중 — 구현 후 추가
+    ("studio-template", flow_studio_template),
+    ("studio-ai", flow_studio_ai),
+    ("studio-fail", flow_studio_fail),
+    ("studio-conflict", flow_studio_conflict),
 ]
 
 

@@ -70,9 +70,21 @@ export function demoCatalog(fixtures) {
 
 /** 공방 템플릿 카드 모델: studio 프로젝트 fixture → 그림·조작 설명 */
 export function templateCards(fixtures) {
-  const all = fixtures?.ALL_FIXTURES || {};
+  return templateCardsFrom(Object.entries(fixtures?.ALL_FIXTURES || {}));
+}
+
+/**
+ * 공방 카탈로그(modes/studio/catalog.js)의 미션 → 템플릿 카드. 공방 챕터가 없으면 빈 배열.
+ * @param {object[]|null} catalog
+ */
+export function studioTemplateCards(catalog) {
+  const missions = (catalog || []).filter(ch => ch.mode === 'studio').flatMap(ch => ch.missions || []);
+  return templateCardsFrom(missions.map(m => [m.id, m.makeProject]));
+}
+
+function templateCardsFrom(entries) {
   const out = [];
-  for (const [key, make] of Object.entries(all)) {
+  for (const [key, make] of entries) {
     if (typeof make !== 'function') continue;
     const p = make();
     if (p.mode !== 'studio') continue;
