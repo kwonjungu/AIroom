@@ -1184,7 +1184,7 @@
                     <label><input type="checkbox" id="ttMissChk" checked onchange="ttView.missing=this.checked;ttRenderTable()"> 미이수 칸 강조</label>
                     <button class="btn btn-secondary" onclick="ttOpenColumns()" style="font-size:12px;padding:7px 12px;">🧩 항목·조건어 설정</button>
                     <button class="btn btn-secondary" onclick="ttOpenRoster()" style="font-size:12px;padding:7px 12px;">👥 명단 관리</button>
-                    <button class="btn btn-secondary" onclick="ttExportExcel()" style="font-size:12px;padding:7px 12px;">📥 엑셀 다운로드</button>
+                    <button class="btn btn-secondary" onclick="ttOpenExport()" style="font-size:12px;padding:7px 12px;">📥 엑셀 다운로드</button>
                     <div class="tt-legend">
                         <span><i style="background:#EAF7EE;border:1px solid #B7E4C4"></i>V 통합연수</span>
                         <span><i style="background:#EAF2FD;border:1px solid #BFD5F2"></i>개별연수(이수일)</span>
@@ -5339,7 +5339,7 @@ function ttShowColumn(colId){
     document.getElementById('ttInfoBody').innerHTML=`
         <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">조건어: ${esc((c.keywords||[]).join(', ')||'없음')}${(c.exclude||[]).length?' · 제외: '+esc(c.exclude.join(', ')):''}</div>
         ${miss.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;">${miss.map(s=>`<span class="tt-chip miss">${esc(s.name)}</span>`).join('')}</div>`:'<div class="tt-status ok">🎉 전원 이수했습니다</div>'}`;
-    document.getElementById('ttInfoFooter').innerHTML=`${miss.length?`<button class="btn btn-secondary" onclick="ttCopy('${esc(miss.map(s=>s.name).join(', '))}')">📋 이름 복사</button>`:''}<button class="btn btn-primary" onclick="closeModal('ttInfoModal')">닫기</button>`;
+    document.getElementById('ttInfoFooter').innerHTML=`<button class="btn btn-secondary" style="margin-right:auto" onclick="ttOpenExport('${colId}')">📥 이 항목 엑셀</button>${miss.length?`<button class="btn btn-secondary" onclick="ttCopy('${esc(miss.map(s=>s.name).join(', '))}')">📋 이름 복사</button>`:''}<button class="btn btn-primary" onclick="closeModal('ttInfoModal')">닫기</button>`;
     openModal('ttInfoModal');
 }
 function ttCopy(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('복사했어요','success')).catch(()=>prompt('복사해서 쓰세요',t));}
@@ -5750,7 +5750,19 @@ async function ttRosterDelete(id){
     ttRenderRoster();ttRender();
 }
 
-// ----- 엑셀 다운로드 (머리행·이름열 고정) -----
+// ----- 엑셀 다운로드 (전체 / 항목별 / 항목마다 시트) — 머리행·이름열 고정 -----
+function ttOpenExport(colId){
+    const cols=ttCfg().columns;
+    document.getElementById('ttInfoTitle').textContent='📥 엑셀 다운로드';
+    document.getElementById('ttInfoBody').innerHTML=`
+        <label class="tt-colpick" style="display:flex;gap:8px;align-items:flex-start;width:100%;margin-bottom:8px;"><input type="radio" name="ttExpKind" value="all" ${colId?'':'checked'}><span><b>전체 현황</b><small>모든 항목을 한 시트에 — 화면의 표 그대로</small></span></label>
+        <label class="tt-colpick" style="display:flex;gap:8px;align-items:flex-start;width:100%;margin-bottom:8px;"><input type="radio" name="ttExpKind" value="one" ${colId?'checked':''}><span style="flex:1"><b>항목별 (등록부)</b><small>고른 항목 하나 — 이름·이수 여부·구분·이수번호·이수일</small>
+            <select id="ttExpCol" onclick="event.stopPropagation()" onchange="document.querySelector('input[name=ttExpKind][value=one]').checked=true" style="margin-top:6px;width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:13px;">${cols.map(c=>`<option value="${c.id}" ${c.id===colId?'selected':''}>${esc(c.name)}</option>`).join('')}</select></span></label>
+        <label class="tt-colpick" style="display:flex;gap:8px;align-items:flex-start;width:100%;"><input type="radio" name="ttExpKind" value="each"><span><b>전체 + 항목마다 시트</b><small>파일 하나에 ‘전체’ 시트와 항목별 시트 ${cols.length}개</small></span></label>`;
+    document.getElementById('ttInfoFooter').innerHTML=`<button class="btn btn-secondary" onclick="closeModal('ttInfoModal')">취소</button>
+        <button class="btn btn-primary" onclick="ttExportExcel((document.querySelector('input[name=ttExpKind]:checked')||{}).value||'all',document.getElementById('ttExpCol').value)">📥 받기</button>`;
+    openModal('ttInfoModal');
+}
 function ttExportRows(){
     const cols=ttCfg().columns;
     const header=['순번','직위','성함','통합 이수번호','통합 이수일',...cols.map(c=>c.name)];
@@ -5760,33 +5772,67 @@ function ttExportRows(){
     });
     return {header,rows,cols};
 }
-async function ttExportExcel(){
-    const {header,rows,cols}=ttExportRows();
-    const stamp=new Date().toISOString().slice(0,10);
+function ttColumnRows(colId){
+    const header=['순번','직위','성함','이수 여부','구분','이수번호','이수일'];
+    const rows=ttRoster().map((s,i)=>{
+        const x=(ttPerson(s.id).cells||{})[colId];
+        return x?[i+1,s.position||'',s.name,'이수',x.mark==='V'?'통합연수':'개별연수',x.certNo||'',x.date||'']:[i+1,s.position||'',s.name,'미이수','','',''];
+    });
+    return {header,rows};
+}
+function ttSheetName(n,used){let s=String(n).replace(/[\[\]:*?\/\\]/g,' ').slice(0,31)||'시트';let k=2;while(used.has(s))s=s.slice(0,28)+'('+(k++)+')';used.add(s);return s;}
+const TT_BORDER={style:'thin',color:{argb:'FFE2E8F0'}};
+function ttAddAllSheet(wb,name){
+    const {header,rows,cols}=ttExportRows();const all=ttRoster();
+    const ws=wb.addWorksheet(name,{views:[{state:'frozen',xSplit:3,ySplit:1}]});
+    ws.addRow(header.map((h,i)=>i>=5?`${h} (${all.filter(s=>(ttPerson(s.id).cells||{})[cols[i-5].id]).length})`:h));
+    rows.forEach(r=>ws.addRow(r));
+    ws.columns.forEach((c,i)=>{c.width=i===0?6:i===1?10:i===2?9:i===3?30:i===4?13:14;});
+    ws.getRow(1).height=34;
+    ws.eachRow((row,rn)=>row.eachCell({includeEmpty:true},(cell,cn)=>{
+        cell.alignment={vertical:'middle',horizontal:cn>=6&&cell.value!=='V'&&rn>1?'left':'center',wrapText:true};
+        cell.border={top:TT_BORDER,bottom:TT_BORDER,left:TT_BORDER,right:TT_BORDER};
+        if(rn===1){cell.font={bold:true};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F6FA'}};}
+        else if(cn>=6){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:cell.value==='V'?'FFEAF7EE':cell.value?'FFEAF2FD':'FFFFF6F5'}};cell.font={size:9};}
+    }));
+}
+function ttAddColumnSheet(wb,name,col){
+    const {header,rows}=ttColumnRows(col.id);
+    const done=rows.filter(r=>r[3]==='이수').length;
+    const ws=wb.addWorksheet(name,{views:[{state:'frozen',xSplit:3,ySplit:2}]});
+    ws.addRow([`${col.name} — 이수 ${done}명 / 미이수 ${rows.length-done}명 (총 ${rows.length}명)`]);
+    ws.mergeCells(1,1,1,header.length);
+    ws.getRow(1).font={bold:true,size:12};ws.getRow(1).height=24;
+    ws.addRow(header);rows.forEach(r=>ws.addRow(r));
+    [6,10,9,9,10,40,14].forEach((w,i)=>{ws.getColumn(i+1).width=w;});
+    ws.eachRow((row,rn)=>{if(rn===1)return;const miss=rn>2&&row.getCell(4).value==='미이수';row.eachCell({includeEmpty:true},(cell,cn)=>{
+        cell.alignment={vertical:'middle',horizontal:cn===6&&rn>2?'left':'center',wrapText:true};
+        cell.border={top:TT_BORDER,bottom:TT_BORDER,left:TT_BORDER,right:TT_BORDER};
+        if(rn===2){cell.font={bold:true};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F6FA'}};}
+        else if(miss){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF6F5'}};if(cn===4)cell.font={color:{argb:'FFC0392B'},bold:true};}
+    });});
+}
+function ttDownloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();}
+async function ttExportExcel(kind,colId){
+    kind=kind||'all';
+    const stamp=new Date().toLocaleDateString('sv-SE');
+    const col=ttCfg().columns.find(c=>c.id===colId);
+    if(kind==='one'&&!col){showToast('항목을 골라 주세요','error');return;}
+    const base=kind==='one'?`연수등록부_${col.name}_${stamp}`:kind==='each'?`연수이수현황_항목별_${stamp}`:`연수이수현황_${stamp}`;
     try{
         if(!window.ExcelJS)await ttLoadScript('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
-        const wb=new ExcelJS.Workbook();const ws=wb.addWorksheet('이수현황',{views:[{state:'frozen',xSplit:3,ySplit:1}]});
-        const all=ttRoster();
-        ws.addRow(header.map((h,i)=>i>=5?`${h} (${all.filter(s=>(ttPerson(s.id).cells||{})[cols[i-5].id]).length})`:h));
-        rows.forEach(r=>ws.addRow(r));
-        ws.columns.forEach((c,i)=>{c.width=i===0?6:i===1?10:i===2?9:i===3?30:i===4?13:14;});
-        ws.getRow(1).height=34;
-        ws.eachRow((row,rn)=>row.eachCell({includeEmpty:true},(cell,cn)=>{
-            cell.alignment={vertical:'middle',horizontal:cn>=6&&cell.value!=='V'&&rn>1?'left':'center',wrapText:true};
-            cell.border={top:{style:'thin',color:{argb:'FFE2E8F0'}},bottom:{style:'thin',color:{argb:'FFE2E8F0'}},left:{style:'thin',color:{argb:'FFE2E8F0'}},right:{style:'thin',color:{argb:'FFE2E8F0'}}};
-            if(rn===1){cell.font={bold:true};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F6FA'}};}
-            else if(cn>=6){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:cell.value==='V'?'FFEAF7EE':cell.value?'FFEAF2FD':'FFFFF6F5'}};cell.font={size:9};}
-        }));
+        const wb=new ExcelJS.Workbook();const used=new Set();
+        if(kind==='one')ttAddColumnSheet(wb,ttSheetName(col.name,used),col);
+        else{ttAddAllSheet(wb,ttSheetName(kind==='each'?'전체':'이수현황',used));if(kind==='each')ttCfg().columns.forEach(c=>ttAddColumnSheet(wb,ttSheetName(c.name,used),c));}
         const buf=await wb.xlsx.writeBuffer();
-        const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-        a.download=`연수이수현황_${stamp}.xlsx`;document.body.appendChild(a);a.click();a.remove();
-        showToast('엑셀 파일을 받았어요','success');
+        ttDownloadBlob(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),base+'.xlsx');
+        closeModal('ttInfoModal');showToast('엑셀 파일을 받았어요','success');
     }catch(e){
         console.warn('xlsx 실패 → CSV',e);
-        const csv='\uFEFF'+[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
-        const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-        a.download=`연수이수현황_${stamp}.csv`;document.body.appendChild(a);a.click();a.remove();
-        showToast('CSV 파일로 받았어요','success');
+        const {header,rows}=kind==='one'?ttColumnRows(col.id):ttExportRows();
+        const csv='﻿'+[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+        ttDownloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),base+'.csv');
+        closeModal('ttInfoModal');showToast(kind==='each'?'엑셀을 만들지 못해 전체 현황만 CSV로 받았어요':'CSV 파일로 받았어요','success');
     }
 }
 
