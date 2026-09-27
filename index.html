@@ -1188,7 +1188,6 @@
                     <button class="btn btn-secondary" onclick="ttOpenColumns()" style="font-size:12px;padding:7px 12px;">🧩 항목·조건어 설정</button>
                     <button class="btn btn-secondary" onclick="ttOpenRoster()" style="font-size:12px;padding:7px 12px;">👥 명단 관리</button>
                     <button class="btn btn-secondary" onclick="ttExportExcel()" style="font-size:12px;padding:7px 12px;">📥 엑셀 다운로드</button>
-                    <button class="btn btn-secondary" onclick="ttOpenImport()" style="font-size:12px;padding:7px 12px;">📋 구글시트에서 가져오기</button>
                     <div class="tt-legend">
                         <span><i style="background:#EAF7EE;border:1px solid #B7E4C4"></i>V 통합연수</span>
                         <span><i style="background:#EAF2FD;border:1px solid #BFD5F2"></i>개별연수(이수일)</span>
@@ -5297,7 +5296,6 @@ const TT_DEFAULT_COLUMNS=[
     ['k17','인권',['인권']],['k18','다문화',['다문화']],['k19','안전',['안전']],['k20','가정폭력',['가정폭력']],
     ['k21','성폭력',['성폭력']],['k22','성희롱',['성희롱']],['k23','성매매',['성매매']],['k24','기초학력',['기초학력','학습지원','학습부진']]
 ].map(([id,name,keywords])=>({id,name,keywords,exclude:[],mode:'any'}));
-const TT_SHEET_CSV='https://docs.google.com/spreadsheets/d/e/2PACX-1vTHaP461evN1iU6NEYoscmZfqzVYuzktENMmTS1daAjqBIOOTBZnwH15n7ibJCf4g1kGG53YsRaGg-I/pub?gid=925775191&single=true&output=csv';
 const TT_PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 let ttData={config:null,people:{}},ttLoaded=false;
 let ttView={q:'',group:'all',missing:true};
@@ -5867,101 +5865,6 @@ async function ttExportExcel(){
     }
 }
 
-// ----- 구글시트(게시용)에서 가져오기 -----
-let ttImportPlan=null;
-function ttParseCsv(t){
-    const rows=[];let r=[],f='',q=false;
-    for(let i=0;i<t.length;i++){const c=t[i];
-        if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
-        else if(c==='"')q=true;else if(c===','){r.push(f);f='';}else if(c==='\n'){r.push(f);rows.push(r);r=[];f='';}else if(c!=='\r')f+=c;}
-    if(f||r.length){r.push(f);rows.push(r);}
-    return rows;
-}
-function ttOpenImport(){
-    ttImportPlan=null;
-    document.getElementById('ttInfoTitle').textContent='📋 구글시트에서 가져오기';
-    document.getElementById('ttInfoBody').innerHTML=`
-        <div class="tt-status info" style="font-size:12px;">기존 ‘이수현황 게시용’ 시트의 기록을 이 표로 옮깁니다. 시트는 그대로 남아요.<br>이름은 백암이 명부와 맞춰서 연결하고, 열 제목이 같은 항목에 채웁니다.</div>
-        <div class="tt-field"><label>게시된 시트 CSV 주소</label><input type="text" id="ttImpUrl" value="${esc(TT_SHEET_CSV)}"></div>
-        <label style="font-size:13px;display:flex;gap:6px;align-items:center;margin-bottom:6px;"><input type="radio" name="ttImpMode" value="fill" checked> 빈 칸만 채우기 (이미 올린 기록은 유지)</label>
-        <label style="font-size:13px;display:flex;gap:6px;align-items:center;"><input type="radio" name="ttImpMode" value="over"> 시트 내용으로 덮어쓰기</label>
-        <div id="ttImpPreview" style="margin-top:12px;"></div>`;
-    document.getElementById('ttInfoFooter').innerHTML=`<button class="btn btn-secondary" onclick="closeModal('ttInfoModal')">닫기</button>
-        <button class="btn btn-secondary" onclick="ttImportPreview()">① 미리보기</button>
-        <button class="btn btn-primary" id="ttImpGo" disabled onclick="ttImportRun()">② 가져오기</button>`;
-    openModal('ttInfoModal');
-}
-async function ttImportPreview(){
-    const out=document.getElementById('ttImpPreview');out.innerHTML='<div class="tt-status info">시트를 읽는 중…</div>';
-    try{
-        const res=await fetch(document.getElementById('ttImpUrl').value.trim());
-        if(!res.ok)throw new Error('HTTP '+res.status);
-        const rows=ttParseCsv(await res.text()).filter(r=>r.some(v=>v.trim()));
-        const head=rows[0]||[];
-        const iName=head.findIndex(h=>/성함|성명|이름/.test(h));
-        const iCert=head.findIndex(h=>/이수번호/.test(h));
-        const iDate=head.findIndex(h=>/이수날짜|이수일/.test(h));
-        if(iName<0)throw new Error('성함 열을 찾지 못했어요');
-        const firstCol=Math.max(iName,iCert,iDate)+1;
-        const cols=ttCfg().columns;
-        const colMap=[];const newCols=[];
-        for(let j=firstCol;j<head.length;j++){
-            const nm=head[j].replace(/\s*\(\d+\)\s*$/,'').trim();if(!nm)continue;
-            let c=cols.find(x=>ttNorm(x.name)===ttNorm(nm));
-            if(!c){c=newCols.find(x=>x.name===nm)||{id:'c'+Date.now().toString(36)+j,name:nm,keywords:[nm],exclude:[],mode:'any'};if(!newCols.includes(c))newCols.push(c);}
-            colMap.push([j,c]);
-        }
-        const people=[];const unknown=[];let filled=0;
-        rows.slice(1).forEach(r=>{
-            const name=(r[iName]||'').trim();if(!name)return;
-            const cells={};
-            colMap.forEach(([j,c])=>{
-                const v=(r[j]||'').trim();if(!v)return;
-                if(v.toUpperCase()==='V')cells[c.id]={mark:'V',certNo:(r[iCert]||'').trim(),date:(r[iDate]||'').trim(),src:'import'};
-                else{const m=v.match(/^([\s\S]*?)\s*\(([^()]*\d[^()]*)\)\s*$/);cells[c.id]={mark:'',certNo:(m?m[1]:v).trim(),date:m?m[2].trim():'',src:'import'};}
-                filled++;
-            });
-            const s=ttFindByName(name);
-            const integrated=(iCert>=0&&(r[iCert]||'').trim())?{certNo:r[iCert].trim(),date:(r[iDate]||'').trim()}:null;
-            people.push({name,staff:s,cells,integrated});
-            if(!s)unknown.push(name);
-        });
-        ttImportPlan={people,newCols};
-        out.innerHTML=`<div class="tt-status ok">사람 ${people.length}명 · 기록 ${filled}칸 · 항목 ${colMap.length}개${newCols.length?` (새 항목 ${newCols.length}개: ${esc(newCols.map(c=>c.name).join(', '))})`:''}</div>
-            ${unknown.length?`<div class="tt-status warn">명부에 없는 이름 ${unknown.length}명: ${esc(unknown.join(', '))}<br>
-            <label style="display:flex;gap:6px;align-items:center;margin-top:6px;"><input type="checkbox" id="ttImpAddUnknown" checked> 추가 명부에 등록하고 가져오기</label></div>`:'<div class="tt-status ok">모든 이름이 명부와 연결됩니다 👍</div>'}`;
-        document.getElementById('ttImpGo').disabled=false;
-    }catch(e){
-        out.innerHTML=`<div class="tt-status warn">시트를 읽지 못했어요 (${esc(e.message)}). 시트가 ‘웹에 게시’ 상태이고 주소 끝이 output=csv인지 확인해 주세요.</div>`;
-    }
-}
-async function ttImportRun(){
-    if(!ttImportPlan)return;
-    const over=(document.querySelector('input[name=ttImpMode]:checked')||{}).value==='over';
-    const addUnknown=(document.getElementById('ttImpAddUnknown')||{}).checked;
-    if(!confirm(over?'시트 내용으로 덮어씁니다. 진행할까요?':'빈 칸에만 채워 넣습니다. 진행할까요?'))return;
-    const btn=document.getElementById('ttImpGo');btn.disabled=true;btn.textContent='가져오는 중…';
-    try{
-        if(ttImportPlan.newCols.length){
-            const config={...(ttData.config||{}),columns:[...ttCfg().columns,...ttImportPlan.newCols],integratedMin:ttCfg().integratedMin,hiddenStaffIds:ttCfg().hiddenStaffIds};
-            const r=await api('PUT','/api/training-tracker/config',config);
-            if(!r||!r.success)throw new Error('항목 저장 실패');
-            ttData.config=config;
-        }
-        let done=0;
-        for(const p of ttImportPlan.people){
-            let s=p.staff;
-            if(!s){if(!addUnknown)continue;s=await ttRosterCreate(p.name,'','extra');if(!s)continue;}
-            const cur=ttPerson(s.id);const cells={};
-            Object.entries(p.cells).forEach(([k,v])=>{if(over||!(cur.cells||{})[k])cells[k]={...v,at:new Date().toISOString(),by:ttMyName()||''};});
-            const integ=p.integrated&&(over||!cur.integrated)?p.integrated:undefined;
-            if(!Object.keys(cells).length&&!integ)continue;
-            await ttPatch(s.id,s.name,cells,integ);
-            done++;btn.textContent=`가져오는 중… ${done}명`;
-        }
-        closeModal('ttInfoModal');showToast(`${done}명의 기록을 가져왔어요`,'success');
-    }catch(e){showToast('가져오기 중 오류: '+e.message,'error');btn.disabled=false;btn.textContent='② 가져오기';}
-}
 
 function switchTrainingTab(tab,btn){
     document.querySelectorAll('.training-sub-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');

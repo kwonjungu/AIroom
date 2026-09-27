@@ -42,7 +42,7 @@ v1(`public/vibecoding.html`)과 별개인 새 앱. **상태·다음 할 일은 `
 - **명단 = 앱 공용 명부** (`clAllStaff()` = staff 18 + checklist-extra-staff 15). 사람 키는 명부 id. 명단 관리 모달에서 고친 직위·이름은 PATCH /api/items/{staff|checklist-extra-staff}/:id로 저장 → 다른 탭에도 반영. 표에서만 빼기 = config.hiddenStaffIds.
 - **서버**: `PATCH /api/training-tracker/people/:staffId` (사람 단위 머지, cells 값 null=삭제), `PUT /api/training-tracker/config` (people 유지 — 열 삭제해도 기록 남음). GET/POST는 DATA_ROUTES.
 - **PDF 처리는 전부 브라우저**: pdf.js(텍스트+페이지 캔버스 미리보기) → 글자 15자 미만이면 tesseract.js(kor, jsdelivr) OCR. 조건어 매칭은 공백 제거 후 includes. 통합연수 = 매칭 항목 수 ≥ integratedMin(기본 12) → 칸에 V. PDF 속 명부 이름이 한 명만 보이면 이수자 자동 선택. 원본 파일은 Firebase Storage `training-tracker/{staffId}/`(미연결 시 건너뜀).
-- **가져오기**: 기존 '이수현황 게시용' 시트의 게시 CSV(`TT_SHEET_CSV`)를 브라우저에서 fetch → 이름을 명부와 매칭해 PATCH. 개인 이수번호가 들어가므로 defaults에 넣어 커밋하지 말 것(공개 저장소).
+- **시트 이전 완료(2026-09-28)**: 기존 '이수현황 게시용' 구글시트 기록(30명·643칸)을 한 번 옮긴 뒤 가져오기 기능은 제거함. 구글 설문·시트는 더 이상 쓰지 않음. 개인 이수번호가 들어가므로 데이터를 defaults에 넣어 커밋하지 말 것(공개 저장소).
 - **엑셀**: exceljs(cdnjs) 동적 로드, 머리행+이름열 고정(frozen xSplit 3/ySplit 1). 실패 시 CSV.
 - 코드: 두 SPA의 `// ===== 연수 챙김이 (tt*) =====` 블록, CSS `tt-` 접두사, 모달 `ttUploadModal/ttColumnsModal/ttRosterModal/ttInfoModal`.
 
