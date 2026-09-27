@@ -411,6 +411,7 @@ const KV_KEYS = {
     'checklist-extra-staff.json': 'checklist-extra-staff',
     'winter-schedule.json': 'winter-schedule',
     'patrol-log.json': 'patrol-log',
+    'training-tracker.json': 'training-tracker',
     'bap-managers.json': 'bap-managers',
     'bap-bosses.json': 'bap-bosses',
     'bap2-managers.json': 'bap2-managers',
@@ -536,6 +537,7 @@ const DATA_ROUTES = [
     { path: 'checklist-extra-staff', file: 'checklist-extra-staff.json', fallback: [] },
     { path: 'winter-schedule', file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
     { path: 'patrol-log', file: 'patrol-log.json', fallback: { config: null, days: {} } },
+    { path: 'training-tracker', file: 'training-tracker.json', fallback: { config: null, people: {} } },
     // vibe-progress GET은 vibecoding 학생 기기(비로그인)도 조회 필요 → requireAuthOrVibe
     { path: 'vibe-progress', file: 'vibe-progress.json', fallback: [], auth: requireAuthOrVibe }
 ];
@@ -1031,6 +1033,48 @@ app.post('/api/winter-schedule/setup', requireAuth, async (req, res) => {
         await writeData('winter-schedule.json', newConfig);
         res.json({ success: true, config: newConfig.config });
     } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===== 연수 챙김이 (이수증 PDF → 항목별 이수 현황) =====
+// 데이터: { config: { columns:[{id,name,keywords[],exclude[]}], integratedMin, hiddenStaffIds[] }, people: { staffId: { name, integrated, cells:{colId:{...}} } } }
+// 사람 키는 앱 명부(staff + checklist-extra-staff)의 id. 한 사람 단위로 머지해서 동시 제출이 서로 덮어쓰지 않게 한다.
+app.patch('/api/training-tracker/people/:staffId', requireAuth, async (req, res) => {
+    try {
+        const { staffId } = req.params;
+        const { name, cells, integrated } = req.body || {};
+        await withRedisLock('data:training-tracker', async () => {
+            const tt = (await readData('training-tracker.json')) || { config: null, people: {} };
+            if (!tt.people) tt.people = {};
+            const p = tt.people[staffId] || { cells: {} };
+            if (!p.cells) p.cells = {};
+            if (name) p.name = name;
+            Object.entries(cells || {}).forEach(([colId, cell]) => {
+                if (cell === null) delete p.cells[colId];
+                else p.cells[colId] = cell;
+            });
+            if (integrated === null) delete p.integrated;
+            else if (integrated) p.integrated = integrated;
+            p.updatedAt = new Date().toISOString();
+            tt.people[staffId] = p;
+            await writeData('training-tracker.json', tt);
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
+});
+
+// 항목(열)·조건어 설정 저장 — people은 건드리지 않음 (열을 지워도 기록은 남아 되살릴 수 있음)
+app.put('/api/training-tracker/config', requireAuth, async (req, res) => {
+    try {
+        const config = req.body || {};
+        if (!Array.isArray(config.columns)) return res.status(400).json({ error: 'columns 배열이 필요합니다.' });
+        await withRedisLock('data:training-tracker', async () => {
+            const tt = (await readData('training-tracker.json')) || { config: null, people: {} };
+            tt.config = { ...config, updatedAt: new Date().toISOString() };
+            if (!tt.people) tt.people = {};
+            await writeData('training-tracker.json', tt);
+        });
+        res.json({ success: true });
+    } catch (e) { res.status(e.status || 500).json({ error: e.message }); }
 });
 
 // ===== 순찰일지 (방학 교내 순찰) =====
@@ -2335,6 +2379,7 @@ const POSTING_DATA = {
     'checklist-extra-staff': { file: 'checklist-extra-staff.json', fallback: [] },
     'winter-schedule': { file: 'winter-schedule.json', fallback: { config: { startDate: '', endDate: '', holidays: [], setAt: null }, entries: {} } },
     'patrol-log': { file: 'patrol-log.json', fallback: { config: null, days: {} } },
+    'training-tracker': { file: 'training-tracker.json', fallback: { config: null, people: {} } },
     'vibe-progress': { file: 'vibe-progress.json', fallback: [] },
 };
 Object.entries(POSTING_DATA).forEach(([p, { file, fallback }]) => {
