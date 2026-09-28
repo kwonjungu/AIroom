@@ -1,0 +1,386 @@
+[
+  {
+    "id": "ln_mukn0qfwwkj",
+    "seq": 1001,
+    "itemId": "it_mukn0qaew5q",
+    "qty": 10,
+    "borrower": {
+      "school": "해오름초등학교",
+      "name": "오태윤",
+      "role": "교사"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-05",
+    "wantTo": "2026-10-08",
+    "method": "방문",
+    "memo": "5학년 진로 체험",
+    "status": "returned",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.148Z",
+        "status": "requested",
+        "by": "해오름초등학교·오태윤",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.178Z",
+        "status": "approved",
+        "by": "새봄초등학교·김하늘·교사",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.197Z",
+        "status": "out",
+        "by": "해오름초등학교·오태윤·교사",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.232Z",
+        "status": "return_requested",
+        "by": "해오름초등학교·오태윤·교사",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.413Z",
+        "status": "returned",
+        "by": "새봄초등학교·김하늘·교사",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.148Z",
+    "updatedAt": "2026-09-28T02:37:49.413Z",
+    "decidedAt": "2026-09-28T02:37:49.178Z",
+    "decidedBy": "새봄초등학교·김하늘·교사",
+    "pickedUpAt": "2026-09-28T02:37:49.197Z",
+    "returnRequestedAt": "2026-09-28T02:37:49.232Z",
+    "returnedAt": "2026-09-28T02:37:49.413Z",
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qnuve2",
+    "seq": 1002,
+    "itemId": "it_mukn0qbil3b",
+    "qty": 2,
+    "borrower": {
+      "school": "새봄초등학교",
+      "name": "김하늘",
+      "role": "교사"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-12",
+    "wantTo": "2026-10-23",
+    "method": "방문",
+    "memo": "가을 체육대회 연습",
+    "status": "out",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.434Z",
+        "status": "requested",
+        "by": "새봄초등학교·김하늘",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.434Z",
+        "status": "approved",
+        "by": "자동 승인",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.451Z",
+        "status": "out",
+        "by": "새봄초등학교·김하늘·교사",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.434Z",
+    "updatedAt": "2026-09-28T02:37:49.451Z",
+    "decidedAt": "2026-09-28T02:37:49.434Z",
+    "decidedBy": "자동 승인",
+    "pickedUpAt": "2026-09-28T02:37:49.451Z",
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qoxwtz",
+    "seq": 1003,
+    "itemId": "it_mukn0qcicur",
+    "qty": 10,
+    "borrower": {
+      "school": "바다빛초등학교",
+      "name": "유시우",
+      "role": "교사"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-13",
+    "wantTo": "2026-10-20",
+    "method": "방문",
+    "memo": "6학년 과학 세포 관찰",
+    "status": "out",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.473Z",
+        "status": "requested",
+        "by": "바다빛초등학교·유시우",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.491Z",
+        "status": "approved",
+        "by": "푸른숲초등학교·한도윤·교사",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.511Z",
+        "status": "out",
+        "by": "바다빛초등학교·유시우·교사",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.473Z",
+    "updatedAt": "2026-09-28T02:37:49.511Z",
+    "decidedAt": "2026-09-28T02:37:49.491Z",
+    "decidedBy": "푸른숲초등학교·한도윤·교사",
+    "pickedUpAt": "2026-09-28T02:37:49.511Z",
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qqoguo",
+    "seq": 1004,
+    "itemId": "it_mukn0qdb2kv",
+    "qty": 12,
+    "borrower": {
+      "school": "푸른숲초등학교",
+      "name": "백서아",
+      "role": "늘봄·돌봄"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-06",
+    "wantTo": "2026-10-16",
+    "method": "방문",
+    "memo": "학예회 준비",
+    "status": "return_requested",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.537Z",
+        "status": "requested",
+        "by": "푸른숲초등학교·백서아",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.537Z",
+        "status": "approved",
+        "by": "자동 승인",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.557Z",
+        "status": "out",
+        "by": "푸른숲초등학교·백서아·늘봄·돌봄",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.576Z",
+        "status": "return_requested",
+        "by": "푸른숲초등학교·백서아·늘봄·돌봄",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.537Z",
+    "updatedAt": "2026-09-28T02:37:49.576Z",
+    "decidedAt": "2026-09-28T02:37:49.537Z",
+    "decidedBy": "자동 승인",
+    "pickedUpAt": "2026-09-28T02:37:49.557Z",
+    "returnRequestedAt": "2026-09-28T02:37:49.576Z",
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qtt8uz",
+    "seq": 1005,
+    "itemId": "it_mukn0qcwwta",
+    "qty": 2,
+    "borrower": {
+      "school": "새봄초등학교",
+      "name": "이미영",
+      "role": "교감"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-23",
+    "wantTo": "2026-10-24",
+    "method": "방문",
+    "memo": "가족 별보기 행사",
+    "status": "requested",
+    "readyAt": "2026-09-28T02:37:49.728Z",
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.649Z",
+        "status": "requested",
+        "by": "새봄초등학교·이미영",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.649Z",
+    "updatedAt": "2026-09-28T02:37:49.649Z",
+    "decidedAt": null,
+    "decidedBy": null,
+    "pickedUpAt": null,
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qw04d9",
+    "seq": 1006,
+    "itemId": "it_mukn0qcwwta",
+    "qty": 1,
+    "borrower": {
+      "school": "해오름초등학교",
+      "name": "오태윤",
+      "role": "교사"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-24",
+    "wantTo": "2026-10-27",
+    "method": "방문",
+    "memo": "과학의 달 행사",
+    "status": "requested",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.728Z",
+        "status": "requested",
+        "by": "해오름초등학교·오태윤",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.728Z",
+    "updatedAt": "2026-09-28T02:37:49.728Z",
+    "decidedAt": null,
+    "decidedBy": null,
+    "pickedUpAt": null,
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qwyimo",
+    "seq": 1007,
+    "itemId": "it_mukn0qap70j",
+    "qty": 1,
+    "borrower": {
+      "school": "바다빛초등학교",
+      "name": "유시우",
+      "role": "교사"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-19",
+    "wantTo": "2026-10-30",
+    "method": "방문",
+    "memo": "동아리 작품 출력",
+    "status": "requested",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.762Z",
+        "status": "requested",
+        "by": "바다빛초등학교·유시우",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.762Z",
+    "updatedAt": "2026-09-28T02:37:49.762Z",
+    "decidedAt": null,
+    "decidedBy": null,
+    "pickedUpAt": null,
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qxhzp0",
+    "seq": 1008,
+    "itemId": "it_mukn0qdta4s",
+    "qty": 2,
+    "borrower": {
+      "school": "새봄초등학교",
+      "name": "이미영",
+      "role": "교감"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-29",
+    "wantTo": "2026-10-30",
+    "method": "방문",
+    "memo": "학부모 공개수업 방송",
+    "status": "approved",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.781Z",
+        "status": "requested",
+        "by": "새봄초등학교·이미영",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.803Z",
+        "status": "approved",
+        "by": "바다빛초등학교·유시우·교사",
+        "note": ""
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.781Z",
+    "updatedAt": "2026-09-28T02:37:49.803Z",
+    "decidedAt": "2026-09-28T02:37:49.803Z",
+    "decidedBy": "바다빛초등학교·유시우·교사",
+    "pickedUpAt": null,
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": null
+  },
+  {
+    "id": "ln_mukn0qz05v6",
+    "seq": 1009,
+    "itemId": "it_mukn0qehsuz",
+    "qty": 2,
+    "borrower": {
+      "school": "푸른숲초등학교",
+      "name": "한도윤",
+      "role": "교사"
+    },
+    "contact": "010-0000-0000",
+    "wantFrom": "2026-10-26",
+    "wantTo": "2026-10-31",
+    "method": "방문",
+    "memo": "학부모 설명회",
+    "status": "rejected",
+    "readyAt": null,
+    "history": [
+      {
+        "at": "2026-09-28T02:37:49.836Z",
+        "status": "requested",
+        "by": "푸른숲초등학교·한도윤",
+        "note": ""
+      },
+      {
+        "at": "2026-09-28T02:37:49.863Z",
+        "status": "rejected",
+        "by": "새봄초등학교·김하늘·교사",
+        "note": "같은 기간 교내 행사로 사용 예정"
+      }
+    ],
+    "createdAt": "2026-09-28T02:37:49.836Z",
+    "updatedAt": "2026-09-28T02:37:49.863Z",
+    "decidedAt": "2026-09-28T02:37:49.863Z",
+    "decidedBy": "새봄초등학교·김하늘·교사",
+    "pickedUpAt": null,
+    "returnRequestedAt": null,
+    "returnedAt": null,
+    "rejectReason": "같은 기간 교내 행사로 사용 예정"
+  }
+]

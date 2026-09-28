@@ -39,7 +39,10 @@ v1(`public/vibecoding.html`)과 별개인 새 앱. **상태·다음 할 일은 `
 
 `a-iroom.vercel.app/copy` — 로그인 없이 누구나 모든 기능을 써 보는 공개 시연본. 같은 서버·같은 코드, **데이터 공간만 분리**. (/posting은 읽기 전용 데모, /copy는 쓰기까지 되는 완전한 사본)
 - **서버**: `/api/copy/*` 요청을 `/api/*`로 재작성 + AsyncLocalStorage(`nsStore`)에 'copy' → `readData/writeData`는 Redis 키 `copy:<key>`, 로컬 파일은 `data-copy/`, 초기값은 `defaults-copy/`에서만 읽음(실데이터 폴더 절대 안 읽음). `withRedisLock`도 `nsKey`로 분리. `validateSession`은 카피본이면 항상 관리자 세션.
-- **카피본에서 막힌 것**(`COPY_BLOCKED`): /api/admin/*(접속 코드·세션), mail, bap, calandar, recruitments, vibe, posting. **AI**(chat·pptx·translate)는 실제 연결 + IP당 분당 5회·전체 하루 300회(`copyAiAllowed`).
+- **카피본에서 막힌 것**(`COPY_BLOCKED`): /api/admin/*(접속 코드·세션), mail, bap(Firestore 직접 사용), vibe 서버(v2 API), posting, 채용의 google·archive·maintenance.
+- **자동화 프로그램도 카피본에서 동작**: `/copy/recruitment`(채용 — 별도 저장소 `copyRecruitStore`, Redis `copy:recruitment:*`, 초대 링크는 X-Recruitment-Token이면 위원으로 처리), `/copy/rental`(교구 대여소 — `nsRedis`로 사진·잠금 키 분리), `/copy/calandar`(입장코드 1111), `/copy/vibecoding`. 각 페이지 `<head>`의 카피본 스크립트가 저장소 접두사·fetch·history·링크/이미지 주소를 /copy·/api/copy로 바꾼다. 메인 화면 시연 바의 「🧰 자동화 프로그램」 목록. 급식일지·메일은 목록에 '시연 제외'로만 표시.
+- **자동화 프로그램 가상 데이터**: 로컬 서버(Redis 없이)를 띄우고 `node scripts/build-copy-apps-seed.js http://localhost:3138` — 실제 API로 채용 2건·교구·대여·캘린더를 등록해 `defaults-copy/recruitment-samples.json`, `rental-*.json`, `calandar-demo.json` 생성. 채용 샘플은 초기화·최초 접근 시 `seedCopyRecruitments`가 넣는다.
+- 카피본 메인 화면은 실제 학교 전화·주소·「📊 학교 현황 바로 가기」(구글 시트) 링크를 가상 정보로 바꾸거나 뺀다. **AI**(chat·pptx·translate)는 실제 연결 + IP당 분당 5회·전체 하루 300회(`copyAiAllowed`).
 - **초기화**: `POST /api/copy-reset`(카피본 요청에서만 동작) → defaults-copy/*.json으로 전부 덮어씀. 화면 상단 시연 바의 「↺ 시연 데이터 초기화」 버튼. 자동 초기화는 없음(사용자 결정).
 - **화면**: 두 SPA `<head>` 맨 앞 스크립트가 `/copy` 경로에서 `window.IS_COPY` 설정 → Storage.prototype get/set/remove 키에 `copy:` 접두사(같은 도메인이라 실서비스 백업과 섞이면 pick()이 실데이터를 카피본 서버로 복원할 수 있음 — 절대 제거 금지), fetch `/api/`→`/api/copy/`, `/defaults/`→`/defaults-copy/`. Firebase 업로드는 `copy/` 경로 아래로만, 실서비스 파일 삭제 금지. 서명·배포 공유 링크는 `/copy/sign/…`, `/copy/doc/…`. 링크형 탭(교구 대여소·채용)은 숨김.
 - **가상 데이터**: `node scripts/build-copy-seed.js` → `defaults-copy/` (가상 학교 새봄초, 2026년 10월). 새 컬렉션을 추가하면 이 스크립트에도 추가할 것. `data-copy/`는 gitignore.

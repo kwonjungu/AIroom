@@ -290,7 +290,7 @@
     // 서버는 토큰 해시만 저장한다. 원본 링크는 발급 응답에만 있으므로 화면에서 붙잡아 둔다.
     async function issueInvite(reviewerId) {
         const data = await api(`/${state.current.id}/invites/${reviewerId}`, 'POST', { version: state.current.version });
-        state.current = data.recruitment; state.invites[reviewerId] = location.origin + data.invitationPath; return data;
+        state.current = data.recruitment; state.invites[reviewerId] = location.origin + (window.IS_COPY ? '/copy' : '') + data.invitationPath; return data;
     }
     async function mutate(path, body = {}) { const r = await api(`/${state.current.id}/${path}`, 'POST', { ...body, version: state.current.version }); state.current = r; if (!token()) { const list = await api(''); state.list = list.items; } state.dirty = false; render(); return r; }
     function collectScores() { const form = $('#score-form'), stage = form.dataset.stage; const rows = Array.from(form.querySelectorAll('tr[data-candidate]')).map(tr => ({ candidateId: tr.dataset.candidate, attendance: tr.querySelector('[name=attendance]').value, scores: Object.fromEntries(state.current.rubrics[stage].map(c => { const v = tr.querySelector(`[name=${c.id}]`).value; return [c.id, v === '' ? null : Number(v)]; })), bonus: Number(tr.querySelector('[name=bonus]')?.value || 0), note: tr.querySelector('[name=note]').value })); return { stage, rows }; }

@@ -1,6 +1,42 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>
+// ===== 시연용 카피본 (/copy/…) — 실서비스와 데이터 공간 분리 =====
+// 브라우저 저장소 키에 'copy:'를 붙이고, '/api/*' 요청·주소를 카피본 공간으로, 앱 내부 링크를 /copy/… 로 바꾼다.
+(function(){
+    if(!/^\/copy\//.test(location.pathname))return;
+    window.IS_COPY=true;
+    var P='copy:',SP=Storage.prototype,g=SP.getItem,s=SP.setItem,r=SP.removeItem,k=SP.key;
+    SP.getItem=function(key){return g.call(this,P+key);};
+    SP.setItem=function(key,v){return s.call(this,P+key,v);};
+    SP.removeItem=function(key){return r.call(this,P+key);};
+    SP.clear=function(){for(var i=this.length-1;i>=0;i--){var key=k.call(this,i);if(key&&key.indexOf(P)===0)r.call(this,key);}};
+    try{s.call(localStorage,P+'airoom_auth_token','copy-demo');s.call(localStorage,P+'airoom_auth_role','admin');}catch(e){}
+    function api(u){return (typeof u==='string'&&u.indexOf('/api/')===0&&u.indexOf('/api/copy/')!==0)?'/api/copy/'+u.slice(5):u;}
+    var APP=/^\/(recruitment|rental|calandar|calendar|vibecoding|sign\/|doc\/)/;
+    function page(u){if(typeof u!=='string'||u.indexOf('/copy')===0)return u;if(u==='/'||u==='')return '/copy';if(APP.test(u)&&!/^\/recruitment\/(privacy|terms)/.test(u))return '/copy'+u;return api(u);}
+    var f=window.fetch.bind(window);window.fetch=function(u,o){return f(api(u),o);};
+    ['pushState','replaceState'].forEach(function(n){var h=history[n].bind(history);history[n]=function(st,t,u){return h(st,t,page(u));};});
+    function fix(el){
+        if(el.nodeType!==1)return;
+        var list=el.matches&&el.matches('a[href],img[src]')?[el]:[];
+        if(el.querySelectorAll)list=list.concat([].slice.call(el.querySelectorAll('a[href],img[src]')));
+        list.forEach(function(n){var a=n.tagName==='IMG'?'src':'href';var v=n.getAttribute(a);if(v&&v.charAt(0)==='/'&&v.charAt(1)!=='/'){var nv=page(v);if(nv!==v)n.setAttribute(a,nv);}});
+    }
+    new MutationObserver(function(ms){ms.forEach(function(m){if(m.type==='attributes')fix(m.target);else m.addedNodes.forEach(fix);});})
+        .observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['href','src']});
+    document.addEventListener('DOMContentLoaded',function(){
+        fix(document.body);
+        document.querySelectorAll('[placeholder*="권준구"]').forEach(function(el){el.placeholder=el.placeholder.replace('권준구','김하늘');});
+        document.title='[시연] '+document.title;
+        var bar=document.createElement('div');
+        bar.style.cssText='position:sticky;top:0;z-index:99999;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;justify-content:center;padding:6px 14px;background:#2D3748;color:#fff;font:13px/1.5 system-ui,sans-serif;text-align:center;';
+        bar.innerHTML='<span>🧪 <b>시연용 카피본</b> · 가상 데이터예요. 실제 백암이와 분리되어 있어요</span><a href="/copy" style="color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:2px 10px;text-decoration:none;">← 백암이 카피본</a>';
+        document.body.insertBefore(bar,document.body.firstChild);
+    });
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>교구 대여소 — 소규모 학교 연계</title>

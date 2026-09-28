@@ -1,0 +1,26 @@
+[
+  {
+    "id": "sc_mukn0q9bfe5",
+    "name": "새봄초등학교",
+    "short": "새봄초",
+    "createdAt": "2026-09-28T02:37:48.911Z"
+  },
+  {
+    "id": "sc_mukn0q9ihss",
+    "name": "해오름초등학교",
+    "short": "해오름초",
+    "createdAt": "2026-09-28T02:37:48.918Z"
+  },
+  {
+    "id": "sc_mukn0q9w8b7",
+    "name": "푸른숲초등학교",
+    "short": "푸른숲초",
+    "createdAt": "2026-09-28T02:37:48.932Z"
+  },
+  {
+    "id": "sc_mukn0qabptk",
+    "name": "바다빛초등학교",
+    "short": "바다빛초",
+    "createdAt": "2026-09-28T02:37:48.947Z"
+  }
+]

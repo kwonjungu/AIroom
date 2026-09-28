@@ -1,0 +1,2350 @@
+[
+  {
+    "id": "1070cb17-7345-4a0c-a629-40a4c116bbf1",
+    "version": 22,
+    "createdAt": "2026-09-28T02:37:47.549Z",
+    "school": "새봄초등학교",
+    "title": "2026학년도 2학기 늘봄학교 프로그램 강사 채용",
+    "field": "늘봄 프로그램 강사(체육)",
+    "documentDate": "2026-10-13",
+    "interviewDate": "2026-10-16",
+    "candidates": [
+      {
+        "id": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+        "code": "2026-001",
+        "name": "김나래"
+      },
+      {
+        "id": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+        "code": "2026-002",
+        "name": "박도현"
+      },
+      {
+        "id": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+        "code": "2026-003",
+        "name": "이수빈"
+      },
+      {
+        "id": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+        "code": "2026-004",
+        "name": "최하준"
+      },
+      {
+        "id": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+        "code": "2026-005",
+        "name": "정예린"
+      },
+      {
+        "id": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+        "code": "2026-006",
+        "name": "강민호"
+      },
+      {
+        "id": "23933831-0df9-4874-971e-fc5260d9a4de",
+        "code": "2026-007",
+        "name": "조서윤"
+      },
+      {
+        "id": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+        "code": "2026-008",
+        "name": "윤재원"
+      },
+      {
+        "id": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+        "code": "2026-009",
+        "name": "장하율"
+      },
+      {
+        "id": "7f599c51-a37b-46cd-a189-877be324818d",
+        "code": "2026-010",
+        "name": "임지호"
+      },
+      {
+        "id": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+        "code": "2026-011",
+        "name": "한서준"
+      },
+      {
+        "id": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+        "code": "2026-012",
+        "name": "오세은"
+      }
+    ],
+    "reviewers": [
+      {
+        "id": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "name": "이미영",
+        "position": "교감",
+        "email": "reviewer-c774bbf8@example.com",
+        "stages": [
+          "document",
+          "interview"
+        ],
+        "pledge": {
+          "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAB4CAYAAADfRGj6AAAACXBIWXMAAAsTAAALEwEAmpwYAAAV7UlEQVR4nO2d+bsVxZ2H/T8yM07GmYwTlSgxGlyiZlHjvsRE0bgbgwgugCAgi8iiyCKCgLLKJpsssoiIgMquEAVEUEAEREVQcEEWrXne4mmsLs65t093n3vqXD7v89QPiXSdPn1Pf6rqux5nhBBCBMlxlb4BIYQQhZFACyFEoEighRAiUCTQQggRKBJoIYQIFAm0EEIEigRaCCECRQIthBCBIoEWQohAkUALIUSgSKCFECJQJNBCCBEoEmghhAgUCbQQQgSKBFoIIQJFAi2EEIEigRZCiECRQAshRKBIoIUQIlAk0EIIESgSaCGECBQJtBBCBIoEWgghAkUCLYQQgSKBFkKIQJFACyFEoEighRAiUCTQQggRKBJoIYQIFAm0EEIEigRaCCECRQIthBCBIoEW9YIvv/rWbN7yuVn17kdm4aJ1lb4dIXJBAi3qBf93Zkvzs182PTIOHDhU6VsSIjMSaFEvaHRhh5hAf/7F3krfkhCZkUCLOmHnrr1m6YoPzAsvLjFDR803Q56fb158abn51+qPzPffH8g8/5+vezwm0Bs27sjlvoWoJBLoY4jtO3abeQvXmMnTl1uRXPnO5rJ+3patX5jez8wy517SOSae/jih4f3m9nsHmwVvvpf6s2648+nYnMtXbsz1uwhRCSTQxxDDxy6MiVjPfjPK8jnffPu96dLzRXN8g+Y1CnOhcfVNvc36D0vf/TZpMTQ2zyvz3y3LdxOiLpFAH0NMmbkiJmLtuozP/TM+2PSpOfOPj5QszO7474YPmOmz3y7pcx9+9IXYHBOmLs39uwlR10igjyEwIbgi1rTl8Fznf2fNFtPgnNZHCe75l3Ux/Qa/bG3Qn+/cY77a860dq9/bakaMXXiU/Zjx7yffa8ZNXmxt14j+ilUbzdwFq83EqUut/frJp2eY9o9NME1bDTc3/mOAaXh+29j1z46cl+t3E6ISSKCLMGzMAtO2y3hzT8thpvGd/a39ttrBIeeKWOO7+uc2N1ETp57bJjY/Yo2g/vjjj7Vej0nCvz7LKJf5Roi6RAJdhGtv6Rt74UmACJX9+w8m+ncffbwz9p0u+esTuXz+Dz/8aMXenfuMP7S3iSOlwO66Nodi0lEO840QdY0Eugh3NBsce+GzRBgkZc/e78yWrTutqWDBovfM1JlvWRNA34GzTefHJ5sH2o4ytzUdZB1pF1zexZz6u4fNz0+9z5oIkmbbud/prIs65nLfs199Jzbv//z6AbNx82ep5tr2yW5z8lkP1SrAvzj9QfOb37c3f7q6m7nu1qfMlY17ldV8I0QlkEAXoUX70bEXHgdbWhAr7Ka9+s807btOMPc+NMLcdPcAc9n1Pe2O8ZSzW1uba9rdYqMLOybe6bqfc1KjViYPrrm5T+x+MA9lYdT4N2LznXhGC7Ps7Q9tdAe77EJZgti3y2W+EaJSSKCLQJiY+8ITopaWma+sys22WmiQ5pwURDm6DrFGtLOAGcO3Oyc1uRTj0KEfzGnnxZ1+nCpq4v0N28tivhGiklSlQPMyjp7wpunWe5p5qONYO3r0nW4z03Z8+mUun/H0s3NiL3yfgbNSz7Vo2fpMAvyfv2puHWhEQ1x1Yy9z6z2D7P8X/fd/O+leK2pJOPviTrG5MXtkYdK0ZbH5iKzIg0e6TYzNS8JLTXz62VdlMd8IUUmqRqDZlQ0bvaBWJxK7wuvv6GeWLN+Q6zG7Y49Jqeda+/62o+J8/3JLX3Nn8+dMyw5jzGNPTjH9n5tjxkx80+6231y63qxZt9XaY0n6KAT2V3fOXbu/TnQvl/7tidh1pTryfBDkcsQfEwftzks0TU2QLu7++1/+Nh/zjRCVpCoEmuPteZc+WvLOE6fad/v25yIQ9z/8fOr7J0TPnet3lz5qsoJzzJ1z00fJhJaY4TyjUxBOdz5sxXngL2pJHKEsfO5CnfRUIUSoBC/Qry5YHXvx/N0yNtVi/z16sXd/+U3Jn/v64vdj82BWSAu7YN9OmxUiF9w5k9bVILrBvW7+G2sz3cfdDwyJzff2vzaZPOD04M7LglQbp1/QLlfzjRCVJmiBJnvsv067P/bSYW+9o/mzZvHyDebrb/bFbJA48vyyk5FIl7qTfnftx7E5sP1mwbUZH39Ks0TJGzWBecS9v9deTya0xAfnFZ1SSKD5u+RVaKnUHfQfruqaq/lGiEoTrEDv3fudTXbwoxWwz9bEt9/tN607jTtKpJu1HlHS53+8LS4QOOiyQMyyO9/er39aXNKA7dqdDwdpEsiwyys6Bbr2mhKbDzt6Hry1alPJJ5hqSi4SoqoFukP3iUclP7y3flvi64k39kV6zmvJK5whoO61RFFkgcQSdz4WgDyFEQdqEp4b+Vpu0SlAfWd3vjadx5lyVN57/KnptSb4+AKd1XwjRKUJUqAxV7gmAQZhdaWACcFPP8aOmdS0wL/DFBFdy/1kgew/914woWRhwJBXYvP1GjAz0XXUxsgrOgVIHnHn+9U5bczBHJxzf70tbmNHfKMEn8tvSJbgM2VGNvONEJUmSIEm5tV90Xgh09oxfQdiKSnbfmW2YiFvSSBF250LJ2QWMCW483HiSAIV4dzr7ssQnRJx0bXdY3OOn7Ik03xUucPXUEx4k46sGY1CVJogBZosMPdFIzY4LV17TY3NReeNpBAO515LZEFaCNNz5yq13nFt2YnN24xMdB2dRtzrbmky0GQF84pvDvpiV7K47ELx7n+8Kh5CmHbUltwiROgEJ9DUWnB3T7zsWeJZsfX+h2OqwGyR1EF3ReMnYy88ySNp6dRjcmwuEmGygLPUne/mhEJLrz73OooMZYXaGL6NnaiLUh2hJJv4Raoi8xJOVj4DUxEOQxY8nimFpCgoRWEp32+R1XwjRKUJTqCnzSotgywJ1HN253x53juJrkP03OtqiyCpCYTEnYtU8iywWLjzsZgkrducZ3RKBAkq7kIYzY25Ignr1m+3pqyj7MglhAG+9PLK3M03QlSS4ATar4Hx/AvZdprwzNC5sTkpxJ8EzAbudTPmrEx9D+zy3LkoxpRnIkfS7ER2u745Ii9oRus77TixECuN7Z9oC3+xmDV3lfnng0NjDtm0ESZvLHk/d/ONEJUkOIH2Y5izOtMKdRJJ6nT0j8ylRpK4cAR356KcaRb87ESiJ5Lyv79p8ZOANsgWnVIoSsRPLooGpitqZJDxR0x7MdsxO/FBw18t+bPZredtvhGikgQn0IRRuS8Z/eiywq7RPX4n3TUSuubeC6FtaaEAvzsXttasxLITGzRPHELoN3V1MzLzgNC7Qn0GkwzszGnreWzdvis2F/VbhKhmghNoP/41aZW22nCrv7GTS5L67UcnkBySpeCTOxdF7rOSNjvxwmviYXEIW94QC435gr9nbSFzmDeIriGyJYtDmIUm7alCiBAJTqB5Ud2XjK7OeXDN3+OJIuzyaoP0afca0qvT4vcDpG5EVnDCpclO9BfBpI68tBByR1Yfnb0Je2R07zPNDB0139qNSevPA5tc1CDdqUKIEAlOoP1ymGQV5oEfvpWkTgMFiNxrKFCUlq/2xPsB/vqCdiYrFHBKk534j/vjBY4QyfoCCzGheCQGUW62UHssIaqF4ATaz7hLWue4VFFKUhaTEp7uNRTZTwutpVw7+AkN7zdZIR44jdDSgSav6BQhxDEk0A8/+kJusccuTVoMjc1LRl1tsDi415DhlgW/W/W+fQcyzednJxIHnARaheUVnZI32NH52xD/THgkRa8IdyRUj0FsOv+bJBW60FAAK23WohChE5xA+zHLVEvLAz/pJIlA46B0r8HRmIVz/hzvB5i1f2La7MQBQ+LPGKGrFAcPHrKJQyzMLIB+skvSQfEkuqZ/9nk+JjEhQiA4gea47b549OvLA7++QxKHGhEFbgQCJU+zcNn18Uw5sueyQCJHmuzEsRMXleUZlwKLEwsMkRZpBLnYwDGICScvx6MQlSQ4gaZjt/vC0eQ0K3jySZA48hKf0ixxSUw/oYJiPnnFeC9d8YHJs2Zy0uxEwt/c61o+ki1pphRw2hFP/ovTH6xRaFkYTzuvrY2npgkwDlpMHDh7KT1KjHNNu22aPdCRR4hqJjiBRkzd+F5b3CjjbsivWUxbrKQ0urBj7NosR+imreL9AGe/mqwmSDGw06bJTqQtlXsdLcTqAnoE+nWxXacpjlxS4okZTxJ9QSw7SS10Fvft+4wTz2hh5xKiWglOoAvVwMjaRslPOMFhmBQ/I279B5+kvg+ExJ1r3OTFJgvUt0gjtHSmySs6JSnY8/2Kd1G4IbbzLLW2gUW88+OTj0qKaXh+29Sd3YWoNEEKNJ0w3JeMzLcsUJMhTf++QpXwlr6VLg0Znnw63g9w4LB4vQnMLkQkfLjpU9uTj47mk6YtswkdOMCIaHC7ivg9Gzn6J+GTT7/MNTolCXfdF29yy8AxmDWSxQensi/SWVL0hagkQQo0dYGpl+G+ZK/MT95PsKYC9ZhMOGqnDc8rpa+hz5Dn53umlo7m4r/0ML/9Uwd7HE/qCCs2kmYn0ljXvY7iReWEhca/13KKZtOWw3PP2hSiEgQp0PDUoJePCnErtagPySHUvMhib/XjsrO0c2I3nFWEaxqlZCf+/NT7jlxHW7ByQjlR9z7JFi0nfjMDFmWZOUQ1EqxAs8s9qdFPkRcMjsmlFNMhvte9nlrFpTqN6CbtzjF4xDyT504y6UBE2emyG8SUwUJD9AUhcoTXYcctxelIhIQ7P6eWcuFG0DB4DuUO4fOfX9aYcyEqQbACXajvXtQlI4mHn0L/fhhWmnAyBNmdA8FOC2FfJ57Z0kaR4HykMBQmFHbpzEsNZGyoJG5g6ybkkFok5RDPC654rCw1TwqdYvwi/pu35JO+n9QJysCsI0S1EbRAA6JayNZaLBOQBBSK5PjX0HEkTd1jTBruPIhpfeCo6n4ZolNqyxT0u6WUu3qeX8e7lLBKIUIieIFm90iiQqFjP042BJwEDdpY0ZfPLTcZDY7zW7buTPX5OAXz7pEYArffOzi36JTaYEGtKwchETCcUvI69QhRSYIX6Eikm7Uekcp2SwhZ0jrJhUC43PkIu6sP+KeMpI100/BIt3jrMGzS23fszv1zSJ1nt+x+VoNzWtveh0JUI1Uh0G7Hb79dU7FB2Bqxw1lSs4GjvzsvtuP6AEkd5ShKVSzu2u9TSGghtuI8wL6Mo9RPH8f2nSUsUohKU1UCHdk0cR6SsHH2xZ2OvPj05zvroo62XgMZeknbP9UGqd2+WaU+4IcxpmnSWgrPjow7WxnYprHppxFqfgfUMiE7k12yPze/Bxr1ClHNVJ1A1zXswN0Xn+JJ9YGR416Pfa8efctvp32i30tFTzw4cUnxZ6Eg05NQPDq6M6hzzQ4f5x9txyig5cZx+4OFe8nyDWX/PkKUGwl0Aigz6h6bszQ2Dclc5Ipam87j6uRzMTn4Mdh5DWzb9D3MatYSIhQk0AkgQcQVgt1ffmOqnYWL1qUuIJWVPXu/sztldrpZRRkTF5mJLDjlTLYRohJIoFMU+8+rT2IlIaPS/U4kzdQ1JLFQFAqxpt4zZg4/6zAamDToSENHciJQsGnTV1JNYUV9RgKdAMpxumJBM9lqh7jwUKNTcADSBT0a9cGkJEQaJNAJYHfnitlrr6811Q5mhnh0irLthIiguBZx9eQHlFKeOG8k0AkgcsAVs0r+wfLsXOOmYJN9J8SxxOc791gT2+Tpy22EEHV+rrqxV6yjE4OibZVCAp2Arr2mxP5gdGipD2D7JdyOeGGchkLUF/bvP2jNeLREI0yT8gI0E76lyUBrzqutJ6Y/SqkhnycS6BRlS1lthRB1z4EDh8y2T3bbnS/ldYeNWWDj63Ec//2fz9i6L4USl0odJDqde0lnGyHUrsv4ipULkEAXgfZTOKjIJCS21v3j3d5ssF2Vo0GLrtET3owNyp2yavuja6+pqUfvZ2YVnNMd/GCjeyCj0r1PehhGyR/sLIjkYLy79mO724gGP0a+e9ZmvULUBg7gnbv22pIKJBfxO6VbPWUa2nUZbzODqX9OP8s8hNc3XbCb5jO69Z5me5/S7IHaPaE4puuNQNN0lJUVwz7iQyYawskRnh0wAte60zjbDok/CBXyiM7gD8QfnxRufgDFwryO9UFtE54NSSY8K0LeeHYMQt94nrfeM8g+W54xx0kGDQXcxYX62tECMn322/aFnLdwjV00eEGjRSNaLHh5WSxUzzlMiD2njyZ/KxZ6/oZzF6y2ZjM2KdRI4TeAHwdn+3W3PmV7jFJTJ482bz+rYQeM4xtxJ0OVXTa/uflvrDXrP9xRNb+n40KOMtiwcYdZvHyDdcrRz69nvxm2rCgtlPhDE59Mmye/EI9G/X4GLBQMOnazWFCDJVosaHHGYtH4rv52sWA82G6UXSzYkUWnEU5F0amDHVu0aJBS7p46sM1Hpw5qkEcLCDWtY6eOnXtioYHFRpZkGurLFJqTjYl7L9FgsxLdL80i+A5sXPheOMb4vvhTeAYsoDyXjj0m2WeFw4xnx6LL87z6pt6HNzNXPGafOc/fr/NdF+P4Bs3tO0+6/21NB9kMWEyO7H5ZGPiuNJ8gxr4+UOcCzQ+URI9Fy9abiVOXmj4DZ1nRpT4x9ZxZWUMQXH587o6RxYAf6N9uj7/8/o4xGvxwCpkp2M3XZqYoNugKXpsZhOJB0T0gTO59UiqVl42BtzoStYuu7W6/YzSik0Q5dzgaegb8BujAfsrZrc35l3WxTSTYZVNAi9/6sNEL7E6cTRrdhTC9EX10LFFWgd61+2tbC/iOZoOtEPiduvMc9Oyjsezvr+xqxQeHAcIZCSUCx5FryswVZsaclbEjNUcedhwc1diRiKPBHs2zobcfz2rj5s+O7M7eWHJ4h0nMqG+TjxYXTj/8HTr1mGwXj1Ydxh5ZOG66e4BdNHhB+Z3Q6dxfLE5oWPlFW6NwhufJZz1k/1Ys9Jxgbm4y0JYOwKSIbXfAkLl2h8t7x2/lsM/jC3tKFhUUaD8ZopRBgSK8qLy0vMTsDDnK4ARDZDl6rlm31RZ+37dPNRiOFdhBRUf7aLHgRBYtFiy6LBbYGiMzxdhJiw8f58ccPs4zuveZduTUwQkuOnUQDeCeOqITB+PKxj+dOrCjuqcONh+R6aWmkeV0GPkB/MHGxL2XaLBZie738ht62u/AYmhPfa0On/p4r3gGLKA8F1LoeVa0euPZsejyPCntyvPFbMIzpx6N0uzrgYmD8pwx00GD5taMgU2LHwk/Do4yrK4493jZqsWAL4QQVS3QE6Yutd56nBTseEIJXxFCiNAJNopDCCGOdSTQQggRKBJoIYQIFAm0EEIEigRaCCECRQIthBCBIoEWQohAkUALIUSgSKCFECJQJNBCCBEoEmghhAgUCbQQQgSKBFoIIQJFAi2EEIEigRZCiECRQAshRKBIoIUQIlAk0EIIESgSaCGECBQJtBBCBIoEWgghAkUCLYQQJkz+H9slFB75yBZBAAAAAElFTkSuQmCC",
+          "signedAt": "2026-09-28T02:37:47.874Z"
+        }
+      },
+      {
+        "id": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "name": "정민재",
+        "position": "교무부장",
+        "email": "reviewer-c815bbfc@example.com",
+        "stages": [
+          "document",
+          "interview"
+        ],
+        "pledge": {
+          "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAB4CAYAAADfRGj6AAAACXBIWXMAAAsTAAALEwEAmpwYAAAXKElEQVR4nO2dibcVxbWH/T9eXoZn8p6JM0aNUeMQYxKNwWgSE+IQpxiDoCgKCoiKIA4oIogoMguCKCCCICIgIggiDiCDgiKiyCg4IIPWW1+5GquLc+7pc7r7nOp7f99atdZd6/bpru5zelfVrr1/+wAjhBAiSA5odAeEEEKURgZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaCCECRQZaNAu++eYb8/4Hm8zrb71vZr/0tpk2841Gd0mI1MhAi2bBnr1fm+8dfJX5r5+1te3/jr6u0V0SIjUy0CJ4xk6Yb+4bONV07z3eXH3jCLN379cljzvomOv2GWiM9Z49e+veVyGyRAZaBM8pZ/XYZ3hpW7Z+VvK4Y0/rFjtu05Ydde+rEFkiA93CwD87ftIr5tGRs0yf/lOs7zZ0/nT+vTHDu/q9T0oe99tz74gd986aDXXvqxBZIgPdwmh18k0xI7Zjx5cmdC5u+1Csz4tfX1PyuPMu6Rc7btGS1XXvqxBZIgPdwjjlj7fHjNjadZvrdu1du/aYTzZ+ala+85FZ8Oq7NtIC//KgYTPNnfc/bW687XHzn45DzJTnlsQ+d82NI2J9fuHFZSXPf0WHwbHjZsx+q053JkQ+yEC3MM65IO4ueGPp2prOgx946fJ15qUFK80z018zo8a9ZPo/Mt3cfs8E07HbKHNZ+0fMny/qa047u5f5+SldzI9bdYhdt6l2d79nYte6pfeTsf8/NXlhyT51umVM7LgnJi6o6d6ECAUZ6DIMeWy2uanHWDuja3NZf7P+462m0RCVsHHzDutbZfnODBEjNHjELNuScMlVg2JGbM685TX15dY740Yzy9alx9jYtfoOfDb2/yGjZpfs0x33TYod98jwF2q6NyFCQQa6DOde1Df2si958/3MHvqXO3eZjzZsM2+v/NDMX7jKPDvjdTN6/MvmwUdnmF73TrIzwX9dM9j89eL77cYX0QnE9TZl1A47oVOia1/bZWTsc5OmLq7pHu5/aFqmRvn7h7Yzhx7fyZx4xq3mrn6TY9caNnpO7Ng+A6aU7BPPzz3ungfiM3EhioYMdBkubRefaRL9kBaW7v9z5DW5zDp/cGi7RBEZt931VOxzw8e8WNO98LlS/eD+jjzpJuvrxp1y0LEdY//HiDIoMHPHvYIPvNJG5cQpr8bO0a3XEyWPY5Bzj+t6+7ia7k2IUGiWBnrHZzvNBx9uNm8u+8C8+PIK8/Szi82Ix+eafoOm2dlqEq7rOir2sk+Ysih1v/yletaN+6525sszqYW16zbZZ8kKgJUAKwJWBj6sAtzrvbd2Y9XXYnB0z9Gu07CSx9Ef97i21w+t6d6ECIVgDfTXX39jN6KIeSWsauacpXZzCP8jS1xmUe07DzcXXjnQ/LHNPeZXZ95mDj+hs51JNmXE2nZM9tL2uDs+0xw6ek7qe/KX6iVnwoe1N0ec2Nmc/IcepnWbPuaiKwfa7Dmy6O59cKr1jU94ZpGZNXeZPcb9LINStTNfZtR5gqsmrasIfQ33HHznpWCwcI/7x78GZHAHQjSOYAz0uIkLzO//cqc57vSb91sWZ9naXN4/UX8eeHh67HOkGqfFX6oT30sUBNEQH3601Xz2eeUZsAv34p6PFUMlcC+4n8EnnSc3dB+d2lWECJJ7DgbkUixfuT523Jnn3ZXBHQjROIIx0A8Pn5nr8j9qZKUlYeTYubHPMYNNy+x58aV6x5sfS3U+VgPu+XDnVALfr/sZojrypGefialdRZ9u/yJ2DlZLpfh4w7bYcSf8/pYM7kCIxhHUDLpWo4tr48rrHjWdbx1jevd92jw09Hnz+FPzzbPPv2EWLHrHrFi13mz45FOzc+fuxP2ZPO212DVIlkgLm2LuOYkVTgPhaO758LVX2wc28vJkwOAZqV1FuLuI8qgUsYIP3L3WIb+8IYM7EKJxBGOgF7622lzw7wftBlDXnuOsTgR6EU8+vdA8P/st8+qSNebdNRvM5i2fWXeA+yL+/bIHMu/P3PkrYtf4538eSn1ONtbcc5LIkTYqxD0fs/7Kfdgc+wzRFnky+ol5mbiKMLZJIlbcKBmMOsZdiKISjIGuBsKykix50/DW2+ti1zj7H31Sn9NfqpNllwYSMdzz4TevxHbv2aHNkSe+z5sY71o4/ne3xM5TLjTP1xrhmQtRVAppoLdu+zz2EjKjQuchS9at3xK7BhETaWHW5y7VSYHO0i1E5EmSPriRLj864mpTTwNNVmYtsOGXREPk1NY9Y8exwShEUSmkgSbd2fdD16opUQ5EfdzzE/qWBe5SHX2KNDw3681YH4ndTgIZe+7nSsUvZwV+cfdazIRrgZC5JBEr51x4X+w4QvSEKCqFNNC8nL6BTjJ7ZMOQGGJiid0KHcQa48JglowhJhbZP/8PD2+fSd+JLHDP+9VXyTcuS/nt3XOR/ZgE0qndz5Fkkhc8b/darCBqkTgl6SRJxMp+GaDz0meACtEoCmmgxzwZT+mNfKnlSiFF/O7Pvff7XDXt8y++St33P/zt7tg5manXyqrVH8fOxewxCWf9Pd4HMgHzAoU7/zky868W0raTRKz4WiPEngtRVAppoP3wsqiRzt0Uf7s0LuhebSN6JC3nXxFfqqONnJWrB/9rEoiWcT9HBl5e+BKgNORDqwXhoyTfta81QvamEEWlcAaaWbK/Ux81fKvbPi2/a//vax+NHY9CHEpxKMZRjQPBdwwKspUDhzy/nzuCjL+0XHXDsNg5Ea5PIz/qnuuohJuOfh+S6pPUAiGQ/veEH7raUlt+xAoz6kj0n5h3Yt8R/fc3E9E/EaKoFM5A+8I5fsP4lAOtCrSUKSa6p4I7BNB8cM9NWnZa/KU6BiYNrgzpga2uSdaHnvE+oAKXBzzjcmn71c7a0b2uZdVTy2xdiFAonIH2N4FIEferdTD7zQLEmNzzUjkkLf5SndlfGvxK1kmyJUkC8iVA8+C1N94razh5ttVAcYJaDHQWGaBCNIpCGWiyCb938FX7Xr5f/ra7dXn4KnFECpDmnZab73gidt7Hnngp9TmpfOKek6V5GvxK1uhRVIIMTfczFAnIA1dwithr1/1Axl+SvkZQQaaSMeYafmEDBKmEKCqFMtAIHbkvHyFc5fSbCZVLq+GMvKd7zgGDn0t9D+MnvRI7J37TNPh6yyi6VYL0efczKM7lAeqE7gYmBWLd66KdkhRcU+5nTzrzNhtqR8glrqtIC9sPwUwqjiVEiBTGQPuzZMLV3I0mNsz8envMpMvVr0sC8dLu+Xr2mZD6PtAVcc9JJess9ZaT+Hb9PrA5mjWE7rnXYDVCtufRp3aNDaLok9QSsfLrs0tHrGCs3eNOOSt9BqgQjaIQBppZoSuCQ3oyCnU+GADfR00jeiNJtZFKSRZp5UEjN417TlT4KvHFl7ts0dplKz40815ZaaY8t8SKEKEUh56He74krh2/D0SwZI3vHooGDl/GNWlyTdKIFb5n97gjfnVjpvclRD0J3kATNudXDmnK1YBPulTsLYUAqvVLv/DiskzlQUst1RF6IhSMaAM2tFDNY1nOzA/jQgZjJd+r20jiqQSqgO5n8GNnCUby4OOud559932qcnw/ruujmmSSJBEr9dYaEaLFGmhmjn7WG0kWSSQkR417yb7EvgHDZ0vKdy1RCGnlQYEQv2oMbrUtSQQLkq3uZ4gEyRK/9qK/EYo+hmtEiV/nuWQVsYJedNYZoEI0ggNCNs5+kgNRGyjZVeMHZYZaypChg1wpSWTN+xtjn/nNn9LJg0ZLdTcSJU3jPIgvkVCDTx5BIdTjKvZh79exPjAzzQp0Nn72i+9mz/yNxGmlUD8GP55NFhEr/neOe0iIIhKkgeaFOv2c+MuIIaKAbLUwe8J1sJ+BPqtHxRqAvqwpG1xZcNAx8VAwluG4M+gT7g1Cw+gzbg9mo2yQ4gYgSYfZJxKaaXWO3QQSjHUl45gUsjDde6OKeLlBAoGqarSi8ZW7x5fahwBqFrrH4bsXoogEZ6DJ1jvypHgqNzM8NrbS8PLCVXbnn/P99NiOdnZcCfyl/33IdzPNnxyVTh7UjenFaDAQsVJoBL/4zc2xZ5zExVAJDKarBMig05R7gcgM323RVGq2H7FSzlXlZ4CysSpEEQnGQLM0vv7m0fst///359eaVxbXrlfhgu/azkSrkKB0l+u0rAsDNApf2Y/Ny7TP1p+5EvNdCQYqvuMkiTN+hfBym76UTXOPI+pFiCISjIFmQ87f3EEUqZwwe73A752VPGhI+Mp+zOrTgL62ez5cNUkFkRBrclcqUSq474LCcCeJWOnWK/sMUCFatIEGyhixecdLxWwsTyH5pJChyJIZg0Fs75atn5nmgK/sh9ZFrUx/4c2YgSV6hlC+alPg/dUTqneunxnNkCQRK30GTMk8A1QI09INdBRDy6ZYErW55kyl4gNpIc3aNWKoxdVaXNff9ETAqhZIYnENPSGWbvUVVPfc67AhWQqyR93jevaZWFN/hGg0wRnoPMDYMxunRBSVOIiRpjFrGzRspjVOJKVgbJKoweXFORfcazfN2BTNqsRWOXr3fTpmxNBbrsUt5fvoSbSpVuvZBb81Kfqt2/TZL/sTV0gSLQ9fa4S9DSGKSLM00OgxIOPZsdsoG7rmJkVUakQhoLpGiFu9w7P8iIZKYYBpwD3gXgsZ1GoHPT8jEH992vA/mDNvecl7JxLHvR5umlLMnLM0dtzlV6fPABWiETQbA83Md9zEBebci/pmlggSbXZlIdSfBD/2e936Lbldi0IBJAKhBYJgUy0+aKqBU4CA501qd9pIkGoFmNjoLMXi1+NaI3/55/259kuIvGgWBnrqjCX7zT6baiSGsDTHqPj6waUaBuimHmOtQcoTXzo0ixJb9YAZb1ahkE2Bm8p9PoQKloKEpqwzQIVoBIU20BjMS9s/XNawsuQmI2/o6DlWTe29tRvNV1/tLrkhR0FYqk3jm/WTOKLW5vL+ZvfubDLukiRi1GvmXqTv230+fE+lINLGPe6YX2eTASpEvSmsgUblzk+MoCFLShxsmvhpNrlIgkABzz9/FpKj5fATMbIosdXccGVniR5JojVCIowQRaSwBrrUzBmxoCz9tmxUnXPhfbFrEAa28p2PTB74iRhEmog4bkV3qyFSJhzRL1ab58pHiLwopIEmXds3zmxWJZEhrRaU2A4/oXPsWvij88BPxOj/yPRcrlNkokSmqCGdWgp/9bNx0/a691WIFmmgidTwpSrzTOzwpTEJL8sDqqS417n9nvQltpobxIq7z6hcxqIfArjy3Y/r3lchWpyBZgPI122geGieEILmXo8IkLyiUWL+7m6jcrlOkfHrTpZTOfS1xOsRZSKEaekGmpmQ797IW7ITNbR6RAX4iRj42fMEKVCiVwjni2odvrF0rQmZa7uMjD0jCuAm0RohQkeIolE4A40B8WOU845Pxr/tXhOh+XokYiQtsUVECyL+iPkj6j9hyiIbWojCnFvrkH5T37GpWodde44zITN8zIv2Xrin7r3Hl8329LVGSGISomgUzkAjnuNnCuYpyE7sdFZiQNUmYjBTRyODNGwGibbXD7WRKqSiU+aKKjNZZk3SrrphmGkOsBpAffDeB6da8aRVq+WDFsWjcAYa/CrfbBrmEcFBxRO0PNxrYRTLRQ5knYjRiEZRXiFEGBTSQPvRDrQON43MTKKURBU27I44MR5eV4/kEdLQsza6rADIuiM1Gv0K/LO4AMiapOI2wvck5lBCihWDEC2dL3fuMstXrreaNU9NXtiwfhTSQFPg1K/wTKPmILoQtcpdosSGsTrjr3ftd25cCfUQfvfrMUYNCc5Dj+9kTjzjVquTzEyX0k74jAkDfHTkLCuzyaYZkQ2EnzHTz1tXWoiisnHTdvuu8N5Q5OHqG0fYfRr2aNx3D82eRlFIAx0VHMUPW8qYMVu89c4n7WYZWX98EVEtQSI+MMQor82dv8LKkpIaTtp4uY2zH7fqULOgfbVMmrrYNgYaNkSpMuOK1gshKsP7vnbdJhteOXnaa3ZyhZTCRVcOtDHyfh3MSo2N+EZQWAMdGWk/LjbrdkWHwdYXLYRoPLt377Whocx8ccsNeWy2uavfZOviZFXJKtqvbVpLY7LGapVN+S49xlpb0wgKbaAjmHH6VarTNJY0pHPPX/SOLRLLSEwIHDNaZt2z5i6zo3LUJjyzaF+VlqiNeHyuHbX9RvmlWhsRCaXO6TZ+sFEfcNe4/SQEj6QeGjML7oeGsBT3GDV+jKwyNHMXeYMLbtOWHXali+Ikv1NCRHHbdekx1k6QCAJgsz4Lw+u/58ymuQY6OBQXRkGSgh+huAabhYGOki5w6LfvNNycfFYP8/1Dqqiicmg7c2CrDuYnR3WoeunTUhobjWRQ4iM/7vTu1r3Ej5uGjjWbj8Qn82Nv23GoXU7SSFd3BxdKjEUDCOXHeCGpgMKgwQsaDRrRYMHLy2CRdzKSqA3ke9nr4LtioOc7JPMWvRwmKQ88PN3+BlCBvKz9I7Z4AoUp0G/3w1ezbD88vL3VY8G4U/CZWTa/OSZXJLsV5fcUrIFGpIjYVbLr2EWlfuDd/Z6xM1uiEPiiTzu7lznqlC4xCUq15v8MGChoKNsxWKD7HQ0WqA8yWKDdzWBBI/uQwYIZWbQa6Tdo2r5VBzO2aNBgT8JddbAXEK06qGkZDSDUr4ytOjZttwNJpVZKjzwp1GgsdU6W/G5fokYUQtTfRUtW23tgE5n7YmOM+yVGnGfAAMpzIfmHZ8WGGc+OQZfnSWUhni9iVTxznn81peSyaj84rL1958kFuLjtQzYaiQ0+Zr8MDNzrhk8+zSXstkUYaH6ga97faJNL2Hgj2w2jiy+ZjTpG1hAMLj8+d8bIYMAP9LxL4i+/P2OMGj+cUm4KFOoquSnKNRJWKrlBSGiJ+oBhcvvZ5rL+9mWjsVsdGTUiYrjHqLGU5N7znOGo6RlE0VFEJ5HbgBAWs2xKsPFbHzJqtp2JM0lbsWq9db2lKUhcRA7IW9iICIlL2w2yhqBUXHFWjUiLo0/tak5t3dMaHzYMMJyRocTAseQisoNYZndJzZKHGQdLtSyKnjZH8EfzbD7esM0+K8pKRbMz/PI8T1xMvk8+GlxY/fA9kHrO4EGl7WjgOP+KAXbQ4AXld8J+gj9YHNiq8YO22v7PgLh9krf4rhjoWcFceOVAW+uy0y1jrG93wOAZdobLe8dv5ds9j812lSwaaKD5Amr9UeMPZheVl5aXmJkhSxk2wTCyLD0R+SHCgoKxomXADCpa2keDBSuyaLBg0GWwcDdyR49/+dvl/GPfLudpd9w3ad+qgxVctOogGsBddUQrDlrrNt+tOvCjuqsOJh+R66WplmZ1GO0D+I2JiduXqDFZifpL7Dz3wGBoV33Xf7vq473iGTCA8lyQMeBZjZ3wrauHQZfnSRITzxe3Cc9867bPVQShObg4fupVtsCHhBsDnxY/En4cLGUYXYks4GUrigNfCCEKbaBREWO3nk0KZjyhhK8IIUToBBvFIYQQLR0ZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGECBQZaCGEMGHy/yXRmQ9q/Q/FAAAAAElFTkSuQmCC",
+          "signedAt": "2026-09-28T02:37:48.044Z"
+        }
+      },
+      {
+        "id": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "name": "신재혁",
+        "position": "행정실장",
+        "email": "reviewer-c2e0c7ac@example.com",
+        "stages": [
+          "document",
+          "interview"
+        ],
+        "pledge": {
+          "image": "data:image/png;base64,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aDAm700ueD98D937zraTB30SvYmDvHYmDV5QfidX3NT3uMki2C5MIxvPgKyoU85rb78rJno8mDtaDjMt2462+zbEdml2wQqX947fyrE9j12Sga1rAx1Unitn0FCVXVReWl5iVoa4MmyCYWRxPWkQumXbHnPwYP4lMkU0WEF5rr03WeCReZMFky6TBbFGL0xBjrt15ycfc+cZfZ6cX+N14MF5XgfZAK7X4XkcjOua/8vrII7qeh0sPrzQS7FRiXfo7QMEBwsT9168wWLFu196M/IZmAyt1/fIMa+P94pnwATKcyEvnmc1fe6xUA+TLs8TjRaeL2ETnjnpmIUkbEWOQhy/OredP3RwWmsbxiCmxY+EHweuDLMrmQW8bHkJ4AshRK4NNBoQ7NazScGKJyvpK0IIkXUym8UhhBANHRloIYTIKDLQQgiRUWSghRAio8hACyFERpGBFkKIjCIDLYQQGUUGWgghMooMtBBCZBQZaCGEyCgy0EIIkVFkoIUQIqPIQAshREaRgRZCiIwiAy2EEBlFBloIITKKDLQQQmQUGWghhMgoMtBCCJFRZKCFECKjyEALIURGkYEWQgiTTf4fbw+g6RrLso0AAAAASUVORK5CYII=",
+          "signedAt": "2026-09-28T02:37:48.242Z"
+        }
+      }
+    ],
+    "rubrics": {
+      "document": [
+        {
+          "id": "c1",
+          "label": "학력",
+          "max": 6,
+          "guide": "강사 자격 기준 학위 취득 및 동등 이상의 학력\n· 채용 관련 전공 대학원 졸업: 6점\n· 채용 관련 전공 대학 졸업: 4년제 5점, 2년제 4점\n· 일반 대학원 및 대학 졸업: 4년제 이상 3점, 2년제 2점\n· 학력 인정 범위 내 기타 과정: 1점"
+        },
+        {
+          "id": "c2",
+          "label": "자격증",
+          "max": 6,
+          "guide": "자격증 소지 (합산 최대 6점)\n· 초등 교원자격증: 3점\n· 유치원 교원자격증: 2점\n· 중등 교원자격증: 1점\n· 채용 관련 자격증: 건당 1점"
+        },
+        {
+          "id": "c3",
+          "label": "경력",
+          "max": 6,
+          "guide": "강사 경력\n· 1년당 1점 (경력증명서로 확인되는 기간만 계산)"
+        },
+        {
+          "id": "c4",
+          "label": "지속 근무 여부",
+          "max": 6,
+          "guide": "직업적 가치관, 생활환경, 조직 적합성을 종합해 채용 기간을 채울 수 있는지 판단합니다."
+        },
+        {
+          "id": "c5",
+          "label": "자기소개서",
+          "max": 26,
+          "guide": "지원 동기, 직무 이해, 학생 지도 계획의 구체성과 실현 가능성을 봅니다. 분량이 아니라 내용으로 판단합니다."
+        }
+      ],
+      "interview": [
+        {
+          "id": "c1",
+          "label": "인성",
+          "max": 10,
+          "guide": "용모, 태도, 근면성, 협동성 등"
+        },
+        {
+          "id": "c2",
+          "label": "교직관",
+          "max": 10,
+          "guide": "책임감, 성실도, 적극성, 진취성, 추진력 등"
+        },
+        {
+          "id": "c3",
+          "label": "소양",
+          "max": 10,
+          "guide": "표현력, 논리성, 이해력, 지도력 등"
+        },
+        {
+          "id": "c4",
+          "label": "수업에 대한 이해",
+          "max": 10,
+          "guide": "수업 설계, 지도 방법, 피드백 등"
+        },
+        {
+          "id": "c5",
+          "label": "학생에 대한 이해",
+          "max": 10,
+          "guide": "학생 특성, 발화법, 안전관리, 문제 발생 시 대처법 등"
+        }
+      ]
+    },
+    "guidance": "",
+    "rules": {
+      "rankingBasis": "combined",
+      "shortlistLimit": 4,
+      "allowBonus": true,
+      "bonusThreshold": 20,
+      "tiePolicy": "competition-rank-manual-review",
+      "precision": 1
+    },
+    "status": "finalized",
+    "provider": "mock",
+    "link": {
+      "kind": "mock",
+      "workspacePath": "/recruitment?id=1070cb17-7345-4a0c-a629-40a4c116bbf1",
+      "folderUrl": null,
+      "spreadsheetUrl": null,
+      "templateCapacity": 20
+    },
+    "evaluations": {
+      "document:6ea7712e-d9cb-4847-8c79-f7cb591c7049": {
+        "reviewerId": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "stage": "document",
+        "rows": [
+          {
+            "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 4,
+              "c4": 4,
+              "c5": 25
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 6,
+              "c3": 4,
+              "c4": 6,
+              "c5": 21
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 6,
+              "c3": 6,
+              "c4": 5,
+              "c5": 19
+            },
+            "bonus": 2.5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 6,
+              "c4": 4,
+              "c5": 25
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 5,
+              "c4": 4,
+              "c5": 23
+            },
+            "bonus": 2.5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 5,
+              "c4": 6,
+              "c5": 17
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 3,
+              "c4": 4,
+              "c5": 23
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 4,
+              "c4": 5,
+              "c5": 16
+            },
+            "bonus": 5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 6,
+              "c3": 3,
+              "c4": 4,
+              "c5": 20
+            },
+            "bonus": 5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 3,
+              "c4": 6,
+              "c5": 16
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 3,
+              "c3": 4,
+              "c4": 4,
+              "c5": 23
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 3,
+              "c3": 6,
+              "c4": 3,
+              "c5": 24
+            },
+            "bonus": 0,
+            "note": ""
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:47.948Z",
+        "submittedAt": "2026-09-28T02:37:47.988Z"
+      },
+      "document:fd8bcc93-b0fc-411b-8623-a720fc26c7f5": {
+        "reviewerId": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "stage": "document",
+        "rows": [
+          {
+            "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+            "attendance": "present",
+            "scores": {
+              "c1": 3,
+              "c2": 4,
+              "c3": 4,
+              "c4": 4,
+              "c5": 15
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 4,
+              "c4": 4,
+              "c5": 19
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 4,
+              "c3": 4,
+              "c4": 5,
+              "c5": 20
+            },
+            "bonus": 5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 3,
+              "c4": 5,
+              "c5": 22
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 5,
+              "c3": 6,
+              "c4": 4,
+              "c5": 20
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 4,
+              "c4": 5,
+              "c5": 16
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 5,
+              "c4": 5,
+              "c5": 17
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 4,
+              "c3": 3,
+              "c4": 6,
+              "c5": 16
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 4,
+              "c3": 6,
+              "c4": 4,
+              "c5": 22
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 5,
+              "c4": 5,
+              "c5": 15
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 4,
+              "c4": 4,
+              "c5": 22
+            },
+            "bonus": 5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 4,
+              "c3": 4,
+              "c4": 5,
+              "c5": 19
+            },
+            "bonus": 0,
+            "note": ""
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:48.088Z",
+        "submittedAt": "2026-09-28T02:37:48.159Z"
+      },
+      "document:a57e0ebb-8693-40f6-bd5d-64a379efb3ae": {
+        "reviewerId": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "stage": "document",
+        "rows": [
+          {
+            "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 5,
+              "c4": 4,
+              "c5": 23
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 4,
+              "c4": 4,
+              "c5": 15
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 6,
+              "c4": 5,
+              "c5": 21
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 5,
+              "c3": 5,
+              "c4": 4,
+              "c5": 16
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 5,
+              "c3": 5,
+              "c4": 5,
+              "c5": 20
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 5,
+              "c4": 4,
+              "c5": 16
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 6,
+              "c4": 4,
+              "c5": 16
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 5,
+              "c4": 5,
+              "c5": 17
+            },
+            "bonus": 2.5,
+            "note": "관련 자격증 사본 확인"
+          },
+          {
+            "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 3,
+              "c4": 5,
+              "c5": 23
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 6,
+              "c3": 4,
+              "c4": 4,
+              "c5": 20
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 6,
+              "c3": 4,
+              "c4": 6,
+              "c5": 22
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 4,
+              "c3": 4,
+              "c4": 6,
+              "c5": 22
+            },
+            "bonus": 0,
+            "note": ""
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:48.318Z",
+        "submittedAt": "2026-09-28T02:37:48.390Z"
+      },
+      "interview:6ea7712e-d9cb-4847-8c79-f7cb591c7049": {
+        "reviewerId": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "stage": "interview",
+        "rows": [
+          {
+            "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+            "attendance": "present",
+            "scores": {
+              "c1": 9,
+              "c2": 9,
+              "c3": 9,
+              "c4": 6,
+              "c5": 6
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+            "attendance": "present",
+            "scores": {
+              "c1": 7,
+              "c2": 7,
+              "c3": 6,
+              "c4": 6,
+              "c5": 9
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+            "attendance": "present",
+            "scores": {
+              "c1": 8,
+              "c2": 7,
+              "c3": 8,
+              "c4": 7,
+              "c5": 7
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+            "attendance": "absent",
+            "scores": {},
+            "bonus": 0,
+            "note": "면접 당일 불참(사전 연락 없음)"
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:48.486Z",
+        "submittedAt": "2026-09-28T02:37:48.511Z"
+      },
+      "interview:fd8bcc93-b0fc-411b-8623-a720fc26c7f5": {
+        "reviewerId": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "stage": "interview",
+        "rows": [
+          {
+            "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+            "attendance": "present",
+            "scores": {
+              "c1": 8,
+              "c2": 10,
+              "c3": 7,
+              "c4": 7,
+              "c5": 8
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+            "attendance": "present",
+            "scores": {
+              "c1": 7,
+              "c2": 6,
+              "c3": 7,
+              "c4": 8,
+              "c5": 7
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 9,
+              "c3": 6,
+              "c4": 7,
+              "c5": 7
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+            "attendance": "absent",
+            "scores": {},
+            "bonus": 0,
+            "note": "면접 당일 불참(사전 연락 없음)"
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:48.535Z",
+        "submittedAt": "2026-09-28T02:37:48.572Z"
+      },
+      "interview:a57e0ebb-8693-40f6-bd5d-64a379efb3ae": {
+        "reviewerId": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "stage": "interview",
+        "rows": [
+          {
+            "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+            "attendance": "present",
+            "scores": {
+              "c1": 8,
+              "c2": 7,
+              "c3": 8,
+              "c4": 8,
+              "c5": 6
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+            "attendance": "present",
+            "scores": {
+              "c1": 8,
+              "c2": 6,
+              "c3": 9,
+              "c4": 8,
+              "c5": 8
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+            "attendance": "present",
+            "scores": {
+              "c1": 9,
+              "c2": 7,
+              "c3": 6,
+              "c4": 9,
+              "c5": 8
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+            "attendance": "absent",
+            "scores": {},
+            "bonus": 0,
+            "note": "면접 당일 불참(사전 연락 없음)"
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:48.599Z",
+        "submittedAt": "2026-09-28T02:37:48.629Z"
+      }
+    },
+    "shortlist": [
+      "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+      "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+      "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+      "a320915f-c8d4-47bc-8e1b-a86ec5f232e4"
+    ],
+    "snapshot": {
+      "version": 1,
+      "finalizedAt": "2026-09-28T02:37:48.659Z",
+      "rules": {
+        "rankingBasis": "combined",
+        "shortlistLimit": 4,
+        "allowBonus": true,
+        "bonusThreshold": 20,
+        "tiePolicy": "competition-rank-manual-review",
+        "precision": 1
+      },
+      "rubrics": {
+        "document": [
+          {
+            "id": "c1",
+            "label": "학력",
+            "max": 6,
+            "guide": "강사 자격 기준 학위 취득 및 동등 이상의 학력\n· 채용 관련 전공 대학원 졸업: 6점\n· 채용 관련 전공 대학 졸업: 4년제 5점, 2년제 4점\n· 일반 대학원 및 대학 졸업: 4년제 이상 3점, 2년제 2점\n· 학력 인정 범위 내 기타 과정: 1점"
+          },
+          {
+            "id": "c2",
+            "label": "자격증",
+            "max": 6,
+            "guide": "자격증 소지 (합산 최대 6점)\n· 초등 교원자격증: 3점\n· 유치원 교원자격증: 2점\n· 중등 교원자격증: 1점\n· 채용 관련 자격증: 건당 1점"
+          },
+          {
+            "id": "c3",
+            "label": "경력",
+            "max": 6,
+            "guide": "강사 경력\n· 1년당 1점 (경력증명서로 확인되는 기간만 계산)"
+          },
+          {
+            "id": "c4",
+            "label": "지속 근무 여부",
+            "max": 6,
+            "guide": "직업적 가치관, 생활환경, 조직 적합성을 종합해 채용 기간을 채울 수 있는지 판단합니다."
+          },
+          {
+            "id": "c5",
+            "label": "자기소개서",
+            "max": 26,
+            "guide": "지원 동기, 직무 이해, 학생 지도 계획의 구체성과 실현 가능성을 봅니다. 분량이 아니라 내용으로 판단합니다."
+          }
+        ],
+        "interview": [
+          {
+            "id": "c1",
+            "label": "인성",
+            "max": 10,
+            "guide": "용모, 태도, 근면성, 협동성 등"
+          },
+          {
+            "id": "c2",
+            "label": "교직관",
+            "max": 10,
+            "guide": "책임감, 성실도, 적극성, 진취성, 추진력 등"
+          },
+          {
+            "id": "c3",
+            "label": "소양",
+            "max": 10,
+            "guide": "표현력, 논리성, 이해력, 지도력 등"
+          },
+          {
+            "id": "c4",
+            "label": "수업에 대한 이해",
+            "max": 10,
+            "guide": "수업 설계, 지도 방법, 피드백 등"
+          },
+          {
+            "id": "c5",
+            "label": "학생에 대한 이해",
+            "max": 10,
+            "guide": "학생 특성, 발화법, 안전관리, 문제 발생 시 대처법 등"
+          }
+        ]
+      },
+      "guidance": "",
+      "results": [
+        {
+          "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+          "code": "2026-003",
+          "name": "이수빈",
+          "score": 38.7,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 1,
+          "document": 42.2,
+          "interview": 38.7,
+          "total": 80.9,
+          "rankingScore": 80.9
+        },
+        {
+          "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+          "code": "2026-009",
+          "name": "장하율",
+          "score": 37,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 2,
+          "document": 41.7,
+          "interview": 37,
+          "total": 78.7,
+          "rankingScore": 78.7
+        },
+        {
+          "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+          "code": "2026-005",
+          "name": "정예린",
+          "score": 36.3,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 3,
+          "document": 41.8,
+          "interview": 36.3,
+          "total": 78.1,
+          "rankingScore": 78.1
+        },
+        {
+          "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+          "code": "2026-011",
+          "name": "한서준",
+          "score": null,
+          "complete": true,
+          "absent": true,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": null,
+          "document": 41.7,
+          "interview": null,
+          "total": null,
+          "rankingScore": null
+        }
+      ],
+      "documentResults": [
+        {
+          "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+          "code": "2026-003",
+          "name": "이수빈",
+          "score": 42.2,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 1
+        },
+        {
+          "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+          "code": "2026-005",
+          "name": "정예린",
+          "score": 41.8,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 2
+        },
+        {
+          "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+          "code": "2026-009",
+          "name": "장하율",
+          "score": 41.7,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 3
+        },
+        {
+          "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+          "code": "2026-011",
+          "name": "한서준",
+          "score": 41.7,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 3
+        },
+        {
+          "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+          "code": "2026-004",
+          "name": "최하준",
+          "score": 39.7,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 5
+        },
+        {
+          "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+          "code": "2026-012",
+          "name": "오세은",
+          "score": 39.3,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 6
+        },
+        {
+          "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+          "code": "2026-001",
+          "name": "김나래",
+          "score": 38,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 7
+        },
+        {
+          "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+          "code": "2026-002",
+          "name": "박도현",
+          "score": 37.3,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 8
+        },
+        {
+          "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+          "code": "2026-007",
+          "name": "조서윤",
+          "score": 37,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 9
+        },
+        {
+          "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+          "code": "2026-008",
+          "name": "윤재원",
+          "score": 36.8,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 10
+        },
+        {
+          "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+          "code": "2026-010",
+          "name": "임지호",
+          "score": 35.7,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 11
+        },
+        {
+          "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+          "code": "2026-006",
+          "name": "강민호",
+          "score": 35,
+          "complete": true,
+          "absent": false,
+          "conflict": false,
+          "submitted": 3,
+          "required": 3,
+          "rank": 12
+        }
+      ],
+      "evaluations": {
+        "document:6ea7712e-d9cb-4847-8c79-f7cb591c7049": {
+          "reviewerId": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+          "stage": "document",
+          "rows": [
+            {
+              "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 4,
+                "c4": 4,
+                "c5": 25
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 6,
+                "c3": 4,
+                "c4": 6,
+                "c5": 21
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 6,
+                "c3": 6,
+                "c4": 5,
+                "c5": 19
+              },
+              "bonus": 2.5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 6,
+                "c4": 4,
+                "c5": 25
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 5,
+                "c4": 4,
+                "c5": 23
+              },
+              "bonus": 2.5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 4,
+                "c3": 5,
+                "c4": 6,
+                "c5": 17
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 3,
+                "c4": 4,
+                "c5": 23
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 4,
+                "c4": 5,
+                "c5": 16
+              },
+              "bonus": 5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 6,
+                "c3": 3,
+                "c4": 4,
+                "c5": 20
+              },
+              "bonus": 5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 3,
+                "c4": 6,
+                "c5": 16
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 3,
+                "c3": 4,
+                "c4": 4,
+                "c5": 23
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+              "attendance": "present",
+              "scores": {
+                "c1": 6,
+                "c2": 3,
+                "c3": 6,
+                "c4": 3,
+                "c5": 24
+              },
+              "bonus": 0,
+              "note": ""
+            }
+          ],
+          "updatedAt": "2026-09-28T02:37:47.948Z",
+          "submittedAt": "2026-09-28T02:37:47.988Z"
+        },
+        "document:fd8bcc93-b0fc-411b-8623-a720fc26c7f5": {
+          "reviewerId": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+          "stage": "document",
+          "rows": [
+            {
+              "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+              "attendance": "present",
+              "scores": {
+                "c1": 3,
+                "c2": 4,
+                "c3": 4,
+                "c4": 4,
+                "c5": 15
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 4,
+                "c4": 4,
+                "c5": 19
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 4,
+                "c3": 4,
+                "c4": 5,
+                "c5": 20
+              },
+              "bonus": 5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 3,
+                "c4": 5,
+                "c5": 22
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+              "attendance": "present",
+              "scores": {
+                "c1": 6,
+                "c2": 5,
+                "c3": 6,
+                "c4": 4,
+                "c5": 20
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 4,
+                "c3": 4,
+                "c4": 5,
+                "c5": 16
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 5,
+                "c4": 5,
+                "c5": 17
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 4,
+                "c3": 3,
+                "c4": 6,
+                "c5": 16
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+              "attendance": "present",
+              "scores": {
+                "c1": 6,
+                "c2": 4,
+                "c3": 6,
+                "c4": 4,
+                "c5": 22
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 5,
+                "c4": 5,
+                "c5": 15
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 4,
+                "c4": 4,
+                "c5": 22
+              },
+              "bonus": 5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 4,
+                "c3": 4,
+                "c4": 5,
+                "c5": 19
+              },
+              "bonus": 0,
+              "note": ""
+            }
+          ],
+          "updatedAt": "2026-09-28T02:37:48.088Z",
+          "submittedAt": "2026-09-28T02:37:48.159Z"
+        },
+        "document:a57e0ebb-8693-40f6-bd5d-64a379efb3ae": {
+          "reviewerId": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+          "stage": "document",
+          "rows": [
+            {
+              "candidateId": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 4,
+                "c3": 5,
+                "c4": 4,
+                "c5": 23
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 4,
+                "c4": 4,
+                "c5": 15
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 6,
+                "c4": 5,
+                "c5": 21
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+              "attendance": "present",
+              "scores": {
+                "c1": 6,
+                "c2": 5,
+                "c3": 5,
+                "c4": 4,
+                "c5": 16
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 5,
+                "c3": 5,
+                "c4": 5,
+                "c5": 20
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 5,
+                "c4": 4,
+                "c5": 16
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "23933831-0df9-4874-971e-fc5260d9a4de",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 4,
+                "c3": 6,
+                "c4": 4,
+                "c5": 16
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 5,
+                "c3": 5,
+                "c4": 5,
+                "c5": 17
+              },
+              "bonus": 2.5,
+              "note": "관련 자격증 사본 확인"
+            },
+            {
+              "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+              "attendance": "present",
+              "scores": {
+                "c1": 5,
+                "c2": 4,
+                "c3": 3,
+                "c4": 5,
+                "c5": 23
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "7f599c51-a37b-46cd-a189-877be324818d",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 6,
+                "c3": 4,
+                "c4": 4,
+                "c5": 20
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 6,
+                "c3": 4,
+                "c4": 6,
+                "c5": 22
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+              "attendance": "present",
+              "scores": {
+                "c1": 4,
+                "c2": 4,
+                "c3": 4,
+                "c4": 6,
+                "c5": 22
+              },
+              "bonus": 0,
+              "note": ""
+            }
+          ],
+          "updatedAt": "2026-09-28T02:37:48.318Z",
+          "submittedAt": "2026-09-28T02:37:48.390Z"
+        },
+        "interview:6ea7712e-d9cb-4847-8c79-f7cb591c7049": {
+          "reviewerId": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+          "stage": "interview",
+          "rows": [
+            {
+              "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+              "attendance": "present",
+              "scores": {
+                "c1": 9,
+                "c2": 9,
+                "c3": 9,
+                "c4": 6,
+                "c5": 6
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+              "attendance": "present",
+              "scores": {
+                "c1": 7,
+                "c2": 7,
+                "c3": 6,
+                "c4": 6,
+                "c5": 9
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+              "attendance": "present",
+              "scores": {
+                "c1": 8,
+                "c2": 7,
+                "c3": 8,
+                "c4": 7,
+                "c5": 7
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+              "attendance": "absent",
+              "scores": {},
+              "bonus": 0,
+              "note": "면접 당일 불참(사전 연락 없음)"
+            }
+          ],
+          "updatedAt": "2026-09-28T02:37:48.486Z",
+          "submittedAt": "2026-09-28T02:37:48.511Z"
+        },
+        "interview:fd8bcc93-b0fc-411b-8623-a720fc26c7f5": {
+          "reviewerId": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+          "stage": "interview",
+          "rows": [
+            {
+              "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+              "attendance": "present",
+              "scores": {
+                "c1": 8,
+                "c2": 10,
+                "c3": 7,
+                "c4": 7,
+                "c5": 8
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+              "attendance": "present",
+              "scores": {
+                "c1": 7,
+                "c2": 6,
+                "c3": 7,
+                "c4": 8,
+                "c5": 7
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+              "attendance": "present",
+              "scores": {
+                "c1": 6,
+                "c2": 9,
+                "c3": 6,
+                "c4": 7,
+                "c5": 7
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+              "attendance": "absent",
+              "scores": {},
+              "bonus": 0,
+              "note": "면접 당일 불참(사전 연락 없음)"
+            }
+          ],
+          "updatedAt": "2026-09-28T02:37:48.535Z",
+          "submittedAt": "2026-09-28T02:37:48.572Z"
+        },
+        "interview:a57e0ebb-8693-40f6-bd5d-64a379efb3ae": {
+          "reviewerId": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+          "stage": "interview",
+          "rows": [
+            {
+              "candidateId": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+              "attendance": "present",
+              "scores": {
+                "c1": 8,
+                "c2": 7,
+                "c3": 8,
+                "c4": 8,
+                "c5": 6
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+              "attendance": "present",
+              "scores": {
+                "c1": 8,
+                "c2": 6,
+                "c3": 9,
+                "c4": 8,
+                "c5": 8
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+              "attendance": "present",
+              "scores": {
+                "c1": 9,
+                "c2": 7,
+                "c3": 6,
+                "c4": 9,
+                "c5": 8
+              },
+              "bonus": 0,
+              "note": ""
+            },
+            {
+              "candidateId": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+              "attendance": "absent",
+              "scores": {},
+              "bonus": 0,
+              "note": "면접 당일 불참(사전 연락 없음)"
+            }
+          ],
+          "updatedAt": "2026-09-28T02:37:48.599Z",
+          "submittedAt": "2026-09-28T02:37:48.629Z"
+        }
+      },
+      "candidates": [
+        {
+          "id": "a3fbe466-f3af-45d4-99dd-fdafa534feaa",
+          "code": "2026-001",
+          "name": "김나래"
+        },
+        {
+          "id": "e2d73950-ed9f-43aa-b0d9-c5ddc3a0ba3a",
+          "code": "2026-002",
+          "name": "박도현"
+        },
+        {
+          "id": "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+          "code": "2026-003",
+          "name": "이수빈"
+        },
+        {
+          "id": "5cf6703e-574b-4095-bbcc-90669e6e05db",
+          "code": "2026-004",
+          "name": "최하준"
+        },
+        {
+          "id": "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+          "code": "2026-005",
+          "name": "정예린"
+        },
+        {
+          "id": "7f5c1f65-6cf1-4f62-be74-9623977e99bf",
+          "code": "2026-006",
+          "name": "강민호"
+        },
+        {
+          "id": "23933831-0df9-4874-971e-fc5260d9a4de",
+          "code": "2026-007",
+          "name": "조서윤"
+        },
+        {
+          "id": "8a0d6ea2-0553-49dc-94ea-0b35aacbd553",
+          "code": "2026-008",
+          "name": "윤재원"
+        },
+        {
+          "id": "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+          "code": "2026-009",
+          "name": "장하율"
+        },
+        {
+          "id": "7f599c51-a37b-46cd-a189-877be324818d",
+          "code": "2026-010",
+          "name": "임지호"
+        },
+        {
+          "id": "a320915f-c8d4-47bc-8e1b-a86ec5f232e4",
+          "code": "2026-011",
+          "name": "한서준"
+        },
+        {
+          "id": "ce321059-89f7-4c6b-94f9-b2b3fb82a58f",
+          "code": "2026-012",
+          "name": "오세은"
+        }
+      ],
+      "reviewers": [
+        {
+          "id": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+          "name": "이미영",
+          "position": "교감",
+          "email": "reviewer-c774bbf8@example.com",
+          "stages": [
+            "document",
+            "interview"
+          ],
+          "pledge": {
+            "image": "data:image/png;base64,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",
+            "signedAt": "2026-09-28T02:37:47.874Z"
+          }
+        },
+        {
+          "id": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+          "name": "정민재",
+          "position": "교무부장",
+          "email": "reviewer-c815bbfc@example.com",
+          "stages": [
+            "document",
+            "interview"
+          ],
+          "pledge": {
+            "image": "data:image/png;base64,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",
+            "signedAt": "2026-09-28T02:37:48.044Z"
+          }
+        },
+        {
+          "id": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+          "name": "신재혁",
+          "position": "행정실장",
+          "email": "reviewer-c2e0c7ac@example.com",
+          "stages": [
+            "document",
+            "interview"
+          ],
+          "pledge": {
+            "image": "data:image/png;base64,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aDAm700ueD98D937zraTB30SvYmDvHYmDV5QfidX3NT3uMki2C5MIxvPgKyoU85rb78rJno8mDtaDjMt2462+zbEdml2wQqX947fyrE9j12Sga1rAx1Unitn0FCVXVReWl5iVoa4MmyCYWRxPWkQumXbHnPwYP4lMkU0WEF5rr03WeCReZMFky6TBbFGL0xBjrt15ycfc+cZfZ6cX+N14MF5XgfZAK7X4XkcjOua/8vrII7qeh0sPrzQS7FRiXfo7QMEBwsT9168wWLFu196M/IZmAyt1/fIMa+P94pnwATKcyEvnmc1fe6xUA+TLs8TjRaeL2ETnjnpmIUkbEWOQhy/OredP3RwWmsbxiCmxY+EHweuDLMrmQW8bHkJ4AshRK4NNBoQ7NazScGKJyvpK0IIkXUym8UhhBANHRloIYTIKDLQQgiRUWSghRAio8hACyFERpGBFkKIjCIDLYQQGUUGWgghMooMtBBCZBQZaCGEyCgy0EIIkVFkoIUQIqPIQAshREaRgRZCiIwiAy2EEBlFBloIITKKDLQQQmQUGWghhMgoMtBCCJFRZKCFECKjyEALIURGkYEWQgiTTf4fbw+g6RrLso0AAAAASUVORK5CYII=",
+            "signedAt": "2026-09-28T02:37:48.242Z"
+          }
+        }
+      ],
+      "school": "새봄초등학교",
+      "title": "2026학년도 2학기 늘봄학교 프로그램 강사 채용",
+      "field": "늘봄 프로그램 강사(체육)",
+      "documentDate": "2026-10-13",
+      "interviewDate": "2026-10-16",
+      "shortlist": [
+        "d7874a7d-6d91-45e9-8e72-b84b1e572434",
+        "62bcc1fa-19b0-40b5-93b4-4e1dfffe27cf",
+        "fee18e73-a1aa-4dc7-85c3-d9038e721086",
+        "a320915f-c8d4-47bc-8e1b-a86ec5f232e4"
+      ],
+      "shortlistReason": "서류 상위 4명 선정(면접대상 최대 4명)."
+    },
+    "audit": [
+      {
+        "at": "2026-09-28T02:37:47.549Z",
+        "actor": "admin",
+        "action": "채용 생성",
+        "detail": ""
+      },
+      {
+        "at": "2026-09-28T02:37:47.571Z",
+        "actor": "admin",
+        "action": "위원 링크 발급",
+        "detail": "이미영"
+      },
+      {
+        "at": "2026-09-28T02:37:47.629Z",
+        "actor": "admin",
+        "action": "위원 링크 발급",
+        "detail": "정민재"
+      },
+      {
+        "at": "2026-09-28T02:37:47.660Z",
+        "actor": "admin",
+        "action": "위원 링크 발급",
+        "detail": "신재혁"
+      },
+      {
+        "at": "2026-09-28T02:37:47.701Z",
+        "actor": "admin",
+        "action": "평가 시작",
+        "detail": "웹에서 평가 진행 · Google 시트 파일은 만들지 않음"
+      },
+      {
+        "at": "2026-09-28T02:37:47.874Z",
+        "actor": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "action": "청렴서약서 서명",
+        "detail": "이미영"
+      },
+      {
+        "at": "2026-09-28T02:37:47.948Z",
+        "actor": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "action": "평가 임시 저장",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:47.988Z",
+        "actor": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "action": "평가 제출",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:48.044Z",
+        "actor": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "action": "청렴서약서 서명",
+        "detail": "정민재"
+      },
+      {
+        "at": "2026-09-28T02:37:48.088Z",
+        "actor": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "action": "평가 임시 저장",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:48.159Z",
+        "actor": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "action": "평가 제출",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:48.242Z",
+        "actor": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "action": "청렴서약서 서명",
+        "detail": "신재혁"
+      },
+      {
+        "at": "2026-09-28T02:37:48.318Z",
+        "actor": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "action": "평가 임시 저장",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:48.390Z",
+        "actor": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "action": "평가 제출",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:48.422Z",
+        "actor": "admin",
+        "action": "면접대상자 확정",
+        "detail": "서류 상위 4명 선정(면접대상 최대 4명)."
+      },
+      {
+        "at": "2026-09-28T02:37:48.486Z",
+        "actor": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "action": "평가 임시 저장",
+        "detail": "interview"
+      },
+      {
+        "at": "2026-09-28T02:37:48.511Z",
+        "actor": "6ea7712e-d9cb-4847-8c79-f7cb591c7049",
+        "action": "평가 제출",
+        "detail": "interview"
+      },
+      {
+        "at": "2026-09-28T02:37:48.535Z",
+        "actor": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "action": "평가 임시 저장",
+        "detail": "interview"
+      },
+      {
+        "at": "2026-09-28T02:37:48.572Z",
+        "actor": "fd8bcc93-b0fc-411b-8623-a720fc26c7f5",
+        "action": "평가 제출",
+        "detail": "interview"
+      },
+      {
+        "at": "2026-09-28T02:37:48.599Z",
+        "actor": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "action": "평가 임시 저장",
+        "detail": "interview"
+      },
+      {
+        "at": "2026-09-28T02:37:48.629Z",
+        "actor": "a57e0ebb-8693-40f6-bd5d-64a379efb3ae",
+        "action": "평가 제출",
+        "detail": "interview"
+      },
+      {
+        "at": "2026-09-28T02:37:48.660Z",
+        "actor": "admin",
+        "action": "결과 확정",
+        "detail": "확정본 v1"
+      }
+    ],
+    "shortlistReason": "서류 상위 4명 선정(면접대상 최대 4명)."
+  },
+  {
+    "id": "00ee1232-e135-48e0-8da5-b663b46393da",
+    "version": 7,
+    "createdAt": "2026-09-28T02:37:48.679Z",
+    "school": "새봄초등학교",
+    "title": "2026학년도 방과후학교 코딩 강사 채용",
+    "field": "방과후 강사(코딩)",
+    "documentDate": "2026-10-27",
+    "interviewDate": "2026-10-30",
+    "candidates": [
+      {
+        "id": "db88da7b-7ee1-4c6f-888a-d74c834f78c9",
+        "code": "2026-101",
+        "name": "문지우"
+      },
+      {
+        "id": "86f14627-7ca9-4259-9fb4-e1f40dd1db16",
+        "code": "2026-102",
+        "name": "배서연"
+      },
+      {
+        "id": "41938000-d317-420f-a150-61b75bc2e651",
+        "code": "2026-103",
+        "name": "신우진"
+      },
+      {
+        "id": "7b9e9afe-d9ef-4ddb-b67f-12aac386e901",
+        "code": "2026-104",
+        "name": "홍채아"
+      },
+      {
+        "id": "1db39252-886d-4599-a94a-6c96c9c4c571",
+        "code": "2026-105",
+        "name": "구도윤"
+      },
+      {
+        "id": "3da42936-a3ef-4b67-af70-c0508b6fc5fd",
+        "code": "2026-106",
+        "name": "표하린"
+      }
+    ],
+    "reviewers": [
+      {
+        "id": "0d6404a2-8e83-4c7a-bc88-03aa3430fa66",
+        "name": "조현우",
+        "position": "교과전담",
+        "email": "reviewer-c870d604@example.com",
+        "stages": [
+          "document",
+          "interview"
+        ],
+        "pledge": {
+          "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAB4CAYAAADfRGj6AAAACXBIWXMAAAsTAAALEwEAmpwYAAAU+UlEQVR4nO2d97tU1bnH/T9yc01uyvWmSbDFRI2owRYVETUSIxoxxqAoLSpduiAg5UgRUaSDNAUBEaX3IggKCCgdaVKko+s+n8Xd567ZZ86cKXvPrJn5fp5n/WDC2W32/q53vestlxghhBBeckmhL0AIIURyJNBCCOEpEmghhPAUCbQQQniKBFoIITxFAi2EEJ4igRZCCE+RQAshhKdIoIUQwlMk0EII4SkSaCGE8BQJtBBCeIoEWgghPEUCLYQQniKBFkIIT5FACyGEp0ighRDCUyTQQgjhKRJoIYTwFAm0EEJ4igRaCCE8RQIthBCeIoEWQghPkUALIYSnSKCFEMJTJNBCCOEpEmghhPAUCbQQQniKBFoIITxFAi2EEJ4igRZCCE+RQAshhKdIoIUQwlMk0EII4SkSaOEFXx84aj79bJdZt2GHWb56q1mwZJNZ/cl2s3f/N+bcuQuFvjwhCoIEWuSV8+cvmJVrt5kBQ2ebh5+sMNfd3tH8uNaz5ge/aJJy/O5P7c2zL75txk9Zag4ePq5fTZQFEugyY96iz8w705abN0Z+bHoPnGG+//77vJx3y7Z9pm2XCeaya1rWKMY1jf/67XPm+Y5jzZc7DuTl2oUoFBLoMuO3f2ydIHbHjp+K9Xy4KP7+9BDzH798OmdhDg8s72Fvf5y3SUaIfCOB9swPu2TFFvP+nLVmzMTF1icbNXXu7pIgcjt2HTJxMWHqsmot5p/Ufs7Uf6Sv6dZnmv13C5duMl9s32927DpoDhw8ZvZ/fdR8tnm3+XjhRusOafTUoGpdIf94bpi5cOG72O5DiEIhgfaIIW/NTRCega/Pjvwc9f/WJ+EcbMrl416C8ZfH+5upM1aZM2fOZXzMQ4dPmH6DZ5mfXdGsynHbd58Yy30IUUgk0B7BBpgrOl1emRL5OXA3uOeYv/jzyM+B9R8WUDYD8X9HwVc7D5pb6nWrco7ZH62P5PhC+IIE2iMQGFdwWrYfHfk5mrcZmXCOae+vjvT4uCYuu7pFwjlwZRw9djJyd9A1t7RLOM9tDXpEeg4hCo0E2iOWrdqaIDiNm74e+TleenlSwjlGjF0Q6fFbtR9TJTzuxLenTRxMendFFSsaH7YQpYIE2iM2f7E3QWwaNHo18nPgw3XPwX9HBRt1v/7D8wnHZ8MzLjhf2Fqf8UF85xMi30ig0+Ds2fPmu+/iD+Vi2e6KDX5WFzLqiHDYvHWfWbFmm/ng4/U2AmLoiLmmV//ppk3n8TYqIhVYzO45OvWcHNn1r13/VcKxieDg2cUJ7hP3nH1eez/W8wmRT8pKoL89ecbs3nvEbPh8l1m0bLO1tkZPXGSjJbr2nmJ9vrgVsFwRx6tualsZMUCiRVScPHXW7Nl3xGzctDshrO7VQTOrxPn+6d5u5uqb25qfX9k8rdhgXAqpwOfs/nt80lExd/6GhGPfel93Ezd//UdFwjl5hkKUCkUp0N8cPWmzyLDYiJOdMmOleXPMfNN30PumQ493bErwo/8abOr9tbe58c+dTa3rXzA/urxpTkkRWKyZ0rbrBPNYk8Hm3of7mDp3dbZJIumkNecyWPKnYt7izxL+PVEdUTF99pqEY9/1UC8TN0wC7jlfH/FR7OcUoqwFevHyzXa53qTlm6bhEwPNnQ/2NH+4raP55bWtYhW3VGPOvE8zvg9Cy/J1fT/81dPW/3v9HS+ldMcQ9+z+HXHRUcEk5h77V7//t4k7S5H7ds+5dMWWWM8phCl3gR4+el7eBRjLFguXTDtEC8u3WeuRNuqBjbSt2/dnfB9//kuvrK6j1g0vWosbyzu4jo49Jtnl+1tj5ttEDyxhxJaohUzStfn37vm436ggWiMsmGvWfWni4t8dxlSZEM4ro1CUEF4K9JTpK7MW2v++qkWV+FgGAvfaG3PMmHeWWJ8vvl9SibHCTp0+G8t9IKz4kO9/tJ954tnXrY8bX3fFsDnW54wPnNUCvmh80vim4wYxd58Lk1KU4FZyj9+w8cBYamUQYheu70HxJyFKCS8FmowzrCFcBLg32Ahq0upNWw3tlQHTrZ9x4tRl1u1A6UpqOBw4dNyWsgy49DeJPuftX6nyGSCW//nrZxIqw0XJzA/XJZ0coxJpLGQ2dcOW+g13doo9YkSIfOOlQOcKQh3+gN+dGW3GXBxQuIhJZ/ioeTZcrmvvqXb0rphhLcb1G3dmLHSsDlglfL55j/XPzpzzSZVaFlGuIPB/P/j3/lVEmkmWCJpchJlMy5vrda1ybFYBhB4KUWqUpEATEhf+iHEx+Mi2L7827bpNtJug6bhwrqjTxkaqEA+dDHy++JVr39jaWsfpHBMBjzrKhs3K8HlY1TzZbJiZNXedLXxUE1zXe7PW2GiYcJnUYODO4hkKUYqUpEBXDPugyoeMRY0V6QsIFFEqYUs/3UFc9KDhH1axqD/5NDFZJJ2BLz5qmECoXJfqvMR3E4pHSCTC/VDjAdZf/8c7O9lypKn+FjcNE1tcaeRC+EBJCnQ4NjYYRET4wKq1282Vddqk3Oi86Z6u5vb7XzZ163c3v7kuMX3aHfjmXd878eGZCjQbpnGAu4P9guqs32wG7pmW7UbZZCMhSp2SE2j8rKk+cEL4CglF+MP1IxiE9o2bvNRGcyQD/y1tqrA6w3+LJRlw/MRpm6hDfWTSnrlfomI+WrDRuj/YLMXdk696GcDmHfdGTHuyWs41jWvrdjDP/V8/wuMxd4ARwidKSqApnkNYW3h33/1vMgqJ/CgELMfxIbvXw39nUieZQveE74VFjHC9dMGn6/4toYf5bhpLFA7RGEwuxDMHo3OvyfZ/JzuUxBeic4QoV0pKoMOFgEjxpg5x2OVBCF9cnURS0b3vtCo+2F17Dmd8HPzOYSv4kacGpf33xAu7f0t8uBDCP0pGoNkADC+fR45faP8/4qQR5XClteWrt+bt+vDHkiHoXgN9+LIFl8elTjwzGYiuLzoVNFp1r6OmCnhCiMJQEgKNXzJc94K4WzfCgcJKbL6FN5zyFR9NtqB7biIVciXszqGedDq8M215wt/hWhBC+MclpeB3JkzLFRyiBqitnCx6IllERIu2o2wp0jjBWo46LpuyqO4xmQTS4cN5n1bpil1quCVd8c+TVk96fdQtvoSIk6IWaNwGRCy4YoOVTKREqmw9ChGFRZrECmpE50ugH36yIqfjsTqgXrV7zHQz9Zio3L974LF+xlfYQ6BJLPHdbKZSKIqCURSOIoWc6A63pCtupFSlZe94oGehb0mI0hdouov8q+XwhI+PzLl0ulQTTYHVnOwDJlEiDt80zVTd81A69fTpc1kfb8GSRMG/tm77lPfLZmTQqIDY5HwW1idN++Dh43YvgAgO0tlxs+ALp7YKNVaI52bSogIg7ir2DMLFkKIYZGwKUSwUpUBjKRI3HPYnI1qZwLI33EMvGNSToP5FlJlq4ZA/GgxkA2IXTg3v2f+9yv9/1IRFlY0KwkWjqkuXzjSVO6jrMXbSEpvRSITK8x3H2oxAnh2iz3HDfv9CDyZGIYqFohNolrj/c03LhI+O/842thmxeeGlsQkV3txByjGiQ02IfTnWrHh73MKEY5PmHUSaZBKtEnbRIMTuRBK2kGsaiGgm0Aux0EIbTMq4edySrnQVp8BUUNKVJJx8l3QVouwEeufuQ7Z2RfgjRayiKCVKpbiaakcwSNGmbyHtnbJZ6oebnDJY2i9btbXaTihshBKFQj3pcMss3Dr8rQtJIJmKXbohesk6p0Rh1bIiCKeEk3lIQ1wa41LJDtcTVeuo84GLS4hS55JicGcQBpZs4+fxpkMjL5az+pPtNukjlf8TqzrbwktEl1BnI9lxcbcwSZApyD03fWGE3fwKrxhcyxfhCoOvmQ00XCj0aiQrjw02Ntqo1cGqgeay7rEyydhLVi0QVwqWPOGD9zTsbRo9Nchu4FJ5z005p4ckkw3XceSbbxNCIckgdI+pDt2i3PFSoLE0+ZARqGTCjDDRjTvd2sjUgsDqymR5i1WOX5WyneHzc+5c47Zp1pqL1clmWi5lNm9r0CPheJl0LWdzk6gUomXYfIxqksR37l4T9USEKGe8Emg+9Nadx6es3sYGFKFy6daccLMLWfpnCu4FfJhdXpliLV/cLFFBxAktotKNVsCdQQJOJrU7qiPszsmma3nUhLuCM0ELUc54JdBAREAyccJHSdRAJoSLArF5litx9Ndj85ENLQoF4bZBPBn4ptnApFYG1eii7Hzyz+Zv5Ny1PGoIAXSvCTeJEOWMdwINCFLwkeIrxX+ZzaZQuChQr/7TY7neYoSQOPfZZLO6iBp85+414csWopzxUqCBbDHikPFHZwv1k90Pvk3n8ZFeYzETrqwXxeoiV/BnR12vRIhixluBjgIE3v3gyVYTyV1JZPT5sAfhXtPl171Q6EsSoqCUtEDPnb8h4YNng60YoP5EdTHRUUEGoI+rCzdqh9C9OHz+QhQLJS3QxDS7InTng/4WyiFb0a0/EXWn7TBkXlLLhKgZ0sSpcOcDxFK7v5mawopypqQFeuv2/VUiQXyFiIW4O20XA9QQcZ9DNh1nhCgVSlqgDx0+UTSFcsJlU+PqtO07xIW7zyFV6VghSp2SFmgiQNwkEIoTxe3bzRZSovPZadtXws0XcmkLJkSxU9ICDfQedD94NuB8hLoTheq07RMU4HefA1UEhShXSl6gKWTvfvB050i3XgYp5XT/JiWbVkl0De83eJbp1HOyad5mpK2nQV3qKML3SMZxr7NcO22HVxKZlmMVopQoaYGmjka4sSoV3khg6V0xw7TrNtE88/xb5m//fM3c9VAvW1CfOiDV1YaubtABJFcmv5cYs12unbb5fdznQIU7IcqVohFoXBN0raYmMAXjSU2mZRLp3AgthXWIhGCTiRrR1BbOVGizHYTH5Qq1NtxjkopdjlAe1X0OFKkSolzxRqApxN6y3ShbLOi+Rq+am+t1tcXxf1r7/6vR+TCS1T3G3ZEra9Z9mXAe4qKjhEJLxFYTvhe0q8LPjSsFa50Jge7ew0fNM4WE2tXuc+CdEKJc8Uag6QqST6GldCdWNtY2VjdCixWONY5VjnWOlY61bjt5fLHXNn6NKwqE+tPhsqrV1WLmOtJdTVxbt4O913SfCy6fQkIdcPd66F4jRLnijUAjONkILVEabATefv/L5qHGA8xTLd4wL3YaZ17u964Z8tZcM27yUjNr7jo7AQQie+ZM9t2044LuIuGYbcqN4hu//o6XbLcVwgTjnrjwxxcSegeyemIV9fgzQ8p2s1QIrwSalkts0t3d8BXbcqrSmq2YYZfdbKJRW4P0bTqJHD5ywtuY5mw3NPMhwMnGL37Xyvz+1g7mjgd6qouJEOaiS5C2dhh3aI8pd4EWptreg9m4bSj4n47LJpNmsUKUEgcOHjOr1m63VS8xBMnmxS1Y64YXq6xmC4UE2iMCf7FPvnEhipGzZ8+bHbsO2m+EZKeKYR/YRsx8T7hDf35l84yMHxotFwIJtEfk0pxAiHLg3LkLZvfeI9bynfnhOpvgRTXGZq1H2v0T9i9S9TRNd1D2lr0fShRTijeTrvdRIoFOIZbEXn994KidiQlPI6uQ2hBEGjArB2PK9JW2I7U73h630M7a4dG199SsB+ngyY7pDl7Y4Bqo+exeJ81mFyzZZAeWBffDWL9xp73HYPAycu9kUwoRJ+y9HDx83K4ECf/kPSUWntVim87jbbgpG8asKKMQ3rDrAmuacxBqOnriItsXc+fuQ/a6fKBkBPrbk2fszIpjH/GhvjHCSXo22WgIHLG+dOXmB8FH26DRq/YH4sfHvcALwIZZITbqfB+XXd3CPhvcLzwrsid5dowHHutnnyeFjni2PGOWkwwSTdzJhciaYAJ5d+Zq+0Gy+cukwQcaTBrBZMHHy2Rx8lR0DXNFdBARRdVIfismen5DGhBPnbHKGikDhs6270DL9qNtyOT9j/Yzdet3N9fc0s6+U3G9rz+6vKmN7kLccRFiZfPOYVyRc1Es75O3An3s+CmzZds+W3aTXVR8rzR9pcA8Han5oW+p181cUadNRnG+GsX/DJgoGLVvvDhZEIESTBb1H+lrJ4uGTwy0kwWDRCImCyyyYDXSf8isylUHFlswaRCW6a46qMMSrDpWrNlWOYFQBjVh1XHwmJ1Iahq5hHgeP3E66TExTNxrCQbGSnC9NGjgHjBcuC82xrhfIqR4BkygPBdqofCs2DDj2THp8jzvfbjPRWPm7i72mfP8L81Tpu4PQolifPM033isyWDb9Z4NPqxfJgbutZT2ZPIu0LygJGUsXr7ZbnZRewHRpfAQIXbMrD4ILi+fazEyGfCCkkDifvxhizEYvDjJ3BRY8zW5Kaob9A2syQ3StsuEymtAmNzrbNh4oP3YGGxABqJ2633d7T0GI1hJxGnhaOgZ8A5QDpgYfxo1UHgMK5s8Bt714aPmWUscI23Tlj3W9VZuLdBiFWhilYk+IOEAIQi3M4pykBJ+1U1tzU33dLXiw4YBwhkIJQLHkotU4umz1yQsqVnyYHGwVPO1HGmhwR/Ns9m3/xv7rIhFD6wz/PI8T2JGwz75YHJh9cPv0LHHJDt5tGo/pnLiICGHSYMPlPfktgY9qkwWP6ld+Elbo+oz+HGtZ20tGn4rJnpWMOQxkDCGSxHfbsWwOdbC5bvjXbm453HIrpJFAQWaHyDbl/pnVzSzu6h8tHzEWIY2aWX0PCuyLD03fL7L7Nl3xKY/i/IACypY2geTBSuyYLJg0mWycDdyqTlil/OjLy7nGd37TqtcdbCCC1YdRAO4q45gxcGg9kqw6sCP6q46MD4C10uqkcvqMNgHCA8ME/dagoGxElwvGancA5OhXfW1urjq47viGTCB8lyGjri4RzB+ykVXD5Muz3PZyi/s88VtwjMn85WIClHkLo5w8gU+JNwY+LR4SXg5WMowu7K5x8dWLA58IYQoaoGeMHWZ3a1nkwKLx5fwFSGE8B1voziEEKLckUALIYSnSKCFEMJTJNBCCOEpEmghhPAUCbQQQniKBFoIITxFAi2EEJ4igRZCCE+RQAshhKdIoIUQwlMk0EII4SkSaCGE8BQJtBBCeIoEWgghPEUCLYQQniKBFkIIT5FACyGEp0ighRDCUyTQQgjhKRJoIYTwFAm0EEIYP/lfn3FpnEtForgAAAAASUVORK5CYII=",
+          "signedAt": "2026-09-28T02:37:48.790Z"
+        }
+      },
+      {
+        "id": "0397372b-f064-4949-a994-159568903fbe",
+        "name": "강수아",
+        "position": "정보부장",
+        "email": "reviewer-ac15c218@example.com",
+        "stages": [
+          "document",
+          "interview"
+        ]
+      }
+    ],
+    "rubrics": {
+      "document": [
+        {
+          "id": "c1",
+          "label": "학력",
+          "max": 6,
+          "guide": "강사 자격 기준 학위 취득 및 동등 이상의 학력\n· 채용 관련 전공 대학원 졸업: 6점\n· 채용 관련 전공 대학 졸업: 4년제 5점, 2년제 4점\n· 일반 대학원 및 대학 졸업: 4년제 이상 3점, 2년제 2점\n· 학력 인정 범위 내 기타 과정: 1점"
+        },
+        {
+          "id": "c2",
+          "label": "자격증",
+          "max": 6,
+          "guide": "자격증 소지 (합산 최대 6점)\n· 초등 교원자격증: 3점\n· 유치원 교원자격증: 2점\n· 중등 교원자격증: 1점\n· 채용 관련 자격증: 건당 1점"
+        },
+        {
+          "id": "c3",
+          "label": "경력",
+          "max": 6,
+          "guide": "강사 경력\n· 1년당 1점 (경력증명서로 확인되는 기간만 계산)"
+        },
+        {
+          "id": "c4",
+          "label": "지속 근무 여부",
+          "max": 6,
+          "guide": "직업적 가치관, 생활환경, 조직 적합성을 종합해 채용 기간을 채울 수 있는지 판단합니다."
+        },
+        {
+          "id": "c5",
+          "label": "자기소개서",
+          "max": 26,
+          "guide": "지원 동기, 직무 이해, 학생 지도 계획의 구체성과 실현 가능성을 봅니다. 분량이 아니라 내용으로 판단합니다."
+        }
+      ],
+      "interview": [
+        {
+          "id": "c1",
+          "label": "인성",
+          "max": 10,
+          "guide": "용모, 태도, 근면성, 협동성 등"
+        },
+        {
+          "id": "c2",
+          "label": "교직관",
+          "max": 10,
+          "guide": "책임감, 성실도, 적극성, 진취성, 추진력 등"
+        },
+        {
+          "id": "c3",
+          "label": "소양",
+          "max": 10,
+          "guide": "표현력, 논리성, 이해력, 지도력 등"
+        },
+        {
+          "id": "c4",
+          "label": "수업에 대한 이해",
+          "max": 10,
+          "guide": "수업 설계, 지도 방법, 피드백 등"
+        },
+        {
+          "id": "c5",
+          "label": "학생에 대한 이해",
+          "max": 10,
+          "guide": "학생 특성, 발화법, 안전관리, 문제 발생 시 대처법 등"
+        }
+      ]
+    },
+    "guidance": "",
+    "rules": {
+      "rankingBasis": "interview",
+      "shortlistLimit": 3,
+      "allowBonus": false,
+      "bonusThreshold": 20,
+      "tiePolicy": "competition-rank-manual-review",
+      "precision": 1
+    },
+    "status": "document",
+    "provider": "mock",
+    "link": {
+      "kind": "mock",
+      "workspacePath": "/recruitment?id=00ee1232-e135-48e0-8da5-b663b46393da",
+      "folderUrl": null,
+      "spreadsheetUrl": null,
+      "templateCapacity": 10
+    },
+    "evaluations": {
+      "document:0d6404a2-8e83-4c7a-bc88-03aa3430fa66": {
+        "reviewerId": "0d6404a2-8e83-4c7a-bc88-03aa3430fa66",
+        "stage": "document",
+        "rows": [
+          {
+            "candidateId": "db88da7b-7ee1-4c6f-888a-d74c834f78c9",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 5,
+              "c3": 4,
+              "c4": 5,
+              "c5": 21
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "86f14627-7ca9-4259-9fb4-e1f40dd1db16",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 5,
+              "c3": 5,
+              "c4": 5,
+              "c5": 15
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "41938000-d317-420f-a150-61b75bc2e651",
+            "attendance": "present",
+            "scores": {
+              "c1": 6,
+              "c2": 3,
+              "c3": 5,
+              "c4": 4,
+              "c5": 17
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "7b9e9afe-d9ef-4ddb-b67f-12aac386e901",
+            "attendance": "present",
+            "scores": {
+              "c1": 4,
+              "c2": 4,
+              "c3": 3,
+              "c4": 4,
+              "c5": 20
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "1db39252-886d-4599-a94a-6c96c9c4c571",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 5,
+              "c4": 5,
+              "c5": 19
+            },
+            "bonus": 0,
+            "note": ""
+          },
+          {
+            "candidateId": "3da42936-a3ef-4b67-af70-c0508b6fc5fd",
+            "attendance": "present",
+            "scores": {
+              "c1": 5,
+              "c2": 4,
+              "c3": 4,
+              "c4": 6,
+              "c5": 18
+            },
+            "bonus": 0,
+            "note": ""
+          }
+        ],
+        "updatedAt": "2026-09-28T02:37:48.844Z",
+        "submittedAt": "2026-09-28T02:37:48.882Z"
+      }
+    },
+    "shortlist": [],
+    "snapshot": null,
+    "audit": [
+      {
+        "at": "2026-09-28T02:37:48.679Z",
+        "actor": "admin",
+        "action": "채용 생성",
+        "detail": ""
+      },
+      {
+        "at": "2026-09-28T02:37:48.708Z",
+        "actor": "admin",
+        "action": "위원 링크 발급",
+        "detail": "조현우"
+      },
+      {
+        "at": "2026-09-28T02:37:48.729Z",
+        "actor": "admin",
+        "action": "위원 링크 발급",
+        "detail": "강수아"
+      },
+      {
+        "at": "2026-09-28T02:37:48.751Z",
+        "actor": "admin",
+        "action": "평가 시작",
+        "detail": "웹에서 평가 진행 · Google 시트 파일은 만들지 않음"
+      },
+      {
+        "at": "2026-09-28T02:37:48.790Z",
+        "actor": "0d6404a2-8e83-4c7a-bc88-03aa3430fa66",
+        "action": "청렴서약서 서명",
+        "detail": "조현우"
+      },
+      {
+        "at": "2026-09-28T02:37:48.844Z",
+        "actor": "0d6404a2-8e83-4c7a-bc88-03aa3430fa66",
+        "action": "평가 임시 저장",
+        "detail": "document"
+      },
+      {
+        "at": "2026-09-28T02:37:48.882Z",
+        "actor": "0d6404a2-8e83-4c7a-bc88-03aa3430fa66",
+        "action": "평가 제출",
+        "detail": "document"
+      }
+    ]
+  }
+]

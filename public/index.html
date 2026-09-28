@@ -24,12 +24,44 @@
         };
         document.addEventListener('DOMContentLoaded',function(){
             document.title='[시연] '+document.title;
+            // 실제 학교 정보·구글 시트(학교 현황) 링크는 공개 카피본에 싣지 않는다 → 가상 학교 정보로 교체
+            var sl=document.querySelector('.school-links');if(sl)sl.remove();
+            var info=document.querySelectorAll('.school-info-inner > span');
+            if(info[0])info[0].textContent='📞 000-000-0000 (가상)';
+            if(info[1])info[1].textContent='📍 새봄시 새봄구 새봄로 1 · 새봄초등학교 (가상 학교)';
+            if(info[2])info[2].textContent='🌐 시연용 카피본';
             var bar=document.createElement('div');
             bar.id='copyBar';
             bar.style.cssText='position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:center;padding:8px 16px;background:#2D3748;color:#fff;font-size:13px;line-height:1.5;text-align:center;';
             bar.innerHTML='<span>🧪 <b>시연용 카피본</b> · 2026년 10월 가상 데이터로 모든 기능을 눌러 볼 수 있어요 · 실제 백암이와는 완전히 분리되어 있어요</span>'
-                +'<button type="button" style="border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:8px;padding:3px 10px;font-size:12px;cursor:pointer;">↺ 시연 데이터 초기화</button>';
-            bar.querySelector('button').onclick=function(){
+                +'<button type="button" data-progs style="border:0;background:#4A90D9;color:#fff;border-radius:8px;padding:3px 12px;font-size:12px;cursor:pointer;">🧰 자동화 프로그램</button>'
+                +'<button type="button" data-reset style="border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;border-radius:8px;padding:3px 10px;font-size:12px;cursor:pointer;">↺ 시연 데이터 초기화</button>';
+            var PROGS=[
+                ['👩‍🏫','채용 관리','/copy/recruitment','가상 채용 2건(결과 확정 1 · 서류심사 중 1). 위원 채점 → 통계 → 인쇄용 HTML(세로·혼합·가로)·한글·엑셀까지'],
+                ['📦','교구 대여소','/copy/rental','여러 학교가 교구를 함께 빌려 쓰는 대여소. 대여 신청·승인·반납·대기열'],
+                ['📅','공유 캘린더','/copy/calandar','연수·행사용 공유 달력. 입장코드 <b>1111</b>'],
+                ['🐢','바이브코딩','/copy/vibecoding','학생용 코딩 모험(거북이·픽셀·미로·스튜디오). AI 도우미 분당 5회'],
+                ['🧩','바이브코딩 v2','/vibe-v2/','새 버전(카드 코딩·게임 공방). 작품은 이 브라우저에만 저장'],
+                ['🍚','급식일지',null,'시연 제외 — 구글 Firestore를 직접 써서 실제 데이터와 분리할 수 없어요'],
+                ['✉️','메일',null,'시연 제외 — 실제 학교 메일 계정이 있어야 동작해요']
+            ];
+            function openProgs(){
+                var m=document.getElementById('copyProgs');
+                if(!m){
+                    m=document.createElement('div');m.id='copyProgs';
+                    m.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+                    m.innerHTML='<div style="background:#fff;color:#2D3748;border-radius:14px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:22px 24px;font-size:14px;line-height:1.55;">'
+                        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><b style="font-size:18px;">🧰 백암이 자동화 프로그램</b><button type="button" data-x style="border:0;background:#EEF1F5;border-radius:8px;padding:4px 10px;cursor:pointer;">✕</button></div>'
+                        +'<p style="margin:0 0 12px;color:#718096;font-size:13px;">메인 화면의 탭(학교 일정·연수 관리·확인대장 등) 외에 따로 돌아가는 프로그램들이에요. 모두 가상 데이터로 눌러 볼 수 있어요.</p>'
+                        +PROGS.map(function(p){return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #EEF1F5;'+(p[2]?'':'opacity:.55;')+'"><span style="font-size:22px;line-height:1.2;">'+p[0]+'</span><div style="flex:1;"><b>'+p[1]+'</b><div style="font-size:12.5px;color:#4A5568;">'+p[3]+'</div></div>'+(p[2]?'<a href="'+p[2]+'" target="_blank" rel="noopener" style="white-space:nowrap;background:#4A90D9;color:#fff;border-radius:8px;padding:5px 12px;text-decoration:none;font-size:13px;">열기</a>':'<span style="white-space:nowrap;font-size:12px;color:#718096;">시연 제외</span>')+'</div>';}).join('')
+                        +'</div>';
+                    m.addEventListener('click',function(e){if(e.target===m||e.target.hasAttribute('data-x'))m.style.display='none';});
+                    document.body.appendChild(m);
+                }
+                m.style.display='flex';
+            }
+            bar.querySelector('[data-progs]').onclick=openProgs;
+            bar.querySelector('[data-reset]').onclick=function(){
                 if(!confirm('시연 데이터를 처음 상태(2026년 10월 가상 데이터)로 되돌릴까요?\n다른 방문자가 바꾼 내용도 함께 초기화됩니다.'))return;
                 var btn=this;btn.disabled=true;btn.textContent='초기화 중…';
                 fetch('/api/copy-reset',{method:'POST'}).then(function(res){return res.json();}).then(function(d){
@@ -6765,8 +6797,9 @@ async function initTabsConfig(){
 
 function renderTabs(){
     const container=document.getElementById('mainTabs');
-    // 시연용 카피본: 외부 앱으로 가는 링크 탭(교구 대여소·채용 관리)은 실서비스로 연결되므로 숨김
-    const sorted=[...tabsConfig].filter(t=>!(window.IS_COPY&&t.type==='link')).sort((a,b)=>a.order-b.order);
+    // 시연용 카피본: 링크 탭(교구 대여소·채용 관리)은 실서비스 대신 카피본 주소로 연결
+    const copyHref=h=>String(h||'').includes('/rental')?'/copy/rental':String(h||'').includes('/recruitment')?'/copy/recruitment':h;
+    const sorted=[...tabsConfig].map(t=>window.IS_COPY&&t.type==='link'?{...t,href:copyHref(t.href)}:t).sort((a,b)=>a.order-b.order);
     let html='';
     sorted.forEach((tab,idx)=>{
         const isActive=tab.id===activeTabId;

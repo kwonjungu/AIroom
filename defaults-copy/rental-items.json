@@ -1,0 +1,222 @@
+[
+  {
+    "id": "it_mukn0qaew5q",
+    "name": "VR 헤드셋(학생용)",
+    "category": "정보",
+    "emoji": "🥽",
+    "hasPhoto": false,
+    "total": 12,
+    "trackQty": true,
+    "owner": {
+      "school": "새봄초등학교",
+      "name": "김하늘",
+      "role": "교사"
+    },
+    "place": "과학실 2층",
+    "ownerContact": "내선 000",
+    "note": "충전 케이블 포함. 1회 최대 7일",
+    "maxDays": 7,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:48.950Z",
+    "updatedAt": "2026-09-28T02:37:48.950Z"
+  },
+  {
+    "id": "it_mukn0qap70j",
+    "name": "3D 프린터(소형)",
+    "category": "정보",
+    "emoji": "🖨️",
+    "hasPhoto": false,
+    "total": 1,
+    "trackQty": true,
+    "owner": {
+      "school": "새봄초등학교",
+      "name": "김하늘",
+      "role": "교사"
+    },
+    "place": "컴퓨터실",
+    "ownerContact": "내선 000",
+    "note": "필라멘트는 빌리는 학교에서 준비",
+    "maxDays": 14,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:48.961Z",
+    "updatedAt": "2026-09-28T02:37:48.961Z"
+  },
+  {
+    "id": "it_mukn0qbil3b",
+    "name": "티볼 세트",
+    "category": "체육",
+    "emoji": "⚾",
+    "hasPhoto": false,
+    "total": 3,
+    "trackQty": true,
+    "owner": {
+      "school": "해오름초등학교",
+      "name": "오태윤",
+      "role": "교사"
+    },
+    "place": "체육창고",
+    "ownerContact": "내선 000",
+    "note": "배트 4, 공 10, 티 2",
+    "maxDays": 14,
+    "autoApprove": true,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:48.990Z",
+    "updatedAt": "2026-09-28T02:37:48.990Z"
+  },
+  {
+    "id": "it_mukn0qc3fki",
+    "name": "뉴스포츠 플라잉디스크",
+    "category": "체육",
+    "emoji": "🥏",
+    "hasPhoto": false,
+    "total": 30,
+    "trackQty": true,
+    "owner": {
+      "school": "해오름초등학교",
+      "name": "오태윤",
+      "role": "교사"
+    },
+    "place": "체육창고",
+    "ownerContact": "내선 000",
+    "note": "",
+    "maxDays": 14,
+    "autoApprove": true,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.011Z",
+    "updatedAt": "2026-09-28T02:37:49.011Z"
+  },
+  {
+    "id": "it_mukn0qcicur",
+    "name": "현미경(광학)",
+    "category": "과학",
+    "emoji": "🔬",
+    "hasPhoto": false,
+    "total": 15,
+    "trackQty": true,
+    "owner": {
+      "school": "푸른숲초등학교",
+      "name": "한도윤",
+      "role": "교사"
+    },
+    "place": "과학실",
+    "ownerContact": "내선 000",
+    "note": "렌즈 닦는 천 동봉",
+    "maxDays": 10,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.026Z",
+    "updatedAt": "2026-09-28T02:37:49.026Z"
+  },
+  {
+    "id": "it_mukn0qcwwta",
+    "name": "천체망원경",
+    "category": "과학",
+    "emoji": "🔭",
+    "hasPhoto": false,
+    "total": 2,
+    "trackQty": true,
+    "owner": {
+      "school": "푸른숲초등학교",
+      "name": "한도윤",
+      "role": "교사"
+    },
+    "place": "과학준비실",
+    "ownerContact": "내선 000",
+    "note": "야간 관측 행사용",
+    "maxDays": 5,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.040Z",
+    "updatedAt": "2026-09-28T02:37:49.040Z"
+  },
+  {
+    "id": "it_mukn0qdb2kv",
+    "name": "젬베 북",
+    "category": "음악",
+    "emoji": "🥁",
+    "hasPhoto": false,
+    "total": 20,
+    "trackQty": true,
+    "owner": {
+      "school": "바다빛초등학교",
+      "name": "유시우",
+      "role": "교사"
+    },
+    "place": "음악실",
+    "ownerContact": "내선 000",
+    "note": "",
+    "maxDays": 14,
+    "autoApprove": true,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.055Z",
+    "updatedAt": "2026-09-28T02:37:49.055Z"
+  },
+  {
+    "id": "it_mukn0qdta4s",
+    "name": "무선 마이크 세트",
+    "category": "행사",
+    "emoji": "🎤",
+    "hasPhoto": false,
+    "total": 4,
+    "trackQty": true,
+    "owner": {
+      "school": "바다빛초등학교",
+      "name": "유시우",
+      "role": "교사"
+    },
+    "place": "방송실",
+    "ownerContact": "내선 000",
+    "note": "수신기 1 + 마이크 2",
+    "maxDays": 3,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.073Z",
+    "updatedAt": "2026-09-28T02:37:49.073Z"
+  },
+  {
+    "id": "it_mukn0qehsuz",
+    "name": "빔프로젝터(휴대용)",
+    "category": "시청각",
+    "emoji": "📽️",
+    "hasPhoto": false,
+    "total": 2,
+    "trackQty": true,
+    "owner": {
+      "school": "새봄초등학교",
+      "name": "김하늘",
+      "role": "교사"
+    },
+    "place": "교무실",
+    "ownerContact": "내선 000",
+    "note": "스크린 별도",
+    "maxDays": 7,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.097Z",
+    "updatedAt": "2026-09-28T02:37:49.097Z"
+  },
+  {
+    "id": "it_mukn0qex3jj",
+    "name": "코딩 로봇(보드형)",
+    "category": "정보",
+    "emoji": "🤖",
+    "hasPhoto": false,
+    "total": 16,
+    "trackQty": true,
+    "owner": {
+      "school": "푸른숲초등학교",
+      "name": "한도윤",
+      "role": "교사"
+    },
+    "place": "컴퓨터실",
+    "ownerContact": "내선 000",
+    "note": "태블릿 앱 필요",
+    "maxDays": 14,
+    "autoApprove": false,
+    "active": true,
+    "createdAt": "2026-09-28T02:37:49.113Z",
+    "updatedAt": "2026-09-28T02:37:49.113Z"
+  }
+]

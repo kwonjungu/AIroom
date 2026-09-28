@@ -280,7 +280,31 @@ app.use(express.json({ limit: '10mb' }));
 // body 파싱이 끝난 뒤 나머지 처리를 'copy' 공간 안에서 실행 (AsyncLocalStorage 전파)
 app.use((req, res, next) => req.isCopy ? nsStore.run('copy', next) : next());
 // 카피본 전용: 인증은 항상 통과, 실서비스에 영향이 가는 기능은 막고, AI는 횟수 제한
-const COPY_BLOCKED = [/^\/api\/admin\//, /^\/api\/mail/, /^\/api\/bap/, /^\/api\/calandar/, /^\/api\/recruitments/, /^\/api\/vibe(\/|$)/, /^\/api\/posting/];
+// 급식일지(Firestore 직접 사용)·메일(실제 계정)은 카피본에서 제외. 채용은 구글 연동·드라이브 보관·자동 삭제만 막는다.
+const COPY_BLOCKED = [/^\/api\/admin\//, /^\/api\/mail/, /^\/api\/bap/, /^\/api\/vibe(\/|$)/, /^\/api\/posting/,
+    /^\/api\/recruitments\/(google|maintenance)(\/|$)/, /^\/api\/recruitments\/[^/]+\/archive$/];
+// 서버 저장소(Redis)를 직접 쓰는 모듈(교구 대여소 사진·잠금 등)에 넘기는 래퍼 — 카피본 요청이면 키에 'copy:'를 붙인다.
+function nsRedis(r) {
+    if (!r) return r;
+    const k = key => nsKey(key);
+    return {
+        get: (key, ...a) => r.get(k(key), ...a), set: (key, ...a) => r.set(k(key), ...a),
+        del: (...keys) => r.del(...keys.map(k)), incr: key => r.incr(k(key)), expire: (key, ...a) => r.expire(k(key), ...a),
+        zadd: (key, ...a) => r.zadd(k(key), ...a), zrange: (key, ...a) => r.zrange(k(key), ...a), zrem: (key, ...a) => r.zrem(k(key), ...a),
+        eval: (script, keys, args) => r.eval(script, (keys || []).map(k), args)
+    };
+}
+// 항상 고정 접두사를 붙이는 래퍼 — 카피본 전용 채용 저장소용
+function prefixedRedis(r, prefix) {
+    if (!r) return r;
+    const k = key => prefix + key;
+    return {
+        get: (key, ...a) => r.get(k(key), ...a), set: (key, ...a) => r.set(k(key), ...a),
+        del: (...keys) => r.del(...keys.map(k)), zadd: (key, ...a) => r.zadd(k(key), ...a),
+        zrange: (key, ...a) => r.zrange(k(key), ...a), zrem: (key, ...a) => r.zrem(k(key), ...a),
+        eval: (script, keys, args) => r.eval(script, (keys || []).map(k), args)
+    };
+}
 const COPY_AI = /^\/api\/(ai\/(chat|pptx\/(outline|build|regen-slide|render))|translate)$/;
 const copyAiHits = new Map();
 async function copyAiAllowed(ip) {
@@ -311,15 +335,17 @@ app.use(async (req, res, next) => {
 app.post('/api/copy-reset', async (req, res) => {
     if (!req.isCopy) return res.status(404).json({ error: 'not found' });
     try {
-        const files = fs.readdirSync(COPY_DEFAULTS_DIR).filter(f => f.endsWith('.json'));
+        // recruitment-samples.json 은 컬렉션이 아니라 채용 저장소에 넣는 가상 채용 목록이다(아래에서 따로 처리)
+        const files = fs.readdirSync(COPY_DEFAULTS_DIR).filter(f => f.endsWith('.json') && f !== COPY_RECRUIT_SAMPLES);
         for (const f of files) {
             const seed = JSON.parse(fs.readFileSync(path.join(COPY_DEFAULTS_DIR, f), 'utf-8'));
             await withRedisLock('data:' + (KV_KEYS[f] || f), async () => { await writeData(f, seed); });
         }
         if (!IS_VERCEL && fs.existsSync(COPY_DATA_DIR)) {
-            for (const f of fs.readdirSync(COPY_DATA_DIR)) if (!files.includes(f)) fs.unlinkSync(path.join(COPY_DATA_DIR, f));
+            for (const f of fs.readdirSync(COPY_DATA_DIR)) if (f.endsWith('.json') && !files.includes(f)) fs.unlinkSync(path.join(COPY_DATA_DIR, f));
         }
-        res.json({ success: true, files: files.length });
+        const recruitments = await seedCopyRecruitments(true);
+        res.json({ success: true, files: files.length, recruitments });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // 채용 관리 화면: public/recruitment/ 디렉터리와 경로가 겹쳐 static 이 먼저 잡으면
@@ -332,6 +358,10 @@ app.get(['/recruitment', '/recruitment/'], (req, res) => {
 // 시연용 카피본 페이지 — 메인 SPA(public/index.html)를 그대로 쓰고, 화면이 경로를 보고 카피본 모드로 전환
 app.get('/copy', (req, res) => req.path.endsWith('/') ? res.redirect(301, '/copy') : res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/copy/sign/:token', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sign.html')));
+app.get(['/copy/recruitment', '/copy/recruitment/'], (req, res) => { res.set('Referrer-Policy', 'no-referrer'); res.sendFile(path.join(__dirname, 'public', 'recruitment', 'index.html')); });
+app.get(['/copy/rental', '/copy/rental/'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'rental.html')));
+app.get(['/copy/calandar', '/copy/calandar/', '/copy/calendar', '/copy/calendar/'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'calandar.html')));
+app.get(['/copy/vibecoding', '/copy/vibecoding.html'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'vibecoding.html')));
 app.get('/copy/doc/:token', (req, res) => res.sendFile(path.join(__dirname, 'public', 'doc.html')));
 app.use('/defaults-copy', express.static(path.join(__dirname, 'defaults-copy')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -2409,13 +2439,40 @@ app.get('/api/admin/audit-log', requireAdmin, async (req, res) => {
 });
 
 // ===== 채용 관리: 별도 모듈, 기존 관리자 세션 재사용 =====
+// 시연용 카피본 채용: 저장소 자체를 따로 둔다(Redis 키 copy:recruitment:*, 로컬은 data-copy/recruitment).
+// 실서비스 라우터로 절대 넘어가지 않도록 카피본 요청은 여기서 끝낸다.
+const COPY_RECRUIT_SAMPLES = 'recruitment-samples.json';
+const { createStore: createRecruitStore } = require('./lib/recruitment/store');
+const copyRecruitStore = createRecruitStore({ redis: prefixedRedis(redis, 'copy:'), serverless: IS_VERCEL, directory: path.join(COPY_DATA_DIR, 'recruitment') });
+const copyRecruitRouter = require('./lib/recruitment/routes').createRouter({
+    // 카피본은 로그인 없이 관리자지만, 위원 초대 링크(X-Recruitment-Token)로 온 요청은 위원으로 처리해야 한다
+    validateSession: async token => token ? COPY_SESSION : null, redis: prefixedRedis(redis, 'copy:'), serverless: IS_VERCEL,
+    directory: path.join(COPY_DATA_DIR, 'recruitment'), store: copyRecruitStore
+});
+let copyRecruitSeeded = false;
+async function seedCopyRecruitments(force) {
+    const file = path.join(COPY_DEFAULTS_DIR, COPY_RECRUIT_SAMPLES);
+    if (!fs.existsSync(file)) return 0;
+    const samples = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    const existing = await copyRecruitStore.list();
+    if (!force && existing.length) { copyRecruitSeeded = true; return 0; }
+    for (const r of existing) await copyRecruitStore.remove(r.id);
+    for (const r of samples) await copyRecruitStore.create(r);
+    copyRecruitSeeded = true;
+    return samples.length;
+}
+app.use('/api/recruitments', async (req, res, next) => {
+    if (!req.isCopy) return next();
+    try { if (!copyRecruitSeeded) await seedCopyRecruitments(false); } catch (e) { console.warn('[copy] 가상 채용 준비 실패:', e.message); }
+    copyRecruitRouter(req, res, () => res.status(404).json({ error: 'not found' }));
+});
 app.use('/api/recruitments', require('./lib/recruitment/routes').createRouter({
     validateSession, redis, serverless: IS_VERCEL
 }));
 // ===== 교구 대여소 (/rental) =====
 // 타 학교 교직원도 쓰므로 메인 접근코드와 분리된 독립 페이지 (초안: 완전 개방)
 require('./lib/rental')(app, {
-    readData, writeData, redis, IS_VERCEL,
+    readData, writeData, redis: nsRedis(redis), IS_VERCEL,
     hashPassword, verifyPassword, generateToken
 });
 app.get(['/rental', '/rental/'], (req, res) => {
