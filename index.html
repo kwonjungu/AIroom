@@ -456,7 +456,8 @@
         .schedule-item{background:var(--surface-soft);border-left:3px solid var(--primary);padding:4px 6px;margin-bottom:3px;border-radius:0;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:4px;}
         .schedule-item:hover{background:#d0e2f7;}
         .schedule-item .del-btn{display:none;background:none;border:none;cursor:pointer;font-size:10px;color:#e53935;padding:0 2px;}
-        .schedule-item:hover .del-btn{display:inline;}
+        /* 휴대폰(터치)에서는 첫 탭이 hover가 되어 ✕가 손가락 밑에 나타나 오삭제됨 → 마우스 기기에서만 표시 */
+        @media (hover:hover) and (pointer:fine){.schedule-item:hover .del-btn{display:inline;}}
         .schedule-add-btn{background:none;border:1px dashed var(--border);border-radius:0;padding:2px 6px;font-size:11px;color:var(--text-light);cursor:pointer;width:100%;text-align:left;margin-top:2px;}
         .schedule-add-btn:hover{background:var(--primary-light);color:var(--primary);}
         .week-table td{height:100px;}
@@ -2737,7 +2738,7 @@ function renderMonthView(el,titleEl){
             const hasExtra=it.link||it.fileUrl||it.gotoTab;
             html+=`<div class="schedule-item${it.link?' has-link':''}" title="${esc(it.link?it.link:(it.manager||''))}" onclick="openScheduleItem('${it.id}')">`
                 +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}${hasExtra?' <span style="font-size:9px;">'+(it.link?'🔗':'')+(it.fileUrl?'📎':'')+(it.gotoTab?'📌':'')+'</span>':''}</span>`
-                +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
+                +`<button class="del-btn" onclick="event.stopPropagation();if(confirm('이 일정을 삭제할까요?'))deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
         html+=`<button class="schedule-add-btn" onclick="promptScheduleAdd('${ds}')">+</button>`;
@@ -2776,7 +2777,7 @@ function renderWeekView(el,titleEl){
         items.forEach(it=>{
             html+=`<div class="schedule-item${it.link?' has-link':''}" title="${esc(it.link?it.link:(it.manager||''))}" onclick="openScheduleItem('${it.id}')">`
                 +`<span>${deptBadge(it.text)}${esc(deptBody(it.text))}${schTimeSuffix(it)}${it.link?' <span style="font-size:9px;">🔗</span>':''}</span>`
-                +`<button class="del-btn" onclick="event.stopPropagation();deleteScheduleItem('${it.id}')">✕</button>`
+                +`<button class="del-btn" onclick="event.stopPropagation();if(confirm('이 일정을 삭제할까요?'))deleteScheduleItem('${it.id}')">✕</button>`
                 +`</div>`;
         });
         html+=`<button class="schedule-add-btn" onclick="promptScheduleAdd('${ds}')">+</button>`;
