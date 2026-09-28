@@ -35,6 +35,15 @@ v1(`public/vibecoding.html`)과 별개인 새 앱. **상태·다음 할 일은 `
 - AI 후보 적용은 모드가 `ctx.generation.apply(job)` — 서버 멱등 반영 후 로컬 store에도 적용(undo 유지). 서버가 발급한 작품 id는 클라이언트에 노출하지 않는다(Job.projectId는 로컬 id).
 - 검사: `npm test`, `npm run test:vibe:integration`, `npm run eval:vibe:mock`, `npm run test:vibe:e2e`(Python Playwright 필요). Node 22에서도 통과해야 한다.
 
+## 시연용 카피본 (/copy, 2026-09)
+
+`a-iroom.vercel.app/copy` — 로그인 없이 누구나 모든 기능을 써 보는 공개 시연본. 같은 서버·같은 코드, **데이터 공간만 분리**. (/posting은 읽기 전용 데모, /copy는 쓰기까지 되는 완전한 사본)
+- **서버**: `/api/copy/*` 요청을 `/api/*`로 재작성 + AsyncLocalStorage(`nsStore`)에 'copy' → `readData/writeData`는 Redis 키 `copy:<key>`, 로컬 파일은 `data-copy/`, 초기값은 `defaults-copy/`에서만 읽음(실데이터 폴더 절대 안 읽음). `withRedisLock`도 `nsKey`로 분리. `validateSession`은 카피본이면 항상 관리자 세션.
+- **카피본에서 막힌 것**(`COPY_BLOCKED`): /api/admin/*(접속 코드·세션), mail, bap, calandar, recruitments, vibe, posting. **AI**(chat·pptx·translate)는 실제 연결 + IP당 분당 5회·전체 하루 300회(`copyAiAllowed`).
+- **초기화**: `POST /api/copy-reset`(카피본 요청에서만 동작) → defaults-copy/*.json으로 전부 덮어씀. 화면 상단 시연 바의 「↺ 시연 데이터 초기화」 버튼. 자동 초기화는 없음(사용자 결정).
+- **화면**: 두 SPA `<head>` 맨 앞 스크립트가 `/copy` 경로에서 `window.IS_COPY` 설정 → Storage.prototype get/set/remove 키에 `copy:` 접두사(같은 도메인이라 실서비스 백업과 섞이면 pick()이 실데이터를 카피본 서버로 복원할 수 있음 — 절대 제거 금지), fetch `/api/`→`/api/copy/`, `/defaults/`→`/defaults-copy/`. Firebase 업로드는 `copy/` 경로 아래로만, 실서비스 파일 삭제 금지. 서명·배포 공유 링크는 `/copy/sign/…`, `/copy/doc/…`. 링크형 탭(교구 대여소·채용)은 숨김.
+- **가상 데이터**: `node scripts/build-copy-seed.js` → `defaults-copy/` (가상 학교 새봄초, 2026년 10월). 새 컬렉션을 추가하면 이 스크립트에도 추가할 것. `data-copy/`는 gitignore.
+
 ## 연수 챙김이 (연수 관리 탭 → 🔔 연수 챙김이 하위탭, 2026-09)
 
 구글 설문+앱스크립트 OCR+시트 iframe 방식(연수이수취합)을 백암이 안으로 옮긴 것. 두 SPA 모두 첫 하위탭(`training-v2`, 기본 활성).

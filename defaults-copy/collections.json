@@ -1,0 +1,236 @@
+[
+  {
+    "id": "col_1791159600000",
+    "name": "2학기 학부모 공개수업 지도안 제출",
+    "manager": "이서준",
+    "startDate": "2026-10-05",
+    "endDate": "2026-10-13",
+    "target": "담임교사",
+    "description": "공개수업(10/14~15) 약안 1쪽을 한글(hwpx) 파일로 제출해 주세요. 파일명: 학년반_교과_성명",
+    "password": "1234",
+    "status": "open",
+    "createdAt": 1791159600000,
+    "submissions": [
+      {
+        "submitter": "김하늘",
+        "fileName": "1-1_국어_김하늘.hwpx",
+        "fileSize": "899.1KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-06"
+      },
+      {
+        "submitter": "박지우",
+        "fileName": "3-1_과학_박지우.hwpx",
+        "fileSize": "104.8KB",
+        "downloadUrl": "",
+        "memo": "실험 준비물 목록 포함",
+        "date": "2026-10-07"
+      },
+      {
+        "submitter": "최윤서",
+        "fileName": "4-1_사회_최윤서.hwpx",
+        "fileSize": "369.8KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-07"
+      },
+      {
+        "submitter": "강수아",
+        "fileName": "6-1_수학_강수아.hwpx",
+        "fileSize": "393.5KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-08"
+      },
+      {
+        "submitter": "송다은",
+        "fileName": "1-해오름_통합_송다은.hwpx",
+        "fileSize": "671.4KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-08"
+      },
+      {
+        "submitter": "정민재",
+        "fileName": "5-1_체육_정민재.hwpx",
+        "fileSize": "886.9KB",
+        "downloadUrl": "",
+        "memo": "우천 시 강당 수업안",
+        "date": "2026-10-12"
+      }
+    ]
+  },
+  {
+    "id": "col_1791262800000",
+    "name": "학교폭력 예방교육 결과 보고 (학급별)",
+    "manager": "최윤서",
+    "startDate": "2026-10-06",
+    "endDate": "2026-10-23",
+    "target": "담임교사",
+    "description": "10/6 예방교육 후 학급별 활동지 사진 2장 이상과 결과 보고서를 올려 주세요.",
+    "password": "2580",
+    "status": "open",
+    "createdAt": 1791262800000,
+    "submissions": [
+      {
+        "submitter": "이서준",
+        "fileName": "2-1_학폭예방_활동사진.jpg",
+        "fileSize": "917.9KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-06"
+      },
+      {
+        "submitter": "이서준",
+        "fileName": "2-1_학폭예방_결과보고.hwpx",
+        "fileSize": "351.9KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-06"
+      },
+      {
+        "submitter": "김하늘",
+        "fileName": "1-1_결과보고.hwpx",
+        "fileSize": "518.1KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-07"
+      },
+      {
+        "submitter": "오태윤",
+        "fileName": "해오름3,4_학폭예방_결과.pdf",
+        "fileSize": "203.8KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-08"
+      },
+      {
+        "submitter": "홍성민",
+        "fileName": "해오름6_결과보고.hwpx",
+        "fileSize": "618.4KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-10-13"
+      }
+    ]
+  },
+  {
+    "id": "col_1788224400000",
+    "name": "1학기 학생 상담 기록 제출",
+    "manager": "강수아",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-19",
+    "target": "전 교원",
+    "description": "1학기 상담 기록(나이스 출력본)을 PDF로 제출합니다. 개인정보가 포함되므로 비밀번호 설정 후 제출.",
+    "password": "0919",
+    "status": "closed",
+    "createdAt": 1788224400000,
+    "submissions": [
+      {
+        "submitter": "김하늘",
+        "fileName": "1학기_상담기록_1-1_김하늘.pdf",
+        "fileSize": "294.0KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-02"
+      },
+      {
+        "submitter": "이서준",
+        "fileName": "1학기_상담기록_2-1_이서준.pdf",
+        "fileSize": "668.9KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-05"
+      },
+      {
+        "submitter": "박지우",
+        "fileName": "1학기_상담기록_3-1_박지우.pdf",
+        "fileSize": "98.0KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-06"
+      },
+      {
+        "submitter": "최윤서",
+        "fileName": "1학기_상담기록_4-1_최윤서.pdf",
+        "fileSize": "619.7KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-07"
+      },
+      {
+        "submitter": "정민재",
+        "fileName": "1학기_상담기록_5-1_정민재.pdf",
+        "fileSize": "920.4KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-06"
+      },
+      {
+        "submitter": "강수아",
+        "fileName": "1학기_상담기록_6-1_강수아.pdf",
+        "fileSize": "308.7KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-09"
+      },
+      {
+        "submitter": "조현우",
+        "fileName": "1학기_상담기록_교과전담_조현우.pdf",
+        "fileSize": "806.4KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-10"
+      },
+      {
+        "submitter": "윤채원",
+        "fileName": "1학기_상담기록_특수교사_윤채원.pdf",
+        "fileSize": "533.6KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-09"
+      },
+      {
+        "submitter": "임소연",
+        "fileName": "1학기_상담기록_유치원_임소연.pdf",
+        "fileSize": "90.3KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-10"
+      },
+      {
+        "submitter": "송다은",
+        "fileName": "1학기_상담기록_1-해오름_송다은.pdf",
+        "fileSize": "856.3KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-11"
+      },
+      {
+        "submitter": "오태윤",
+        "fileName": "1학기_상담기록_34-해오름_오태윤.pdf",
+        "fileSize": "712.8KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-12"
+      },
+      {
+        "submitter": "홍성민",
+        "fileName": "1학기_상담기록_6-해오름_홍성민.pdf",
+        "fileSize": "823.2KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-14"
+      },
+      {
+        "submitter": "서가은",
+        "fileName": "1학기_상담기록_특수교사_서가은.pdf",
+        "fileSize": "453.0KB",
+        "downloadUrl": "",
+        "memo": "",
+        "date": "2026-09-17"
+      }
+    ]
+  }
+]

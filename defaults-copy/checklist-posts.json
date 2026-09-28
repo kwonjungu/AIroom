@@ -1,0 +1,970 @@
+[
+  {
+    "id": "cl_1790811600000",
+    "title": "10월 복무 및 청렴 서약서 확인",
+    "description": "공문 「2026 하반기 청렴 서약」 첨부 파일을 읽고 본인 칸에 체크해 주세요.",
+    "deadline": "2026-10-08",
+    "color": "#E3F2FD",
+    "borderColor": "#90CAF9",
+    "createdAt": 1790811600000,
+    "entries": [
+      {
+        "staffId": "s1",
+        "name": "박정호",
+        "position": "교장",
+        "checked": true,
+        "checkedAt": 1791119437715
+      },
+      {
+        "staffId": "s2",
+        "name": "이미영",
+        "position": "교감",
+        "checked": true,
+        "checkedAt": 1791027530740
+      },
+      {
+        "staffId": "s3",
+        "name": "김하늘",
+        "position": "1-1",
+        "checked": true,
+        "checkedAt": 1790820288889
+      },
+      {
+        "staffId": "s4",
+        "name": "이서준",
+        "position": "2-1",
+        "checked": true,
+        "checkedAt": 1791200505395
+      },
+      {
+        "staffId": "s5",
+        "name": "박지우",
+        "position": "3-1",
+        "checked": true,
+        "checkedAt": 1790852807184
+      },
+      {
+        "staffId": "s6",
+        "name": "최윤서",
+        "position": "4-1",
+        "checked": true,
+        "checkedAt": 1790937258978
+      },
+      {
+        "staffId": "s7",
+        "name": "정민재",
+        "position": "5-1",
+        "checked": true,
+        "checkedAt": 1790840227561
+      },
+      {
+        "staffId": "s8",
+        "name": "강수아",
+        "position": "6-1",
+        "checked": true,
+        "checkedAt": 1791242686543
+      },
+      {
+        "staffId": "s9",
+        "name": "조현우",
+        "position": "교과전담",
+        "checked": true,
+        "checkedAt": 1790945914756
+      },
+      {
+        "staffId": "s10",
+        "name": "윤채원",
+        "position": "특수교사",
+        "checked": true,
+        "checkedAt": 1791279762812
+      },
+      {
+        "staffId": "s11",
+        "name": "장은비",
+        "position": "영양교사",
+        "checked": true,
+        "checkedAt": 1791319538133
+      },
+      {
+        "staffId": "s12",
+        "name": "한지민",
+        "position": "보건교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s13",
+        "name": "임소연",
+        "position": "유치원",
+        "checked": true,
+        "checkedAt": 1791095179388
+      },
+      {
+        "staffId": "s14",
+        "name": "송다은",
+        "position": "1-해오름",
+        "checked": true,
+        "checkedAt": 1791039387435
+      },
+      {
+        "staffId": "s15",
+        "name": "오태윤",
+        "position": "3,4-해오름",
+        "checked": true,
+        "checkedAt": 1790865776840
+      },
+      {
+        "staffId": "s16",
+        "name": "홍성민",
+        "position": "6-해오름",
+        "checked": true,
+        "checkedAt": 1791166802285
+      },
+      {
+        "staffId": "s17",
+        "name": "문예린",
+        "position": "교과전담",
+        "checked": true,
+        "checkedAt": 1790864563504
+      },
+      {
+        "staffId": "s18",
+        "name": "서가은",
+        "position": "특수교사",
+        "checked": true,
+        "checkedAt": 1790986465949
+      },
+      {
+        "staffId": "s19",
+        "name": "신재혁",
+        "position": "행정실장",
+        "checked": true,
+        "checkedAt": 1791240081883
+      },
+      {
+        "staffId": "s20",
+        "name": "김나연",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791078970027
+      },
+      {
+        "staffId": "s21",
+        "name": "이준호",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791209440768
+      },
+      {
+        "staffId": "s22",
+        "name": "박성진",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791144154241
+      },
+      {
+        "staffId": "s23",
+        "name": "최유진",
+        "position": "행정실무사",
+        "checked": true,
+        "checkedAt": 1791066014719
+      },
+      {
+        "staffId": "s24",
+        "name": "노하은",
+        "position": "행정실무사",
+        "checked": true,
+        "checkedAt": 1790812444688
+      },
+      {
+        "staffId": "s25",
+        "name": "표서연",
+        "position": "사서",
+        "checked": true,
+        "checkedAt": 1791268587117
+      },
+      {
+        "staffId": "s26",
+        "name": "도은숙",
+        "position": "유치원방과후",
+        "checked": true,
+        "checkedAt": 1791139483589
+      },
+      {
+        "staffId": "s27",
+        "name": "양미경",
+        "position": "돌봄전담사",
+        "checked": true,
+        "checkedAt": 1791026279111
+      },
+      {
+        "staffId": "s28",
+        "name": "봉순자",
+        "position": "조리사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s29",
+        "name": "명혜진",
+        "position": "조리실무사",
+        "checked": true,
+        "checkedAt": 1790885862079
+      },
+      {
+        "staffId": "s30",
+        "name": "차경희",
+        "position": "조리실무사",
+        "checked": true,
+        "checkedAt": 1791032598102
+      },
+      {
+        "staffId": "s31",
+        "name": "마준석",
+        "position": "스포츠강사",
+        "checked": true,
+        "checkedAt": 1791069157367
+      },
+      {
+        "staffId": "s32",
+        "name": "구민지",
+        "position": "늘봄실장",
+        "checked": true,
+        "checkedAt": 1790834374965
+      },
+      {
+        "staffId": "s33",
+        "name": "탁세영",
+        "position": "늘봄실무사",
+        "checked": true,
+        "checkedAt": 1791266011319
+      }
+    ]
+  },
+  {
+    "id": "cl_1791259500000",
+    "title": "학교폭력 예방교육 교직원 자료 열람 확인",
+    "description": "교무기획부 공유폴더의 연수 자료(20분 분량)를 열람한 뒤 체크합니다.",
+    "deadline": "2026-10-16",
+    "color": "#FFF0F0",
+    "borderColor": "#FFCDD2",
+    "createdAt": 1791259500000,
+    "entries": [
+      {
+        "staffId": "s1",
+        "name": "박정호",
+        "position": "교장",
+        "checked": true,
+        "checkedAt": 1791438349291
+      },
+      {
+        "staffId": "s2",
+        "name": "이미영",
+        "position": "교감",
+        "checked": true,
+        "checkedAt": 1791677821192
+      },
+      {
+        "staffId": "s3",
+        "name": "김하늘",
+        "position": "1-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s4",
+        "name": "이서준",
+        "position": "2-1",
+        "checked": true,
+        "checkedAt": 1791556711508
+      },
+      {
+        "staffId": "s5",
+        "name": "박지우",
+        "position": "3-1",
+        "checked": true,
+        "checkedAt": 1791458316181
+      },
+      {
+        "staffId": "s6",
+        "name": "최윤서",
+        "position": "4-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s7",
+        "name": "정민재",
+        "position": "5-1",
+        "checked": true,
+        "checkedAt": 1791840996744
+      },
+      {
+        "staffId": "s8",
+        "name": "강수아",
+        "position": "6-1",
+        "checked": true,
+        "checkedAt": 1791359281946
+      },
+      {
+        "staffId": "s9",
+        "name": "조현우",
+        "position": "교과전담",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s10",
+        "name": "윤채원",
+        "position": "특수교사",
+        "checked": true,
+        "checkedAt": 1791626908858
+      },
+      {
+        "staffId": "s11",
+        "name": "장은비",
+        "position": "영양교사",
+        "checked": true,
+        "checkedAt": 1791645315256
+      },
+      {
+        "staffId": "s12",
+        "name": "한지민",
+        "position": "보건교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s13",
+        "name": "임소연",
+        "position": "유치원",
+        "checked": true,
+        "checkedAt": 1791694985903
+      },
+      {
+        "staffId": "s14",
+        "name": "송다은",
+        "position": "1-해오름",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s15",
+        "name": "오태윤",
+        "position": "3,4-해오름",
+        "checked": true,
+        "checkedAt": 1791889835388
+      },
+      {
+        "staffId": "s16",
+        "name": "홍성민",
+        "position": "6-해오름",
+        "checked": true,
+        "checkedAt": 1791533878760
+      },
+      {
+        "staffId": "s17",
+        "name": "문예린",
+        "position": "교과전담",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s18",
+        "name": "서가은",
+        "position": "특수교사",
+        "checked": true,
+        "checkedAt": 1791638151639
+      },
+      {
+        "staffId": "s19",
+        "name": "신재혁",
+        "position": "행정실장",
+        "checked": true,
+        "checkedAt": 1791915521848
+      },
+      {
+        "staffId": "s20",
+        "name": "김나연",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791749192036
+      },
+      {
+        "staffId": "s21",
+        "name": "이준호",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791597364879
+      },
+      {
+        "staffId": "s22",
+        "name": "박성진",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791795539007
+      },
+      {
+        "staffId": "s23",
+        "name": "최유진",
+        "position": "행정실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s24",
+        "name": "노하은",
+        "position": "행정실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s25",
+        "name": "표서연",
+        "position": "사서",
+        "checked": true,
+        "checkedAt": 1791835643997
+      },
+      {
+        "staffId": "s26",
+        "name": "도은숙",
+        "position": "유치원방과후",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s27",
+        "name": "양미경",
+        "position": "돌봄전담사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s28",
+        "name": "봉순자",
+        "position": "조리사",
+        "checked": true,
+        "checkedAt": 1791778956589
+      },
+      {
+        "staffId": "s29",
+        "name": "명혜진",
+        "position": "조리실무사",
+        "checked": true,
+        "checkedAt": 1791322366778
+      },
+      {
+        "staffId": "s30",
+        "name": "차경희",
+        "position": "조리실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s31",
+        "name": "마준석",
+        "position": "스포츠강사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s32",
+        "name": "구민지",
+        "position": "늘봄실장",
+        "checked": true,
+        "checkedAt": 1791343491294
+      },
+      {
+        "staffId": "s33",
+        "name": "탁세영",
+        "position": "늘봄실무사",
+        "checked": false,
+        "checkedAt": null
+      }
+    ]
+  },
+  {
+    "id": "cl_1791764100000",
+    "title": "가을 운동회 업무 분장 확인",
+    "description": "운동회 당일 역할(경기 진행·안전·음향·급식 지원)을 확인하셨으면 체크해 주세요.",
+    "deadline": "2026-10-15",
+    "color": "#E8F5E9",
+    "borderColor": "#A5D6A7",
+    "createdAt": 1791764100000,
+    "entries": [
+      {
+        "staffId": "s1",
+        "name": "박정호",
+        "position": "교장",
+        "checked": true,
+        "checkedAt": 1791940752763
+      },
+      {
+        "staffId": "s2",
+        "name": "이미영",
+        "position": "교감",
+        "checked": true,
+        "checkedAt": 1791768770147
+      },
+      {
+        "staffId": "s3",
+        "name": "김하늘",
+        "position": "1-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s4",
+        "name": "이서준",
+        "position": "2-1",
+        "checked": true,
+        "checkedAt": 1791891815508
+      },
+      {
+        "staffId": "s5",
+        "name": "박지우",
+        "position": "3-1",
+        "checked": true,
+        "checkedAt": 1791905168624
+      },
+      {
+        "staffId": "s6",
+        "name": "최윤서",
+        "position": "4-1",
+        "checked": true,
+        "checkedAt": 1791941140241
+      },
+      {
+        "staffId": "s7",
+        "name": "정민재",
+        "position": "5-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s8",
+        "name": "강수아",
+        "position": "6-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s9",
+        "name": "조현우",
+        "position": "교과전담",
+        "checked": true,
+        "checkedAt": 1791867412344
+      },
+      {
+        "staffId": "s10",
+        "name": "윤채원",
+        "position": "특수교사",
+        "checked": true,
+        "checkedAt": 1791805099680
+      },
+      {
+        "staffId": "s11",
+        "name": "장은비",
+        "position": "영양교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s12",
+        "name": "한지민",
+        "position": "보건교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s13",
+        "name": "임소연",
+        "position": "유치원",
+        "checked": true,
+        "checkedAt": 1791935010040
+      },
+      {
+        "staffId": "s14",
+        "name": "송다은",
+        "position": "1-해오름",
+        "checked": true,
+        "checkedAt": 1791967630641
+      },
+      {
+        "staffId": "s15",
+        "name": "오태윤",
+        "position": "3,4-해오름",
+        "checked": true,
+        "checkedAt": 1791941312218
+      },
+      {
+        "staffId": "s16",
+        "name": "홍성민",
+        "position": "6-해오름",
+        "checked": true,
+        "checkedAt": 1791835614777
+      },
+      {
+        "staffId": "s17",
+        "name": "문예린",
+        "position": "교과전담",
+        "checked": true,
+        "checkedAt": 1791930647295
+      },
+      {
+        "staffId": "s18",
+        "name": "서가은",
+        "position": "특수교사",
+        "checked": true,
+        "checkedAt": 1791778474369
+      },
+      {
+        "staffId": "s19",
+        "name": "신재혁",
+        "position": "행정실장",
+        "checked": true,
+        "checkedAt": 1791805533448
+      },
+      {
+        "staffId": "s20",
+        "name": "김나연",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791780066609
+      },
+      {
+        "staffId": "s21",
+        "name": "이준호",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791971677055
+      },
+      {
+        "staffId": "s22",
+        "name": "박성진",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1791892375699
+      },
+      {
+        "staffId": "s23",
+        "name": "최유진",
+        "position": "행정실무사",
+        "checked": true,
+        "checkedAt": 1791881892235
+      },
+      {
+        "staffId": "s24",
+        "name": "노하은",
+        "position": "행정실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s25",
+        "name": "표서연",
+        "position": "사서",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s26",
+        "name": "도은숙",
+        "position": "유치원방과후",
+        "checked": true,
+        "checkedAt": 1791950934740
+      },
+      {
+        "staffId": "s27",
+        "name": "양미경",
+        "position": "돌봄전담사",
+        "checked": true,
+        "checkedAt": 1791844060512
+      },
+      {
+        "staffId": "s28",
+        "name": "봉순자",
+        "position": "조리사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s29",
+        "name": "명혜진",
+        "position": "조리실무사",
+        "checked": true,
+        "checkedAt": 1791975711191
+      },
+      {
+        "staffId": "s30",
+        "name": "차경희",
+        "position": "조리실무사",
+        "checked": true,
+        "checkedAt": 1791911220217
+      },
+      {
+        "staffId": "s31",
+        "name": "마준석",
+        "position": "스포츠강사",
+        "checked": true,
+        "checkedAt": 1791945047912
+      },
+      {
+        "staffId": "s32",
+        "name": "구민지",
+        "position": "늘봄실장",
+        "checked": true,
+        "checkedAt": 1791845981515
+      },
+      {
+        "staffId": "s33",
+        "name": "탁세영",
+        "position": "늘봄실무사",
+        "checked": true,
+        "checkedAt": 1791979955564
+      }
+    ]
+  },
+  {
+    "id": "cl_1792976400000",
+    "title": "2학기 개인정보보호 자체점검 체크리스트",
+    "description": "PC 내 개인정보 파일 정리, 화면보호기 설정, 공유폴더 권한을 점검한 뒤 체크합니다.",
+    "deadline": "2026-10-30",
+    "color": "#FFF3E0",
+    "borderColor": "#FFB74D",
+    "createdAt": 1792976400000,
+    "entries": [
+      {
+        "staffId": "s1",
+        "name": "박정호",
+        "position": "교장",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s2",
+        "name": "이미영",
+        "position": "교감",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s3",
+        "name": "김하늘",
+        "position": "1-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s4",
+        "name": "이서준",
+        "position": "2-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s5",
+        "name": "박지우",
+        "position": "3-1",
+        "checked": true,
+        "checkedAt": 1793115128478
+      },
+      {
+        "staffId": "s6",
+        "name": "최윤서",
+        "position": "4-1",
+        "checked": true,
+        "checkedAt": 1793185945523
+      },
+      {
+        "staffId": "s7",
+        "name": "정민재",
+        "position": "5-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s8",
+        "name": "강수아",
+        "position": "6-1",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s9",
+        "name": "조현우",
+        "position": "교과전담",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s10",
+        "name": "윤채원",
+        "position": "특수교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s11",
+        "name": "장은비",
+        "position": "영양교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s12",
+        "name": "한지민",
+        "position": "보건교사",
+        "checked": true,
+        "checkedAt": 1793251367720
+      },
+      {
+        "staffId": "s13",
+        "name": "임소연",
+        "position": "유치원",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s14",
+        "name": "송다은",
+        "position": "1-해오름",
+        "checked": true,
+        "checkedAt": 1793120117075
+      },
+      {
+        "staffId": "s15",
+        "name": "오태윤",
+        "position": "3,4-해오름",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s16",
+        "name": "홍성민",
+        "position": "6-해오름",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s17",
+        "name": "문예린",
+        "position": "교과전담",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s18",
+        "name": "서가은",
+        "position": "특수교사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s19",
+        "name": "신재혁",
+        "position": "행정실장",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s20",
+        "name": "김나연",
+        "position": "주무관",
+        "checked": true,
+        "checkedAt": 1793178616218
+      },
+      {
+        "staffId": "s21",
+        "name": "이준호",
+        "position": "주무관",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s22",
+        "name": "박성진",
+        "position": "주무관",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s23",
+        "name": "최유진",
+        "position": "행정실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s24",
+        "name": "노하은",
+        "position": "행정실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s25",
+        "name": "표서연",
+        "position": "사서",
+        "checked": true,
+        "checkedAt": 1793119324488
+      },
+      {
+        "staffId": "s26",
+        "name": "도은숙",
+        "position": "유치원방과후",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s27",
+        "name": "양미경",
+        "position": "돌봄전담사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s28",
+        "name": "봉순자",
+        "position": "조리사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s29",
+        "name": "명혜진",
+        "position": "조리실무사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s30",
+        "name": "차경희",
+        "position": "조리실무사",
+        "checked": true,
+        "checkedAt": 1793207285004
+      },
+      {
+        "staffId": "s31",
+        "name": "마준석",
+        "position": "스포츠강사",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s32",
+        "name": "구민지",
+        "position": "늘봄실장",
+        "checked": false,
+        "checkedAt": null
+      },
+      {
+        "staffId": "s33",
+        "name": "탁세영",
+        "position": "늘봄실무사",
+        "checked": false,
+        "checkedAt": null
+      }
+    ]
+  }
+]

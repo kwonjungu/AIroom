@@ -67,6 +67,7 @@ async function deleteSession(token) {
 
 // 세션 검증 (메모리 → Redis 폴백)
 async function validateSession(token) {
+    if (isCopyNs()) return COPY_SESSION; // 시연용 카피본: 로그인 없이 관리자 권한
     if (!token) return null;
     // 메모리 캐시 먼저
     let session = sessions.get(token);
@@ -267,7 +268,60 @@ app.use((req, res, next) => {
     next();
 });
 
+// 시연용 카피본: /api/copy/* → /api/* 로 재작성 (body 파싱보다 먼저)
+app.use((req, res, next) => {
+    if (req.url === '/api/copy' || req.url.startsWith('/api/copy/') || req.url.startsWith('/api/copy?')) {
+        req.url = '/api/' + req.url.slice('/api/copy'.length).replace(/^[/]/, '');
+        req.isCopy = true;
+    }
+    next();
+});
 app.use(express.json({ limit: '10mb' }));
+// body 파싱이 끝난 뒤 나머지 처리를 'copy' 공간 안에서 실행 (AsyncLocalStorage 전파)
+app.use((req, res, next) => req.isCopy ? nsStore.run('copy', next) : next());
+// 카피본 전용: 인증은 항상 통과, 실서비스에 영향이 가는 기능은 막고, AI는 횟수 제한
+const COPY_BLOCKED = [/^\/api\/admin\//, /^\/api\/mail/, /^\/api\/bap/, /^\/api\/calandar/, /^\/api\/recruitments/, /^\/api\/vibe(\/|$)/, /^\/api\/posting/];
+const COPY_AI = /^\/api\/(ai\/(chat|pptx\/(outline|build|regen-slide|render))|translate)$/;
+const copyAiHits = new Map();
+async function copyAiAllowed(ip) {
+    const minute = Math.floor(Date.now() / 60000), day = new Date().toISOString().slice(0, 10);
+    const PER_MIN = 5, PER_DAY_ALL = 300;
+    if (redis) {
+        try {
+            const a = await redis.incr(`copy:ai:${ip}:${minute}`); if (a === 1) await redis.expire(`copy:ai:${ip}:${minute}`, 120);
+            const b = await redis.incr(`copy:ai:all:${day}`); if (b === 1) await redis.expire(`copy:ai:all:${day}`, 172800);
+            return a <= PER_MIN && b <= PER_DAY_ALL;
+        } catch (e) { /* Redis 실패 시 메모리 제한으로 */ }
+    }
+    const k = ip + '|' + minute; const n = (copyAiHits.get(k) || 0) + 1; copyAiHits.set(k, n);
+    if (copyAiHits.size > 5000) copyAiHits.clear();
+    return n <= PER_MIN;
+}
+app.use(async (req, res, next) => {
+    if (!req.isCopy) return next();
+    const p = req.path;
+    if (p === '/api/auth/login') return res.json({ success: true, token: 'copy-demo', role: 'admin', copy: true });
+    if (p === '/api/auth/verify') return res.json({ valid: true, role: 'admin', copy: true });
+    if (p === '/api/auth/logout') return res.json({ success: true });
+    if (COPY_BLOCKED.some(re => re.test(p))) return res.status(403).json({ error: '시연용 카피본에서는 사용할 수 없는 기능입니다.', copy: true });
+    if (COPY_AI.test(p) && !(await copyAiAllowed(req.ip || ''))) return res.status(429).json({ error: '시연용 카피본은 AI 요청이 분당 5회로 제한됩니다. 잠시 후 다시 시도해 주세요.', copy: true });
+    next();
+});
+// 시연 데이터 초기화 — defaults-copy/ 의 가상 데이터로 카피본 공간 전체를 되돌림 (카피본 요청에서만 동작)
+app.post('/api/copy-reset', async (req, res) => {
+    if (!req.isCopy) return res.status(404).json({ error: 'not found' });
+    try {
+        const files = fs.readdirSync(COPY_DEFAULTS_DIR).filter(f => f.endsWith('.json'));
+        for (const f of files) {
+            const seed = JSON.parse(fs.readFileSync(path.join(COPY_DEFAULTS_DIR, f), 'utf-8'));
+            await withRedisLock('data:' + (KV_KEYS[f] || f), async () => { await writeData(f, seed); });
+        }
+        if (!IS_VERCEL && fs.existsSync(COPY_DATA_DIR)) {
+            for (const f of fs.readdirSync(COPY_DATA_DIR)) if (!files.includes(f)) fs.unlinkSync(path.join(COPY_DATA_DIR, f));
+        }
+        res.json({ success: true, files: files.length });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
 // 채용 관리 화면: public/recruitment/ 디렉터리와 경로가 겹쳐 static 이 먼저 잡으면
 // 301 로 넘어가며 Referrer-Policy 가 빠진다. static 보다 앞에 둔다.
 app.get(['/recruitment', '/recruitment/'], (req, res) => {
@@ -275,6 +329,11 @@ app.get(['/recruitment', '/recruitment/'], (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'recruitment', 'index.html'));
 });
 
+// 시연용 카피본 페이지 — 메인 SPA(public/index.html)를 그대로 쓰고, 화면이 경로를 보고 카피본 모드로 전환
+app.get('/copy', (req, res) => req.path.endsWith('/') ? res.redirect(301, '/copy') : res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/copy/sign/:token', (req, res) => res.sendFile(path.join(__dirname, 'public', 'sign.html')));
+app.get('/copy/doc/:token', (req, res) => res.sendFile(path.join(__dirname, 'public', 'doc.html')));
+app.use('/defaults-copy', express.static(path.join(__dirname, 'defaults-copy')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/defaults', express.static(path.join(__dirname, 'defaults')));
 app.use('/defaults-posting', express.static(path.join(__dirname, 'defaults-posting')));
@@ -428,12 +487,29 @@ const KV_KEYS = {
     'rental-audit.json': 'rental-audit'
 };
 
+// ===== 시연용 카피본 (/copy) — 요청 단위 데이터 공간 분리 =====
+// /api/copy/* 요청은 /api/* 로 되돌려 같은 라우트를 타되, AsyncLocalStorage에 'copy'를 실어
+// Redis 키는 'copy:' 접두사, 로컬 파일은 data-copy/, 초기값은 defaults-copy/ 에서만 읽고 쓴다.
+const { AsyncLocalStorage } = require('async_hooks');
+const nsStore = new AsyncLocalStorage();
+const COPY_DEFAULTS_DIR = path.join(__dirname, 'defaults-copy');
+const COPY_DATA_DIR = path.join(__dirname, 'data-copy');
+const COPY_SESSION = { role: 'admin', copy: true, createdAt: 0, expiresAt: Number.MAX_SAFE_INTEGER };
+function isCopyNs() { return nsStore.getStore() === 'copy'; }
+function nsKey(key) { return isCopyNs() ? 'copy:' + key : key; }
+function dataDirs() {
+    return isCopyNs()
+        ? { data: COPY_DATA_DIR, defaults: COPY_DEFAULTS_DIR }
+        : { data: LOCAL_DATA_DIR, defaults: path.join(__dirname, 'defaults') };
+}
+
 // ===== 파일 기반 읽기/쓰기 (로컬 개발용) =====
 function readFile(filename) {
     try {
-        const dataPath = path.join(LOCAL_DATA_DIR, filename);
+        const dirs = dataDirs();
+        const dataPath = path.join(dirs.data, filename);
         if (fs.existsSync(dataPath)) return JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-        const defaultPath = path.join(__dirname, 'defaults', filename);
+        const defaultPath = path.join(dirs.defaults, filename);
         if (fs.existsSync(defaultPath)) return JSON.parse(fs.readFileSync(defaultPath, 'utf-8'));
         return null;
     } catch (e) { return null; }
@@ -441,8 +517,9 @@ function readFile(filename) {
 
 function writeFile(filename, data) {
     try {
-        if (!fs.existsSync(LOCAL_DATA_DIR)) fs.mkdirSync(LOCAL_DATA_DIR, { recursive: true });
-        fs.writeFileSync(path.join(LOCAL_DATA_DIR, filename), JSON.stringify(data, null, 2), 'utf-8');
+        const dir = dataDirs().data;
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, filename), JSON.stringify(data, null, 2), 'utf-8');
     } catch (e) { console.error('파일 쓰기 실패:', e.message); }
 }
 
@@ -459,7 +536,7 @@ async function redisRetry(fn, retries = 2) {
 }
 
 async function readData(filename) {
-    const key = KV_KEYS[filename];
+    const key = KV_KEYS[filename] && nsKey(KV_KEYS[filename]);
     // Upstash Redis 연결 시: Redis에서 읽기
     if (redis && key) {
         try {
@@ -479,7 +556,7 @@ async function readData(filename) {
 }
 
 async function writeData(filename, data) {
-    const key = KV_KEYS[filename];
+    const key = KV_KEYS[filename] && nsKey(KV_KEYS[filename]);
     // Upstash Redis 연결 시: Redis에 저장
     if (redis && key) {
         try {
@@ -576,7 +653,7 @@ async function withRedisLock(key, fn, opts = {}) {
     const maxWaitMs = opts.maxWait || 5000;
     // 로컬(Redis 미연결)은 단일 프로세스이므로 락 없이 직접 실행
     if (!redis) return await fn();
-    const lockKey = 'lock:' + key;
+    const lockKey = 'lock:' + nsKey(key);
     const token = crypto.randomBytes(8).toString('hex');
     const ttlSec = Math.max(1, Math.ceil(ttlMs / 1000));
     const start = Date.now();

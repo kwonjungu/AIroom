@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <script>
+    // 시연용 카피본(/copy/sign/…, /copy/doc/…)에서는 카피본 전용 API 공간을 사용
+    (function(){
+        if(!/^\/copy\//.test(location.pathname))return;
+        var f=window.fetch.bind(window);
+        window.fetch=function(u,o){if(typeof u==='string'&&u.indexOf('/api/')===0&&u.indexOf('/api/copy/')!==0)u='/api/copy/'+u.slice(5);return f(u,o);};
+    })();
+    </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>전자서명</title>
