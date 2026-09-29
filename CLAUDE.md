@@ -45,6 +45,8 @@ AI 실험실 → 가정통신문 번역기(PDF·HWPX·HWP). multicultural-board 
   모델별 시도를 위해 `callGroqWithFallback(body, {models:[m]})` — 키 순회는 그대로 유지.
 - **품질 규칙 단일 기준** `public/lib/translate-quality.js` — 브라우저(`window.TranslateQuality`)와 서버(`require`)가 **같은 파일**을 쓴다.
   `validateTranslation(orig, tr, {targetLang})` 은 `{ok, valid, reason}` — 비한국어 번역에 한글이 30% 넘게 남으면 `hangul_residue`.
+  **언어 가드**(mul `langGuard.ts` 이식): 대상 언어가 아닌 문자 체계(크메르어 속 한자·태국어 등 — 실측됨)가 20% 이하면 `scrubForeignScript`로 걷어내고, 넘으면 `foreign_script` 불합격. 한글은 이름일 수 있어 여기서는 허용.
+- **gpt-oss + JSON 모드 함정**: 추론 토큰이 max_tokens 를 먹어 JSON 이 잘리면 Groq 가 400 `json_validate_failed`. 대응 3단: `reasoning_effort:'low'` → 400 이면 `failed_generation` 회수 → 그래도 안 되면 같은 모델 일반 모드 재시도. `stats.trace` 로 시도 결과를 볼 수 있다.
 - **HWPX** `public/lib/translate-hwpx.js` — 추출 전 `mergeHwpxRuns`(같은 run 속성 + 사이 공백뿐인 단순 run 만 합침. 문단·서식 경계는 안 넘음).
   `unescapeXml` 은 `&amp;` 를 마지막에 푼다(먼저 풀면 이중 디코딩으로 XML 파손).
 - **폰트** `TranslateAutofit.fontForLang(lang)` — km=Khmer UI, 라틴·키릴=Arial, 한중일=**함초롬바탕**(예전 '함초롱바탕'은 오타라 교체가 무효였다).

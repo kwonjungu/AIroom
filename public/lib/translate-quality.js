@@ -94,7 +94,84 @@
             if (hangul >= 2 && visible > 0 && hangul / visible > 0.3) return fail('hangul_residue');
         }
 
+        // 다른 문자 체계 오염 — 걷어낼 수 없을 만큼(20% 초과) 섞였으면 실패
+        if (opts.targetLang && foreignScriptRatio(tr, opts.targetLang) > 0.2) return fail('foreign_script');
+
         return { ok: true, valid: true, reason: '' };
+    }
+
+    // ===== 언어 가드 (multicultural-board lib/langGuard.ts 이식) =====
+    // 번역문에 대상 언어가 아닌 문자 체계가 섞이는 오염 — 2026-09-29 실측:
+    // 크메르어 번역에 한자 "由"·태국어 "ชั้น" 이 끼어 들어왔다.
+    // 공통 문자(ASCII·숫자·문장부호·이모지·○ 같은 기호)와 한글(사람 이름 등 고유명사,
+    // 잔류 여부는 hangul_residue 가 따로 판정)은 언제나 허용한다.
+    const SCRIPTS = {
+        cjk: [[0x4e00, 0x9fff], [0x3400, 0x4dbf], [0xf900, 0xfaff], [0x20000, 0x2a6df]],
+        kana: [[0x3040, 0x309f], [0x30a0, 0x30ff], [0x31f0, 0x31ff]],
+        latin: [[0x00c0, 0x024f], [0x1e00, 0x1eff]],
+        cyrillic: [[0x0400, 0x052f]],
+        thai: [[0x0e00, 0x0e7f]],
+        khmer: [[0x1780, 0x17ff], [0x19e0, 0x19ff]],
+        devanagari: [[0x0900, 0x097f]],
+        arabic: [[0x0600, 0x06ff], [0x0750, 0x077f]],
+        myanmar: [[0x1000, 0x109f]]
+    };
+    const LANG_SCRIPTS = {
+        zh: ['cjk'], ja: ['kana', 'cjk'],
+        en: ['latin'], vi: ['latin'], fil: ['latin'], id: ['latin'], uz: ['latin'],
+        ru: ['cyrillic'], mn: ['cyrillic'],
+        th: ['thai'], km: ['khmer'], hi: ['devanagari'], ar: ['arabic'], my: ['myanmar']
+    };
+    function inRanges(cp, ranges) {
+        for (let i = 0; i < ranges.length; i++) if (cp >= ranges[i][0] && cp <= ranges[i][1]) return true;
+        return false;
+    }
+    function isHangul(cp) {
+        return (cp >= 0xac00 && cp <= 0xd7a3) || (cp >= 0x1100 && cp <= 0x11ff) || (cp >= 0x3130 && cp <= 0x318f);
+    }
+    // 어느 문자 체계에도 속하지 않으면 공통(부호·기호·숫자)으로 본다
+    function scriptOf(cp) {
+        if (cp <= 0x7f) return null;
+        if (isHangul(cp)) return 'hangul';
+        for (const name in SCRIPTS) if (inRanges(cp, SCRIPTS[name])) return name;
+        return null;
+    }
+    // 대상 언어에 허용되지 않는 문자 체계의 문자 목록
+    function foreignChars(text, lang) {
+        const allowed = LANG_SCRIPTS[lang];
+        if (!allowed) return [];
+        const out = [];
+        for (const ch of String(text || '')) {
+            const sc = scriptOf(ch.codePointAt(0));
+            if (sc && sc !== 'hangul' && allowed.indexOf(sc) === -1) out.push(ch);
+        }
+        return out;
+    }
+    // 문자 체계 문자 중 외래 문자 비율 (문자 체계 문자가 없으면 0)
+    function foreignScriptRatio(text, lang) {
+        const allowed = LANG_SCRIPTS[lang];
+        if (!allowed) return 0;
+        let total = 0, foreign = 0;
+        for (const ch of String(text || '')) {
+            const sc = scriptOf(ch.codePointAt(0));
+            if (!sc || sc === 'hangul') continue;
+            total++;
+            if (allowed.indexOf(sc) === -1) foreign++;
+        }
+        return total ? foreign / total : 0;
+    }
+    // 소량 오염(외래 문자 20% 이하 — 짧은 문장 속 단어 하나 정도)만 걷어낸다. 많으면 그대로 두고 validate 가 떨어뜨린다.
+    function scrubForeignScript(text, lang) {
+        const s = String(text || '');
+        if (!LANG_SCRIPTS[lang] || !foreignChars(s, lang).length) return s;
+        if (foreignScriptRatio(s, lang) > 0.2) return s;
+        let out = '';
+        for (const ch of s) {
+            const sc = scriptOf(ch.codePointAt(0));
+            if (sc && sc !== 'hangul' && LANG_SCRIPTS[lang].indexOf(sc) === -1) continue;
+            out += ch;
+        }
+        return out.replace(/[ \t]{2,}/g, ' ').trim();
     }
 
     // 배치 검사 — { validRate, failures:[{idx, reason}] }
@@ -148,7 +225,9 @@
         cleanTranslation: cleanTranslation,
         batchCheck: batchCheck,
         batchValidity: batchValidity,
-        isUntranslatable: isUntranslatable
+        isUntranslatable: isUntranslatable,
+        foreignScriptRatio: foreignScriptRatio,
+        scrubForeignScript: scrubForeignScript
     };
     global.TranslateQuality = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
