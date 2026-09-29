@@ -49,6 +49,8 @@ AI 실험실 → 가정통신문 번역기(PDF·HWPX·HWP). multicultural-board 
 - **gpt-oss + JSON 모드 함정**: 추론 토큰이 max_tokens 를 먹어 JSON 이 잘리면 Groq 가 400 `json_validate_failed`. 대응 3단: `reasoning_effort:'low'` → 400 이면 `failed_generation` 회수 → 그래도 안 되면 같은 모델 일반 모드 재시도. `stats.trace` 로 시도 결과를 볼 수 있다.
 - **HWPX** `public/lib/translate-hwpx.js` — 추출 전 `mergeHwpxRuns`(같은 run 속성 + 사이 공백뿐인 단순 run 만 합침. 문단·서식 경계는 안 넘음).
   `unescapeXml` 은 `&amp;` 를 마지막에 푼다(먼저 풀면 이중 디코딩으로 XML 파손).
+  ⚠ **`zip.remove('폴더/')` 는 폴더 안 파일까지 재귀 삭제한다.** `zip.file()` 기본값이 `Contents/` 폴더 항목을 만들고, serialize 가 폴더 항목을 remove 로 지우면서
+  본문·헤더가 통째로 사라진 HWPX 가 나가고 있었다(2026-09-29 발견, 이전부터 있던 버그). 치환은 `createFolders:false`, 폴더 항목 정리는 `delete zip.files[n]`.
 - **폰트** `TranslateAutofit.fontForLang(lang)` — km=Khmer UI, 라틴·키릴=Arial, 한중일=**함초롬바탕**(예전 '함초롱바탕'은 오타라 교체가 무효였다).
 - 테스트: `node _check/doc-translate-test.js` (가짜 모델로 엔진 규칙 + 실제 템플릿 HWPX 왕복). 번역 코드 수정 시 실행할 것.
 

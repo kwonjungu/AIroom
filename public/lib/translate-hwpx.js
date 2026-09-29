@@ -185,7 +185,9 @@
                 return '<' + prefix + 't' + (attrs || '') + '>' + escaped + '</' + prefix + 't>';
             });
 
-            zip.file(sectionPath, newXml);
+            // createFolders:false — 기본값(true)이면 'Contents/' 폴더 항목이 생기고, 그걸 serialize 가 지울 때
+            // JSZip 이 폴더 안 파일까지 통째로 지워 본문 없는 HWPX 가 나왔다(2026-09-29 발견·수정).
+            zip.file(sectionPath, newXml, { createFolders: false });
         }
 
         // header.xml은 호출자가 별도로 scaleHeaderXml/unifyFontsHwpx 처리 후 넣어줌
@@ -193,7 +195,7 @@
             // header.xml 경로 검색
             const headerPath = extracted.fileNames.find(isHeaderPath);
             if (headerPath) {
-                zip.file(headerPath, options.headerXml);
+                zip.file(headerPath, options.headerXml, { createFolders: false });
             }
         }
 
@@ -209,7 +211,8 @@
     //  - 디렉토리 엔트리 제거 (jszip이 자동 추가하는 것 포함)
     //
     // ※ 이 규칙은 lib/hwpx.js (server-side)에서 검증된 사항과 동일하다.
-    async function serialize(zip) {
+    async function serialize(zip, opts) {
+        opts = opts || {};
         const STORED = new Set(['mimetype', 'version.xml', 'Preview/PrvImage.png']);
 
         // 디렉토리 엔트리 제거
@@ -217,7 +220,8 @@
         zip.forEach(function (path, file) {
             if (file.dir) dirNames.push(path);
         });
-        dirNames.forEach(function (n) { zip.remove(n); });
+        // ⚠ zip.remove(폴더)는 그 안의 파일까지 재귀 삭제한다 — 폴더 항목만 목록에서 뺀다
+        dirNames.forEach(function (n) { delete zip.files[n]; });
 
         // 각 파일별 압축 방식 지정 — generateAsync의 file별 compression
         // jszip 3.x: zip.file(name)으로 가져와 .options.compression 갱신
@@ -233,7 +237,7 @@
         }
 
         return await zip.generateAsync({
-            type: 'blob',
+            type: opts.type || 'blob',
             compression: 'DEFLATE',
             compressionOptions: { level: 6 },
             mimeType: 'application/hwp+zip'
