@@ -35,6 +35,21 @@ v1(`public/vibecoding.html`)과 별개인 새 앱. **상태·다음 할 일은 `
 - AI 후보 적용은 모드가 `ctx.generation.apply(job)` — 서버 멱등 반영 후 로컬 store에도 적용(undo 유지). 서버가 발급한 작품 id는 클라이언트에 노출하지 않는다(Job.projectId는 로컬 id).
 - 검사: `npm test`, `npm run test:vibe:integration`, `npm run eval:vibe:mock`, `npm run test:vibe:e2e`(Python Playwright 필요). Node 22에서도 통과해야 한다.
 
+## 가정통신문 번역기 — 문서 번역 엔진 (2026-09-29 개편)
+
+AI 실험실 → 가정통신문 번역기(PDF·HWPX·HWP). multicultural-board 의 튜닝된 번역 파이프라인
+(`lib/groq-translate.ts`·`translation-quality.ts`·`xmlI18n.ts`)을 이식했다. **모델은 기존 Groq 체인(`GROQ_FALLBACK_MODELS`) 그대로**, 엔진만 바꿨다.
+- **서버 엔진** `lib/doc-translate.js` — Express·Groq 비의존(`callModel` 주입). `/api/translate` 는 이걸 부르기만 한다. 요청/응답 모양은 예전 그대로(+`stats`).
+  ① JSON 모드 `{"items":[..]}`→`{"out":[..]}` (옛 `[0] 문장` 번호 파싱 폐기) ② **개수가 다르면 응답 통째 폐기 → 다음 모델**(억지 정렬 금지)
+  ③ 모델별 품질 게이트: 합격률 80% 미만이면 다음 모델, 전부 미달이면 최선 결과 + 불합격 항목만 원문 ④ 배치 40개·3200자 상한 ⑤ max_tokens = 원문 글자×3(1500~8000).
+  모델별 시도를 위해 `callGroqWithFallback(body, {models:[m]})` — 키 순회는 그대로 유지.
+- **품질 규칙 단일 기준** `public/lib/translate-quality.js` — 브라우저(`window.TranslateQuality`)와 서버(`require`)가 **같은 파일**을 쓴다.
+  `validateTranslation(orig, tr, {targetLang})` 은 `{ok, valid, reason}` — 비한국어 번역에 한글이 30% 넘게 남으면 `hangul_residue`.
+- **HWPX** `public/lib/translate-hwpx.js` — 추출 전 `mergeHwpxRuns`(같은 run 속성 + 사이 공백뿐인 단순 run 만 합침. 문단·서식 경계는 안 넘음).
+  `unescapeXml` 은 `&amp;` 를 마지막에 푼다(먼저 풀면 이중 디코딩으로 XML 파손).
+- **폰트** `TranslateAutofit.fontForLang(lang)` — km=Khmer UI, 라틴·키릴=Arial, 한중일=**함초롬바탕**(예전 '함초롱바탕'은 오타라 교체가 무효였다).
+- 테스트: `node _check/doc-translate-test.js` (가짜 모델로 엔진 규칙 + 실제 템플릿 HWPX 왕복). 번역 코드 수정 시 실행할 것.
+
 ## 시연용 카피본 (/copy, 2026-09)
 
 `a-iroom.vercel.app/copy` — 로그인 없이 누구나 모든 기능을 써 보는 공개 시연본. 같은 서버·같은 코드, **데이터 공간만 분리**. (/posting은 읽기 전용 데모, /copy는 쓰기까지 되는 완전한 사본)

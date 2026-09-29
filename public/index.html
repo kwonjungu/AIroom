@@ -11332,7 +11332,7 @@ async function pdfTransStartDoc(){
                 if(TQ.cleanTranslation) raw=TQ.cleanTranslation(raw);
                 let pass=true;
                 if(TQ.validateTranslation){
-                    const v=TQ.validateTranslation(batch[j],raw);
+                    const v=TQ.validateTranslation(batch[j],raw,{targetLang:pdfTransState.targetLang});
                     pass=v.ok;
                     if(!pass) console.warn('[translate-validate]',v.reason,batch[j].slice(0,30));
                 }
@@ -11406,7 +11406,8 @@ async function pdfTransSaveHwpx(baseName,lang){
     let headerXml=pdfTransState.hwpxData.headerXml||'';
     if(headerXml){
         headerXml=TA.scaleHeaderXml(headerXml,p90);
-        if(lang&&lang!=='ko') headerXml=TA.unifyFontsHwpx(headerXml,'함초롱바탕');
+        // 대상 언어에 맞는 폰트로 통일 (크메르어=Khmer UI, 라틴·키릴=Arial, 한중일=함초롬바탕)
+        if(lang&&lang!=='ko') headerXml=TA.unifyFontsHwpx(headerXml,TA.fontForLang?TA.fontForLang(lang):'함초롬바탕');
     }
 
     TH.applyReplacements(pdfTransState.hwpxData,pdfTransState.translationMap,{headerXml});

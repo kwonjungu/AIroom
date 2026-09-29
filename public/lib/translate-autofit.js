@@ -31,16 +31,18 @@
     }
 
     // 번역 전후 페어에서 90백분위 확장비 계산
-    // 너무 짧은 원문(<=2자)은 노이즈라 제외
+    // 짧은 원문(5자 미만 — 제목·단어·번호)은 확장비가 널뛰는 노이즈라 제외
+    // (multicultural-board expansionP90 의 minSrcLen=5 와 같은 기준)
     function p90Ratio(originals, translations) {
         const ratios = [];
         for (let i = 0; i < originals.length; i++) {
             const o = originals[i];
             const t = translations[i];
             if (!o || !t) continue;
+            if (String(o).trim().length < 5) continue;
             const ow = visualWidth(o);
             const tw = visualWidth(t);
-            if (ow < 3) continue;
+            if (!ow) continue;
             ratios.push(tw / ow);
         }
         if (!ratios.length) return 1;
@@ -117,23 +119,42 @@
     // header.xml의 <hh:fontfaces lang="HANGUL|LATIN|HANJA|JAPANESE|OTHER|SYMBOL|USER">
     //   <hh:font id="N" type="..." face="..."/> ...
     //
-    // CJK 문자 깨짐 방지를 위해 모든 폰트의 face를 "함초롱바탕"으로 일괄 교체.
-    // (multicultural-board 패턴 — 대부분 PC에 깔려 있고 한컴 기본 폰트)
-    function unifyFontsHwpx(headerXml, fontFace) {
-        if (!headerXml) return headerXml;
-        const face = fontFace || '함초롱바탕';
-        // <hh:font ... face="기존폰트" ... />  →  face="함초롱바탕"
-        return headerXml.replace(/(<hh:font\b[^>]*\bface=")[^"]*(")/g, function (_m, p, q) {
-            return p + face + q;
-        });
+    // 모든 폰트의 face(변형 문서는 name)를 대상 언어에 맞는 폰트 하나로 교체한다.
+    //
+    // 예전엔 모든 언어를 "함초롱바탕"으로 강제했는데 (1) 실제 한컴 폰트명은 **함초롬바탕**이라
+    // 교체가 무효였고 (2) 크메르어 등 비라틴 문자는 한국어 폰트에 글리프가 없어 □로 깨질 수 있었다.
+    // multicultural-board lib/xmlI18n.ts hwpxFontForLang 과 같은 표 — Windows 기본 탑재 폰트 기준.
+    const SCRIPT_FONTS = {
+        th: 'Leelawadee UI',   // 태국어
+        hi: 'Nirmala UI',      // 힌디(데바나가리)
+        km: 'Khmer UI',        // 크메르(캄보디아어)
+        my: 'Myanmar Text',    // 미얀마
+        ar: 'Arial'            // 아랍어
+    };
+    function fontForLang(lang) {
+        if (SCRIPT_FONTS[lang]) return SCRIPT_FONTS[lang];
+        if (lang === 'ko' || lang === 'ja' || lang === 'zh') return '함초롬바탕';
+        // 라틴(en/vi/…) + 키릴(ru/mn) — Arial 은 베트남어 성조 글리프까지 포함
+        return 'Arial';
     }
 
-    global.TranslateAutofit = {
+    function unifyFontsHwpx(headerXml, fontFace) {
+        if (!headerXml) return headerXml;
+        const face = fontFace || '함초롬바탕';
+        return headerXml
+            .replace(/(<(?:[\w]+:)?font\b[^>]*?\bface=")[^"]*(")/g, function (_m, p, q) { return p + face + q; })
+            .replace(/(<(?:[\w]+:)?font\b[^>]*?\bname=")[^"]*(")/g, function (_m, p, q) { return p + face + q; });
+    }
+
+    const api = {
         visualWidth: visualWidth,
         p90Ratio: p90Ratio,
         fontScaleFromRatio: fontScaleFromRatio,
         lineSpacingScale: lineSpacingScale,
         scaleHeaderXml: scaleHeaderXml,
+        fontForLang: fontForLang,
         unifyFontsHwpx: unifyFontsHwpx
     };
+    global.TranslateAutofit = api;
+    if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,6 +1,7 @@
 // HWPX(한컴 OWPML, ZIP+XML) 텍스트 추출/치환
 // jszip 글로벌(이미 index.html에서 CDN 로드)을 사용한다.
 // multicultural-board 패턴: <hp:t> 텍스트 노드 단위로 추출·치환 (서식 보존).
+// 추출 전에 같은 서식의 조각 run 을 합쳐 문장 단위로 번역되게 한다(mergeHwpxRuns).
 // window.TranslateHwpx 로 노출.
 (function (global) {
     'use strict';
@@ -36,8 +37,55 @@
             .replace(/&gt;/g, '>')
             .replace(/&quot;/g, '"')
             .replace(/&apos;/g, "'")
-            .replace(/&#(\d+);/g, function (_m, c) { return String.fromCharCode(parseInt(c, 10)); })
-            .replace(/&amp;/g, '&'); // & 마지막
+            .replace(/&#(\d+);/g, function (_m, c) { return String.fromCodePoint(parseInt(c, 10)); })
+            .replace(/&#x([0-9a-fA-F]+);/g, function (_m, h) { return String.fromCodePoint(parseInt(h, 16)); })
+            .replace(/&amp;/g, '&'); // & 마지막 — 먼저 풀면 "&amp;lt;"가 "<"로 이중 디코딩돼 XML이 깨진다
+    }
+
+    // ===== run 병합 (multicultural-board lib/xmlI18n.ts mergeHwpxRuns 이식) =====
+    //
+    // 한글은 맞춤법 검사·부분 서식 때문에 한 문장을 여러 run 으로 쪼개 저장한다
+    // ("안녕" + "하세요"). 조각별로 번역하면 문장이 깨지는 게 번역 품질 저하의 최대 원인이었다.
+    // "서식(charPrIDRef 등 run 속성)이 같고 사이에 공백뿐인" 인접 단순 run 을 하나로 합친 뒤 추출한다.
+    // 문단 경계(</hp:p><hp:p>)는 사이에 태그가 끼므로 절대 합쳐지지 않는다.
+    // 자식이 <hp:t> 하나뿐인 run 만 대상 — 탭·그림·필드 등 다른 자식이 있으면 건드리지 않는다.
+    const HWPX_SIMPLE_RUN = /<([\w]+:)?run\b([^>]*)>\s*<([\w]+:)?t(?:\s[^>]*)?>([^<]*)<\/\3t>\s*<\/\1run>/g;
+
+    function mergeHwpxRuns(xml) {
+        const runs = [];
+        HWPX_SIMPLE_RUN.lastIndex = 0;
+        let m;
+        while ((m = HWPX_SIMPLE_RUN.exec(xml)) !== null) {
+            runs.push({
+                start: m.index, end: m.index + m[0].length, full: m[0],
+                prefix: m[1] || '', attrs: m[2] || '', tPrefix: m[3] || '', text: m[4]
+            });
+        }
+        if (runs.length < 2) return xml;
+
+        const norm = function (a) { return a.replace(/\s+/g, ' ').trim(); };
+        const sameStyle = function (a, b) { return a.prefix === b.prefix && norm(a.attrs) === norm(b.attrs); };
+
+        let out = '', cursor = 0, i = 0;
+        while (i < runs.length) {
+            let j = i;
+            while (
+                j + 1 < runs.length &&
+                /^\s*$/.test(xml.slice(runs[j].end, runs[j + 1].start)) &&
+                sameStyle(runs[j + 1], runs[i])
+            ) j++;
+            out += xml.slice(cursor, runs[i].start);
+            if (j > i) {
+                const r = runs[i];
+                const text = runs.slice(i, j + 1).map(function (x) { return x.text; }).join('');
+                out += '<' + r.prefix + 'run' + r.attrs + '><' + r.tPrefix + 't>' + text + '</' + r.tPrefix + 't></' + r.prefix + 'run>';
+            } else {
+                out += runs[i].full;
+            }
+            cursor = runs[j].end;
+            i = j + 1;
+        }
+        return out + xml.slice(cursor);
     }
 
     // ===== 추출 =====
@@ -64,7 +112,8 @@
         for (const name of fileNames) {
             if (isSectionPath(name)) {
                 const xml = await zip.files[name].async('string');
-                sections[name] = xml;
+                // 조각 run 을 문장 단위로 합친 XML 을 기준으로 추출·치환한다
+                sections[name] = mergeHwpxRuns(xml);
             } else if (isHeaderPath(name)) {
                 headerXml = await zip.files[name].async('string');
             }
@@ -197,7 +246,9 @@
         serialize: serialize,
         escapeXml: escapeXml,
         unescapeXml: unescapeXml,
+        mergeHwpxRuns: mergeHwpxRuns,
         isSectionPath: isSectionPath,
         isHeaderPath: isHeaderPath
     };
+    if (typeof module !== 'undefined' && module.exports) module.exports = global.TranslateHwpx;
 })(typeof window !== 'undefined' ? window : globalThis);

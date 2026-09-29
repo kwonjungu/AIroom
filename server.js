@@ -2102,14 +2102,16 @@ function isGroqQuotaError(status, data) {
 //   1) 같은 키로 모델 순회 (70B → 8B)
 //   2) 모든 모델 실패 시 다음 키로 전환하여 다시 1) 수행
 // 반환: { ok, status, data }  — data._fallbackModel / _fallbackKeyIndex 포함
-async function callGroqWithFallback(body) {
+// opts.models 를 주면 그 모델만 시도한다(키 순회는 그대로) — 모델별 품질 게이트를
+// 호출부가 직접 돌려야 하는 문서 번역 엔진(lib/doc-translate.js)용.
+async function callGroqWithFallback(body, opts = {}) {
     const keys = getGroqApiKeys();
     if (keys.length === 0) {
         return { ok: false, status: 400, data: { error: 'Groq API 키가 설정되지 않았습니다. Vercel 환경변수 GROQ_API_KEY를 설정하세요.' } };
     }
 
     const requested = body.model;
-    const models = [requested, ...GROQ_FALLBACK_MODELS].filter(
+    const models = (opts.models || [requested, ...GROQ_FALLBACK_MODELS]).filter(
         (m, i, arr) => m && arr.indexOf(m) === i
     );
 
@@ -2319,66 +2321,30 @@ app.get('/api/ai/pptx/themes', requireAuth, (req, res) => {
 });
 
 // ===== 가정통신문 번역 API (Groq) =====
+// 엔진은 lib/doc-translate.js (JSON 모드 배치 + 개수 불일치 폐기 + 모델별 품질 게이트).
+// 요청/응답 모양은 예전 그대로: { blocks:[{text,...}], targetLang } → { translations:[{...block, translated}] }
+const docTranslate = require('./lib/doc-translate');
 app.post('/api/translate', requireAuth, async (req, res) => {
     if (getGroqApiKeys().length === 0) return res.status(400).json({ error: 'API 키가 설정되지 않았습니다.' });
-    const { blocks, targetLang } = req.body;
-    if (!blocks || !blocks.length || !targetLang) return res.status(400).json({ error: 'blocks와 targetLang이 필요합니다.' });
-
-    const langNames = { en:'English', zh:'Chinese (Simplified)', vi:'Vietnamese', km:'Khmer (Cambodian)', ja:'Japanese', ru:'Russian' };
-    const langName = langNames[targetLang] || targetLang;
-
-    // 블록 텍스트를 번호 매겨서 하나의 프롬프트로 보냄
-    const numbered = blocks.map((b, i) => `[${i}] ${b.text}`).join('\n');
-    const systemPrompt = `You are a professional translator for school newsletters (가정통신문/안내장). Translate ALL of the following numbered text blocks from Korean to ${langName}.
-
-CRITICAL RULES:
-- You MUST translate EVERY single block. Do NOT skip any block.
-- Return ONLY the translations in the exact same numbered format [0], [1], [2], etc.
-- Keep the exact same numbering — every input number must appear in your output.
-- Do not add any explanation, commentary, or extra text.
-- Preserve line breaks within each block.
-- If a block contains only numbers, dates, phone numbers, URLs, or proper nouns that don't need translation, return them as-is with their number tag.
-- Translate everything including headers, footers, signatures, notes, instructions, checkbox items, etc.
-- This is a school document for parents — translate naturally and clearly.`;
+    const { blocks, targetLang, sourceLang } = req.body || {};
+    if (!Array.isArray(blocks) || !blocks.length || !targetLang) return res.status(400).json({ error: 'blocks와 targetLang이 필요합니다.' });
+    if (blocks.length > 400) return res.status(413).json({ error: '한 번에 보낼 수 있는 블록은 400개까지입니다.' });
 
     try {
-        const result = await callGroqWithFallback({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: numbered }
-            ],
-            temperature: 0.1,
-            max_tokens: 8192
+        const texts = blocks.map(b => String((b && b.text) ?? ''));
+        const { translations, stats } = await docTranslate.translateSegments(texts, {
+            fromLang: sourceLang || 'ko',
+            toLang: targetLang,
+            models: GROQ_FALLBACK_MODELS,
+            callModel: (model, body) => callGroqWithFallback({ ...body, model }, { models: [model] }),
         });
-        if (!result.ok) return res.status(result.status).json(result.data);
-        const data = result.data;
-
-        const content = data.choices?.[0]?.message?.content || '';
-        // 번호별로 파싱
-        const translations = {};
-        const lines = content.split('\n');
-        let currentIdx = -1;
-        let currentText = '';
-        for (const line of lines) {
-            const m = line.match(/^\[(\d+)\]\s*(.*)/);
-            if (m) {
-                if (currentIdx >= 0) translations[currentIdx] = currentText.trim();
-                currentIdx = parseInt(m[1]);
-                currentText = m[2];
-            } else if (currentIdx >= 0) {
-                currentText += '\n' + line;
-            }
-        }
-        if (currentIdx >= 0) translations[currentIdx] = currentText.trim();
-
-        const translated = blocks.map((b, i) => ({
-            ...b,
-            translated: translations[i] || b.text
-        }));
-        res.json({ translations: translated, fallbackModel: data._fallbackModel });
+        const translated = blocks.map((b, i) => ({ ...b, translated: translations[i] }));
+        const primary = GROQ_FALLBACK_MODELS[0];
+        const fallbackModel = stats.models.find(m => m !== primary);
+        res.json({ translations: translated, fallbackModel, stats });
     } catch (e) {
-        res.status(500).json({ error: '번역 API 호출 실패: ' + e.message });
+        const status = e.status && e.status >= 400 && e.status < 600 ? e.status : 500;
+        res.status(status).json({ error: '번역 API 호출 실패: ' + e.message });
     }
 });
 

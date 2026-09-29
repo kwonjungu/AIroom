@@ -1,135 +1,155 @@
-// 번역 품질 검증/정리 — multicultural-board 패턴 이식
-// 의존성 없음. window.TranslateQuality 네임스페이스로 노출.
+// 번역 품질 검증/정리 — multicultural-board lib/translation-quality.ts 최신판 이식 (2026-09)
+// 의존성 없음. 브라우저는 window.TranslateQuality, 서버(Node)는 require()로 같은 파일을 쓴다.
+// → 검증 규칙의 단일 기준. 서버 엔진(lib/doc-translate.js)과 화면이 같은 판정을 내린다.
+//
+// 실패 예시들:
+//   "Here is the translation: xxx"   ← 인트로 붙임
+//   "번역: xxx"                       ← 한국어 인트로
+//   "```json\n{...}"                 ← JSON 프래그먼트 누수
+//   "" 또는 공백                      ← 빈 답
+//   원문 그대로                       ← 미번역
+//   "Note: this may not be accurate"  ← 해설 첨부
+//   원문의 10배 길이                  ← 할루시네이션
+//   "HI, 선생님"                      ← 부분 번역(한글 잔류)
 (function (global) {
     'use strict';
 
-    // 인트로 누수("Here is the translation:", "Here's the translation -", "번역:" 등) — 다국어
-    // 두 부분으로 분리: (1) "Here is/Here's" 류 prefix (선택)
-    //                  (2) "the translation/translation/번역" 등 핵심
-    const INTRO_RE = /^\s*(?:(?:here\s+is|here'?s|here\s+are|below\s+is|below\s+are)\s+)?(?:the\s+translations?|translations?|번역(?:문)?|译文|翻译|перевод|traductions?|traducciones?|traduzioni?)\s*[:：\-—]?\s*/i;
+    // 번역물 맨 앞에 자주 붙는 메타 표현 (LLM 유도 실패 시)
+    const INTRO_PATTERNS = [
+        /^here (is|are)( the)? translations?[\s:：\-,]/i,
+        /^the translation (is|of|for)[\s:：\-,]/i,
+        /^translated (text|output|version)[\s:：\-,]/i,
+        /^translation[\s:：\-,]/i,
+        /^sure[!,.]?\s+(here|this)/i,
+        /^번역(?:문)?[\s:：\-,]/,
+        /^翻译[\s:：\-,]/,
+        /^翻訳[\s:：\-,]/,
+        /^перевод[\s:：\-,]/i,
+        /^ترجمة[\s:：\-,]/
+    ];
 
-    // 마크다운 코드블록/볼드/인라인코드/큐트
-    const CODE_FENCE_RE = /^```[\s\S]*?```$/m;
-    const JSON_LEAK_RE = /^\s*\{[\s\S]*"(?:items|out|translations?)"\s*:\s*\[/i;
-    const NOTE_RE = /\b(note|참고|caveat|disclaimer)\s*[:：]/i;
-    const PAREN_NOTE_RE = /\((?:translation|translated|note)\)/i;
+    // 번역에 들어가면 안 되는 해설/메타 문구
+    const COMMENTARY_TAGS = [
+        /\bnote\s*[:：]/i,
+        /\bnote that\b/i,
+        /\bplease note\b/i,
+        /\(translation\)/i,
+        /\(translated\)/i,
+        /\[.*?translat\w*.*?\]/i,
+        /\*\*.*?translation.*?\*\*/i
+    ];
 
-    function looksLikeIntro(s) {
-        return INTRO_RE.test(s);
-    }
-
-    function hasCodeFence(s) {
-        return CODE_FENCE_RE.test(s);
-    }
-
-    function hasJsonLeak(s) {
-        return JSON_LEAK_RE.test(s);
-    }
-
-    function hasRepeatedChar(s, n) {
-        n = n || 6;
-        const re = new RegExp('(.)\\1{' + (n - 1) + ',}');
-        return re.test(s);
-    }
-
-    function lenRatio(orig, trans) {
-        if (!orig || !orig.length) return 1;
-        return trans.length / orig.length;
-    }
-
-    // 정리: 인트로/볼드/감싼따옴표/괄호해설 제거
-    function cleanTranslation(text) {
-        if (!text) return '';
-        let s = String(text);
-
-        // 코드 펜스 제거 (내용만 남김)
-        s = s.replace(/^```[a-z]*\n?/i, '').replace(/\n?```\s*$/, '');
-
-        // JSON 누수 — {"out":[...]} 형식이면 첫 문자열 추출 시도
-        const jsonMatch = s.match(/"(?:out|translation|translated)"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
-        if (jsonMatch) s = jsonMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
-
-        // 인트로 제거
-        s = s.replace(INTRO_RE, '');
-
-        // 볼드/이탤릭 마크다운
-        s = s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1');
-
-        // 감싼 따옴표 (전체가 따옴표로 묶인 경우만)
-        const wrapped = s.match(/^["'“”‘’](.*)["'“”‘’]$/s);
-        if (wrapped) s = wrapped[1];
-
-        // (translation) 류 괄호 해설 제거
-        s = s.replace(/\s*\((?:translation|translated|역|tr\.?)\)\s*/gi, ' ');
-
-        return s.trim();
-    }
-
-    // 단건 검증: 합리적인 번역인지 판정
-    // 반환: { ok: boolean, reason: string }
-    function validateTranslation(original, translated, opts) {
-        opts = opts || {};
-        const minRatio = opts.minRatio || 0.15;
-        const maxRatio = opts.maxRatio || 8.0;
-
-        if (translated == null) return { ok: false, reason: 'null' };
-        const t = String(translated);
-        if (!t.trim()) return { ok: false, reason: 'empty' };
-
-        const o = String(original || '');
-
-        // 원문 동일 — 단, 숫자/URL/고유명사처럼 번역 불필요한 경우는 OK
-        if (o.trim() === t.trim()) {
-            if (isUntranslatable(o)) return { ok: true, reason: 'untranslatable' };
-            // 영문 입력에 영문 출력 같은 경우는 fromLang=toLang일 때 정상.
-            // 호출자가 fromLang/toLang을 검사하므로 여기서는 동일성만 경고로.
-            if (o.length > 5) return { ok: false, reason: 'identical' };
-            return { ok: true, reason: 'short-identical' };
-        }
-
-        if (hasCodeFence(t)) return { ok: false, reason: 'code-fence' };
-        if (hasJsonLeak(t)) return { ok: false, reason: 'json-leak' };
-        if (NOTE_RE.test(t)) return { ok: false, reason: 'note-leak' };
-        if (PAREN_NOTE_RE.test(t)) return { ok: false, reason: 'paren-note' };
-        if (hasRepeatedChar(t, 6)) return { ok: false, reason: 'repeat' };
-        if (looksLikeIntro(t)) return { ok: false, reason: 'intro' };
-
-        const r = lenRatio(o, t);
-        if (r < minRatio) return { ok: false, reason: 'too-short' };
-        if (r > maxRatio) return { ok: false, reason: 'too-long' };
-
-        return { ok: true, reason: '' };
-    }
-
-    // 번역 불필요 항목 (사전 필터)
-    // 숫자/URL/이메일/전화/순수 구두점/매우 짧은 영숫자
+    // 번역 불필요 항목 (사전 필터) — 숫자/날짜/URL/이메일/순수 구두점/1글자
     function isUntranslatable(text) {
         if (!text) return true;
         const s = String(text).trim();
         if (!s) return true;
         if (s.length < 2) return true;
-        if (/^[\d\s,.\-/:()+]+$/.test(s)) return true; // 숫자/날짜
-        if (/^https?:\/\/\S+$/i.test(s)) return true; // URL
-        if (/^[\w.+-]+@[\w-]+\.[\w.-]+$/i.test(s)) return true; // 이메일
-        if (/^[\s.,!?;:'"\-—–()\[\]{}]+$/.test(s)) return true; // 순수 구두점
+        if (/^[\d\s,.\-/:()+%±~]+$/.test(s)) return true;
+        if (/^https?:\/\/\S+$/i.test(s)) return true;
+        if (/^[\w.+-]+@[\w-]+\.[\w.-]+$/i.test(s)) return true;
+        if (/^[\s.,!?;:'"\-—–()\[\]{}·•※○●□■◆◇▶▷→]+$/.test(s)) return true;
         return false;
     }
 
-    // 배치 합격률
-    function batchValidity(originals, translations, opts) {
-        if (!originals || !originals.length) return 1;
+    // 단건 검증.
+    // 반환: { ok, valid, reason } — ok 와 valid 는 같은 값(옛 호출부 호환용 이름 둘).
+    // opts.targetLang 을 주면 비한국어 번역의 한글 잔류(부분 번역)도 잡는다.
+    function validateTranslation(original, translated, opts) {
+        opts = opts || {};
+        const orig = String(original == null ? '' : original).trim();
+        const tr = String(translated == null ? '' : translated).trim();
+        const fail = function (reason) { return { ok: false, valid: false, reason: reason }; };
+
+        if (!tr) return fail('empty');
+
+        // 원문 그대로 — 숫자·URL 처럼 원래 번역이 필요 없는 것만 허용
+        if (orig && tr === orig) {
+            if (opts.allowSameAsSource || isUntranslatable(orig)) return { ok: true, valid: true, reason: 'untranslatable' };
+            return fail('same_as_source');
+        }
+
+        // JSON / 마크다운 프래그먼트
+        if (tr.indexOf('```') !== -1) return fail('json_leftover');
+        if (/^[{[]/.test(tr) && /["'][\w_-]+["']\s*:/.test(tr) && tr.length > 20) return fail('looks_like_json');
+
+        if (INTRO_PATTERNS.some(function (re) { return re.test(tr); })) return fail('template_intro');
+        if (COMMENTARY_TAGS.some(function (re) { return re.test(tr); })) return fail('added_commentary');
+
+        // 길이 비율 — 짧은 원문(< 5자)은 제목/단어라 건너뜀
+        if (orig.length >= 5) {
+            const ratio = tr.length / orig.length;
+            if (ratio < 0.15) return fail('too_short');
+            if (ratio > 8) return fail('too_long');
+        }
+
+        // 같은 글자 반복 (모델 붕괴)
+        if (tr.length > 10 && /^(.)\1{5,}$/.test(tr.slice(0, 20))) return fail('repeated_char');
+
+        // 부분 번역 — 비한국어 번역에 한글이 상당량 남음.
+        // 사람 이름 등 고유명사 한두 글자는 허용: 2자 이상 + 비율 30% 초과일 때만 실패.
+        if (opts.targetLang && opts.targetLang !== 'ko') {
+            const hangul = (tr.match(/[가-힣]/g) || []).length;
+            const visible = tr.replace(/\s/g, '').length;
+            if (hangul >= 2 && visible > 0 && hangul / visible > 0.3) return fail('hangul_residue');
+        }
+
+        return { ok: true, valid: true, reason: '' };
+    }
+
+    // 배치 검사 — { validRate, failures:[{idx, reason}] }
+    function batchCheck(originals, translations, opts) {
+        if (!originals || !originals.length) return { validRate: 1, failures: [] };
+        const failures = [];
         let pass = 0;
         for (let i = 0; i < originals.length; i++) {
             const r = validateTranslation(originals[i], translations[i], opts);
             if (r.ok) pass++;
+            else failures.push({ idx: i, reason: r.reason });
         }
-        return pass / originals.length;
+        return { validRate: pass / originals.length, failures: failures };
     }
 
-    global.TranslateQuality = {
+    // 배치 합격률(숫자) — 옛 호출부 호환
+    function batchValidity(originals, translations, opts) {
+        return batchCheck(originals, translations, opts).validRate;
+    }
+
+    // 군더더기 제거 (번역은 살리고 인트로/볼드/감싼 따옴표/괄호 해설만 뺀다)
+    function cleanTranslation(text) {
+        let out = String(text == null ? '' : text).trim();
+
+        // 코드 펜스 벗기기
+        out = out.replace(/^```[a-z]*\n?/i, '').replace(/\n?```\s*$/, '').trim();
+
+        // 앞 인트로 제거
+        for (const re of INTRO_PATTERNS) {
+            const m = out.match(re);
+            if (m && m.index === 0) out = out.slice(m[0].length).trimStart();
+        }
+        // "**번역:**" 같은 앞머리 볼드 라벨
+        out = out.replace(/^\*\*.{1,30}?\*\*\s*/m, '').trim();
+        // 뒤 괄호 해설 ("(translation)" 등)
+        out = out.replace(/\s*\([^)]*translat\w*[^)]*\)\s*$/i, '').trim();
+        // 전체를 감싼 따옴표 — 중간에 같은 따옴표가 없을 때만 벗긴다
+        if (out.length >= 2) {
+            const first = out[0], last = out[out.length - 1];
+            const pairs = { '"': '"', "'": "'", '“': '”', '‘': '’' };
+            if (pairs[first] && pairs[first] === last) {
+                const inner = out.slice(1, -1);
+                if (inner.indexOf(first) === -1 && inner.indexOf(last) === -1) out = inner.trim();
+            }
+        }
+        return out;
+    }
+
+    const api = {
         validateTranslation: validateTranslation,
         cleanTranslation: cleanTranslation,
+        batchCheck: batchCheck,
         batchValidity: batchValidity,
         isUntranslatable: isUntranslatable
     };
+    global.TranslateQuality = api;
+    if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
