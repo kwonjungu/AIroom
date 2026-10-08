@@ -21,8 +21,7 @@ function finalized() {
     submitAll(r, 'interview');
     return d.finalize(r);
 }
-// 본문은 구역 3개(세로 표지 / 가로 표 / 세로 서약서)로 나뉘어 있다.
-// 어느 구역인지 따지지 않는 검사는 전부 이어 붙여서 본다.
+// 본문은 A4 세로 한 구역이다. 구역이 늘어도 검사가 깨지지 않게 전부 이어 붙여서 본다.
 async function sectionsOf(zip) {
     const names = Object.keys(zip.files).filter(name => /^Contents\/section\d+\.xml$/.test(name)).sort();
     return Promise.all(names.map(name => zip.file(name).async('string')));
@@ -40,8 +39,7 @@ test('builds a hwpx package a 한/글 can open: mimetype first and stored, requi
     assert.ok(Buffer.isBuffer(buffer) && buffer.length > 1000);
     assert.deepEqual(firstEntry(buffer), { method: 0, name: 'mimetype' });
     const zip = await JSZip.loadAsync(buffer);
-    for (const part of ['mimetype', 'version.xml', 'META-INF/container.xml', 'META-INF/manifest.xml', 'Contents/content.hpf', 'Contents/header.xml',
-        'Contents/section0.xml', 'Contents/section1.xml', 'Contents/section2.xml']) {
+    for (const part of ['mimetype', 'version.xml', 'META-INF/container.xml', 'META-INF/manifest.xml', 'Contents/content.hpf', 'Contents/header.xml', 'Contents/section0.xml']) {
         assert.ok(zip.file(part), `${part} 가 있어야 한다`);
     }
     assert.equal(await zip.file('mimetype').async('string'), 'application/hwp+zip');
@@ -49,93 +47,91 @@ test('builds a hwpx package a 한/글 can open: mimetype first and stored, requi
     assert.deepEqual(Object.keys(zip.files).filter(name => zip.files[name].dir), []);
 });
 
-test('three sections are declared in content.hpf in spine order and counted in header.xml', async () => {
+test('one A4 portrait section, declared in content.hpf and counted in header.xml', async () => {
     const zip = await JSZip.loadAsync(await buildHwpx(finalized()));
     const hpf = await zip.file('Contents/content.hpf').async('string');
-    for (let i = 0; i < 3; i++) {
-        assert.ok(hpf.includes(`<opf:item id="section${i}" href="Contents/section${i}.xml" media-type="application/xml"/>`), `section${i} manifest 항목`);
-    }
-    // spine 순서가 곧 문서의 구역 순서다 — header 다음에 0,1,2 가 이 차례로 와야 한다.
     const spine = /<opf:spine>(.*?)<\/opf:spine>/s.exec(hpf)[1];
-    assert.deepEqual(spine.match(/idref="([^"]+)"/g), ['idref="header"', 'idref="section0"', 'idref="section1"', 'idref="section2"']);
-    assert.ok(!hpf.includes('section3'));
-    assert.match(await zip.file('Contents/header.xml').async('string'), /secCnt="3"/);
+    assert.deepEqual(spine.match(/idref="([^"]+)"/g), ['idref="header"', 'idref="section0"']);
+    assert.ok(!zip.file('Contents/section1.xml'));
+    assert.match(await zip.file('Contents/header.xml').async('string'), /secCnt="1"/);
+    // 원본 구글 시트 심사표처럼 전부 세로. 한/글이 저장한 세로 문서와 같은 값이어야 한다.
+    const xml = await zip.file('Contents/section0.xml').async('string');
+    const tags = xml.match(/<hp:pagePr [^>]*>/g) || [];
+    assert.equal(tags.length, 1);
+    assert.match(tags[0], /landscape="WIDELY" width="59528" height="84188"/);
 });
 
-test('only the table section is landscape: NARROWLY flag with portrait paper dims', async () => {
-    const zip = await JSZip.loadAsync(await buildHwpx(finalized()));
-    const pagePr = async i => {
-        const xml = await zip.file(`Contents/section${i}.xml`).async('string');
-        const tags = xml.match(/<hp:pagePr [^>]*>/g) || [];
-        assert.equal(tags.length, 1, `구역 ${i} 의 pagePr 은 정확히 하나여야 한다`);
-        const [, landscape, width, height] = /landscape="([^"]+)" width="(\d+)" height="(\d+)"/.exec(tags[0]);
-        return { landscape, width: Number(width), height: Number(height) };
-    };
-    // 실기 판별(2026-09-17): NARROWLY 플래그가 용지를 회전한다. width/height 는 세로 값
-    // 그대로여야 하며, 치수까지 맞바꾸면 두 번 회전이 되어 한/글에서 세로로 열린다.
-    assert.deepEqual(await pagePr(1), { landscape: 'NARROWLY', width: 59528, height: 84188 });
-    for (const i of [0, 2]) {
-        assert.deepEqual(await pagePr(i), { landscape: 'WIDELY', width: 59528, height: 84188 }, `구역 ${i} 는 세로여야 한다`);
+test('pages follow the original sheet order and every table row fills the body width', async () => {
+    const r = finalized(), s = r.snapshot;
+    const xml = await allSections(await JSZip.loadAsync(await buildHwpx(r)));
+    // 순서: 서약서(위원별) → 서류 채점표(위원별) → 서류 집계표 → 면접 채점표(위원별) → 면접 집계.
+    const at = needle => { const i = xml.indexOf(needle); assert.ok(i >= 0, `${needle} 이 있어야 한다`); return i; };
+    const order = ['청 렴 서 약 서(평가위원용)', '채용 서류심사 채점표', '채용 서류심사 집계표', '채용 면접 심사 채점표', '채용 면접 심사 집계 합산 및 순위'].map(at);
+    assert.deepEqual([...order].sort((a, b) => a - b), order);
+    assert.equal((xml.match(/청 렴 서 약 서\(평가위원용\)/g) || []).length, s.reviewers.length);
+    for (const needle of ['강사별 심사표', '심사관점', '총 계', '평 균', '서류 심사 순위', '서류전형 계', '강사 순위', '평가자', '장 귀하', '「부패 없는 투명한 사회」']) at(needle);
+    // 쪽마다 새 쪽에서 시작하되 문서 첫 쪽은 빈 쪽을 만들지 않는다.
+    assert.ok(/^[\s\S]*?<hp:p [^>]*pageBreak="0"/.test(xml));
+    assert.ok((xml.match(/pageBreak="1"/g) || []).length >= 4);
+    // 병합 칸 포함, 줄마다 칸 너비 합이 그 표 폭과 같아야 한다(rowSpan 으로 덮인 칸은 윗줄이 낸다).
+    const body = 59528 - Math.round(10 * 283.465) * 2;
+    for (const tbl of xml.match(/<hp:tbl [\s\S]*?<\/hp:tbl>/g) || []) {
+        const width = Number(/<hp:sz width="(\d+)"/.exec(tbl)[1]);
+        assert.equal(width, body, '표 폭은 본문 폭');
+        const colCnt = Number(/colCnt="(\d+)"/.exec(tbl)[1]);
+        const cells = [...tbl.matchAll(/<hp:cellAddr colAddr="(\d+)" rowAddr="(\d+)"\/><hp:cellSpan colSpan="(\d+)" rowSpan="(\d+)"\/><hp:cellSz width="(\d+)"/g)].map(m => m.slice(1).map(Number));
+        const rows = Number(/rowCnt="(\d+)"/.exec(tbl)[1]);
+        const grid = Array.from({ length: rows }, () => new Array(colCnt).fill(0));
+        for (const [col, row, cs, rs] of cells) for (let y = row; y < row + rs; y++) for (let x = col; x < col + cs; x++) grid[y][x]++;
+        assert.ok(grid.every(line => line.every(n => n === 1)), '모든 칸이 정확히 한 셀에 덮여야 한다');
+        const firstRow = cells.filter(c => c[1] === 0).reduce((a, c) => a + c[4], 0);
+        assert.equal(firstRow, width);
     }
 });
 
-test('each section carries only its own content and its tables fit that section body width', async () => {
-    const zip = await JSZip.loadAsync(await buildHwpx(finalized()));
-    const [cover, tables, pledges] = await Promise.all([0, 1, 2].map(i => zip.file(`Contents/section${i}.xml`).async('string')));
-    // 구역 0: 표지. 집계표도 서약서도 여기 있으면 안 된다.
-    assert.ok(cover.includes('채용 심사 결과') && cover.includes('서류전형일'));
-    // 순위 기준·확정 시각은 공문서 표지에서 뺐다 (2026-09-17)
-    assert.ok(!cover.includes('순위 기준') && !cover.includes('확정일'), '표지에 내부 산정 정보가 남아 있다');
-    assert.ok(!cover.includes('집계표') && !cover.includes('청렴서약서'));
-    // 구역 1(가로): 집계표 + 채점표.
-    for (const needle of ['1. 서류심사 집계표', '2. 면접·최종 합산 통계표', '서류심사 채점표', '면접심사 채점표', '최종 순위', '채점자 직위']) {
-        assert.ok(tables.includes(needle), `가로 구역에 ${needle} 이 있어야 한다`);
-    }
-    assert.ok(!tables.includes('청렴서약서'));
-    // 구역 2: 서약서. 문구는 exports.js 인쇄본과 한 글자도 다르면 안 된다.
-    assert.ok(pledges.includes('청렴서약서') && pledges.includes('금품·향응·편의를 수수하거나'));
-    assert.ok(pledges.includes('장 귀하') && !pledges.includes('집계표'));
-    // 표 폭은 구역의 본문 폭(용지 폭 − 좌우 여백)에 맞춰 다시 계산되어야 한다.
-    // hp:sz 는 그림(서명)에도 붙는다 — 표 바로 안쪽의 것만 센다.
-    const tableWidths = xml => (xml.match(/<hp:tbl [^>]*><hp:sz width="(\d+)"/g) || []).map(m => Number(/width="(\d+)"/.exec(m)[1]));
-    assert.ok(tableWidths(cover).every(w => w === 59528 - 4251 * 2), '세로 구역 표는 51026');
-    assert.ok(tableWidths(tables).length > 0 && tableWidths(tables).every(w => w === 84188 - 4251 * 2), '가로 구역 표는 75686');
-    // 열 너비 합계도 표 폭과 맞아야 한다(반올림 오차는 마지막 열이 흡수).
-    for (const tbl of tables.match(/<hp:tbl [\s\S]*?<\/hp:tbl>/g) || []) {
-        const firstRow = /<hp:tr>[\s\S]*?<\/hp:tr>/.exec(tbl)[0];
-        const sum = (firstRow.match(/<hp:cellSz width="(\d+)"/g) || []).reduce((a, m) => a + Number(/\d+/.exec(m)[0]), 0);
-        assert.equal(sum, 84188 - 4251 * 2);
-    }
-});
-
-test('section body carries the school, candidates, rubric labels and reviewer names, all escaped', async () => {
+test('section body carries the school, candidates, rubric viewpoints and reviewer names, all escaped', async () => {
     const r = finalized(), s = r.snapshot;
     const zip = await JSZip.loadAsync(await buildHwpx(r));
-    for (const one of await sectionsOf(zip)) {
-        assert.match(one, /^<\?xml version="1\.0" encoding="UTF-8"/);
-        assert.ok(one.includes('<hs:sec ') && one.endsWith('</hs:sec>'));
-        // 구역마다 자기 secPr 이 첫 문단 안에 정확히 하나 있어야 한다.
-        assert.equal((one.match(/<hp:secPr /g) || []).length, 1);
-        assert.match(one, /^[\s\S]*?<hs:sec [^>]*><hp:p [^>]*><hp:run [^>]*><hp:secPr /);
-    }
     const section = await allSections(zip);
-    // 태그가 짝이 맞는지 — 여는 hp:p 와 닫는 hp:p 수가 같아야 한다.
+    assert.match(section, /^<\?xml version="1\.0" encoding="UTF-8"/);
+    assert.equal((section.match(/<hp:secPr /g) || []).length, 1);
+    assert.match(section, /^[\s\S]*?<hs:sec [^>]*><hp:p [^>]*><hp:run [^>]*><hp:secPr /);
+    // 태그가 짝이 맞는지 — 여는 태그와 닫는 태그 수가 같아야 한다.
     assert.equal((section.match(/<hp:p\s/g) || []).length, (section.match(/<\/hp:p>/g) || []).length);
     assert.equal((section.match(/<hp:tbl\s/g) || []).length, (section.match(/<\/hp:tbl>/g) || []).length);
     assert.equal((section.match(/<hp:tc\s/g) || []).length, (section.match(/<\/hp:tc>/g) || []).length);
-    for (const needle of ['테스트학교', '협력강사', '두번째', '청렴서약서', '서류심사 채점표', '면접심사 채점표', '학력', '자기소개서', '위원1', '위원2', '교사']) {
-        assert.ok(section.includes(needle), `본문에 ${needle} 이 있어야 한다`);
-    }
-    assert.ok(section.includes('001') && section.includes('002'));
+    for (const needle of ['협력강사', '두번째', '위원1', '위원2', '교사', '2026. 9. 20.', '2026. 9. 21.']) assert.ok(section.includes(needle), `본문에 ${needle} 이 있어야 한다`);
+    // 배점표는 채용마다 다르므로 스냅샷의 rubrics 라벨이 '구분' 칸에 모두 있어야 한다.
+    for (const stage of ['document', 'interview']) s.rubrics[stage].forEach((item, n) => assert.ok(section.includes(`${n + 1}. ${item.label}`), `${item.label}`));
     // XSS/HTML 페이로드는 반드시 escape 된 채로만 나타난다.
     assert.ok(!section.includes('<script>'), 'script 태그가 그대로 들어가면 안 된다');
-    assert.ok(section.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+    assert.ok(section.includes('테스트학교 &lt;script&gt;alert(1)&lt;/script&gt;'));
     assert.ok(section.includes('=1+1 &amp; &lt;b&gt;홍길동&lt;/b&gt;'));
-    assert.ok(section.includes('동점자 전원 면접 &lt;확인&gt;'), '선정 사유가 표 밖 문단으로 들어가야 한다');
-    // 집계표는 exports.js 의 statistics 를 그대로 쓴다 — 헤더가 살아 있는지만 본다.
-    for (const header of ['접수번호', '지원자', '서류 평균', '최종 순위', '순위 기준 점수']) assert.ok(section.includes(header));
-    // 배점표는 채용마다 다르므로 스냅샷의 rubrics 라벨이 모두 있어야 한다.
-    for (const item of s.rubrics.interview) assert.ok(section.includes(item.label));
+    assert.ok(section.includes('동점자 전원 면접 &lt;확인&gt;'), '선정 사유가 집계표 아래 문단으로 들어가야 한다');
+});
+
+test('preset 심사관점: the picked line carries the score, grouped lines print like the original', async () => {
+    const r = provision(d.createRecruitment(input({ rubrics: undefined, preset: 'basic-literacy', allowBonus: true })));
+    r.reviewers.forEach((v, i) => d.signPledge(r, v.id, signatureFor(i + 40)));
+    for (const v of r.reviewers) {
+        // 첫 지원자: 4년제 관련 전공(5점) · 초등 3 + 관련 자격증 5건 → 상한 6 · 경력 2년
+        d.saveEvaluation(r, v.id, 'document', r.candidates.map((c, i) => ({ candidateId: c.id, attendance: 'present', note: '', bonus: 0,
+            picks: { c1: i === 0 ? 1 : 0, c2: i === 0 ? [1, 0, 0, 5] : [0, 0, 0, 0], c3: [2] }, scores: { c4: 5, c5: 20 } })));
+        d.submitEvaluation(r, v.id, 'document');
+    }
+    d.selectShortlist(r, [r.candidates[0].id], '상위');
+    for (const v of r.reviewers) { d.saveEvaluation(r, v.id, 'interview', [{ candidateId: r.candidates[0].id, attendance: 'present', note: '', bonus: 0, scores: { c1: 8, c2: 8, c3: 8, c4: 8, c5: 8 } }]); d.submitEvaluation(r, v.id, 'interview'); }
+    d.finalize(r);
+    const xml = await allSections(await JSZip.loadAsync(await buildHwpx(r)));
+    // 원본 표기: 4년제/2년제를 한 줄로, 가점 줄, 서약서 원문.
+    assert.ok(xml.includes('(4년제 5점, 2년제 4점)'));
+    assert.ok(xml.includes('국가유공자법 제29조제1항 제1·2·4호(5점)'));
+    assert.ok(xml.includes('방과후학교 계약업체 또는 입찰참가업체(개인위탁강사)'));
+    // 자격증 3 + 5 = 8 은 배점 6에서 잘리므로, 건당 줄에는 남은 3점만 찍힌다.
+    const sheet = xml.slice(xml.indexOf('채용 서류심사 채점표'), xml.indexOf('채용 서류심사 집계표'));
+    const cellsOf = label => { const at = sheet.indexOf(label); return sheet.slice(at, at + 4000); };
+    assert.match(cellsOf('채용 관련 자격증 건당'), /<hp:t>3<\/hp:t>/);
+    assert.ok(!/<hp:t>5<\/hp:t>[\s\S]{0,200}건당/.test(sheet));
 });
 
 test('every reviewer signature lands in BinData and is declared in content.hpf', async () => {

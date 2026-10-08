@@ -59,6 +59,8 @@ with sync_playwright() as pw:
 
     step("새 채용 폼 열기", open_form)
     step("배점 편집기 노출", lambda: expect(page.locator("#rubric-document .rubric-row")).to_have_count(5))
+    step("심사표 불러오기 드롭다운", lambda: expect(page.locator("#create-form select[name=preset]")).to_contain_text("기초학력 협력강사"))
+    step("심사관점 채점 방식 프리셋 반영", lambda: expect(page.locator("#rubric-document .rubric-row").first.locator("[name=kind]")).to_have_value("pick"))
     step("배점 합계 표시", lambda: expect(page.locator('[data-total="document"]')).to_contain_text("총 50점"))
 
     def rubric_edit():
@@ -166,6 +168,16 @@ with sync_playwright() as pw:
             limit = float(cell.get_attribute("max"))
             value = min(3 + (i % 3), limit)
             cell.fill(str(int(value) if value == int(value) else value))
+        # 심사관점 항목: 학력은 한 줄 고르기, 자격증은 해당 줄 체크·건수, 경력은 연수.
+        for sel in rp.locator("#score-form select.pick").all():
+            sel.select_option(index=1)
+        for box in rp.locator("#score-form .sum-pick input[type=checkbox]").all()[::2]:
+            box.check()
+        for qty in rp.locator("#score-form .sum-pick input[type=number]").all():
+            qty.fill("2")
+        if rp.locator("#score-form select.pick").count():
+            expect(rp.locator("#score-form .row-total").first).not_to_contain_text("빈칸", timeout=3000)
+            expect(rp.locator("#score-form .sum-out").first).to_contain_text("점", timeout=3000)
         btn = rp.get_by_role("button", name="저장 후 평가 제출")
         rp.once("dialog", lambda d: d.accept())
         btn.first.click()
@@ -219,8 +231,10 @@ with sync_playwright() as pw:
         p2.wait_for_selector("section.page", timeout=15000)
         p2.wait_for_timeout(500)
         body = p2.content()
-        count = p2.locator("img.sign-image").count()
+        count = p2.locator(".pledge img.sign-inline").count()
         assert count == 2, "서약서 서명 이미지 %d개" % count
+        assert p2.locator("section.page").count() >= 6, "쪽 구성 부족"
+        assert "심사관점" in body and "강사별 심사표" in body, "원본 심사표 머리글 없음"
         assert "연수 이수" in body, "사용자 정의 항목 미반영"
         p2.close()
 

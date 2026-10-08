@@ -9,6 +9,7 @@ const ExcelJS = require('exceljs');
 const JSZip = require('jszip');
 const { createRouter } = require('../../lib/recruitment/routes');
 const { createStore } = require('../../lib/recruitment/store');
+const { fullPicks } = require('./domain.test');
 const d = require('../../lib/recruitment/domain');
 const payload = () => ({ school: '테스트학교', title: '검증 <script>alert(1)</script>', field: '강사', documentDate: '2026-09-20', interviewDate: '2026-09-21', rankingBasis: 'combined', shortlistLimit: 1, allowBonus: false, candidates: [{ code: '001', name: '=1+1' }], reviewers: [{ name: '위원', position: '교사', email: 'reviewer@example.com', stages: ['document', 'interview'] }] });
 test('HTTP journey: permissions, invitation rotation, versions, finalization, HTML/XLSX/ZIP', async t => {
@@ -34,7 +35,7 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     assert.equal((await request(`/${r.id}/provision`, 'POST', { version: 1 })).res.status, 409);
     // 서명 전에는 제출이 막힌다.
     {
-        const rows = r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(d.DEFAULT_RUBRICS.document.map((v, i) => ({ ...v, id: `c${i + 1}` })).map(v => [v.id, v.max])), bonus: 0, note: '' }));
+        const rows = r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(r.rubrics.document.map(v => [v.id, v.max])), picks: fullPicks(r.rubrics.document), bonus: 0, note: '' }));
         r = (await request(`/${r.id}/evaluations/document/save`, 'POST', { version: r.version, rows }, token)).json;
         const blocked = await request(`/${r.id}/evaluations/document/submit`, 'POST', { version: r.version }, token);
         assert.equal(blocked.res.status, 400); assert.match(blocked.json.error, /청렴서약서/);
@@ -44,14 +45,14 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     r = (await request(`/${r.id}/pledge`, 'POST', { version: r.version, image: 'data:image/png;base64,' + png }, token)).json;
     assert.ok(r.reviewers[0].pledge.signedAt);
     for (const stage of ['document', 'interview']) {
-        const rows = r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(d.DEFAULT_RUBRICS[stage].map((v, i) => ({ ...v, id: `c${i + 1}` })).map(v => [v.id, v.max])), bonus: 0, note: '<img src=x onerror=alert(1)>' }));
+        const rows = r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(r.rubrics[stage].map(v => [v.id, v.max])), picks: fullPicks(r.rubrics[stage]), bonus: 0, note: '<img src=x onerror=alert(1)>' }));
         r = (await request(`/${r.id}/evaluations/${stage}/save`, 'POST', { version: r.version, rows }, token)).json;
         r = (await request(`/${r.id}/evaluations/${stage}/submit`, 'POST', { version: r.version }, token)).json;
         assert.equal((await request(`/${r.id}/evaluations/${stage}/save`, 'POST', { version: r.version, rows }, token)).res.status, 409);
         if (stage === 'document') r = (await request(`/${r.id}/shortlist`, 'POST', { version: r.version, candidateIds: [r.candidates[0].id], reason: '서류 상위 선정' })).json;
     }
     r = (await request(`/${r.id}/finalize`, 'POST', { version: r.version })).json; assert.equal(r.snapshot.results[0].total, 100);
-    const htmlResult = await request(`/${r.id}/export/html`); const html = await htmlResult.res.text(); assert.match(html, /window.print/); assert.ok(!html.includes('<script>alert(1)</script>')); assert.ok(!html.includes('<img src=x')); assert.match(html, /면접·최종 합산 통계표/);
+    const htmlResult = await request(`/${r.id}/export/html`); const html = await htmlResult.res.text(); assert.match(html, /window.print/); assert.ok(!html.includes('<script>alert(1)</script>')); assert.ok(!html.includes('<img src=x')); assert.match(html, /면접 심사 집계 합산 및 순위/); assert.match(html, /서류심사 채점표/); assert.match(html, /청 렴 서 약 서/);
     const xlsxResult = await request(`/${r.id}/export/xlsx`); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(await xlsxResult.res.arrayBuffer())); assert.equal(workbook.worksheets.length, 7); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('G2').value, 100); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('B2').type, ExcelJS.ValueType.String);
     const hwpxResult = await request(`/${r.id}/export/hwpx`); assert.equal(hwpxResult.res.status, 200); assert.equal(hwpxResult.res.headers.get('content-type'), 'application/hwp+zip'); const hwpxBuffer = Buffer.from(await hwpxResult.res.arrayBuffer()); assert.equal(hwpxBuffer.subarray(0, 2).toString(), 'PK');
     const zipResult = await request(`/${r.id}/export/zip`); const zip = await JSZip.loadAsync(Buffer.from(await zipResult.res.arrayBuffer())); assert.equal(Object.keys(zip.files).length, 5); assert.ok(zip.file('채점표_서약서_인쇄용.html')); assert.ok(zip.file('평가통계_확정본.hwpx'));

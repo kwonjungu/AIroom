@@ -6,7 +6,7 @@
     const stages = { document: '서류심사', interview: '면접심사' };
     const fmt = v => v === null || v === undefined ? '—' : Number(v).toFixed(1);
     const stamp = v => new Date(v).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
-    const state = { list: [], current: null, tab: 'overview', tabSet: false, config: null, isNew: false, busy: false, dirty: false, invite: null, invites: {}, resign: false };
+    const state = { presetId: null, presetTouched: false, list: [], current: null, tab: 'overview', tabSet: false, config: null, isNew: false, busy: false, dirty: false, invite: null, invites: {}, resign: false };
     let messageTimer;
     const idFromUrl = () => new URL(location.href).searchParams.get('id');
     // 보관함 연결 콜백은 ?google=connected 로 돌아온다. 눌렀던 자리로 되돌려 준다.
@@ -33,31 +33,46 @@
     }
     const field = (title, name, value = '', type = 'text', extra = '') => `<label class="field">${title}<input name="${name}" type="${type}" value="${esc(value)}" ${extra} required></label>`;
     function reviewerRow(v = {}) { return `<div class="reviewer">${field('위원 이름', 'reviewer-name', v.name || '', 'text', 'maxlength="50"')}${field('직위', 'reviewer-position', v.position || '교사', 'text', 'maxlength="50"')}<div><label class="check"><input type="checkbox" name="document" ${v.document === false ? '' : 'checked'}>서류</label><label class="check"><input type="checkbox" name="interview" ${v.interview === false ? '' : 'checked'}>면접</label></div><button type="button" class="secondary" data-action="remove-reviewer" aria-label="이 위원 삭제">삭제</button></div>`; }
-    // 준거 문장은 lib/recruitment/domain.js 의 DEFAULT_RUBRICS 와 같은 값을 유지한다.
-    const DEFAULT_RUBRICS = {
-        document: [
-            { label: '학력', max: 6, guide: '강사 자격 기준 학위 취득 및 동등 이상의 학력\n· 채용 관련 전공 대학원 졸업: 6점\n· 채용 관련 전공 대학 졸업: 4년제 5점, 2년제 4점\n· 일반 대학원 및 대학 졸업: 4년제 이상 3점, 2년제 2점\n· 학력 인정 범위 내 기타 과정: 1점' },
-            { label: '자격증', max: 6, guide: '자격증 소지 (합산 최대 6점)\n· 초등 교원자격증: 3점\n· 유치원 교원자격증: 2점\n· 중등 교원자격증: 1점\n· 채용 관련 자격증: 건당 1점' },
-            { label: '경력', max: 6, guide: '강사 경력\n· 1년당 1점 (경력증명서로 확인되는 기간만 계산)' },
-            { label: '지속 근무 여부', max: 6, guide: '직업적 가치관, 생활환경, 조직 적합성을 종합해 채용 기간을 채울 수 있는지 판단합니다.' },
-            { label: '자기소개서', max: 26, guide: '지원 동기, 직무 이해, 학생 지도 계획의 구체성과 실현 가능성을 봅니다. 분량이 아니라 내용으로 판단합니다.' }
-        ],
-        interview: [
-            { label: '인성', max: 10, guide: '용모, 태도, 근면성, 협동성 등' },
-            { label: '교직관', max: 10, guide: '책임감, 성실도, 적극성, 진취성, 추진력 등' },
-            { label: '소양', max: 10, guide: '표현력, 논리성, 이해력, 지도력 등' },
-            { label: '수업에 대한 이해', max: 10, guide: '수업 설계, 지도 방법, 피드백 등' },
-            { label: '학생에 대한 이해', max: 10, guide: '학생 특성, 발화법, 안전관리, 문제 발생 시 대처법 등' }
-        ]
+    // 심사표 프리셋은 서버(lib/recruitment/presets.js)가 /config 로 내려준다. 화면에 따로 두지 않는다.
+    const presets = () => state.config?.presets || [];
+    const presetOf = id => presets().find(p => p.id === id) || null;
+    const KIND_NAMES = { pick: '하나 고르기', sum: '해당 줄 합산', judge: '위원 재량 점수' };
+    const KIND_HINTS = {
+        pick: '한 줄에 하나씩, 끝에 점수를 적어 주세요. 예) 채용 관련 전공 대학원 졸업(6점). 위원은 해당하는 한 줄만 고릅니다.',
+        sum: '한 줄에 하나씩, 끝에 점수. 예) 초등 교원자격증(3점) / 채용 관련 자격증 건당(1점). 해당하는 줄을 모두 더하고 배점에서 자릅니다.',
+        judge: '살펴볼 심사관점을 한 줄에 하나씩. 예) 용모 / 태도. 위원이 0~배점 사이로 매깁니다.'
     };
-    const DEFAULT_GUIDANCE = '';
+    const optionLine = o => `${o.label}(${o.points}점)`;
+    const UNIT_WORDS = [['시간당', '시간'], ['건당', '건'], ['년당', '년'], ['회당', '회'], ['개당', '개']];
+    // 심사관점 칸의 한 줄 = '대학원 졸업(6점)', '채용 관련 자격증 건당(1점)'. 원본 심사표 표기 그대로 적으면 된다.
+    function parseOptionLines(value, label) {
+        return value.split(/\n/).map(v => v.trim()).filter(Boolean).map(line => {
+            const m = /^(.*?)\s*\(?\s*(\d+(?:\.5)?)\s*점\s*\)?$/.exec(line);
+            if (!m || !m[1].trim()) throw new Error(`${label}: '${line}' — 줄 끝에 점수를 '(6점)'처럼 적어 주세요.`);
+            const unit = UNIT_WORDS.find(([word]) => m[1].includes(word))?.[1];
+            return { label: m[1].trim(), points: Number(m[2]), ...(unit ? { unit } : {}) };
+        });
+    }
     const stageName = { document: '서류심사', interview: '면접심사' };
     const code = index => String(index + 1).padStart(3, '0');
-    function criterionRow(item = { label: '', max: '' }) {
-        return `<div class="rubric-row"><input name="label" value="${esc(item.label)}" maxlength="40" placeholder="항목 이름" aria-label="항목 이름" required><input name="max" type="number" min="0.5" max="100" step="0.5" value="${item.max}" aria-label="배점" required><button type="button" class="secondary" data-action="remove-criterion" aria-label="항목 삭제">×</button><textarea name="guide" class="guide-input" rows="4" maxlength="1000" aria-label="${esc(item.label) || '이 항목'} 채점 기준" placeholder="점수 구간별 기준을 줄바꿈으로 적어 주세요. 위원 채점 화면과 채점표에 그대로 나옵니다.">${esc(item.guide)}</textarea></div>`;
+    function criterionRow(item = { label: '', max: '', kind: 'judge' }) {
+        const kind = item.kind || 'judge';
+        const lines = kind === 'judge' ? (item.guide || '') : (item.options || []).map(optionLine).join('\n');
+        return `<div class="rubric-row"><input name="label" value="${esc(item.label)}" maxlength="40" placeholder="구분 (항목 이름)" aria-label="항목 이름" required><input name="max" type="number" min="0.5" max="100" step="0.5" value="${item.max}" aria-label="배점" required><button type="button" class="secondary" data-action="remove-criterion" aria-label="항목 삭제">×</button><label class="kind-field">채점 방식<select name="kind">${Object.entries(KIND_NAMES).map(([k, v]) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${v}</option>`).join('')}</select></label><textarea name="guide" class="guide-input" rows="${Math.max(4, lines.split(/\n/).length + 1)}" maxlength="1000" aria-label="${esc(item.label) || '이 항목'} 심사관점" placeholder="${esc(KIND_HINTS[kind])}">${esc(lines)}</textarea></div>`;
     }
-    function rubricEditor(stage) {
-        return `<div class="rubric-box"><div class="split"><h4>${stageName[stage]}</h4><span class="badge" data-total="${stage}">—</span></div><div class="rubric-rows" id="rubric-${stage}">${DEFAULT_RUBRICS[stage].map(criterionRow).join('')}</div><button type="button" class="secondary" data-action="add-criterion" data-stage="${stage}">+ 항목 추가</button></div>`;
+    const BLANK_ITEMS = [{ label: '', max: '', kind: 'judge' }];
+    function rubricEditor(stage, preset) {
+        const items = preset ? preset.rubrics[stage] : BLANK_ITEMS;
+        return `<div class="rubric-box"><div class="split"><h4>${stageName[stage]}</h4><span class="badge" data-total="${stage}">—</span></div><div class="rubric-rows" id="rubric-${stage}">${items.map(criterionRow).join('')}</div><button type="button" class="secondary" data-action="add-criterion" data-stage="${stage}">+ 항목 추가</button></div>`;
+    }
+    // 심사표 불러오기: 강사 유형을 고르면 두 전형의 항목·배점·심사관점을 통째로 바꾼다.
+    function applyPreset(id) {
+        const form = $('#create-form'); if (!form) return;
+        const preset = presetOf(id);
+        for (const stage of ['document', 'interview']) $(`#rubric-${stage}`).innerHTML = (preset ? preset.rubrics[stage] : BLANK_ITEMS).map(criterionRow).join('');
+        const typed = form.elements.field.value.trim();
+        if (preset && (!typed || presets().some(p => p.field === typed))) form.elements.field.value = preset.field;
+        syncTotals();
     }
     // 접수번호는 입력받지 않고 순번으로 붙인다. 이름만 채우면 된다.
     function candidateRows(count, names = []) {
@@ -78,9 +93,9 @@
     }
     function createForm() {
         const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
-        return `<section class="panel"><div class="split"><div><h2>새 채용 설정</h2><p class="muted small" style="margin:0">네 가지를 채우면 바로 평가를 시작할 수 있습니다. 생성 후에는 배점과 위원을 바꿀 수 없습니다.</p></div><button class="secondary" data-action="fill-example">예시 채우기</button></div><form id="create-form"><h3 class="step-title"><b>1</b>채용 정보</h3><div class="grid">${field('학교명', 'school', '', 'text', 'maxlength="100"')}${field('채용명', 'title', '', 'text', 'maxlength="100"')}${field('채용 분야', 'field', '', 'text', 'maxlength="100"')}${field('면접대상자 최대 수', 'shortlistLimit', '1', 'number', 'min="1" max="4"')}${field('서류전형일', 'documentDate', today, 'date')}${field('면접일', 'interviewDate', today, 'date')}<label class="field">최종 순위 기준<select name="rankingBasis"><option value="combined">서류 평균 + 면접 평균</option><option value="interview">면접 평균</option></select></label><label class="field">가점 사용<select name="allowBonus"><option value="false">미사용</option><option value="true">사용 (서류 총점의 40% 이상 · 근거 입력)</option></select></label></div>
+        return `<section class="panel"><div class="split"><div><h2>새 채용 설정</h2><p class="muted small" style="margin:0">네 가지를 채우면 바로 평가를 시작할 수 있습니다. 생성 후에는 배점과 위원을 바꿀 수 없습니다.</p></div><button class="secondary" data-action="fill-example">예시 채우기</button></div><form id="create-form"><div class="preset-bar"><label class="field">심사표 불러오기<select name="preset">${presets().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}<option value="">빈 심사표로 직접 만들기</option></select></label><p class="muted small">강사 유형을 고르면 평가 항목·배점·심사관점이 그 유형의 심사표대로 채워집니다. 불러온 뒤 2단계에서 고칠 수 있습니다.</p></div><h3 class="step-title"><b>1</b>채용 정보</h3><div class="grid">${field('학교명', 'school', '', 'text', 'maxlength="100"')}${field('채용명', 'title', '', 'text', 'maxlength="100"')}${field('채용 분야', 'field', presets()[0]?.field || '', 'text', 'maxlength="100"')}${field('면접대상자 최대 수', 'shortlistLimit', '1', 'number', 'min="1" max="4"')}${field('서류전형일', 'documentDate', today, 'date')}${field('면접일', 'interviewDate', today, 'date')}<label class="field">최종 순위 기준<select name="rankingBasis"><option value="combined">서류 평균 + 면접 평균</option><option value="interview">면접 평균</option></select></label><label class="field">가점 사용<select name="allowBonus"><option value="false">미사용</option><option value="true">사용 (서류 총점의 40% 이상 · 근거 입력)</option></select></label></div>
 
-<h3 class="step-title"><b>2</b>평가 항목과 배점</h3><p class="muted small">항목을 더하거나 지우고 배점을 바꿀 수 있습니다. 0.5점 단위, 항목당 100점까지, 전형마다 12개까지.</p><div class="grid">${rubricEditor('document')}${rubricEditor('interview')}</div><label class="field" style="margin-top:16px">심사 참고자료 (선택)<textarea name="guidance" class="guidance-input" maxlength="3000" placeholder="자격 요건, 결격 사유, 배점 해석처럼 위원 모두가 같이 알아야 할 내용을 적어 주세요. 채점 화면 맨 위에 펼쳐서 보여 줍니다.">${esc(DEFAULT_GUIDANCE)}</textarea></label>
+<h3 class="step-title"><b>2</b>평가 항목과 배점</h3><p class="muted small">항목을 더하거나 지우고 배점·심사관점을 바꿀 수 있습니다. 0.5점 단위, 항목당 100점까지, 전형마다 12개까지. 위원은 여기 적힌 심사관점을 보고 채점합니다.</p><div class="grid">${rubricEditor('document', presets()[0])}${rubricEditor('interview', presets()[0])}</div><label class="field" style="margin-top:16px">심사 참고자료 (선택)<textarea name="guidance" class="guidance-input" maxlength="3000" placeholder="자격 요건, 결격 사유, 배점 해석처럼 위원 모두가 같이 알아야 할 내용을 적어 주세요. 채점 화면 맨 위에 펼쳐서 보여 줍니다."></textarea></label>
 
 <h3 class="step-title"><b>3</b>평가위원</h3><p class="muted small">최대 5명. 한 위원이 두 전형을 모두 맡으면 한 줄에서 둘 다 선택하세요.</p><div id="reviewer-rows">${reviewerRow()}</div><button type="button" class="secondary" data-action="add-reviewer" style="margin:14px 0 4px">+ 위원 추가</button>
 
@@ -105,6 +120,7 @@
         state.dirty = false;
         setupSignature();
         syncTotals();
+        syncScoreTotals();
     }
     // 진행 단계 막대. 지금 어디이고 다음이 무엇인지 한 줄로 보여 준다.
     function rail(items, currentIndex) {
@@ -183,11 +199,12 @@
             : '';
         return `<details class="panel guide-panel"${open ? ' open' : ''}><summary>${esc(summary)}</summary><div class="guide-body">${notesHtml}${listHtml}</div></details>`;
     }
+    // 옛 채용(pledgeItems 없음)에 쓰던 문구. 새 채용은 심사표 프리셋의 서약 문구를 채용에 저장해 쓴다.
     const PLEDGE_ITEMS = ['객관적이고 공정한 평가를 위하여 지원자와의 이해관계를 확인하고, 이해충돌이 있는 경우 담당자에게 알리겠습니다.', '평가와 관련하여 금품·향응·편의를 수수하거나 제공받지 않으며, 이러한 상황이 발생하면 담당 부서에 통보하겠습니다.', '업무상 취득한 비밀을 준수하고 보안 관련 규정과 지침을 성실히 수행하겠습니다.', '평가와 관련하여 알게 된 업무상 비밀을 타인에게 누설하지 않겠습니다.'];
     function pledgePanel(r) {
         const me = r.reviewers.find(v => v.id === r.actor.id);
         if (me?.pledge?.signedAt && !state.resign) return `<section class="panel signed"><div class="split"><div><h2>청렴서약서 서명 완료</h2><p class="muted small">${stamp(me.pledge.signedAt)} · 결과 문서에 그대로 들어갑니다.</p></div>${r.status !== 'finalized' ? '<button type="button" class="secondary" data-action="resign">다시 서명</button>' : ''}</div>${me.pledge.image ? `<img class="signature-view" src="${me.pledge.image}" alt="내 서명">` : ''}</section>`;
-        return `<section class="panel"><h2>청렴서약서</h2><p>본인은 ${esc(r.school)}의 ${esc(r.field)} 채용 심사를 실시함에 있어 다음 사항을 준수할 것을 서약합니다.</p><ol class="rule-list">${PLEDGE_ITEMS.map(v => `<li>${esc(v)}</li>`).join('')}</ol><p class="sign-guide">아래 칸에 마우스나 손가락으로 이름을 쓰고 <b>서명 저장</b>을 누르세요. 서명해야 채점표를 제출할 수 있고, 이 서명은 결과 문서에 그대로 인쇄됩니다.</p><canvas id="sign-pad" class="sign-pad" role="img" aria-label="서명란"></canvas><div class="actions"><button type="button" class="primary" data-action="sign-save">서명 저장</button><button type="button" class="secondary" data-action="sign-clear">지우기</button>${state.resign ? '<button type="button" class="secondary" data-action="resign-cancel">취소</button>' : ''}</div></section>`;
+        return `<section class="panel"><h2>청렴서약서</h2><p>본인은 ${esc(r.school)}의 ${esc(r.field)} 채용 심사를 실시함에 있어 「부패 없는 투명한 사회」 구현 등을 위하여 다음 사항을 준수할 것을 서약합니다.</p><ol class="rule-list">${(r.pledgeItems || PLEDGE_ITEMS).map(v => `<li>${esc(v)}</li>`).join('')}</ol><p class="sign-guide">아래 칸에 마우스나 손가락으로 이름을 쓰고 <b>서명 저장</b>을 누르세요. 서명해야 채점표를 제출할 수 있고, 이 서명은 결과 문서에 그대로 인쇄됩니다.</p><canvas id="sign-pad" class="sign-pad" role="img" aria-label="서명란"></canvas><div class="actions"><button type="button" class="primary" data-action="sign-save">서명 저장</button><button type="button" class="secondary" data-action="sign-clear">지우기</button>${state.resign ? '<button type="button" class="secondary" data-action="resign-cancel">취소</button>' : ''}</div></section>`;
     }
     function detail(r) {
         const admin = r.actor.role === 'admin';
@@ -263,7 +280,56 @@
         const hasSigned = !!r.reviewers.find(v => v.id === r.actor.id)?.pledge?.signedAt;
         const total = r.rubrics[stage].reduce((a, c) => a + c.max, 0);
         const guided = r.rubrics[stage].some(c => c.guide);
-        return pledgePanel(r) + guideDetails(r, stage, { open: true }) + `<section class="panel"><div class="split"><h2>${stages[stage]} 채점표</h2><span class="muted small">지원자 ${candidates.length}명 · 만점 ${total}점</span></div><p class="muted small">빈칸은 아직 안 넣은 것, 0은 0점입니다. 0.5점 단위로 넣을 수 있습니다.${locked ? '' : '<span class="wide-only"> 항목이 많으면 표를 좌우로 밀어서 보세요.</span>'}</p><form id="score-form" data-stage="${stage}">${guided ? '<input type="checkbox" id="show-guides" class="guide-check"><label class="guide-switch" for="show-guides">표 머리글에 평가 준거 함께 보기</label>' : ''}<div class="table-wrap score-wrap"><table class="score-table"><thead><tr><th>지원자</th><th>참석</th>${r.rubrics[stage].map(c => `<th>${esc(c.label)}<span class="max">${c.max}점</span>${c.guide ? `<span class="th-guide">${esc(c.guide)}</span>` : ''}</th>`).join('')}${stage === 'document' && r.rules.allowBonus ? '<th>가점</th>' : ''}<th>메모 / 불참·가점 근거</th></tr></thead><tbody>${candidates.map(c => { const row = ev?.rows.find(x => x.candidateId === c.id); return `<tr data-candidate="${c.id}"><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th><td data-label="참석 여부"><select name="attendance" aria-label="${esc(c.code)} 참석 상태" ${locked ? 'disabled' : ''}><option value="present">참석</option><option value="absent" ${row?.attendance === 'absent' ? 'selected' : ''}>불참</option></select></td>${r.rubrics[stage].map(item => `<td data-label="${esc(item.label)} · ${item.max}점"><input class="score" type="number" inputmode="decimal" min="0" max="${item.max}" step="0.5" name="${item.id}" aria-label="${esc(c.code)} ${esc(item.label)} 점수 (최대 ${item.max})" value="${row?.scores[item.id] ?? ''}" ${locked ? 'disabled' : ''}></td>`).join('')}${stage === 'document' && r.rules.allowBonus ? `<td data-label="가점"><select name="bonus" aria-label="${esc(c.code)} 가점" ${locked ? 'disabled' : ''}>${[0, 2.5, 5].map(v => `<option value="${v}" ${row?.bonus === v ? 'selected' : ''}>${v}</option>`).join('')}</select></td>` : ''}<td class="note-cell" data-label="메모 / 불참·가점 근거"><textarea name="note" class="score-note" maxlength="1000" aria-label="${esc(c.code)} 평가 메모" ${locked ? 'disabled' : ''}>${esc(row?.note || '')}</textarea></td></tr>`; }).join('')}</tbody></table></div>${!locked ? `<div class="actions submit-bar"><button type="button" class="primary" data-action="submit-evaluation" ${hasSigned ? '' : 'disabled'}>저장 후 평가 제출</button><button class="secondary" type="submit">임시 저장</button>${hasSigned ? '<span class="muted small">제출하면 점수를 고칠 수 없습니다.</span>' : '<span class="muted small">청렴서약서에 서명하면 제출할 수 있습니다.</span>'}</div>` : '<p class="notice ok-note">제출을 마쳤습니다. 고칠 것이 있으면 담당 선생님께 다시 열어 달라고 알려 주세요.</p>'}</form></section>`;
+        return pledgePanel(r) + guideDetails(r, stage, { open: true }) + `<section class="panel"><div class="split"><h2>${stages[stage]} 채점표</h2><span class="muted small">지원자 ${candidates.length}명 · 만점 ${total}점</span></div><p class="muted small">심사관점이 정해진 항목은 해당하는 줄을 고르면 점수가 저절로 매겨집니다. 재량 점수 칸의 빈칸은 아직 안 넣은 것, 0은 0점입니다.${locked ? '' : '<span class="wide-only"> 항목이 많으면 표를 좌우로 밀어서 보세요.</span>'}</p><form id="score-form" data-stage="${stage}">${guided ? '<input type="checkbox" id="show-guides" class="guide-check"><label class="guide-switch" for="show-guides">표 머리글에 평가 준거 함께 보기</label>' : ''}<div class="table-wrap score-wrap"><table class="score-table"><thead><tr><th>지원자</th><th>참석</th>${r.rubrics[stage].map(c => `<th>${esc(c.label)}<span class="max">${c.max}점</span>${c.guide ? `<span class="th-guide">${esc(c.guide)}</span>` : ''}</th>`).join('')}${stage === 'document' && r.rules.allowBonus ? `<th>가점<span class="th-guide">${esc(r.rules.bonusLabel || '확인된 가점 대상자')}</span></th>` : ''}<th>합계</th><th>메모 / 불참·가점 근거</th></tr></thead><tbody>${candidates.map(c => { const row = ev?.rows.find(x => x.candidateId === c.id); return `<tr data-candidate="${c.id}"><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th><td data-label="참석 여부"><select name="attendance" aria-label="${esc(c.code)} 참석 상태" ${locked ? 'disabled' : ''}><option value="present">참석</option><option value="absent" ${row?.attendance === 'absent' ? 'selected' : ''}>불참</option></select></td>${r.rubrics[stage].map(item => `<td data-label="${esc(item.label)} · ${item.max}점">${scoreCell(c, item, row, locked)}</td>`).join('')}${stage === 'document' && r.rules.allowBonus ? `<td data-label="가점"><select name="bonus" aria-label="${esc(c.code)} 가점" ${locked ? 'disabled' : ''}>${bonusChoices(r).map(o => `<option value="${o.points}" ${(row?.bonus ?? 0) === o.points ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select></td>` : ''}<td class="row-total" data-label="합계">—</td><td class="note-cell" data-label="메모 / 불참·가점 근거"><textarea name="note" class="score-note" maxlength="1000" aria-label="${esc(c.code)} 평가 메모" ${locked ? 'disabled' : ''}>${esc(row?.note || '')}</textarea></td></tr>`; }).join('')}</tbody></table></div>${!locked ? `<div class="actions submit-bar"><button type="button" class="primary" data-action="submit-evaluation" ${hasSigned ? '' : 'disabled'}>저장 후 평가 제출</button><button class="secondary" type="submit">임시 저장</button>${hasSigned ? '<span class="muted small">제출하면 점수를 고칠 수 없습니다.</span>' : '<span class="muted small">청렴서약서에 서명하면 제출할 수 있습니다.</span>'}</div>` : '<p class="notice ok-note">제출을 마쳤습니다. 고칠 것이 있으면 담당 선생님께 다시 열어 달라고 알려 주세요.</p>'}</form></section>`;
+    }
+    // 채점 칸. 심사관점이 정해진 항목(pick·sum)은 점수를 직접 넣지 않고 해당하는 줄을 고른다.
+    function scoreCell(c, item, row, locked) {
+        const dis = locked ? 'disabled' : '', aria = `${esc(c.code)} ${esc(item.label)}`;
+        if (item.kind === 'pick') {
+            const v = row?.picks?.[item.id];
+            return `<select class="pick" name="${item.id}" aria-label="${aria} 심사관점" ${dis}><option value="">고르기</option>${item.options.map((o, i) => `<option value="${i}" ${v === i ? 'selected' : ''}>${esc(o.label)} · ${o.points}점</option>`).join('')}<option value="-1" ${v === -1 ? 'selected' : ''}>해당 없음 · 0점</option></select>`;
+        }
+        if (item.kind === 'sum') {
+            const v = row?.picks?.[item.id] || [];
+            return `<div class="sum-pick" data-name="${item.id}">${item.options.map((o, i) => o.unit
+                ? `<label class="qty"><span>${esc(o.label)} ${o.points}점 ×</span><input type="number" min="0" max="99" step="1" inputmode="numeric" data-i="${i}" value="${v[i] || 0}" aria-label="${aria} ${esc(o.label)} ${esc(o.unit)} 수" ${dis}>${esc(o.unit)}</label>`
+                : `<label class="tick"><input type="checkbox" data-i="${i}" ${v[i] ? 'checked' : ''} aria-label="${aria} ${esc(o.label)}" ${dis}><span>${esc(o.label)} ${o.points}점</span></label>`).join('')}<output class="sum-out"></output></div>`;
+        }
+        return `<input class="score" type="number" inputmode="decimal" min="0" max="${item.max}" step="0.5" name="${item.id}" aria-label="${aria} 점수 (최대 ${item.max})" value="${row?.scores[item.id] ?? ''}" ${dis}>`;
+    }
+    // 옛 채용에는 가점 문구가 없다. 숫자만 보여 준다.
+    function bonusChoices(r) {
+        const named = r.rules.bonusOptions || [{ points: 5, label: '5점' }, { points: 2.5, label: '2.5점' }];
+        return [{ points: 0, label: '해당 없음' }, ...named.map(o => ({ points: o.points, label: r.rules.bonusOptions ? `${o.label} · ${o.points}점` : o.label }))];
+    }
+    function readPick(item, tr) {
+        if (item.kind === 'pick') { const v = tr.querySelector(`select[name=${item.id}]`).value; return v === '' ? null : Number(v); }
+        return Array.from(tr.querySelectorAll(`[data-name=${item.id}] input`)).map(el => el.type === 'checkbox' ? (el.checked ? 1 : 0) : Math.max(0, Math.floor(Number(el.value) || 0)));
+    }
+    // 서버 domain.pickScore 와 같은 계산. 화면 표시용이고, 저장되는 점수는 서버가 다시 계산한다.
+    function pickPoints(item, pick) {
+        if (pick === null) return { score: null, raw: null };
+        if (item.kind === 'pick') return { score: pick === -1 ? 0 : item.options[pick].points, raw: null };
+        const raw = Math.round(item.options.reduce((sum, o, i) => sum + o.points * pick[i], 0) * 10) / 10;
+        return { score: Math.min(item.max, raw), raw };
+    }
+    function syncScoreTotals() {
+        const form = $('#score-form'); if (!form || !state.current) return;
+        const rubric = state.current.rubrics[form.dataset.stage];
+        form.querySelectorAll('tr[data-candidate]').forEach(tr => {
+            let total = 0, blank = false;
+            for (const item of rubric) {
+                let score;
+                if (item.kind === 'pick' || item.kind === 'sum') {
+                    const got = pickPoints(item, readPick(item, tr)); score = got.score;
+                    if (item.kind === 'sum') tr.querySelector(`[data-name=${item.id}] .sum-out`).textContent = `= ${fmt(got.score)}점${got.raw > item.max ? ` (배점 ${item.max}점에서 자름)` : ''}`;
+                } else { const v = tr.querySelector(`input[name=${item.id}]`).value; score = v === '' ? null : Number(v); }
+                if (score === null) blank = true; else total += score;
+            }
+            const absent = tr.querySelector('[name=attendance]').value === 'absent';
+            const bonus = Number(tr.querySelector('[name=bonus]')?.value || 0);
+            tr.querySelector('.row-total').textContent = absent ? '불참' : `${fmt(total + bonus)}점${blank ? ' · 빈칸 있음' : ''}`;
+        });
     }
     function scoreTable(r, stage) {
         const rows = stage === 'document' ? r.documentResults : r.finalResults;
@@ -293,11 +359,29 @@
         state.current = data.recruitment; state.invites[reviewerId] = location.origin + (window.IS_COPY ? '/copy' : '') + data.invitationPath; return data;
     }
     async function mutate(path, body = {}) { const r = await api(`/${state.current.id}/${path}`, 'POST', { ...body, version: state.current.version }); state.current = r; if (!token()) { const list = await api(''); state.list = list.items; } state.dirty = false; render(); return r; }
-    function collectScores() { const form = $('#score-form'), stage = form.dataset.stage; const rows = Array.from(form.querySelectorAll('tr[data-candidate]')).map(tr => ({ candidateId: tr.dataset.candidate, attendance: tr.querySelector('[name=attendance]').value, scores: Object.fromEntries(state.current.rubrics[stage].map(c => { const v = tr.querySelector(`[name=${c.id}]`).value; return [c.id, v === '' ? null : Number(v)]; })), bonus: Number(tr.querySelector('[name=bonus]')?.value || 0), note: tr.querySelector('[name=note]').value })); return { stage, rows }; }
+    function collectScores() {
+        const form = $('#score-form'), stage = form.dataset.stage, rubric = state.current.rubrics[stage];
+        const judged = rubric.filter(c => c.kind !== 'pick' && c.kind !== 'sum'), picked = rubric.filter(c => c.kind === 'pick' || c.kind === 'sum');
+        const rows = Array.from(form.querySelectorAll('tr[data-candidate]')).map(tr => ({ candidateId: tr.dataset.candidate, attendance: tr.querySelector('[name=attendance]').value,
+            scores: Object.fromEntries(judged.map(c => { const v = tr.querySelector(`input[name=${c.id}]`).value; return [c.id, v === '' ? null : Number(v)]; })),
+            picks: Object.fromEntries(picked.map(c => [c.id, readPick(c, tr)])),
+            bonus: Number(tr.querySelector('[name=bonus]')?.value || 0), note: tr.querySelector('[name=note]').value }));
+        return { stage, rows };
+    }
     async function run(fn) { if (state.busy) return; state.busy = true; const buttons = Array.from(document.querySelectorAll('button')).filter(b => !b.disabled); buttons.forEach(b => { b.disabled = true; }); try { await fn(); } catch (e) { notify(e.message); } finally { state.busy = false; buttons.filter(b => b.isConnected).forEach(b => { b.disabled = false; }); } }
+    $('#app').addEventListener('change', e => {
+        if (e.target.name === 'preset' && e.target.closest('#create-form')) {
+            // 고친 항목을 덮어쓰므로 한 번 묻는다. 취소하면 선택도 되돌린다.
+            if (state.presetTouched && !confirm('2단계에서 고친 평가 항목이 이 심사표로 바뀝니다. 불러올까요?')) { e.target.value = state.presetId ?? ''; return; }
+            state.presetId = e.target.value; state.presetTouched = false; applyPreset(e.target.value); notify(e.target.value ? '심사표를 불러왔습니다.' : '빈 심사표로 바꿨습니다.');
+        }
+        if (e.target.name === 'kind') { const box = e.target.closest('.rubric-row').querySelector('[name=guide]'); box.placeholder = KIND_HINTS[e.target.value]; }
+    });
     $('#app').addEventListener('input', e => {
         if (e.target.closest('#score-form,#create-form,#shortlist-form')) state.dirty = true;
+        if (e.target.closest('.rubric-rows')) state.presetTouched = true;
         if (e.target.name === 'max') syncTotals();
+        if (e.target.closest('#score-form')) syncScoreTotals();
         if (e.target.name === 'candidateCount') syncCandidates();
     });
     $('#app').addEventListener('submit', e => {
@@ -307,8 +391,8 @@
             if (form.id === 'create-form') {
                 const f = new FormData(form); const reviewers = Array.from(form.querySelectorAll('.reviewer')).map(row => ({ name: row.querySelector('[name=reviewer-name]').value, position: row.querySelector('[name=reviewer-position]').value, stages: ['document', 'interview'].filter(s => row.querySelector(`[name=${s}]`).checked) }));
                 const candidates = Array.from(form.querySelectorAll('[name=candidate-name]')).map((el, k) => ({ code: code(k), name: el.value.trim() }));
-                const rubrics = {}; for (const stage of ['document', 'interview']) rubrics[stage] = Array.from(form.querySelectorAll(`#rubric-${stage} .rubric-row`)).map(row => ({ label: row.querySelector('[name=label]').value, max: Number(row.querySelector('[name=max]').value), guide: row.querySelector('[name=guide]').value.trim() }));
-                const r = await api('', 'POST', { school: f.get('school'), title: f.get('title'), field: f.get('field'), documentDate: f.get('documentDate'), interviewDate: f.get('interviewDate'), shortlistLimit: Number(f.get('shortlistLimit')), rankingBasis: f.get('rankingBasis'), allowBonus: f.get('allowBonus') === 'true', guidance: (f.get('guidance') || '').trim(), reviewers, candidates, rubrics }); state.isNew = false; state.invites = {}; state.tab = 'overview'; await load(r.id); notify('채용 설정을 저장했습니다.');
+                const rubrics = {}; for (const stage of ['document', 'interview']) rubrics[stage] = Array.from(form.querySelectorAll(`#rubric-${stage} .rubric-row`)).map(row => { const label = row.querySelector('[name=label]').value.trim(), max = Number(row.querySelector('[name=max]').value), kind = row.querySelector('[name=kind]').value, lines = row.querySelector('[name=guide]').value.trim(); return kind === 'judge' ? { label, max, kind, guide: lines } : { label, max, kind, options: parseOptionLines(lines, `${stageName[stage]} ${label || '항목'}`) }; });
+                const r = await api('', 'POST', { school: f.get('school'), title: f.get('title'), field: f.get('field'), documentDate: f.get('documentDate'), interviewDate: f.get('interviewDate'), shortlistLimit: Number(f.get('shortlistLimit')), rankingBasis: f.get('rankingBasis'), allowBonus: f.get('allowBonus') === 'true', guidance: (f.get('guidance') || '').trim(), preset: f.get('preset') || null, reviewers, candidates, rubrics }); state.isNew = false; state.invites = {}; state.tab = 'overview'; await load(r.id); notify('채용 설정을 저장했습니다.');
             }
             if (form.id === 'score-form') { const { stage, rows } = collectScores(); await mutate(`evaluations/${stage}/save`, { rows }); notify('평가를 임시 저장했습니다.'); }
             if (form.id === 'shortlist-form') { if (!confirm('면접대상자를 확정하면 서류 평가를 수정할 수 없습니다. 확정할까요?')) return; const data = new FormData(form); await mutate('shortlist', { candidateIds: data.getAll('candidateId'), reason: data.get('reason') }); notify('면접 평가를 시작합니다.'); }
@@ -317,7 +401,7 @@
     $('#app').addEventListener('click', e => { const button = e.target.closest('[data-action]'); if (!button) return; const action = button.dataset.action;
         run(async () => {
             if (['new', 'open', 'tab', 'goto', 'refresh', 'cancel-new', 'exit'].includes(action) && !canLeave()) return;
-            if (action === 'new') { state.isNew = true; state.invites = {}; render(); }
+            if (action === 'new') { state.isNew = true; state.invites = {}; state.presetId = presets()[0]?.id ?? ''; state.presetTouched = false; render(); }
             if (action === 'cancel-new') { state.isNew = false; render(); }
             if (action === 'open') { state.isNew = false; state.invites = {}; state.tab = 'overview'; state.tabSet = false; await load(button.dataset.id); }
             if (action === 'tab') { state.tab = button.dataset.tab; state.tabSet = true; render(); }
@@ -346,8 +430,8 @@ ${r.title}`);
             if (action === 'remove-reviewer') { if (document.querySelectorAll('.reviewer').length <= 1) throw new Error('위원이 최소 1명 필요합니다.'); button.closest('.reviewer').remove(); state.dirty = true; }
             if (action === 'fill-example') { const form = $('#create-form'); if (!form) return; if (state.dirty && !confirm('현재 입력을 예시로 바꿀까요?')) return; Object.entries({ school: '예시초등학교', title: '2026 기초학력 협력강사 채용 (예시)', field: '기초학력 협력강사', shortlistLimit: '2', candidateCount: '3' }).forEach(([k, v]) => { form.elements[k].value = v; });
                 syncCandidates(['예시지원자 가', '예시지원자 나', '예시지원자 다']); $('#reviewer-rows').innerHTML = reviewerRow({ name: '예시위원 가' }) + reviewerRow({ name: '예시위원 나' }); state.dirty = true; }
-            if (action === 'add-criterion') { const box = document.querySelector(`#rubric-${button.dataset.stage}`); if (box.querySelectorAll('.rubric-row').length >= 12) throw new Error('항목은 전형별 최대 12개입니다.'); box.insertAdjacentHTML('beforeend', criterionRow()); syncTotals(); state.dirty = true; }
-            if (action === 'remove-criterion') { const box = button.closest('.rubric-rows'); if (box.querySelectorAll('.rubric-row').length <= 1) throw new Error('항목이 최소 1개 필요합니다.'); button.closest('.rubric-row').remove(); syncTotals(); state.dirty = true; }
+            if (action === 'add-criterion') { const box = document.querySelector(`#rubric-${button.dataset.stage}`); if (box.querySelectorAll('.rubric-row').length >= 12) throw new Error('항목은 전형별 최대 12개입니다.'); box.insertAdjacentHTML('beforeend', criterionRow()); syncTotals(); state.dirty = true; state.presetTouched = true; }
+            if (action === 'remove-criterion') { const box = button.closest('.rubric-rows'); if (box.querySelectorAll('.rubric-row').length <= 1) throw new Error('항목이 최소 1개 필요합니다.'); button.closest('.rubric-row').remove(); syncTotals(); state.dirty = true; state.presetTouched = true; }
             if (action === 'connect-archive') {
                 if (!canLeave()) return;
                 const data = await api('/google/start', 'POST', {});
@@ -368,7 +452,7 @@ ${r.title}`);
                 if (!image) throw new Error('서명란에 직접 서명해 주세요.');
                 // 서명 저장은 화면을 다시 그린다. 입력 중이던 점수가 날아가지 않도록 먼저 임시 저장한다.
                 const form = $('#score-form');
-                if (form && form.querySelector('.score:not([disabled])')) { const { stage, rows } = collectScores(); await mutate(`evaluations/${stage}/save`, { rows }); }
+                if (form && form.querySelector('.score:not([disabled]),.pick:not([disabled]),.sum-pick input:not([disabled])')) { const { stage, rows } = collectScores(); await mutate(`evaluations/${stage}/save`, { rows }); }
                 await mutate('pledge', { image });
                 state.resign = false; render(); notify('서명을 저장했습니다. 입력 중이던 점수도 함께 임시 저장했습니다.');
             }

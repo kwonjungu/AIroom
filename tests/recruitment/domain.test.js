@@ -3,8 +3,20 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const d = require('../../lib/recruitment/domain');
 const { provision } = require('../../lib/recruitment/providers/mock');
-function input(overrides = {}) { return { school: '테스트학교', title: '테스트 채용', field: '협력강사', documentDate: '2026-09-20', interviewDate: '2026-09-21', rankingBasis: 'combined', shortlistLimit: 2, allowBonus: false, candidates: [{ code: '001', name: '동명이인' }, { code: '002', name: '동명이인' }], reviewers: [{ name: '위원1', position: '교사', email: 'one@example.com', stages: ['document', 'interview'] }, { name: '위원2', position: '교사', email: 'two@example.com', stages: ['document', 'interview'] }], ...overrides }; }
-function rows(r, stage, fraction = 1) { return d.stageCandidates(r, stage).map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(d.DEFAULT_RUBRICS[stage].map((v, i) => ({ ...v, id: `c${i + 1}` })).map(x => [x.id, x.max * fraction])), bonus: 0, note: '' })); }
+function input(overrides = {}) { return { school: '테스트학교', title: '테스트 채용', field: '협력강사', documentDate: '2026-09-20', interviewDate: '2026-09-21', rankingBasis: 'combined', shortlistLimit: 2, allowBonus: false, candidates: [{ code: '001', name: '동명이인' }, { code: '002', name: '동명이인' }], reviewers: [{ name: '위원1', position: '교사', email: 'one@example.com', stages: ['document', 'interview'] }, { name: '위원2', position: '교사', email: 'two@example.com', stages: ['document', 'interview'] }], rubrics: JUDGE_RUBRICS, ...overrides }; }
+// 기존 검사는 '위원이 점수를 직접 넣는' 규칙을 본다. 프리셋의 pick·sum 항목은 점수를 서버가 계산하므로
+// 여기서는 같은 항목·배점을 전부 재량(judge) 항목으로 바꿔 쓴다. pick·sum 은 아래 '심사관점' 검사가 본다.
+const JUDGE_RUBRICS = Object.fromEntries(Object.entries(d.DEFAULT_RUBRICS).map(([stage, items]) => [stage, items.map(({ label, max }) => ({ label, max, kind: 'judge' }))]));
+// 프리셋 그대로 만점을 받는 심사관점 선택. pick 은 가장 높은 줄, sum 은 배점까지 채운다.
+function fullPicks(rubrics) {
+    const picks = {};
+    for (const c of rubrics) {
+        if (c.kind === 'pick') picks[c.id] = c.options.reduce((best, o, i) => o.points > c.options[best].points ? i : best, 0);
+        if (c.kind === 'sum') { let left = c.max; picks[c.id] = c.options.map(o => { const n = Math.min(o.unit ? 99 : 1, Math.ceil(left / o.points)); left = Math.max(0, left - n * o.points); return n; }); }
+    }
+    return picks;
+}
+function rows(r, stage, fraction = 1) { return d.stageCandidates(r, stage).map(c => ({ candidateId: c.id, attendance: 'present', scores: Object.fromEntries(r.rubrics[stage].map(x => [x.id, x.max * fraction])), picks: fullPicks(r.rubrics[stage]), bonus: 0, note: '' })); }
 // 위원마다 다른 바이트를 써야 '남의 서명이 새는지'를 실제로 구분할 수 있다.
 const signatureFor = seed => 'data:image/png;base64,' + Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(400, seed)]).toString('base64');
 const SIGNATURE = signatureFor(9);
@@ -94,4 +106,36 @@ test('rubrics are stored per recruitment and drive validation, totals and the bo
     d.saveEvaluation(r, v.id, 'document', rows);
     assert.throws(() => d.saveEvaluation(r, v.id, 'document', r.candidates.map(c => ({ candidateId: c.id, attendance: 'present', scores: { c1: 11, c2: 5 }, bonus: 0, note: '' }))), /0~10/);
 });
-module.exports = { input, rows, submitAll, signAll, SIGNATURE, signatureFor };
+test('preset viewpoints: the server scores from the picked 심사관점, not from what the screen sends', () => {
+    const r = signAll(provision(d.createRecruitment(input({ rubrics: undefined })))), v = r.reviewers[0];
+    const [edu, cert, career] = r.rubrics.document;
+    assert.deepEqual([edu.kind, cert.kind, career.kind, r.rubrics.document[3].kind], ['pick', 'sum', 'sum', 'judge']);
+    // guide 는 원본 표기 그대로 다시 써진다 — 화면·문서가 같은 글을 보여 준다.
+    assert.match(edu.guide, /^채용 관련 전공 대학원 졸업\(6점\)/);
+    const data = rows(r, 'document');
+    // 4년제 관련 전공(5점) · 초등+채용 관련 자격증 5건 = 8 → 상한 6 · 경력 4년 = 4
+    data[0].picks = { c1: 1, c2: [1, 0, 0, 5], c3: [4] }; data[0].scores = { c1: 6, c2: 6, c3: 6, c4: 3, c5: 20 };
+    data[1].picks = { c1: -1, c2: [0, 0, 0, 0], c3: [0] };
+    d.saveEvaluation(r, v.id, 'document', data);
+    const saved = r.evaluations[`document:${v.id}`].rows;
+    assert.deepEqual([saved[0].scores.c1, saved[0].scores.c2, saved[0].scores.c3], [5, 6, 4]);
+    assert.deepEqual([saved[1].scores.c1, saved[1].scores.c2, saved[1].scores.c3], [0, 0, 0]);
+    assert.deepEqual(saved[0].picks.c2, [1, 0, 0, 5]);
+    // 고르지 않은 pick 은 '아직 안 넣음'이라 제출을 막는다. 해당 없음(-1)은 0점으로 통과한다.
+    const blank = rows(r, 'document'); blank[0].picks = { ...blank[0].picks, c1: null };
+    d.saveEvaluation(r, v.id, 'document', blank); assert.throws(() => d.submitEvaluation(r, v.id, 'document'), /심사관점을 고르지/);
+    for (const bad of [{ c1: 6 }, { c2: [1, 0, 0] }, { c2: [2, 0, 0, 0] }, { c3: [1.5] }]) {
+        const x = rows(r, 'document'); x[0].picks = { ...x[0].picks, ...bad };
+        assert.throws(() => d.saveEvaluation(r, v.id, 'document', x), /심사관점을 다시|0 또는 1|0~99/);
+    }
+});
+test('rubric viewpoints are validated: kind, option points within the item max, no duplicates', () => {
+    const doc = items => input({ rubrics: { document: items } });
+    assert.throws(() => d.createRecruitment(doc([{ label: '가', max: 3, kind: 'rank' }])), /채점 방식/);
+    assert.throws(() => d.createRecruitment(doc([{ label: '가', max: 3, kind: 'pick', options: [] }])), /1~12줄/);
+    assert.throws(() => d.createRecruitment(doc([{ label: '가', max: 3, kind: 'pick', options: [{ label: 'a', points: 4 }] }])), /0.5~3점/);
+    assert.throws(() => d.createRecruitment(doc([{ label: '가', max: 3, kind: 'sum', options: [{ label: 'a', points: 1 }, { label: 'a', points: 2 }] }])), /중복/);
+    // kind 가 없던 옛 채용 항목은 재량 점수로 읽는다.
+    assert.equal(d.createRecruitment(doc([{ label: '가', max: 3 }])).rubrics.document[0].kind, 'judge');
+});
+module.exports = { input, rows, fullPicks, submitAll, signAll, SIGNATURE, signatureFor };

@@ -289,6 +289,18 @@ dialog::backdrop{background:#0006}
 .rubric-box h4{margin:0;font-size:15px;font-weight:600}
 .rubric-rows{margin:20px 0}
 .rubric-row{display:grid;grid-template-columns:1fr 88px 42px;gap:10px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #ddd9d0;align-items:center}
+.kind-field{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--slate)}
+.kind-field select{border:1px solid var(--hairline);border-radius:var(--r-xs);padding:8px 10px;font-size:14px;background:var(--surface);color:var(--ink)}
+.preset-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px;padding:16px 18px;margin:4px 0 8px;border:1px solid var(--near-black);border-radius:var(--r-md);background:var(--surface)}
+.preset-bar .field{min-width:240px}.preset-bar p{margin:0;flex:1 1 260px}
+/* 심사관점 고르기 칸 */
+.score-table select.pick{max-width:220px}
+.sum-pick{display:flex;flex-direction:column;gap:6px;min-width:190px;font-size:13px;text-align:left}
+.sum-pick label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.sum-pick .qty input{width:58px;min-height:36px;padding:4px 6px;border:1px solid var(--hairline);border-radius:var(--r-xs);text-align:center}
+.sum-pick input[type=checkbox]{width:18px;height:18px;flex:none}
+.sum-out{font-weight:600;font-variant-numeric:tabular-nums}
+.row-total{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
 .rubric-row:last-child{border-bottom:0;padding-bottom:0}
 .rubric-row input{border:1px solid var(--hairline);border-radius:var(--r-xs);padding:10px;font-size:15px;width:100%;background:var(--surface);color:var(--ink)}
 .rubric-row button{padding:0;font-size:17px;line-height:1;min-height:42px;border-radius:999px;border-color:transparent;color:var(--slate);background:transparent}
@@ -367,6 +379,8 @@ dialog::backdrop{background:#0006}
   .score-table td::before{content:attr(data-label);font-size:13.5px;color:var(--slate);min-width:0;overflow-wrap:anywhere}
   .score-table td .score{width:88px;flex:none}
   .score-table td select{flex:none;min-width:96px}
+  .score-table td .sum-pick{min-width:0;align-items:flex-end}
+  .score-table td select.pick{max-width:62vw}
   .score-table td.note-cell{display:block}
   .score-table td.note-cell::before{display:block;margin-bottom:8px}
   .score-table .score-note{min-width:0}
