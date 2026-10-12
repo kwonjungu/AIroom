@@ -45,20 +45,41 @@
     const optionLine = o => `${o.label}(${o.points}점)`;
     const UNIT_WORDS = [['시간당', '시간'], ['건당', '건'], ['년당', '년'], ['회당', '회'], ['개당', '개']];
     // 심사관점 칸의 한 줄 = '대학원 졸업(6점)', '채용 관련 자격증 건당(1점)'. 원본 심사표 표기 그대로 적으면 된다.
+    // 끝의 점수만 떼어 낸다: '(6점)'·'6점'·'(6)'·전각 괄호 모두 받는다. '(4년제)'처럼 점수가 아닌 괄호는 이름에 남는다.
+    // 시트에서 복사한 줄 앞의 '-'·'·'·번호(1. ①)는 지운다.
+    function parseOptionLine(raw) {
+        const line = raw.replace(/\t+/g, ' ').replace(/^\s*(?:[-·•▪*]|\d+[.)]|[①-⑳])\s*/, '').trim();
+        const m = /^(.*?\S)\s*(?:[(（]\s*(\d+(?:\.5)?)\s*점?\s*[)）]|(\d+(?:\.5)?)\s*점)\s*$/.exec(line);
+        if (!m) return { line, error: "줄 끝에 점수를 '(6점)'처럼 적어 주세요." };
+        const label = m[1].trim(), unit = UNIT_WORDS.find(([word]) => label.includes(word))?.[1];
+        return { label, points: Number(m[2] ?? m[3]), ...(unit ? { unit } : {}) };
+    }
     function parseOptionLines(value, label) {
         return value.split(/\n/).map(v => v.trim()).filter(Boolean).map(line => {
-            const m = /^(.*?)\s*\(?\s*(\d+(?:\.5)?)\s*점\s*\)?$/.exec(line);
-            if (!m || !m[1].trim()) throw new Error(`${label}: '${line}' — 줄 끝에 점수를 '(6점)'처럼 적어 주세요.`);
-            const unit = UNIT_WORDS.find(([word]) => m[1].includes(word))?.[1];
-            return { label: m[1].trim(), points: Number(m[2]), ...(unit ? { unit } : {}) };
+            const o = parseOptionLine(line);
+            if (o.error) throw new Error(`${label}: '${line}' — ${o.error}`);
+            return o;
         });
+    }
+    // 하나 고르기·합산 항목은 적는 대로 '심사관점 | 점수'로 나눠 보여 준다. 하나 고르기는 배점도 가장 높은 줄 점수로 채운다
+    // (사람이 배점을 직접 고치면 그 뒤로는 건드리지 않는다).
+    function syncOptionPreview(row) {
+        const kind = row.querySelector('[name=kind]').value, out = row.querySelector('.option-preview');
+        const lines = row.querySelector('[name=guide]').value.split(/\n/).map(v => v.trim()).filter(Boolean);
+        if (kind === 'judge' || !lines.length) { out.innerHTML = ''; return; }
+        const parsed = lines.map(parseOptionLine);
+        out.innerHTML = `<table><thead><tr><th>심사관점</th><th class="number">점수</th></tr></thead><tbody>${parsed.map(o => o.error
+            ? `<tr class="bad"><td>${esc(o.line)}</td><td class="number">점수 없음</td></tr>`
+            : `<tr><td>${esc(o.label)}${o.unit ? ` <span class="muted">(${esc(o.unit)} 수를 넣음)</span>` : ''}</td><td class="number">${o.points}점</td></tr>`).join('')}</tbody></table>`;
+        const max = row.querySelector('[name=max]'), top = Math.max(0, ...parsed.filter(o => !o.error).map(o => o.points));
+        if (kind === 'pick' && top > 0 && (!max.value || max.dataset.auto === '1')) { max.value = top; max.dataset.auto = '1'; syncTotals(); }
     }
     const stageName = { document: '서류심사', interview: '면접심사' };
     const code = index => String(index + 1).padStart(3, '0');
     function criterionRow(item = { label: '', max: '', kind: 'judge' }) {
         const kind = item.kind || 'judge';
         const lines = kind === 'judge' ? (item.guide || '') : (item.options || []).map(optionLine).join('\n');
-        return `<div class="rubric-row"><input name="label" value="${esc(item.label)}" maxlength="40" placeholder="구분 (항목 이름)" aria-label="항목 이름" required><input name="max" type="number" min="0.5" max="100" step="0.5" value="${item.max}" aria-label="배점" required><button type="button" class="secondary" data-action="remove-criterion" aria-label="항목 삭제">×</button><label class="kind-field">채점 방식<select name="kind">${Object.entries(KIND_NAMES).map(([k, v]) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${v}</option>`).join('')}</select></label><textarea name="guide" class="guide-input" rows="${Math.max(4, lines.split(/\n/).length + 1)}" maxlength="1000" aria-label="${esc(item.label) || '이 항목'} 심사관점" placeholder="${esc(KIND_HINTS[kind])}">${esc(lines)}</textarea></div>`;
+        return `<div class="rubric-row"><input name="label" value="${esc(item.label)}" maxlength="40" placeholder="구분 (항목 이름)" aria-label="항목 이름" required><input name="max" type="number" min="0.5" max="100" step="0.5" value="${item.max}" aria-label="배점" required><button type="button" class="secondary" data-action="remove-criterion" aria-label="항목 삭제">×</button><label class="kind-field">채점 방식<select name="kind">${Object.entries(KIND_NAMES).map(([k, v]) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${v}</option>`).join('')}</select></label><textarea name="guide" class="guide-input" rows="${Math.max(4, lines.split(/\n/).length + 1)}" maxlength="1000" aria-label="${esc(item.label) || '이 항목'} 심사관점" placeholder="${esc(KIND_HINTS[kind])}">${esc(lines)}</textarea><div class="option-preview" aria-live="polite"></div></div>`;
     }
     const BLANK_ITEMS = [{ label: '', max: '', kind: 'judge' }];
     function rubricEditor(stage, preset) {
@@ -71,7 +92,8 @@
         const preset = presetOf(id);
         for (const stage of ['document', 'interview']) $(`#rubric-${stage}`).innerHTML = (preset ? preset.rubrics[stage] : BLANK_ITEMS).map(criterionRow).join('');
         const typed = form.elements.field.value.trim();
-        if (preset && (!typed || presets().some(p => p.field === typed))) form.elements.field.value = preset.field;
+        // 표준 심사표는 영역이 비어 있다. 영역은 사람이 직접 적으므로, 프리셋에 분야가 있을 때만 채운다.
+        if (preset?.field && (!typed || presets().some(p => p.field === typed))) form.elements.field.value = preset.field;
         syncTotals();
     }
     // 접수번호는 입력받지 않고 순번으로 붙인다. 이름만 채우면 된다.
@@ -93,7 +115,7 @@
     }
     function createForm() {
         const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
-        return `<section class="panel"><div class="split"><div><h2>새 채용 설정</h2><p class="muted small" style="margin:0">네 가지를 채우면 바로 평가를 시작할 수 있습니다. 생성 후에는 배점과 위원을 바꿀 수 없습니다.</p></div><button class="secondary" data-action="fill-example">예시 채우기</button></div><form id="create-form"><div class="preset-bar"><label class="field">심사표 불러오기<select name="preset">${presets().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}<option value="">빈 심사표로 직접 만들기</option></select></label><p class="muted small">강사 유형을 고르면 평가 항목·배점·심사관점이 그 유형의 심사표대로 채워집니다. 불러온 뒤 2단계에서 고칠 수 있습니다.</p><div class="actions sample-actions"><button type="button" class="secondary" data-action="sample" data-format="html">샘플 심사표 인쇄본 보기</button><button type="button" class="secondary" data-action="sample" data-format="hwpx">샘플 한글(HWPX) 받기</button></div><p class="muted small">가상의 지원자 5명·위원 3명으로 끝까지 채점한 예시입니다. 저장되지 않으며, 2단계에서 고친 배점은 반영하지 않고 고른 심사표 그대로 보여 줍니다.</p></div><h3 class="step-title"><b>1</b>채용 정보</h3><div class="grid">${field('학교명', 'school', '', 'text', 'maxlength="100"')}${field('채용명', 'title', '', 'text', 'maxlength="100"')}${field('채용 분야', 'field', presets()[0]?.field || '', 'text', 'maxlength="100"')}${field('면접대상자 최대 수', 'shortlistLimit', '1', 'number', 'min="1" max="4"')}${field('서류전형일', 'documentDate', today, 'date')}${field('면접일', 'interviewDate', today, 'date')}<label class="field">최종 순위 기준<select name="rankingBasis"><option value="combined">서류 평균 + 면접 평균</option><option value="interview">면접 평균</option></select></label><label class="field">가점 사용<select name="allowBonus"><option value="false">미사용</option><option value="true">사용 (0~5점, 0.5점 간격 · 서류 만점의 40% 이상 득점자 · 근거 입력)</option></select></label></div>
+        return `<section class="panel"><div class="split"><div><h2>새 채용 설정</h2><p class="muted small" style="margin:0">네 가지를 채우면 바로 평가를 시작할 수 있습니다. 생성 후에는 배점과 위원을 바꿀 수 없습니다.</p></div><button class="secondary" data-action="fill-example">예시 채우기</button></div><form id="create-form"><div class="preset-bar"><label class="field">심사표 불러오기<select name="preset">${presets().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}<option value="">빈 심사표로 직접 만들기</option></select></label><p class="muted small">강사 유형을 고르면 평가 항목·배점·심사관점이 그 유형의 심사표대로 채워집니다. 불러온 뒤 2단계에서 고칠 수 있습니다.</p><div class="actions sample-actions"><button type="button" class="secondary" data-action="sample" data-format="html">샘플 심사표 인쇄본 보기</button><button type="button" class="secondary" data-action="sample" data-format="hwpx">샘플 한글(HWPX) 받기</button></div><p class="muted small">가상의 지원자 5명·위원 3명으로 끝까지 채점한 예시입니다. 채용 분야 칸에 적은 영역이 제목에 들어갑니다. 저장되지 않으며, 2단계에서 고친 배점은 반영하지 않고 고른 심사표 그대로 보여 줍니다.</p></div><h3 class="step-title"><b>1</b>채용 정보</h3><div class="grid">${field('학교명', 'school', '', 'text', 'maxlength="100"')}${field('채용명', 'title', '', 'text', 'maxlength="100"')}${field('채용 분야(영역)', 'field', '', 'text', 'maxlength="100" placeholder="예: 문화예술강사[국악], 방과후학교 강사[컴퓨터부]"')}${field('면접대상자 최대 수', 'shortlistLimit', '1', 'number', 'min="1" max="4"')}${field('서류전형일', 'documentDate', today, 'date')}${field('면접일', 'interviewDate', today, 'date')}<label class="field">최종 순위 기준<select name="rankingBasis"><option value="combined">서류 평균 + 면접 평균</option><option value="interview">면접 평균</option></select></label><label class="field">가점 사용<select name="allowBonus"><option value="false">미사용</option><option value="true">사용 (0~5점, 0.5점 간격 · 서류 만점의 40% 이상 득점자 · 근거 입력)</option></select></label></div>
 
 <h3 class="step-title"><b>2</b>평가 항목과 배점</h3><p class="muted small">항목을 더하거나 지우고 배점·심사관점을 바꿀 수 있습니다. 0.5점 단위, 항목당 100점까지, 전형마다 12개까지. 위원은 여기 적힌 심사관점을 보고 채점합니다.</p><div class="grid">${rubricEditor('document', presets()[0])}${rubricEditor('interview', presets()[0])}</div><label class="field" style="margin-top:16px">심사 참고자료 (선택)<textarea name="guidance" class="guidance-input" maxlength="3000" placeholder="자격 요건, 결격 사유, 배점 해석처럼 위원 모두가 같이 알아야 할 내용을 적어 주세요. 채점 화면 맨 위에 펼쳐서 보여 줍니다."></textarea></label>
 
@@ -407,12 +429,13 @@
             state.presetId = e.target.value; state.presetTouched = false; applyPreset(e.target.value); notify(e.target.value ? '심사표를 불러왔습니다.' : '빈 심사표로 바꿨습니다.');
         }
         if (e.target.matches('#score-form input.score')) { cleanScore(e.target, true); syncScoreTotals(); }
-        if (e.target.name === 'kind') { const box = e.target.closest('.rubric-row').querySelector('[name=guide]'); box.placeholder = KIND_HINTS[e.target.value]; }
+        if (e.target.name === 'kind') { const row = e.target.closest('.rubric-row'); row.querySelector('[name=guide]').placeholder = KIND_HINTS[e.target.value]; syncOptionPreview(row); }
     });
     $('#app').addEventListener('input', e => {
         if (e.target.closest('#score-form,#create-form,#shortlist-form')) state.dirty = true;
         if (e.target.closest('.rubric-rows')) state.presetTouched = true;
-        if (e.target.name === 'max') syncTotals();
+        if (e.target.name === 'max') { delete e.target.dataset.auto; syncTotals(); }
+        if (e.target.name === 'guide' && e.target.closest('.rubric-row')) syncOptionPreview(e.target.closest('.rubric-row'));
         if (e.target.matches('#score-form input.score')) cleanScore(e.target, false);
         if (e.target.closest('#score-form')) syncScoreTotals();
         if (e.target.name === 'candidateCount') syncCandidates();
@@ -505,8 +528,8 @@ ${r.title}`);
             if (action === 'sample') {
                 const preset = $('#create-form [name=preset]')?.value; if (!preset) { notify('샘플은 심사표를 고른 뒤 볼 수 있습니다.'); return; }
                 const format = button.dataset.format; const popup = format === 'html' ? window.open('about:blank', '_blank') : null;
-                try { const response = await fetch(`/api/recruitments/sample/${encodeURIComponent(preset)}/${format}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
-                    if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${presetOf(preset)?.name || '심사표'}_샘플.${format}`; a.click(); }
+                try { const response = await fetch(`/api/recruitments/sample/${encodeURIComponent(preset)}/${format}?field=${encodeURIComponent($('#create-form [name=field]')?.value.trim() || '')}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
+                    if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${$('#create-form [name=field]')?.value.trim() || '표준 심사표'}_샘플.${format}`; a.click(); }
                     setTimeout(() => URL.revokeObjectURL(url), 60000); notify(format === 'html' ? '샘플 인쇄본을 열었습니다.' : '샘플 한글 파일을 준비했습니다.');
                 } catch (e) { popup?.close(); throw e; }
             }

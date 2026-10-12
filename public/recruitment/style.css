@@ -419,3 +419,10 @@ dialog::backdrop{background:#0006}
   .criteria-grid td.view{min-width:104px;font-size:11px}
   .criteria-sheet summary .muted{display:block;font-weight:400;margin-top:2px}
 }
+
+/* 심사관점 줄 미리보기: 적는 대로 '심사관점 | 점수'로 나눠 보여 준다 */
+.option-preview{grid-column:1/-1}
+.option-preview table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.option-preview th,.option-preview td{border-bottom:1px solid var(--line-light);padding:4px 6px;text-align:left}
+.option-preview th{color:var(--slate);font-weight:600}.option-preview .number{text-align:right;white-space:nowrap}
+.option-preview tr.bad td{color:var(--error)}

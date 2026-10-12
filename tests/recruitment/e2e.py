@@ -59,23 +59,22 @@ with sync_playwright() as pw:
 
     step("새 채용 폼 열기", open_form)
     step("배점 편집기 노출", lambda: expect(page.locator("#rubric-document .rubric-row")).to_have_count(5))
-    step("심사표 불러오기 드롭다운", lambda: expect(page.locator("#create-form select[name=preset]")).to_contain_text("기초학력 협력강사"))
+    step("심사표 불러오기 드롭다운", lambda: expect(page.locator("#create-form select[name=preset]")).to_contain_text("표준 심사표"))
     step("심사관점 채점 방식 프리셋 반영", lambda: expect(page.locator("#rubric-document .rubric-row").first.locator("[name=kind]")).to_have_value("pick"))
     step("배점 합계 표시", lambda: expect(page.locator('[data-total="document"]')).to_contain_text("총 50점"))
-    step("원본 시트 영역 11개", lambda: expect(page.locator("#create-form select[name=preset] option")).to_have_count(12))
+    step("표준 심사표 하나·영역 칸은 비어 있음", lambda: (expect(page.locator("#create-form select[name=preset] option")).to_have_count(2), expect(page.locator("#create-form [name=field]")).to_have_value("")))
 
     def sample_print():
-        page.select_option("#create-form select[name=preset]", label="방과후학교[컴퓨터부] 강사")
+        page.fill("#create-form [name=field]", "방과후학교 강사[컴퓨터부]")
         with ctx.expect_page(timeout=20000) as popup:
             page.locator('[data-action="sample"][data-format="html"]').click()
         p2 = popup.value
         p2.wait_for_selector("section.page", timeout=15000)
         body = p2.content()
-        assert "방과후학교[컴퓨터부] 강사 채용 서류심사 집계표" in body, "샘플 집계표 제목 없음"
+        assert "방과후학교 강사[컴퓨터부] 채용 서류심사 집계표" in body, "샘플에 적은 영역이 안 들어감"
         assert "일강사" in body and "가나다" in body, "샘플 지원자·위원 없음"
         p2.close()
-        page.select_option("#create-form select[name=preset]", label="기초학력 협력강사")
-        expect(page.locator("#create-form [name=field]")).to_have_value("기초학력 협력강사")
+        page.fill("#create-form [name=field]", "")
 
     step("샘플 심사표 인쇄본", sample_print)
 
@@ -90,6 +89,21 @@ with sync_playwright() as pw:
         expect(page.locator('[data-total="document"]')).to_contain_text("총 28점")
 
     step("항목 추가·삭제·합계 자동계산", rubric_edit)
+
+    # 빈 항목에서 '하나 고르기'를 고르고 원본 심사관점 줄을 붙여 넣으면 줄마다 점수가 나뉘고 배점이 자동으로 찬다.
+    def pick_split():
+        page.click('[data-action="add-criterion"][data-stage="document"]')
+        row = page.locator("#rubric-document .rubric-row").last
+        row.locator("[name=label]").fill("학력")
+        row.locator("[name=kind]").select_option("pick")
+        row.locator("[name=guide]").fill("채용 관련 전공 대학원 졸업(6점)\n채용 관련 전공 대학 졸업(4년제)(5점)\n채용 관련 전공 대학 졸업(2년제)(4점)\n일반 대학원 및 대학 졸업(4년제 이상)(3점)\n일반 대학원 및 대학 졸업(2년제)(2점)\n학력 인정 범위 내 기타 과정(1점)")
+        expect(row.locator(".option-preview tbody tr")).to_have_count(6)
+        expect(row.locator(".option-preview tbody tr").nth(1)).to_contain_text("채용 관련 전공 대학 졸업(4년제)")
+        expect(row.locator(".option-preview tbody tr").nth(1)).to_contain_text("5점")
+        expect(row.locator("[name=max]")).to_have_value("6")
+        row.locator('[data-action="remove-criterion"]').click()
+
+    step("하나 고르기 심사관점 줄 자동 분리·배점 자동", pick_split)
 
     def candidates():
         page.fill("[name=candidateCount]", "4")
@@ -108,7 +122,7 @@ with sync_playwright() as pw:
     def fill_rest():
         page.fill("[name=school]", "백암초등학교")
         page.fill("[name=title]", "2026 기초학력 협력강사 채용")
-        page.fill("[name=field]", "기초학력 협력강사")
+        page.fill("[name=field]", "기초학력 협력강사[국어]")
         page.fill("[name=shortlistLimit]", "2")
         page.fill("[name=documentDate]", "2026-09-21")
         page.fill("[name=interviewDate]", "2026-09-25")
@@ -130,6 +144,8 @@ with sync_playwright() as pw:
     def create():
         page.click("#create-form button.primary")
         expect(page.get_by_text("채용 설정을 저장했습니다.")).to_be_visible(timeout=10000)
+        # 영역은 사람이 적은 그대로 저장된다(원본 시트 영역 표기).
+        expect(page.get_by_text("기초학력 협력강사[국어]").first).to_be_visible(timeout=5000)
 
     step("채용 생성", create)
 
