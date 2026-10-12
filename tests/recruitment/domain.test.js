@@ -139,20 +139,21 @@ test('rubric viewpoints are validated: kind, option points within the item max, 
     assert.equal(d.createRecruitment(doc([{ label: '가', max: 3 }])).rubrics.document[0].kind, 'judge');
 });
 module.exports = { input, rows, fullPicks, submitAll, signAll, SIGNATURE, signatureFor };
-// 국가유공자법 제31조: 가점은 서류 만점의 10%·5%. 원본 시트처럼 0~최대 가점을 0.5점 단위로 고른다.
-test('bonus follows the document max: 10%/5% points, 40% threshold, 0.5-point steps up to the max', () => {
+// 가점은 원본 시트(KHSDO 6번 행)대로: 배점과 상관없이 0~5점 0.5점 간격, 서류 만점의 40% 이상 득점자만.
+test('bonus follows the original sheet: 0-5 in 0.5 steps regardless of the document max, 40% threshold', () => {
     const preset = d.createRecruitment(input({ rubrics: undefined, allowBonus: true }));
-    assert.deepEqual(preset.rules.bonusOptions.map(o => o.points), [5, 2.5], '서류 50점이면 원본과 같은 5점·2.5점');
+    assert.equal(preset.rules.bonusMax, 5);
+    assert.deepEqual(preset.rules.bonusOptions.map(o => o.points), [5, 2.5]);
     assert.equal(preset.rules.bonusThreshold, 20);
     const custom = { document: [{ label: '제안서', max: 60 }, { label: '자격', max: 40 }], interview: [{ label: '시연', max: 50 }] };
     const r = signAll(provision(d.createRecruitment(input({ rubrics: custom, allowBonus: true })))), v = r.reviewers[0];
-    assert.deepEqual(r.rules.bonusOptions.map(o => o.points), [10, 5], '서류 100점이면 10점·5점');
+    assert.equal(r.rules.bonusMax, 5, '서류 100점이어도 최대 5점');
     assert.equal(r.rules.bonusThreshold, 40);
     const at = bonus => r.candidates.map((c, i) => ({ candidateId: c.id, attendance: 'present', scores: { c1: 30, c2: 20 }, bonus: i === 0 ? bonus : 0, note: i === 0 ? '보훈 확인서' : '' }));
-    for (const ok of [0.5, 7.5, 10]) d.saveEvaluation(r, v.id, 'document', at(ok));
-    assert.throws(() => d.saveEvaluation(r, v.id, 'document', at(10.5)), /0~10점/);
-    assert.throws(() => d.saveEvaluation(r, v.id, 'document', at(0.3)), /0.5점 단위/);
+    for (const ok of [0.5, 1.5, 3.5, 5]) d.saveEvaluation(r, v.id, 'document', at(ok));
+    assert.throws(() => d.saveEvaluation(r, v.id, 'document', at(5.5)), /0~5점/);
+    assert.throws(() => d.saveEvaluation(r, v.id, 'document', at(10)), /0~5점/);
+    assert.throws(() => d.saveEvaluation(r, v.id, 'document', at(0.3)), /0.5점 간격/);
     const odd = d.createRecruitment(input({ rubrics: { document: [{ label: '서류', max: 47 }], interview: [{ label: '면접', max: 50 }] }, allowBonus: true }));
-    assert.deepEqual(odd.rules.bonusOptions.map(o => o.points), [4.7, 2.35]);
     assert.equal(odd.rules.bonusThreshold, 18.8, '문턱은 0.5 단위로 내리지 않는다');
 });
