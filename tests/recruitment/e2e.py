@@ -62,6 +62,22 @@ with sync_playwright() as pw:
     step("심사표 불러오기 드롭다운", lambda: expect(page.locator("#create-form select[name=preset]")).to_contain_text("기초학력 협력강사"))
     step("심사관점 채점 방식 프리셋 반영", lambda: expect(page.locator("#rubric-document .rubric-row").first.locator("[name=kind]")).to_have_value("pick"))
     step("배점 합계 표시", lambda: expect(page.locator('[data-total="document"]')).to_contain_text("총 50점"))
+    step("원본 시트 영역 11개", lambda: expect(page.locator("#create-form select[name=preset] option")).to_have_count(12))
+
+    def sample_print():
+        page.select_option("#create-form select[name=preset]", label="방과후학교[컴퓨터부] 강사")
+        with ctx.expect_page(timeout=20000) as popup:
+            page.locator('[data-action="sample"][data-format="html"]').click()
+        p2 = popup.value
+        p2.wait_for_selector("section.page", timeout=15000)
+        body = p2.content()
+        assert "방과후학교[컴퓨터부] 강사 채용 서류심사 집계표" in body, "샘플 집계표 제목 없음"
+        assert "일강사" in body and "가나다" in body, "샘플 지원자·위원 없음"
+        p2.close()
+        page.select_option("#create-form select[name=preset]", label="기초학력 협력강사")
+        expect(page.locator("#create-form [name=field]")).to_have_value("기초학력 협력강사")
+
+    step("샘플 심사표 인쇄본", sample_print)
 
     def rubric_edit():
         page.click('[data-action="add-criterion"][data-stage="document"]')
@@ -138,8 +154,15 @@ with sync_playwright() as pw:
 
     step("위원 전체 링크 발급·목록 노출", invite_all)
 
-    def reviewer_flow(idx, sign):
+    # 휴대폰 폭에서 가로로 페이지가 밀리지 않는지(표는 자기 상자 안에서만 스크롤).
+    def no_page_overflow(pg, label):
+        over = pg.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
+        assert over <= 1, "%s: 페이지가 가로로 %dpx 넘침" % (label, over)
+
+    def reviewer_flow(idx, sign, mobile=False):
         rp = ctx.new_page()
+        if mobile:
+            rp.set_viewport_size({"width": 390, "height": 844})
         rp.on("pageerror", lambda e: errors.append("reviewer: " + str(e)))
         rp.on("console", lambda m: errors.append("reviewer console.%s: %s" % (m.type, m.text)) if m.type == "error" else None)
         rp.goto(links[idx])
@@ -164,10 +187,22 @@ with sync_playwright() as pw:
             expect(rp.get_by_text("서명 완료", exact=False).first).to_be_visible(timeout=8000)
         cells = rp.locator("#score-form .score").all()
         assert len(cells) > 0, "점수 입력칸 없음"
+        if mobile:
+            no_page_overflow(rp, "채점표(390px)")
+        # 점수는 직접 입력한다. 엉뚱한 값은 칸을 떠날 때 지워지고, 숫자가 아닌 글자는 입력 중에 걸러진다.
+        first = cells[0]
+        first.fill("999")
+        first.press("Tab")
+        expect(first).to_have_value("")
+        expect(rp.locator("#message")).to_contain_text("지웠습니다", timeout=3000)
+        first.fill("")
+        first.press_sequentially("3점")
+        expect(first).to_have_value("3")
         for i, cell in enumerate(cells):
-            limit = float(cell.get_attribute("max"))
+            limit = float(cell.get_attribute("data-max"))
             value = min(3 + (i % 3), limit)
             cell.fill(str(int(value) if value == int(value) else value))
+            cell.dispatch_event("change")
         # 심사관점 항목: 학력은 한 줄 고르기, 자격증은 해당 줄 체크·건수, 경력은 연수.
         for sel in rp.locator("#score-form select.pick").all():
             sel.select_option(index=1)
@@ -186,13 +221,21 @@ with sync_playwright() as pw:
         rp.close()
 
     step("위원1 서명·서류채점·제출", lambda: reviewer_flow(0, True))
-    step("위원2 서명·서류채점·제출", lambda: reviewer_flow(1, True))
+    step("위원2 서명·서류채점·제출(휴대폰 폭)", lambda: reviewer_flow(1, True, mobile=True))
 
     def shortlist():
         page.reload()
         page.wait_for_timeout(1500)
         page.get_by_role("button", name="통계·결과").click()
         expect(page.locator("#shortlist-form")).to_be_visible(timeout=8000)
+        # 통계 화면에도 인쇄본과 같은 심사관점 줄 단위 집계표가 나온다.
+        grid = page.locator(".criteria-sheet .criteria-grid").first
+        expect(grid).to_be_visible(timeout=5000)
+        expect(grid).to_contain_text("평가자")
+        expect(grid).to_contain_text("서류 심사 순위")
+        page.set_viewport_size({"width": 390, "height": 844})
+        no_page_overflow(page, "통계·결과(390px)")
+        page.set_viewport_size({"width": 1440, "height": 1000})
         boxes = page.locator("#shortlist-form input[name=candidateId]")
         boxes.nth(0).check()
         boxes.nth(1).check()

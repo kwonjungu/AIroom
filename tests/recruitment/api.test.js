@@ -53,7 +53,13 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     }
     r = (await request(`/${r.id}/finalize`, 'POST', { version: r.version })).json; assert.equal(r.snapshot.results[0].total, 100);
     const htmlResult = await request(`/${r.id}/export/html`); const html = await htmlResult.res.text(); assert.match(html, /window.print/); assert.ok(!html.includes('<script>alert(1)</script>')); assert.ok(!html.includes('<img src=x')); assert.match(html, /면접 심사 집계 합산 및 순위/); assert.match(html, /서류심사 채점표/); assert.match(html, /청 렴 서 약 서/);
-    const xlsxResult = await request(`/${r.id}/export/xlsx`); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(await xlsxResult.res.arrayBuffer())); assert.equal(workbook.worksheets.length, 7); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('G2').value, 100); assert.equal(workbook.getWorksheet('면접 최종 집계표').getCell('B2').type, ExcelJS.ValueType.String);
+    const xlsxResult = await request(`/${r.id}/export/xlsx`); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(await xlsxResult.res.arrayBuffer())); assert.equal(workbook.worksheets.length, 9); assert.equal(workbook.getWorksheet('면접 최종 통계').getCell('G2').value, 100); assert.equal(workbook.getWorksheet('면접 최종 통계').getCell('B2').type, ExcelJS.ValueType.String);
+    // 집계표 시트는 인쇄본과 같이 심사관점 줄 단위다: 항목 이름·평가자 줄·순위 줄이 있고, 위원 점수가 숫자로 찍힌다.
+    const grid = []; workbook.getWorksheet('서류심사 집계표').eachRow(row => row.eachCell(cell => grid.push(cell.value)));
+    assert.ok(grid.some(v => String(v).includes(r.rubrics.document[0].label)), '심사관점 줄');
+    assert.ok(grid.includes('평가자') && grid.includes('서류 심사 순위'));
+    assert.ok(grid.some(v => typeof v === 'number'));
+    assert.ok(workbook.getWorksheet('면접 집계·합산 및 순위'));
     const hwpxResult = await request(`/${r.id}/export/hwpx`); assert.equal(hwpxResult.res.status, 200); assert.equal(hwpxResult.res.headers.get('content-type'), 'application/hwp+zip'); const hwpxBuffer = Buffer.from(await hwpxResult.res.arrayBuffer()); assert.equal(hwpxBuffer.subarray(0, 2).toString(), 'PK');
     const zipResult = await request(`/${r.id}/export/zip`); const zip = await JSZip.loadAsync(Buffer.from(await zipResult.res.arrayBuffer())); assert.equal(Object.keys(zip.files).length, 5); assert.ok(zip.file('채점표_서약서_인쇄용.html')); assert.ok(zip.file('평가통계_확정본.hwpx'));
     assert.equal((await request(`/${r.id}/export/html`, 'GET', undefined, token)).res.status, 401);

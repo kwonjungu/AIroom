@@ -403,3 +403,19 @@ dialog::backdrop{background:#0006}
 .qr-col { width:124px; text-align:center }
 .qr-box { display:inline-block; line-height:0; border:1px solid var(--line,#e6e6e6); padding:4px; background:#fff }
 .qr-box svg { display:block }
+
+/* 심사관점별 집계표: 원본 시트 집계표 모양(가는 선, 회색 머리, 순위 줄 연노랑) */
+.criteria-sheet{margin-top:18px}.criteria-sheet summary{cursor:pointer;font-weight:700;margin-bottom:10px}
+.criteria-grid{border-collapse:collapse;font-size:12.5px;min-width:100%}
+.criteria-grid th,.criteria-grid td{border:1px solid var(--near-black);padding:4px 6px;text-align:center;vertical-align:middle;font-variant-numeric:tabular-nums}
+.criteria-grid th.h,.criteria-grid th.stage{background:var(--stone)}
+.criteria-grid td.gubun,.criteria-grid td.view{text-align:left;min-width:150px;font-size:12px}
+.criteria-grid td.nb,.criteria-grid tr.sum th{font-weight:700}
+.criteria-grid tr.rank td{background:#fff2cc;color:#000}
+@media (max-width:640px){
+  .criteria-grid{font-size:11.5px}
+  .criteria-grid th,.criteria-grid td{padding:3px 4px}
+  .criteria-grid td.gubun{min-width:84px;font-size:11px}
+  .criteria-grid td.view{min-width:104px;font-size:11px}
+  .criteria-sheet summary .muted{display:block;font-weight:400;margin-top:2px}
+}
