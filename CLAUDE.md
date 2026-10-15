@@ -446,7 +446,7 @@ node test-minimal.js      # 이름만 치환 (최소 수정)
 - `requireAuth` / `requireAdmin` 미들웨어
 - 세션 토큰 → `localStorage.airoom_auth_token`
 - 접근코드 기본값 `1234` (user), `admin1234` (admin)
-- 실패 시 브루트포스 방어 (점진적 잠금)
+- 실패 시 브루트포스 방어 (`lib/login-guard.js`, 2026-10-15): 같은 기기(`X-Device-Id`, 브라우저 localStorage `baekam_device_id`) 10회 또는 같은 IP 합계 30회 실패 → 24시간 금지. 본관·채용·관리자 포털·급식 관리자·메일 로그인이 Redis 장부 하나를 공유(카피본 경로 포함). 성공하면 그 기기 실패 수만큼 IP 장부에서 빼 줌(교내 공인 IP 공유 대비). 관리자 포털 「🔒 로그인 잠금」에서 즉시 해제. 새 로그인 화면을 만들면 요청 헤더에 기기 ID 를 붙이고 라우트에 `loginLockGate`·`loginFailed`·`loginSucceeded` 를 쓸 것.
 
 ### API 호출 패턴 (프론트)
 ```js

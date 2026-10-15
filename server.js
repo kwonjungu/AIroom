@@ -170,87 +170,33 @@ async function requireAuthOrVibe(req, res, next) {
     next();
 }
 
-// ===== 브루트포스 방어 시스템 =====
-// IP별 로그인 실패 추적 및 점진적 잠금
-const loginAttempts = new Map(); // ip → { failures, lockedUntil, totalFailures }
-const LOCKOUT_POLICY = [
-    { threshold: 5,  duration: 1 * 60 * 1000 },   // 5회 실패 → 1분 잠금
-    { threshold: 10, duration: 5 * 60 * 1000 },   // 10회 실패 → 5분 잠금
-    { threshold: 15, duration: 30 * 60 * 1000 },  // 15회 실패 → 30분 잠금
-    { threshold: 20, duration: 60 * 60 * 1000 },  // 20회 실패 → 1시간 잠금
-];
-const MAX_FAILURES_BEFORE_LONG_LOCK = 25; // 25회 이상 → 24시간 잠금
-const LONG_LOCK_DURATION = 24 * 60 * 60 * 1000;
-const ATTEMPT_RESET_AFTER = 60 * 60 * 1000; // 마지막 실패 후 1시간 지나면 카운터 리셋
-
-function getLoginAttemptInfo(ip) {
-    const now = Date.now();
-    let entry = loginAttempts.get(ip);
-    if (!entry) return null;
-    // 마지막 실패 후 1시간 경과 시 카운터 리셋
-    if (entry.lastFailure && (now - entry.lastFailure) > ATTEMPT_RESET_AFTER) {
-        loginAttempts.delete(ip);
-        return null;
-    }
-    return entry;
+// ===== 브루트포스 방어: 백암이 전체 로그인 잠금 (lib/login-guard.js) =====
+// 기기 10회 / IP 30회 실패 → 24시간 금지, 관리자 포털에서 즉시 해제. 기록은 Redis(없으면 메모리).
+// 예전 메모리 전용 단계 잠금(5회 1분…)은 Vercel 처럼 서버가 여러 개 뜨는 곳에서 장부가 흩어져 거의 동작하지 않았다.
+const { createLoginGuard, lockMessage } = require('./lib/login-guard');
+let loginGuardInstance = null;
+// redis 는 아래 'Upstash Redis' 절에서 정해진다. 첫 로그인 때 만든다.
+const loginGuard = () => loginGuardInstance || (loginGuardInstance = createLoginGuard({ redis }));
+const guardWho = req => ({ ip: req.ip || req.connection?.remoteAddress || '', device: req.headers['x-device-id'] });
+// 로그인 라우트 앞에 붙인다: 금지 중이면 비밀번호를 확인하지 않고 바로 돌려보낸다.
+// 시연용 카피본(/api/copy/…)도 같은 장부를 쓴다 — 카피본 경로로 실서비스 메일 비밀번호를 두드리는 우회를 막는다.
+async function loginLockGate(req, res, next) {
+    try {
+        const lock = await loginGuard().check(guardWho(req));
+        if (lock.locked) return res.status(429).json({ error: lockMessage(lock), locked: true, scope: lock.scope, remainSec: lock.remainSec });
+    } catch (e) { console.error('[login-guard check]', e.message); }
+    next();
 }
-
-function checkLoginLock(ip) {
-    const now = Date.now();
-    const entry = getLoginAttemptInfo(ip);
-    if (!entry) return { locked: false };
-    if (entry.lockedUntil && now < entry.lockedUntil) {
-        const remainMs = entry.lockedUntil - now;
-        const remainSec = Math.ceil(remainMs / 1000);
-        return { locked: true, remainSec, failures: entry.failures };
-    }
-    return { locked: false, failures: entry.failures };
+// 틀렸을 때 응답 본문을 만든다(남은 횟수 3번 이하부터 알려 준다).
+async function loginFailed(req, res, message) {
+    let r = null;
+    try { r = await loginGuard().fail(guardWho(req)); } catch (e) { console.error('[login-guard fail]', e.message); }
+    if (r?.locked) return res.status(429).json({ error: lockMessage(r), locked: true, scope: r.scope, remainSec: r.remainSec });
+    const body = { error: message };
+    if (r && r.left !== null && r.left <= 3) { body.error += ` (${r.left}회 더 틀리면 24시간 동안 로그인이 금지됩니다)`; body.attemptsLeft = r.left; }
+    return res.status(401).json(body);
 }
-
-function recordLoginFailure(ip) {
-    const now = Date.now();
-    let entry = getLoginAttemptInfo(ip) || { failures: 0, lockedUntil: null, lastFailure: null };
-    entry.failures++;
-    entry.lastFailure = now;
-
-    // 점진적 잠금 시간 결정
-    if (entry.failures >= MAX_FAILURES_BEFORE_LONG_LOCK) {
-        entry.lockedUntil = now + LONG_LOCK_DURATION;
-    } else {
-        // 정책 테이블에서 해당하는 가장 높은 단계 적용
-        for (let i = LOCKOUT_POLICY.length - 1; i >= 0; i--) {
-            if (entry.failures >= LOCKOUT_POLICY[i].threshold) {
-                entry.lockedUntil = now + LOCKOUT_POLICY[i].duration;
-                break;
-            }
-        }
-    }
-
-    loginAttempts.set(ip, entry);
-
-    // 잠금 상태 반환
-    const nextThreshold = LOCKOUT_POLICY.find(p => p.threshold > entry.failures);
-    const remaining = nextThreshold ? (nextThreshold.threshold - entry.failures) : 0;
-    return {
-        failures: entry.failures,
-        lockedUntil: entry.lockedUntil,
-        attemptsUntilLock: remaining
-    };
-}
-
-function resetLoginAttempts(ip) {
-    loginAttempts.delete(ip);
-}
-
-// 오래된 잠금 기록 주기적 정리 (메모리 누수 방지)
-setInterval(() => {
-    const now = Date.now();
-    for (const [ip, entry] of loginAttempts) {
-        if (entry.lastFailure && (now - entry.lastFailure) > ATTEMPT_RESET_AFTER) {
-            loginAttempts.delete(ip);
-        }
-    }
-}, 10 * 60 * 1000); // 10분마다 정리
+async function loginSucceeded(req) { try { await loginGuard().success(guardWho(req)); } catch (e) { console.error('[login-guard success]', e.message); } }
 
 // GitHub Pages 미러(kwonjungu.github.io/AIroom)에서 이 서버의 API를 쓸 수 있게 CORS 허용
 const CORS_ORIGINS = new Set(['https://kwonjungu.github.io']);
@@ -260,7 +206,7 @@ app.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Vary', 'Origin');
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Auth-Token,X-Vibe-Client,X-Room-Code,X-Owner');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Auth-Token,X-Vibe-Client,X-Room-Code,X-Owner,X-Device-Id');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
         res.setHeader('Access-Control-Max-Age', '86400');
         if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -394,24 +340,9 @@ async function getAuthCodes() {
 }
 
 // 로그인 (인증코드 검증 + 브루트포스 방어)
-app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
-    const ip = req.ip || req.connection.remoteAddress;
+app.post('/api/auth/login', rateLimit(10, 60000), loginLockGate, async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: '인증 코드를 입력해주세요.' });
-
-    // 잠금 상태 확인
-    const lockStatus = checkLoginLock(ip);
-    if (lockStatus.locked) {
-        const min = Math.floor(lockStatus.remainSec / 60);
-        const sec = lockStatus.remainSec % 60;
-        const timeStr = min > 0 ? `${min}분 ${sec}초` : `${sec}초`;
-        return res.status(429).json({
-            error: `로그인 시도가 너무 많습니다. ${timeStr} 후에 다시 시도해주세요.`,
-            locked: true,
-            remainSec: lockStatus.remainSec,
-            failures: lockStatus.failures
-        });
-    }
 
     const auth = await getAuthCodes();
 
@@ -423,29 +354,10 @@ app.post('/api/auth/login', rateLimit(10, 60000), async (req, res) => {
         return res.status(500).json({ error: '인증 처리 오류' });
     }
 
-    if (!role) {
-        // 실패 기록 및 잠금 정보 반환
-        const result = recordLoginFailure(ip);
-        const response = { error: '잘못된 인증 코드입니다.' };
-        if (result.attemptsUntilLock > 0 && result.attemptsUntilLock <= 3) {
-            response.error += ` (${result.attemptsUntilLock}회 남음)`;
-            response.attemptsLeft = result.attemptsUntilLock;
-        }
-        if (result.lockedUntil) {
-            const lockSec = Math.ceil((result.lockedUntil - Date.now()) / 1000);
-            const min = Math.floor(lockSec / 60);
-            const sec = lockSec % 60;
-            const timeStr = min > 0 ? `${min}분 ${sec}초` : `${sec}초`;
-            response.error = `로그인 시도 초과. ${timeStr} 동안 잠금됩니다.`;
-            response.locked = true;
-            response.remainSec = lockSec;
-        }
-        response.failures = result.failures;
-        return res.status(401).json(response);
-    }
+    if (!role) return loginFailed(req, res, '잘못된 인증 코드입니다.');
 
-    // 로그인 성공 시 실패 카운터 리셋
-    resetLoginAttempts(ip);
+    // 로그인 성공: 이 기기의 실패 기록을 지운다
+    await loginSucceeded(req);
 
     const token = generateToken();
     await saveSession(token, {
@@ -1840,7 +1752,7 @@ app.post('/api/bap/auth/signup', async (req, res) => {
 });
 
 // 로그인
-app.post('/api/bap/auth/login', async (req, res) => {
+app.post('/api/bap/auth/login', loginLockGate, async (req, res) => {
     try {
         const { role, name, password } = req.body || {};
         const school = resolveSchool(req);
@@ -1851,9 +1763,8 @@ app.post('/api/bap/auth/login', async (req, res) => {
         const map = (await readData(file)) || {};
         const acc = map[cleanName];
         if (!acc) return res.status(404).json({ error: '가입되지 않은 이름입니다.' });
-        if (!verifyPassword(password, acc.pwHash, acc.pwSalt)) {
-            return res.status(401).json({ error: '비밀번호가 틀립니다.' });
-        }
+        if (!verifyPassword(password, acc.pwHash, acc.pwSalt)) return loginFailed(req, res, '비밀번호가 틀립니다.');
+        await loginSucceeded(req);
         const token = generateToken();
         await bapSessionSet(token, { role, school, name: cleanName, createdAt: Date.now() });
         res.json({ token, name: cleanName, role, school });
@@ -2350,6 +2261,18 @@ app.post('/api/translate', requireAuth, async (req, res) => {
 
 // ===== 관리자 전용 API =====
 // 세션 목록 조회
+// 로그인 잠금 목록·해제(관리자 포털). 기기 ID 는 앞 8자만 보여 준다.
+app.get('/api/admin/login-locks', requireAdmin, async (req, res) => {
+    try { res.json({ items: await loginGuard().list() }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/login-locks/unlock', requireAdmin, async (req, res) => {
+    try {
+        const ok = await loginGuard().unlock((req.body || {}).key);
+        if (!ok) return res.status(400).json({ error: '해제할 기록을 다시 고르세요.' });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/admin/sessions', requireAdmin, (req, res) => {
     const list = [];
     sessions.forEach((session, token) => {
@@ -2530,10 +2453,9 @@ function mailAuth(req, res, next) {
 // 페이지 진입용 비밀번호 확인 — 학급 전체가 학교 NAT(공인 IP 1개) 뒤에서 동시 접속하므로 한도 넉넉히
 app.use('/api/mail/provider', mailAuth, express.json({ type: 'application/merge-patch+json', limit: '16kb' }), require('./lib/mail-proxy'));
 
-app.post('/api/mail/login', rateLimit(60, 60000), (req, res) => {
-    if (((req.body || {}).password || '') !== MAIL_KEY) {
-        return res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
-    }
+app.post('/api/mail/login', rateLimit(60, 60000), loginLockGate, async (req, res) => {
+    if (((req.body || {}).password || '') !== MAIL_KEY) return loginFailed(req, res, '비밀번호가 올바르지 않습니다.');
+    await loginSucceeded(req);
     res.json({ success: true });
 });
 

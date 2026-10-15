@@ -251,7 +251,7 @@ async function gateLogin() {
     err.textContent = '';
     try {
         const r = await fetch('/api/mail/login', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Device-Id': (window.baekamDeviceId||(window.baekamDeviceId=(()=>{try{let v=localStorage.getItem('baekam_device_id');if(!/^[A-Za-z0-9_-]{16,64}$/.test(v||'')){v=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');localStorage.setItem('baekam_device_id',v)}return v}catch(e){return ''}})())) },
             body: JSON.stringify({ password: pw })
         });
         if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || '비밀번호가 올바르지 않습니다.'); }
@@ -569,7 +569,7 @@ async function deleteCurrent() {
     for (let i = 0; i < 3; i++) {
         try {
             const r = await fetch('/api/mail/login', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Device-Id': (window.baekamDeviceId||(window.baekamDeviceId=(()=>{try{let v=localStorage.getItem('baekam_device_id');if(!/^[A-Za-z0-9_-]{16,64}$/.test(v||'')){v=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');localStorage.setItem('baekam_device_id',v)}return v}catch(e){return ''}})())) },
                 body: JSON.stringify({ password: mailKey })
             });
             if (r.ok) {

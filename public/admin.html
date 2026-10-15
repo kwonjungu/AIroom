@@ -115,6 +115,13 @@
                 <button class="btn btn-danger" onclick="clearSessions()" style="margin-top:12px;width:100%;">모든 세션 강제 종료</button>
             </div>
 
+            <!-- 로그인 잠금 (기기 10회 · IP 30회 실패 → 24시간) -->
+            <div class="admin-card">
+                <h3>🔒 로그인 잠금</h3>
+                <p style="font-size:12px;color:var(--text-light);margin:0 0 10px;">같은 기기에서 10번, 같은 네트워크(IP)에서 합계 30번 틀리면 24시간 동안 로그인이 금지됩니다. 교무실·채용·급식·메일 로그인에 모두 적용됩니다. 선생님이 요청하면 여기서 바로 풀어 주세요.</p>
+                <div class="session-list" id="lockList">로딩 중...</div>
+            </div>
+
             <!-- 인증 코드 변경 -->
             <div class="admin-card">
                 <h3>🔑 인증 코드 관리</h3>
@@ -204,7 +211,7 @@ async function adminLogin() {
     try {
         const r = await fetch('/api/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Device-Id': (window.baekamDeviceId||(window.baekamDeviceId=(()=>{try{let v=localStorage.getItem('baekam_device_id');if(!/^[A-Za-z0-9_-]{16,64}$/.test(v||'')){v=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');localStorage.setItem('baekam_device_id',v)}return v}catch(e){return ''}})())) },
             body: JSON.stringify({ code })
         });
         const data = await r.json();
@@ -274,7 +281,7 @@ async function checkAdminAuth() {
 }
 
 async function refreshAll() {
-    await Promise.all([loadSystemStatus(), loadDataStats(), loadSessions()]);
+    await Promise.all([loadSystemStatus(), loadDataStats(), loadSessions(), loadLocks()]);
 }
 
 async function loadSystemStatus() {
@@ -347,6 +354,30 @@ async function loadSessions() {
     } catch (e) {
         el.innerHTML = '<p style="color:var(--text-light);">로딩 실패</p>';
     }
+}
+
+async function loadLocks() {
+    const el = document.getElementById('lockList');
+    try {
+        const data = await adminApi('GET', '/api/admin/login-locks');
+        const items = (data && data.items) || [];
+        if (!items.length) { el.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:20px;">잠긴 기기·네트워크 없음</p>'; return; }
+        el.innerHTML = items.map(x => `
+            <div class="session-item">
+                <div>
+                    <span class="session-role ${x.lockedUntil ? 'admin' : 'user'}">${x.lockedUntil ? '금지 중' : '실패 기록'}</span>
+                    <span>${x.kind === 'ip' ? '네트워크(IP) ' : '기기 '}<span style="font-family:monospace;">${esc(x.id)}</span> · ${x.failures}회 실패</span>
+                    <div style="font-size:11px;color:var(--text-light);">${x.lockedUntil ? new Date(x.lockedUntil).toLocaleString('ko-KR') + '까지' : '마지막 실패 ' + new Date(x.lastFailure).toLocaleString('ko-KR')}</div>
+                </div>
+                <button class="btn" data-key="${esc(x.key)}" onclick="unlockLogin(this.dataset.key)">해제</button>
+            </div>`).join('');
+    } catch (e) { el.innerHTML = '<p style="color:var(--text-light);">로딩 실패</p>'; }
+}
+async function unlockLogin(key) {
+    if (!confirm('이 기록을 지워 로그인 금지를 풀까요?')) return;
+    const data = await adminApi('POST', '/api/admin/login-locks/unlock', { key });
+    if (data && data.success) { showToast('로그인 금지를 풀었습니다.', 'success'); loadLocks(); }
+    else showToast((data && data.error) || '해제하지 못했습니다.', 'error');
 }
 
 async function clearSessions() {

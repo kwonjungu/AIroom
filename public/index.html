@@ -2555,7 +2555,7 @@ async function handleLogin(){
     if(!code){errEl.textContent='인증 코드를 입력해주세요.';input.classList.add('error');return;}
     btn.disabled=true;btn.textContent='확인 중...';
     try{
-        const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+        const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json','X-Device-Id':(window.baekamDeviceId||(window.baekamDeviceId=(()=>{try{let v=localStorage.getItem('baekam_device_id');if(!/^[A-Za-z0-9_-]{16,64}$/.test(v||'')){v=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');localStorage.setItem('baekam_device_id',v)}return v}catch(e){return ''}})()))},body:JSON.stringify({code})});
         const data=await r.json();
         if(!r.ok){
             errEl.textContent=data.error||'인증 실패';
