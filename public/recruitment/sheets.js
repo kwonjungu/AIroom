@@ -2,7 +2,8 @@
 // 서버(require)와 브라우저(<script>, window.RecruitmentSheets) 양쪽에서 읽는다. 그래서 lib 가 아니라 public 에 있고 Node 전용 API 를 쓰지 않는다.
 (function (root) {
 'use strict';
-// 원본 구글 시트 심사표(KHSDO)의 쪽 구성을 그대로 따른다. 전부 A4 세로.
+// 원본 구글 시트 심사표(KHSDO)의 쪽 구성을 그대로 따른다. 기본은 전부 A4 세로.
+// 집계표만 채용을 만들 때 고른 용지(rules.summaryOrient)를 따른다: 'landscape' 면 A4 가로에 지원자 10명(면접 4명)씩.
 // 순서: 청렴서약서(위원별) → 서류심사 채점표(위원별) → 서류심사 집계표 → 면접 채점표(위원별) → 면접 집계·합산 및 순위.
 // 표의 행은 원본처럼 '구분 | 심사관점' 한 줄씩이고, 위원이 고른 심사관점 줄에 점수가 찍힌다.
 //
@@ -109,8 +110,12 @@ function summaryPages(s, stage, { fit = false } = {}) {
     const reviewers = s.reviewers.filter(v => v.stages.includes(stage)), R = reviewers.length;
     const results = stage === 'document' ? s.documentResults : s.results;
     const list = stageList(s, stage).map(c => ({ c, res: results.find(x => x.candidateId === c.id) }));
-    const size = Math.max(1, Math.min(SLOTS[stage], Math.floor(SUMMARY_COLUMNS / R)));
-    const rows = sheetRows(s, stage);
+    const land = s.rules?.summaryOrient === 'landscape';
+    // 세로: 한 쪽 40칸(원본). 가로: 위원 수와 상관없이 10명(면접 4명)씩 — 칸이 넓어져 글씨가 커진다.
+    const size = land ? SLOTS[stage] : Math.max(1, Math.min(SLOTS[stage], Math.floor(SUMMARY_COLUMNS / R)));
+    // 가로 쪽은 심사관점 글을 한 줄로 펴서 줄 높이를 낮춘다(본문 높이가 186mm 뿐이라).
+    const rows = land ? sheetRows(s, stage).map(r => ({ ...r, view: r.view.replace(/\n\(/g, ' (').replace(/\n/g, ', '), head: r.head.replace(/\n/g, ' ') })) : sheetRows(s, stage);
+    const lead = land ? [4, 15, 21] : LEAD_COLS, leadSum = lead.reduce((a, b) => a + b, 0);
     const basis = s.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균';
     return chunk(list, size).map(group => {
         const slots = fit ? group : [...group, ...Array(size - group.length).fill(null)];
@@ -118,7 +123,7 @@ function summaryPages(s, stage, { fit = false } = {}) {
         const absent = x => x.res?.absent ? '불참' : null;
         const per = (label, fn, cls = 'sum') => ({ cls, cells: [C(label, 'h', 3), ...slots.map(x => x ? C(fn(x), 'nb', R) : C('', 'blank', R))] });
         const table = {
-            cols: [...LEAD_COLS, ...slots.flatMap(() => reviewers.map(() => (100 - 42) / (slots.length * R)))],
+            cols: [...lead, ...slots.flatMap(() => reviewers.map(() => (100 - leadSum) / (slots.length * R)))],
             rows: [
                 { head: true, cells: [C('전형\n방법', 'h', 1, 3), C('구분\n(배점)', 'h', 1, 3), C('심사관점', 'h', 1, 2), C('강사별 심사표', 'h', slots.length * R)] },
                 { head: true, cells: slots.map(x => C(x ? x.c.name : '', 'cand', R)) },
@@ -133,7 +138,9 @@ function summaryPages(s, stage, { fit = false } = {}) {
         const note = stage === 'document'
             ? `평균은 배정 위원 전원 제출 후 소수 첫째 자리 반올림 · 동점은 공동순위 · 면접대상자 선정 사유: ${s.shortlistReason ?? ''}`
             : `강사 순위 기준: ${basis} · 동점은 공동순위이며 최종 선발은 기관 기준에 따라 별도로 결정합니다.`;
-        return { type: 'sheet', title: `${s.field} 채용 ${stage === 'document' ? '서류심사 집계표' : '면접 심사 집계 합산 및 순위'}`, field: s.field, signers: reviewers, table, tight: true, roomy: stage === 'interview', note, date: dotDate(stageDate(s, stage)), school: s.school };
+        // 위원 칸 폭(mm). 가로 쪽에서 5mm 이상이면 작은 글씨(tight)를 쓰지 않는다.
+        const cellMm = (land ? 277 : 190) * (100 - leadSum) / 100 / (slots.length * R || 1);
+        return { type: 'sheet', title: `${s.field} 채용 ${stage === 'document' ? '서류심사 집계표' : '면접 심사 집계 합산 및 순위'}`, field: s.field, signers: reviewers, table, tight: !land || cellMm < 5, roomy: stage === 'interview' && !land, orient: land ? 'landscape' : 'portrait', note, date: dotDate(stageDate(s, stage)), school: s.school };
     });
 }
 function pledgePageModel(s, reviewer) {
