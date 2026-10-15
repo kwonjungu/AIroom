@@ -141,11 +141,13 @@ def admin_deck():
         ('관리번호', '001, 002 …', '과목 + 순번 (담임01, 담임02 …)'),
     ], expl='원본은 강사 채용 프로그램(KHSDO)과 계약제교원 채용 프로그램(KHSDO) 엑셀이에요. 기준과 문구는 그대로 옮겼어요.')
     d.steps('전체 흐름', '여섯 단계', [
-        ('로그인', '백암이 접근 코드'), ('채용 만들기', '표준 고르기 → 정보 · 배점 · 위원 · 지원자'), ('링크 보내기', '위원 전체 링크 · QR 배부표'),
+        ('로그인', '학교 찾기 + 학교 코드'), ('채용 만들기', '표준 고르기 → 정보 · 배점 · 위원 · 지원자'), ('링크 보내기', '위원 전체 링크 · QR 배부표'),
         ('대상자 고르기', '서류 결과 보고 면접(·수업실연) 대상자'), ('결과 확정', '모든 위원 제출 후'), ('문서 받기', '한글 · Excel · 인쇄용 PDF')])
 
-    d.section(1, '들어가기', '백암이 접근 코드 하나면 돼요')
-    d.capture('채용 관리 로그인', '백암이 접근 코드', 'k-01-login.png', 'AI 교무실 메뉴 「채용 관리」나 주소 /recruitment 로 들어와요. 백암이에 들어갈 때 쓰는 접근 코드를 넣으세요. 10번 틀리면 그 기기는 24시간 금지돼요.')
+    d.section(1, '들어가기', '학교 공간 — 학교를 찾고, 학교 코드를 넣어요')
+    d.capture('학교 공간', '학교 찾기', 'h-04-login-search.png', '주소 a-iroom.vercel.app/hub 로 들어와 학교 이름을 찾으세요(NEIS 학교 정보). 「사용 중」인 학교만 고를 수 있어요. 미등록이면 관리자에게 등록을 요청하세요.')
+    d.capture('관리자가 준', '학교 코드', 'h-05-login-code.png', '우리 학교를 누르고 관리자가 준 학교 코드를 넣으면 들어가요. 같은 학교 선생님들이 같은 코드를 써요. 10번 틀리면 그 기기는 24시간 금지돼요.')
+    d.capture('학교 공간에서', '채용 관리', 'h-06-school-home.png', '우리 학교 공간 첫 화면이에요. 「채용 관리」 카드를 누르세요. 학교 공간에 도구가 더해지면 여기에 카드가 늘어나요.')
     d.capture('왼쪽 위', '+ 새 채용', 'k-02-home.png', '왼쪽 채용 목록에 지금까지 만든 채용이 진행 단계와 함께 보여요. 새로 시작하려면 「+ 새 채용」을 누르세요.')
 
     d.section(2, '채용 만들기', '표준 고르기 → 정보 → 배점 → 위원 → 지원자')
@@ -183,7 +185,7 @@ def admin_deck():
     d.cards('막혔을 때', '', [
         ('링크', '위원이 링크를 잃어버렸어요', '기본 설정 탭에서 그 위원만 「다시 발급」. 이전 링크는 바로 막혀요.'),
         ('제출', '위원이 잘못 냈어요', '평가 진행 탭 「다시 열기」 → 사유 입력. 다음 전형으로 넘어가면 고칠 수 없어요.'),
-        ('로그인', '로그인이 금지됐어요', '관리자 포털 「🔒 로그인 잠금」에서 바로 풀 수 있어요. 학교 네트워크 전체가 막혔다면 휴대폰 데이터로 접속해 푸세요.'),
+        ('로그인', '학교 코드를 모르거나 금지됐어요', '학교 코드는 관리자에게 받아요(잊으면 관리자가 새 코드 발급). 10번 틀려 금지됐으면 관리자가 백암이 관리자 포털 「🔒 로그인 잠금」에서 풀어 줘요.'),
     ])
     d.capture('다 끝났으면', '채용 삭제', 'k-24-delete.png', '문서를 받아 보관했다면 기본 설정 탭 맨 아래에서 지울 수 있어요. 채용명을 그대로 입력해야 지워지고, 되돌릴 수 없어요.')
     d.sentence(['표준만 고르면,', '<span class="hl2">나머지는 같아요</span>'], '🅐 강사 채용 표준 · 🅑 계약제 교원 채용 표준')
@@ -240,6 +242,27 @@ def reviewer_deck():
     return d
 
 
+# ════════════════════════════════════════ 관리자용 ════════════════════════════════════════
+def manager_deck():
+    d = Deck('학교 공간 사용 설명서 · 관리자용', '학교 공간 · 관리자용')
+    d.cover(['학교를 등록하면,', '그 학교 공간이 열려요'], '학교 등록 · 학교 코드 · 정지 · 전체 데이터 확인')
+    d.steps('관리자가 하는 일', '', [('관리자 로그인', '백암이 관리자 코드'), ('학교 등록', 'NEIS 에서 찾고 학교 코드 정하기'), ('코드 전달', '학교 담당 선생님께'), ('관리', '열기 · 코드 바꾸기 · 정지 · 삭제')],
+            expl='등록하지 않았거나 정지한 학교는 들어올 수 없어요. 등록한 학교는 각자 자기 공간과 데이터만 봐요.')
+    d.section(1, '관리자 로그인', '/hub/admin')
+    d.capture('관리자 화면', '백암이 관리자 코드', 'h-01-admin-login.png', '주소 a-iroom.vercel.app/hub/admin. 백암이 관리자 코드로 들어와요(백암이와 같은 암호화로 확인, 따로 비밀번호를 두지 않아요). 학교 코드처럼 10번 틀리면 그 기기가 금지돼요.')
+    d.section(2, '학교 등록', 'NEIS 에서 찾고, 학교 코드를 정해요')
+    d.capture('NEIS 에서 찾아', '고르고 코드 정하기', 'h-02-admin-register.png', '학교 이름으로 찾으면 교육청·주소가 함께 나와요(이름이 같은 학교를 구별). 학교를 누르고 「코드 만들기」나 직접 정한 코드로 「등록」. 코드는 등록할 때 한 번만 보여 주니 바로 전해 주세요.')
+    d.section(3, '학교 관리')
+    d.capture('등록한 학교', '열기 · 코드 · 정지 · 삭제', 'h-03-admin-list.png', '「열기」는 그 학교 채용 관리를 관리자로 열어요(모든 채용·점수·이력 확인, 대신 작업 가능). 「코드 바꾸기」는 이전 코드를 바로 막아요. 「정지」하면 학교 사람·위원 모두 못 들어오고 데이터는 남아요.')
+    d.cards('지울 때·옮길 때', '', [
+        ('삭제', '학교 이름을 그대로 입력', '등록만 지우거나, 채용 데이터까지 함께 지울지 고를 수 있어요. 데이터 삭제는 되돌릴 수 없어요.'),
+        ('옮기기', '백암이 채용 → 학교 공간', '백암이 안에 있던 채용을 한 학교 공간으로 복사해요. 원본은 남고, 백암이 채용 메뉴와 옛 위원 링크는 그 학교 공간으로 이어져요.'),
+        ('데이터', '학교마다 따로', '학교 공간끼리는 서로 볼 수 없어요. 관리자만 모든 학교를 열 수 있어요.'),
+    ])
+    d.sentence(['등록한 학교만,', '<span class="hl2">자기 공간에서</span>'], '관리자는 모든 학교를 확인하고 검증해요')
+    return d
+
+
 INDEX = '''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>채용 관리 사용 설명서</title><meta name="description" content="백암이 채용 관리 사용 설명서 — 담당자용 · 심사위원용">
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
@@ -250,7 +273,7 @@ INDEX = '''<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name
 h1{font-family:"Black Han Sans","Pretendard",sans-serif;font-weight:400;font-size:clamp(40px,7vw,76px);line-height:1.1;margin:18px 0 10px;text-align:center}
 .k{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:6px 16px;font-size:14px;font-weight:700}
 p.s{color:#cacacb;font-size:18px;margin:0 0 40px;text-align:center}
-.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;width:100%;max-width:880px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;width:100%;max-width:1080px}
 a.c{display:flex;flex-direction:column;gap:10px;background:#fff;color:#111;border-radius:22px;padding:30px 28px;text-decoration:none;min-height:220px;transition:transform .15s}
 a.c:hover{transform:translateY(-3px)}a.c:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
 a.c b{font-size:15px;color:#fff;background:var(--ac);align-self:flex-start;border-radius:999px;padding:5px 14px}
@@ -258,14 +281,16 @@ a.c h2{font-family:"Black Han Sans","Pretendard",sans-serif;font-weight:400;font
 a.c span{color:var(--mute);font-size:16px;line-height:1.55}
 .f{margin-top:36px;color:#9e9ea0;font-size:14px;text-align:center;line-height:1.7}.f a{color:#fff}
 </style></head><body>
-<span class="k">백암이 채용 관리</span><h1>사용 설명서</h1><p class="s">강사 채용 표준 · 계약제 교원 채용 표준을 한 권에</p>
+<span class="k">학교 공간 · 채용 관리</span><h1>사용 설명서</h1><p class="s">강사 채용 표준 · 계약제 교원 채용 표준을 한 권에</p>
 <div class="g"><a class="c" href="admin.html"><b>담당자용</b><h2>채용 진행하는 선생님</h2><span>채용 만들기 · 위원 링크 · 대상자 선정 · 결과 확정 · 한글/Excel 받기</span></a>
-<a class="c" href="reviewer.html"><b>심사위원용</b><h2>평가하는 위원</h2><span>링크 열기 · 서약서 서명 · 눌러서 채점 · 제출 (휴대폰 · PC)</span></a></div>
-<p class="f">← → 로 넘기고, T 목차 · F 목록 보기 · P 인쇄 보기<br><a href="/recruitment">채용 관리로 돌아가기</a></p>
+<a class="c" href="reviewer.html"><b>심사위원용</b><h2>평가하는 위원</h2><span>링크 열기 · 서약서 서명 · 눌러서 채점 · 제출 (휴대폰 · PC)</span></a>
+<a class="c" href="manager.html"><b>관리자용</b><h2>학교 공간 관리자</h2><span>학교 등록 · 학교 코드 발급 · 정지 · 전체 데이터 확인 · 백암이 채용 옮기기</span></a></div>
+<p class="f">← → 로 넘기고, T 목차 · F 목록 보기 · P 인쇄 보기<br><a href="/hub">학교 공간으로</a></p>
 </body></html>'''
 
 if __name__ == '__main__':
     (OUT / 'admin.html').write_text(admin_deck().html('채용 관리 사용 설명서 · 담당자용', '백암이 채용 관리 담당자용 설명서 — 강사 채용 표준과 계약제 교원 채용 표준'), encoding='utf-8')
     (OUT / 'reviewer.html').write_text(reviewer_deck().html('채용 관리 사용 설명서 · 심사위원용', '백암이 채용 관리 심사위원용 설명서 — 링크 열기, 서명, 눌러서 채점, 제출'), encoding='utf-8')
+    (OUT / 'manager.html').write_text(manager_deck().html('학교 공간 사용 설명서 · 관리자용', '학교 공간 관리자 설명서 — 학교 등록, 학교 코드, 정지, 전체 데이터 확인'), encoding='utf-8')
     (OUT / 'index.html').write_text(INDEX, encoding='utf-8')
     print('만듦:', [p.name for p in OUT.glob('*.html')])
