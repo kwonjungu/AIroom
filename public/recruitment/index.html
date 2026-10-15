@@ -1,5 +1,12 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><script>
+// ===== 학교 공간으로 옮긴 뒤: 옛 /recruitment 주소(위원 링크 포함)는 그 학교 채용 화면으로 =====
+(function(){
+    if(!/^\/recruitment\/?$/.test(location.pathname)||window.RECRUIT_CTX)return;
+    try{var x=new XMLHttpRequest();x.open('GET','/api/hub/migrated',false);x.send();
+        var m=x.status===200&&JSON.parse(x.responseText);
+        if(m&&m.schoolId)location.replace('/hub/s/'+encodeURIComponent(m.schoolId)+'/recruitment'+location.search+location.hash);}catch(e){}
+})();
 // ===== 시연용 카피본 (/copy/…) — 실서비스와 데이터 공간 분리 =====
 // 브라우저 저장소 키에 'copy:'를 붙이고, '/api/*' 요청·주소를 카피본 공간으로, 앱 내부 링크를 /copy/… 로 바꾼다.
 (function(){
