@@ -54,6 +54,18 @@ AI 실험실 → 가정통신문 번역기(PDF·HWPX·HWP). multicultural-board 
 - **폰트** `TranslateAutofit.fontForLang(lang)` — km=Khmer UI, 라틴·키릴=Arial, 한중일=**함초롬바탕**(예전 '함초롱바탕'은 오타라 교체가 무효였다).
 - 테스트: `node _check/doc-translate-test.js` (가짜 모델로 엔진 규칙 + 실제 템플릿 HWPX 왕복). 번역 코드 수정 시 실행할 것.
 
+## 학교 공간 (/hub, 2026-10-15) — 백암이와 독립된 다학교 서비스
+`a-iroom.vercel.app/hub` — 백암이 접근 코드를 몰라도 쓰는 학교별 공간. 같은 서버·같은 코드, **학교마다 데이터 공간 분리**(`lib/hub/index.js`).
+- **로그인**: `/hub` 에서 NEIS 학교 검색(`/api/hub/neis`) → 관리자가 등록한 학교만 선택 가능 → 학교 코드(학교당 하나, PBKDF2 해시만 저장). 세션 `hub:session:<token>`(12시간), 화면 열쇠 localStorage `hub_token:<학교코드>`.
+- **관리자**: `/hub/admin` — 백암이 관리자 코드(`settings.json` adminHash, 백암이와 같은 확인)로 로그인, 열쇠 `hub_admin_token`. 학교 등록(NEIS 선택+코드)·코드 바꾸기·정지·삭제(이름 확인, 데이터까지 선택)·모든 학교 채용 열기(대리 작업 가능, 전체 권한)·백암이 채용 옮기기.
+- **미등록·정지 학교는 사용 불가**: 로그인 거절, 정지 학교는 학교 세션·위원 링크 API 모두 403(관리자만 열람).
+- **저장**: 학교 목록 `hub:schools`(JSON 한 덩어리), 학교 채용은 `prefixedRedis(redis, 'hub:<학교코드>:')` 위 채용 저장소. 로컬은 `data-hub/`(gitignore).
+- **채용 화면 재사용**: `/hub/s/<학교코드>/recruitment` 는 `public/hub/recruitment.html` 이 `window.RECRUIT_CTX`(API `/api/hub/s/<id>/recruitments`·페이지 주소·토큰 열쇠·로그인 주소)를 정하고 `/recruitment/app.js` 를 그대로 쓴다. 위원 초대 링크는 `createRouter({ pagePath })` 로 학교 공간 주소.
+- **백암이 채용 이관**: 관리자 '옮기기' → 백암이 채용(원본 유지)을 학교 공간에 복사 + `hub:migrated-baekam` 기록. 이후 `/recruitment`(옛 위원 링크 포함, #invite 유지)는 그 학교 공간으로 302.
+- **로그인 잠금 공유**: 학교·관리자 로그인 모두 `loginLockGate`(기기 10·IP 30).
+- **학교 공간 넓히기**: `public/hub/school.html` 의 도구 카드에 새 도구를 더하고, 데이터는 학교 접두사 저장소를 쓴다.
+- 테스트: `node --test tests/hub.test.js`, 브라우저 `python tests/hub_e2e.py http://127.0.0.1:3195 admin1234`(server.js 로컬 실행 후).
+
 ## 시연용 카피본 (/copy, 2026-09)
 
 `a-iroom.vercel.app/copy` — 로그인 없이 누구나 모든 기능을 써 보는 공개 시연본. 같은 서버·같은 코드, **데이터 공간만 분리**. (/posting은 읽기 전용 데모, /copy는 쓰기까지 되는 완전한 사본)

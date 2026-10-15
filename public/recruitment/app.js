@@ -8,27 +8,31 @@
     const stamp = v => new Date(v).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
     const state = { evalStage: null, presetId: null, presetTouched: false, list: [], current: null, tab: 'overview', tabSet: false, config: null, isNew: false, busy: false, dirty: false, invite: null, invites: {}, resign: false };
     let messageTimer;
+    // 화면이 붙는 곳: 백암이(/recruitment, 기본값) 또는 학교 공간(/hub/s/<학교코드>/recruitment). 학교 공간 페이지가 window.RECRUIT_CTX 를 먼저 정한다.
+    const CTX = Object.assign({ api: '/api/recruitments', page: '/recruitment', tokenKey: 'airoom_auth_token', loginUrl: null, loginLabel: '백암이' }, window.RECRUIT_CTX || {});
     const idFromUrl = () => new URL(location.href).searchParams.get('id');
     // 보관함 연결 콜백은 ?google=connected 로 돌아온다. 눌렀던 자리로 되돌려 준다.
     if (new URL(location.href).searchParams.get('google') === 'connected') { state.tab = 'exports'; state.tabSet = true; }
     const incoming = new URLSearchParams(location.hash.slice(1)).get('invite');
     if (incoming && /^[a-f0-9]{64}$/.test(incoming) && idFromUrl()) { sessionStorage.setItem(`recruitment-invite:${idFromUrl()}`, incoming); history.replaceState(null, '', location.pathname + location.search); }
     function token() { return idFromUrl() && sessionStorage.getItem(`recruitment-invite:${idFromUrl()}`); }
-    function headers() { const h = { 'Content-Type': 'application/json' }; if (token()) h['X-Recruitment-Token'] = token(); else h['X-Auth-Token'] = localStorage.getItem('airoom_auth_token') || ''; return h; }
+    function headers() { const h = { 'Content-Type': 'application/json' }; if (token()) h['X-Recruitment-Token'] = token(); else h['X-Auth-Token'] = localStorage.getItem(CTX.tokenKey) || ''; return h; }
     function notify(message) { clearTimeout(messageTimer); $('#message').textContent = message; $('#message').hidden = false; messageTimer = setTimeout(() => { $('#message').hidden = true; }, 6000); }
     async function api(endpoint, method = 'GET', body) {
-        const response = await fetch('/api/recruitments' + endpoint, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) });
+        const response = await fetch(CTX.api + endpoint, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) });
         const data = await response.json(); if (!response.ok) throw new Error(data.error || '요청을 처리하지 못했습니다.'); return data;
     }
     function canLeave() { return !state.dirty || confirm('저장하지 않은 입력이 있습니다. 화면을 이동할까요?'); }
     window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
-    function setId(id) { history.replaceState(null, '', '/recruitment' + (id ? `?id=${id}` : '')); }
+    function setId(id) { history.replaceState(null, '', CTX.page + (id ? `?id=${id}` : '')); }
     async function load(id = idFromUrl()) {
         if (!token()) { const [list, config] = await Promise.all([api(''), api('/config')]); state.list = list.items; state.config = config; }
         if (id) { state.current = await api('/' + id); setId(id); }
         state.dirty = false; render();
     }
     function login(error = '') {
+        // 학교 공간은 학교 로그인 화면(NEIS 학교 + 학교 코드)에서 들어온다. 여기서 코드를 묻지 않는다.
+        if (CTX.loginUrl && !token()) { $('#app').innerHTML = `<section class="panel login"><h1>학교 로그인이 필요합니다</h1><p class="muted">학교를 고르고 관리자가 준 학교 코드로 들어오세요. 평가위원은 받은 링크로 바로 들어갑니다.</p>${error ? `<p class="notice error">${esc(error)}</p>` : ''}<div class="actions" style="margin-top:20px"><a class="button primary" href="${esc(CTX.loginUrl)}">학교 로그인으로</a></div></section>`; return; }
         $('#app').innerHTML = `<section class="panel login"><h1>채용 관리 로그인</h1><p class="muted">백암이에 들어갈 때 쓰는 접근 코드를 넣으세요. 평가위원은 받은 링크로 바로 들어갑니다.</p>${error ? `<p class="notice error">${esc(error)}</p>` : ''}<form id="login-form"><label class="field">백암이 접근 코드<input type="password" name="code" autocomplete="current-password" required></label><div class="actions" style="margin-top:20px"><button class="primary">로그인</button><button type="button" class="secondary" data-action="exit">위원 링크 접속 해제</button></div></form></section>`;
     }
     const field = (title, name, value = '', type = 'text', extra = '') => `<label class="field">${title}<input name="${name}" type="${type}" value="${esc(value)}" ${extra} required></label>`;
@@ -674,14 +678,14 @@ ${r.title}`);
             if (action === 'sample') {
                 const preset = $('#create-form [name=preset]')?.value; if (!preset) { notify('샘플은 심사표를 고른 뒤 볼 수 있습니다.'); return; }
                 const format = button.dataset.format; const popup = format === 'html' ? window.open('about:blank', '_blank') : null;
-                try { const response = await fetch(`/api/recruitments/sample/${encodeURIComponent(preset)}/${format}?field=${encodeURIComponent($('#create-form [name=field]')?.value.trim() || '')}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
+                try { const response = await fetch(`${CTX.api}/sample/${encodeURIComponent(preset)}/${format}?field=${encodeURIComponent($('#create-form [name=field]')?.value.trim() || '')}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
                     if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${$('#create-form [name=field]')?.value.trim() || '강사 채용 표준'}_샘플.${format}`; a.click(); }
                     setTimeout(() => URL.revokeObjectURL(url), 60000); notify(format === 'html' ? '샘플 인쇄본을 열었습니다.' : '샘플 한글 파일을 준비했습니다.');
                 } catch (e) { popup?.close(); throw e; }
             }
             if (action === 'download') {
                 const format = button.dataset.format; const popup = format === 'html' ? window.open('about:blank', '_blank') : null;
-                try { const response = await fetch(`/api/recruitments/${state.current.id}/export/${format}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
+                try { const response = await fetch(`${CTX.api}/${state.current.id}/export/${format}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
                     if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${state.current.title}_확정본_v1.${format}`; a.click(); }
                     setTimeout(() => URL.revokeObjectURL(url), 60000); notify(format === 'html' ? '인쇄용 HTML을 열었습니다. PDF로 저장할 수 있습니다.' : '다운로드를 준비했습니다.');
                 } catch (e) { popup?.close(); throw e; }

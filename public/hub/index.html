@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<title>학교 공간 · 로그인</title><link rel="stylesheet" href="/recruitment/style.css"><link rel="stylesheet" href="/hub/hub.css"></head>
+<body><header class="topbar"><a class="brand" href="/hub">학교 공간 <span>채용 관리 · 학교 도구</span></a><div class="toolbar"><a href="/recruitment/manual/" target="_blank" rel="noopener">사용 설명서</a></div></header>
+<main class="hub-main" id="app">
+  <section class="hub-hero"><h1>우리 학교 공간으로 들어가기</h1><p>학교를 찾고, 관리자가 준 학교 코드를 넣으세요. 평가위원은 받은 링크로 바로 들어가니 여기서 로그인하지 않아도 됩니다.</p></section>
+  <div id="resume"></div>
+  <form id="search-form" class="search-box" role="search"><label class="sr-only" for="q">학교 이름</label><input id="q" name="q" placeholder="학교 이름 (예: 백암초등학교)" autocomplete="off" minlength="2" required><button class="primary">학교 찾기</button></form>
+  <p class="muted small" id="search-note">NEIS 학교 정보에서 찾습니다. 관리자가 등록한 학교만 들어올 수 있습니다.</p>
+  <ul class="school-list" id="results" aria-live="polite"></ul>
+  <form id="code-form" class="code-step" hidden><p><b id="picked"></b></p><label class="field">학교 코드<input name="code" type="password" autocomplete="current-password" required></label><div class="actions" style="margin-top:16px"><button class="primary">들어가기</button></div><p class="notice error" id="err" hidden></p></form>
+</main>
+<div id="message" role="status" hidden></div>
+<script src="/hub/hub.js"></script>
+<script>
+(function () {
+    const { esc, call, store } = window.Hub, $ = s => document.querySelector(s);
+    let picked = null;
+    // 이 기기에서 들어갔던 학교로 바로 가기
+    const last = store.get('hub_last_school');
+    if (last) { try { const s = JSON.parse(last); if (store.get('hub_token:' + s.id)) $('#resume').innerHTML = `<p class="notice">이 기기에서 쓰던 학교: <b>${esc(s.name)}</b> <a href="/hub/s/${esc(s.id)}" style="margin-left:10px">계속하기 →</a></p>`; } catch (e) {} }
+    $('#search-form').addEventListener('submit', async e => {
+        e.preventDefault(); const q = $('#q').value.trim(); if (q.length < 2) return;
+        $('#results').innerHTML = '<li class="muted small">찾는 중…</li>';
+        try {
+            const { items, error } = await call('/neis?q=' + encodeURIComponent(q));
+            if (error) { $('#results').innerHTML = `<li class="notice error">${esc(error)}</li>`; return; }
+            if (!items.length) { $('#results').innerHTML = '<li class="muted small">찾은 학교가 없습니다. 이름을 다시 확인하세요.</li>'; return; }
+            $('#results').innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}" ${s.registered ? '' : 'disabled'} aria-pressed="false"><span class="nm">${esc(s.name)}</span><span class="meta">${esc([s.office, s.kind, s.address].filter(Boolean).join(' · '))}</span>${s.registered ? '<span class="pill on">사용 중</span>' : '<span class="pill">미등록 · 관리자에게 요청</span>'}</button></li>`).join('');
+            $('#results').onclick = ev => {
+                const b = ev.target.closest('button[data-i]'); if (!b || b.disabled) return;
+                picked = items[+b.dataset.i];
+                document.querySelectorAll('#results button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+                $('#picked').textContent = picked.name + (picked.office ? ` · ${picked.office}` : '');
+                $('#code-form').hidden = false; $('#code-form [name=code]').focus();
+            };
+        } catch (err) { $('#results').innerHTML = `<li class="notice error">${esc(err.message)}</li>`; }
+    });
+    $('#code-form').addEventListener('submit', async e => {
+        e.preventDefault(); if (!picked) return;
+        const btn = e.target.querySelector('button'); btn.disabled = true; $('#err').hidden = true;
+        try {
+            const r = await call('/login', { method: 'POST', body: { schoolId: picked.id, code: e.target.code.value } });
+            store.set('hub_token:' + r.school.id, r.token); store.set('hub_last_school', JSON.stringify({ id: r.school.id, name: r.school.name }));
+            const next = new URLSearchParams(location.search).get('next');
+            location.href = next && next.startsWith(`/hub/s/${r.school.id}`) ? next : `/hub/s/${r.school.id}`;
+        } catch (err) { $('#err').textContent = err.message; $('#err').hidden = false; btn.disabled = false; }
+    });
+    // /hub?school=<코드> 로 오면(로그인이 풀린 학교 화면에서) 그 학교 이름으로 바로 찾는다.
+    const want = new URLSearchParams(location.search).get('school');
+    if (want) call('/schools/' + encodeURIComponent(want)).then(s => { $('#q').value = s.name; $('#search-form').requestSubmit(); }).catch(() => {});
+})();
+</script>
+</body></html>

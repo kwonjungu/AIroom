@@ -296,7 +296,10 @@ app.post('/api/copy-reset', async (req, res) => {
 });
 // 채용 관리 화면: public/recruitment/ 디렉터리와 경로가 겹쳐 static 이 먼저 잡으면
 // 301 로 넘어가며 Referrer-Policy 가 빠진다. static 보다 앞에 둔다.
-app.get(['/recruitment', '/recruitment/'], (req, res) => {
+app.get(['/recruitment', '/recruitment/'], async (req, res) => {
+    // 학교 공간으로 옮긴 뒤에는 그 학교의 채용 화면으로 보낸다(옛 위원 링크의 #invite 는 브라우저가 그대로 들고 간다).
+    try { const moved = await hub.getFlag(hub.MIGRATED); const m = typeof moved === 'string' ? JSON.parse(moved) : moved;
+        if (m?.schoolId) return res.redirect(302, `/hub/s/${m.schoolId}/recruitment` + (req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '')); } catch (e) { console.warn('[hub] 이관 확인 실패:', e.message); }
     res.set('Referrer-Policy', 'no-referrer');
     res.sendFile(path.join(__dirname, 'public', 'recruitment', 'index.html'));
 });
@@ -2355,9 +2358,17 @@ app.use('/api/recruitments', async (req, res, next) => {
     try { if (!copyRecruitSeeded) await seedCopyRecruitments(false); } catch (e) { console.warn('[copy] 가상 채용 준비 실패:', e.message); }
     copyRecruitRouter(req, res, () => res.status(404).json({ error: 'not found' }));
 });
+// 백암이 채용 저장소. 학교 공간(/hub)으로 옮길 때 원본으로도 쓴다.
+const mainRecruitStore = createRecruitStore({ redis, serverless: IS_VERCEL, directory: path.join(__dirname, 'data', 'recruitment') });
 app.use('/api/recruitments', require('./lib/recruitment/routes').createRouter({
-    validateSession, redis, serverless: IS_VERCEL
+    validateSession, redis, serverless: IS_VERCEL, store: mainRecruitStore
 }));
+// ===== 학교 공간 (/hub) — 백암이와 독립된 다학교 서비스 (lib/hub) =====
+// NEIS 학교 + 관리자가 준 학교 코드로 들어오고, 관리자(/hub/admin)는 백암이 관리자 코드로 들어온다.
+const hub = require('./lib/hub').mountHub(app, {
+    redis, IS_VERCEL, dataDir: path.join(__dirname, 'data-hub'), getAuthCodes, verifyPassword, hashPassword,
+    loginLockGate, loginFailed, loginSucceeded, prefixedRedis, legacyRecruitStore: mainRecruitStore
+});
 // ===== 교구 대여소 (/rental) =====
 // 타 학교 교직원도 쓰므로 메인 접근코드와 분리된 독립 페이지 (초안: 완전 개방)
 require('./lib/rental')(app, {

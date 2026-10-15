@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<script>
+// 학교 공간 채용 관리: 채용 화면(app.js)은 백암이와 같고, API 주소·세션 열쇠·로그인 화면만 학교 공간 것으로 바꾼다.
+(function () {
+    var id = (location.pathname.match(/\/hub\/s\/(\d{7,10})/) || [])[1] || '';
+    var key = 'hub_token:' + id; try { if (!localStorage.getItem(key) && localStorage.getItem('hub_admin_token')) key = 'hub_admin_token'; } catch (e) {}
+    window.RECRUIT_CTX = { api: '/api/hub/s/' + id + '/recruitments', page: '/hub/s/' + id + '/recruitment', tokenKey: key, loginUrl: '/hub?school=' + id + '&next=' + encodeURIComponent(location.pathname + location.search), loginLabel: '학교' };
+})();
+</script>
+<title>채용 관리 · 학교 공간</title><link rel="stylesheet" href="/recruitment/style.css"></head>
+<body><header class="topbar"><a class="brand" id="brand" href="/hub">학교 공간 <span>채용 관리</span></a><div class="toolbar"><a href="/recruitment/manual/" target="_blank" rel="noopener">사용 설명서</a><a id="home" href="/hub">학교 공간으로</a></div></header>
+<main id="app" aria-live="polite"><section class="panel"><h1>채용 관리</h1><p>로그인 상태를 확인하고 있습니다.</p></section></main><footer class="page-footer"><a href="/recruitment/privacy.html">개인정보처리방침</a><a href="/recruitment/terms.html">서비스 약관</a><span class="muted">학교 공간 채용 관리</span></footer><div id="message" role="status" hidden></div>
+<script>
+(function () {
+    var id = (location.pathname.match(/\/hub\/s\/(\d{7,10})/) || [])[1] || '';
+    document.getElementById('home').href = '/hub/s/' + id; document.getElementById('brand').href = '/hub/s/' + id;
+    fetch('/api/hub/schools/' + id).then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
+        if (!s) return; document.title = s.name + ' 채용 관리 · 학교 공간';
+        document.getElementById('brand').innerHTML = s.name.replace(/[&<>"']/g, '') + ' <span>채용 관리</span>';
+    }).catch(function () {});
+})();
+</script>
+<script src="/recruitment/qr.js" defer></script><script src="/recruitment/sheets.js" defer></script><script src="/recruitment/app.js" defer></script></body></html>

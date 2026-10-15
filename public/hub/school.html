@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<title>학교 공간</title><link rel="stylesheet" href="/recruitment/style.css"><link rel="stylesheet" href="/hub/hub.css"></head>
+<body><header class="topbar"><a class="brand" href="/hub">학교 공간 <span id="brand-school">…</span></a><div class="toolbar"><span id="who" class="muted small"></span><a href="#" id="logout">로그아웃</a></div></header>
+<main class="hub-main" id="app"><p class="muted">불러오는 중…</p></main>
+<div id="message" role="status" hidden></div>
+<script src="/hub/hub.js"></script>
+<script>
+(function () {
+    const { esc, call, store, schoolIdFromPath, tokenFor } = window.Hub, $ = s => document.querySelector(s);
+    const id = schoolIdFromPath(), token = tokenFor(id);
+    const back = () => { location.href = '/hub?school=' + encodeURIComponent(id); };
+    if (!token) return back();
+    // 학교 공간 첫 화면. 도구를 더하면 이 목록에 카드를 하나씩 붙인다.
+    Promise.all([call('/me', { token }), call('/schools/' + id)]).then(([me, school]) => {
+        if (me.role === 'school' && me.school.id !== id) return back();
+        document.title = `${school.name} · 학교 공간`;
+        $('#brand-school').textContent = school.name;
+        $('#who').textContent = me.role === 'hubadmin' ? '관리자로 보는 중' : '';
+        $('#app').innerHTML = `<section class="hub-hero"><h1>${esc(school.name)}</h1><p>${esc([school.region, school.kind].filter(Boolean).join(' · '))}${school.active ? '' : ' · <b style="color:var(--error)">관리자가 사용을 멈춘 학교</b>'}</p></section>
+            <div class="tools"><a class="tool" href="/hub/s/${esc(id)}/recruitment"><span class="pill on">사용 중</span><h3>채용 관리</h3><p>강사 채용 표준 · 계약제 교원 채용 표준. 위원 링크, 눌러서 채점, 한글·Excel 결과 문서까지.</p></a>
+            <a class="tool" href="/recruitment/manual/" target="_blank" rel="noopener"><span class="pill">안내</span><h3>사용 설명서</h3><p>담당자용 · 심사위원용</p></a>
+            <div class="tool soon" aria-disabled="true"><span class="pill">준비 중</span><h3>새 도구</h3><p>학교 공간에 도구가 더해지면 여기에 나타납니다.</p></div></div>`;
+    }).catch(err => { if (err.status === 401) { store.del('hub_token:' + id); return back(); } $('#app').innerHTML = `<p class="notice error">${esc(err.message)}</p><p><a href="/hub">학교 로그인으로</a></p>`; });
+    $('#logout').addEventListener('click', async e => { e.preventDefault(); try { await call('/logout', { method: 'POST', token }); } catch (err) {} store.del('hub_token:' + id); location.href = '/hub'; });
+})();
+</script>
+</body></html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex">
+<title>학교 공간 · 관리자</title><link rel="stylesheet" href="/recruitment/style.css"><link rel="stylesheet" href="/hub/hub.css"></head>
+<body><header class="topbar"><a class="brand" href="/hub/admin">학교 공간 <span>관리자</span></a><div class="toolbar"><a href="/hub">학교 로그인 화면</a><a href="#" id="logout" hidden>로그아웃</a></div></header>
+<main class="hub-main" id="app"></main>
+<div id="message" role="status" hidden></div>
+<script src="/hub/hub.js"></script>
+<script>
+(function () {
+    const { esc, call, store, toast } = window.Hub, $ = s => document.querySelector(s);
+    let token = store.get('hub_admin_token'), schools = [], migrated = null, picked = null;
+    const fmt = v => v ? new Date(v).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', dateStyle: 'short', timeStyle: 'short' }) : '—';
+    // 학교 코드 만들기 버튼용: 헷갈리는 글자(0·O·1·l)를 뺀 8자.
+    const makeCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const b = new Uint8Array(8); crypto.getRandomValues(b); return Array.from(b, x => a[x % a.length]).join(''); };
+
+    function loginView(error = '') {
+        $('#logout').hidden = true;
+        $('#app').innerHTML = `<section class="hub-hero"><h1>관리자 로그인</h1><p>백암이 관리자 코드로 들어옵니다(백암이와 같은 암호화 확인). 학교 등록·코드 발급·데이터 확인을 여기서 합니다.</p></section>
+            <form id="admin-login" class="code-step" style="border:0;padding:0;margin:0"><label class="field">관리자 코드<input name="code" type="password" autocomplete="current-password" required></label><div class="actions" style="margin-top:16px"><button class="primary">로그인</button></div>${error ? `<p class="notice error">${esc(error)}</p>` : ''}</form>`;
+        $('#admin-login').addEventListener('submit', async e => {
+            e.preventDefault();
+            try { const r = await call('/admin/login', { method: 'POST', body: { code: e.target.code.value } }); token = r.token; store.set('hub_admin_token', token); await load(); }
+            catch (err) { loginView(err.message); }
+        });
+    }
+    async function load() {
+        try { const r = await call('/admin/schools', { token }); schools = r.items; migrated = r.migrated ? (typeof r.migrated === 'string' ? JSON.parse(r.migrated) : r.migrated) : null; render(); }
+        catch (err) { if (err.status === 401 || err.status === 403) { store.del('hub_admin_token'); token = ''; return loginView(); } $('#app').innerHTML = `<p class="notice error">${esc(err.message)}</p>`; }
+    }
+    function render() {
+        $('#logout').hidden = false;
+        const rows = schools.map(s => `<tr data-id="${esc(s.id)}"><td><b>${esc(s.name)}</b><div class="muted small">${esc([s.office || s.region, s.kind].filter(Boolean).join(' · '))} · ${esc(s.id)}</div></td><td>${s.active ? '<span class="pill on">사용 중</span>' : '<span class="pill off">정지</span>'}</td><td>채용 ${s.recruitments}건<div class="muted small">최근 ${fmt(s.lastActivity)}</div></td><td class="muted small">코드 변경 ${fmt(s.codeUpdatedAt)}</td><td><div class="actions"><a class="primary" href="/hub/s/${esc(s.id)}/recruitment" target="_blank" rel="noopener">열기</a><button class="secondary" data-act="code">코드 바꾸기</button><button class="secondary" data-act="active">${s.active ? '정지' : '다시 사용'}</button><button class="danger" data-act="delete">삭제</button></div></td></tr>`).join('');
+        $('#app').innerHTML = `<section class="hub-hero"><h1>학교 공간 관리</h1><p>등록한 학교만 학교 코드로 들어올 수 있습니다. 관리자는 모든 학교의 채용·점수·처리 이력을 열고 학교 대신 작업할 수 있습니다.</p></section>
+            <section class="panel"><h2>학교 등록</h2><p class="muted small">NEIS 에서 학교를 찾아 고르고, 그 학교 선생님들이 함께 쓸 코드를 정하세요. 이미 등록한 학교를 다시 고르면 코드만 새로 바뀝니다.</p>
+                <form id="find" class="search-box" style="margin-top:12px"><input name="q" placeholder="학교 이름" minlength="2" required><button class="secondary">NEIS 에서 찾기</button></form>
+                <ul class="school-list" id="found"></ul>
+                <form id="register" class="inline-form" hidden><p style="width:100%;margin:0"><b id="reg-name"></b></p><label class="field">학교 코드 (공백 없이 4~40자)<input name="code" required minlength="4" maxlength="40" autocomplete="off"></label><button type="button" class="secondary" id="gen">코드 만들기</button><button class="primary">등록</button></form></section>
+            <section class="panel"><div class="split"><h2>등록한 학교 ${schools.length}곳</h2><button class="secondary" id="refresh">새로고침</button></div>
+                ${schools.length ? `<div class="table-wrap"><table class="admin-table"><thead><tr><th>학교</th><th>상태</th><th>데이터</th><th>코드</th><th>관리</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">아직 등록한 학교가 없습니다. 위에서 학교를 찾아 등록하세요.</p>'}</section>
+            <section class="panel"><h2>백암이 채용 옮기기</h2>${migrated ? `<p class="notice">${fmt(migrated.at)}에 <b>${esc(migrated.name)}</b> 학교 공간으로 ${migrated.copied}건을 옮겼습니다. 백암이 채용 관리(/recruitment)와 옛 위원 링크는 그 학교 공간으로 이어집니다. 다시 실행하면 새로 생긴 채용만 더 옮깁니다.</p>` : '<p class="muted small">백암이 안에 있던 채용 관리 데이터를 한 학교 공간으로 복사합니다. 원본은 지우지 않습니다. 옮긴 뒤에는 백암이 채용 메뉴와 옛 위원 링크가 그 학교 공간으로 이어집니다.</p>'}
+                <form id="migrate" class="inline-form"><label class="field">옮겨 갈 학교<select name="schoolId" required>${schools.map(s => `<option value="${esc(s.id)}" ${migrated?.schoolId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label><button class="primary" ${schools.length ? '' : 'disabled'}>옮기기</button></form></section>`;
+        bind();
+    }
+    function bind() {
+        $('#refresh').onclick = load;
+        $('#find').onsubmit = async e => {
+            e.preventDefault(); $('#found').innerHTML = '<li class="muted small">찾는 중…</li>';
+            const { items, error } = await call('/neis?q=' + encodeURIComponent(e.target.q.value.trim()));
+            if (error || !items.length) { $('#found').innerHTML = `<li class="muted small">${esc(error || '찾은 학교가 없습니다.')}</li>`; return; }
+            $('#found').innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}" aria-pressed="false"><span class="nm">${esc(s.name)}</span><span class="meta">${esc([s.office, s.kind, s.address].filter(Boolean).join(' · '))}</span>${s.registered ? '<span class="pill on">등록됨</span>' : ''}</button></li>`).join('');
+            $('#found').onclick = ev => { const b = ev.target.closest('button[data-i]'); if (!b) return; picked = items[+b.dataset.i]; document.querySelectorAll('#found button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); $('#reg-name').textContent = `${picked.name} · ${picked.office || picked.region}`; $('#register').hidden = false; };
+        };
+        $('#gen').onclick = () => { $('#register [name=code]').value = makeCode(); };
+        $('#register').onsubmit = async e => {
+            e.preventDefault(); if (!picked) return;
+            const code = e.target.code.value.trim();
+            try { await call('/admin/schools', { method: 'POST', token, body: { id: picked.id, name: picked.name, kind: picked.kind, region: picked.region, office: picked.office, address: picked.address, code } });
+                alert(`${picked.name} 등록 완료\n\n학교 코드: ${code}\n\n이 코드를 학교 담당 선생님께 전해 주세요. 코드는 다시 보여 주지 않습니다(잊으면 '코드 바꾸기').`); picked = null; await load(); }
+            catch (err) { toast(err.message); }
+        };
+        $('#migrate').onsubmit = async e => {
+            e.preventDefault(); const sel = e.target.schoolId; const name = sel.options[sel.selectedIndex].text;
+            if (!confirm(`백암이 채용 관리 데이터를 '${name}' 학교 공간으로 복사합니다.\n옮긴 뒤 백암이 채용 메뉴와 옛 위원 링크는 이 학교 공간으로 이어집니다. 계속할까요?`)) return;
+            try { const r = await call('/admin/migrate-baekam', { method: 'POST', token, body: { schoolId: sel.value } }); toast(`옮김 ${r.copied}건 · 이미 있음 ${r.skipped}건`); await load(); } catch (err) { toast(err.message); }
+        };
+        document.querySelectorAll('tr[data-id] [data-act]').forEach(b => b.onclick = async () => {
+            const id = b.closest('tr').dataset.id, s = schools.find(x => x.id === id);
+            try {
+                if (b.dataset.act === 'code') {
+                    const code = prompt(`${s.name}의 새 학교 코드 (공백 없이 4~40자). 비워 두면 자동으로 만듭니다.`, ''); if (code === null) return;
+                    const v = code.trim() || makeCode(); await call(`/admin/schools/${id}/code`, { method: 'POST', token, body: { code: v } });
+                    alert(`${s.name} 새 학교 코드: ${v}\n\n이전 코드는 바로 막힙니다. 학교에 새 코드를 전해 주세요.`);
+                }
+                if (b.dataset.act === 'active') { if (s.active && !confirm(`${s.name} 사용을 멈출까요? 학교 사람과 위원 모두 들어올 수 없게 됩니다. 데이터는 남습니다.`)) return; await call(`/admin/schools/${id}/active`, { method: 'POST', token, body: { active: !s.active } }); }
+                if (b.dataset.act === 'delete') {
+                    const typed = prompt(`학교 등록을 지웁니다. 지우려면 학교 이름을 그대로 입력하세요.\n\n${s.name}`); if (typed === null) return;
+                    const purge = s.recruitments > 0 && confirm(`이 학교의 채용 데이터 ${s.recruitments}건도 함께 지울까요?\n[확인] 데이터까지 삭제(되돌릴 수 없음) · [취소] 등록만 지우고 데이터는 남김`);
+                    const r = await call(`/admin/schools/${id}`, { method: 'DELETE', token, body: { confirmName: typed.trim(), purge } }); toast(`삭제했습니다${purge ? ` · 채용 ${r.purged}건 삭제` : ''}.`);
+                }
+                await load();
+            } catch (err) { toast(err.message); }
+        });
+    }
+    $('#logout').addEventListener('click', async e => { e.preventDefault(); try { await call('/logout', { method: 'POST', token }); } catch (err) {} store.del('hub_admin_token'); token = ''; loginView(); });
+    if (token) load(); else loginView();
+})();
+</script>
+</body></html>
