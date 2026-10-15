@@ -426,3 +426,45 @@ dialog::backdrop{background:#0006}
 .option-preview th,.option-preview td{border-bottom:1px solid var(--line-light);padding:4px 6px;text-align:left}
 .option-preview th{color:var(--slate);font-weight:600}.option-preview .number{text-align:right;white-space:nowrap}
 .option-preview tr.bad td{color:var(--error)}
+
+/* ── 터치로 고르는 채점(드롭다운 없음) ─────────────────────────────
+   하나 고르기: 심사관점 줄 옆을 눌러 고른다. 점수 고르기·가점·참석: 알약 단추를 누른다. 손가락 기준 높이 44px. */
+.opt-list{display:flex;flex-direction:column;gap:6px;min-width:220px;text-align:left}
+.opt{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;border:1px solid var(--hairline);border-radius:var(--r-md);background:var(--surface);cursor:pointer;font-size:13.5px;line-height:1.35}
+.opt input{width:18px;height:18px;flex:none;accent-color:var(--near-black)}
+.opt span{flex:1;min-width:0;word-break:keep-all}
+.opt b{flex:none;font-weight:600;font-variant-numeric:tabular-nums}
+.opt.none{color:var(--slate)}
+.opt:has(input:checked){border-color:var(--near-black);background:var(--stone);box-shadow:inset 0 0 0 1px var(--near-black)}
+.opt:has(input:focus-visible),.chip:has(input:focus-visible){outline:2px solid var(--near-black);outline-offset:2px}
+.opt:has(input:disabled),.chip:has(input:disabled){cursor:default;opacity:.75}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips.scale{min-width:200px}
+.chip{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 12px;border:1px solid var(--hairline);border-radius:999px;background:var(--surface);cursor:pointer;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip small{font-weight:400;font-size:11px;margin-left:4px;color:var(--slate)}
+.chip:has(input:checked),.chip.on{background:var(--near-black);border-color:var(--near-black);color:#fff}
+.chip:has(input:checked) small{color:#ddd}
+.chip.warn:has(input:checked){background:#9b1c1c;border-color:#9b1c1c}
+.chip-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.chip-preview .chip{min-height:32px;min-width:32px;font-size:13px}.chip-preview .bad{width:100%;color:#9b1c1c;font-size:13px;margin:4px 0 0}
+.score-table tr.is-absent td:not(:first-of-type):not(.note-cell):not(.row-total){opacity:.35}
+.stage-switch{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+.stage-switch button{min-height:44px;padding:0 20px;border:1px solid var(--hairline);border-radius:999px;background:var(--surface);font:inherit;font-weight:600;cursor:pointer}
+.stage-switch button[aria-pressed=true]{background:var(--near-black);border-color:var(--near-black);color:#fff}
+.stage-checks{display:flex;flex-wrap:wrap;gap:4px 14px}
+.field-note{display:block;margin-top:4px;font-size:12px}
+.contract-only{margin-bottom:14px}
+@media (max-width:760px){
+  .score-table td .opt-list,.score-table td .chips{min-width:0;width:100%}
+  .score-table td:has(.opt-list),.score-table td:has(.chips.scale){display:block}
+  .score-table td:has(.opt-list)::before,.score-table td:has(.chips.scale)::before{display:block;margin-bottom:8px}
+}
+/* hidden 속성은 .field 의 display 보다 앞선다(계약제 '과목 직접 입력' 칸 등). */
+[hidden]{display:none!important}
+/* PC 채점표: 점수 단추는 한 줄로(접히면 어느 칸 점수인지 헷갈린다), 심사관점 줄은 글이 다 보이게. */
+@media (min-width:761px){
+  .score-table .chips.scale{flex-wrap:nowrap}
+  .score-table .chips.scale .chip{min-width:40px;padding:0 8px}
+  .score-table .opt-list{min-width:250px}
+  .score-table .chips[data-bonus]{min-width:150px}
+}

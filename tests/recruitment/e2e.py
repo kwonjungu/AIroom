@@ -59,10 +59,10 @@ with sync_playwright() as pw:
 
     step("새 채용 폼 열기", open_form)
     step("배점 편집기 노출", lambda: expect(page.locator("#rubric-document .rubric-row")).to_have_count(5))
-    step("심사표 불러오기 드롭다운", lambda: expect(page.locator("#create-form select[name=preset]")).to_contain_text("표준 심사표"))
+    step("심사표 불러오기 드롭다운", lambda: expect(page.locator("#create-form select[name=preset]")).to_contain_text("강사 채용 표준"))
     step("심사관점 채점 방식 프리셋 반영", lambda: expect(page.locator("#rubric-document .rubric-row").first.locator("[name=kind]")).to_have_value("pick"))
     step("배점 합계 표시", lambda: expect(page.locator('[data-total="document"]')).to_contain_text("총 50점"))
-    step("표준 심사표 하나·영역 칸은 비어 있음", lambda: (expect(page.locator("#create-form select[name=preset] option")).to_have_count(2), expect(page.locator("#create-form [name=field]")).to_have_value("")))
+    step("표준 둘(강사·계약제)·영역 칸은 비어 있음", lambda: (expect(page.locator("#create-form select[name=preset] option")).to_have_count(3), expect(page.locator("#create-form [name=field]")).to_have_value("")))
 
     def sample_print():
         page.fill("#create-form [name=field]", "방과후학교 강사[컴퓨터부]")
@@ -220,20 +220,21 @@ with sync_playwright() as pw:
             cell.fill(str(int(value) if value == int(value) else value))
             cell.dispatch_event("change")
         # 심사관점 항목: 학력은 한 줄 고르기, 자격증은 해당 줄 체크·건수, 경력은 연수.
-        for sel in rp.locator("#score-form select.pick").all():
-            sel.select_option(index=1)
+        # 하나 고르기는 드롭다운이 아니라 심사관점 줄을 누른다(둘째 줄).
+        for lst in rp.locator("#score-form .opt-list").all():
+            lst.locator(".opt").nth(1).click()
         for box in rp.locator("#score-form .sum-pick input[type=checkbox]").all()[::2]:
             box.check()
         for qty in rp.locator("#score-form .sum-pick input[type=number]").all():
             qty.fill("2")
-        if rp.locator("#score-form select.pick").count():
+        if rp.locator("#score-form .opt-list").count():
             expect(rp.locator("#score-form .row-total").first).not_to_contain_text("빈칸", timeout=3000)
             expect(rp.locator("#score-form .sum-out").first).to_contain_text("점", timeout=3000)
-        btn = rp.get_by_role("button", name="저장 후 평가 제출")
+        btn = rp.get_by_role("button", name=re.compile("저장 후 .*제출"))
         rp.once("dialog", lambda d: d.accept())
         btn.first.click()
         rp.wait_for_timeout(2500)
-        expect(rp.locator("#message")).to_contain_text("평가 제출이 완료되었습니다", timeout=10000)
+        expect(rp.locator("#message")).to_contain_text("제출이 완료되었습니다", timeout=10000)
         rp.close()
 
     step("위원1 서명·서류채점·제출", lambda: reviewer_flow(0, True))
