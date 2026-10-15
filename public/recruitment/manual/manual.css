@@ -1,0 +1,42 @@
+/* 사용 설명서 덱 — deck.css(강의안 원본) 위에 설명서용 모양만 더한다. 색·글꼴·크기는 deck.css 변수를 그대로 쓴다. */
+.kt{display:inline-block;align-self:flex-start;color:#fff;font-size:15px;font-weight:800;border-radius:999px;padding:5px 14px;white-space:nowrap}
+.panel.shot{position:relative;flex-direction:column;gap:10px;padding:14px}
+.panel.shot>.kt{position:absolute;top:12px;left:12px;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.panel.shot img{display:block;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.12);object-fit:contain}
+.secno{font-family:var(--fd);font-size:120px;line-height:1;color:var(--ac);margin:0 0 10px}
+.bar{display:block;width:44px;height:6px;background:var(--ac);margin-bottom:30px;border-radius:2px}
+.slide.dark .sub{color:#cacacb}
+/* 나란히(🅐 / 🅑) */
+.cmpfig{margin:0;display:flex;flex-direction:column;gap:10px;min-width:0;height:100%;justify-content:center}
+.cmpfig .panel{flex:0 1 auto}
+.cmpfig figcaption{font-size:18px;color:var(--ash);line-height:1.45;word-break:keep-all}
+/* 휴대폰 화면 */
+.phones{display:flex;align-items:center;gap:40px;min-height:0}
+.prow{display:flex;gap:26px;align-items:flex-end}
+.phone{margin:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.pframe{background:#111;border-radius:30px;padding:9px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.pframe img{display:block;border-radius:22px}
+.phone figcaption{font-size:16px;color:var(--ash);text-align:center;max-width:240px;word-break:keep-all}
+.pside{flex:1;font-size:26px;line-height:1.55;word-break:keep-all}
+.pside p{margin:0 0 16px}.pside b{color:var(--ac)}.pside .muted2{color:var(--mute);font-size:21px}
+/* 단계 */
+.steps2{display:grid;gap:22px;align-content:center}
+.scell2{border-top:4px solid var(--ink);padding-top:22px}
+.sno2{display:inline-flex;width:40px;height:40px;border-radius:999px;background:var(--ac);color:#fff;font-weight:800;font-size:20px;align-items:center;justify-content:center}
+.scell2 h3{font-size:26px;margin:16px 0 8px;font-weight:800;word-break:keep-all}
+.scell2 p{font-size:18px;color:var(--ash);line-height:1.5;margin:0;word-break:keep-all}
+/* 비교표 */
+table.vs2{width:100%;border-collapse:collapse;font-size:21px}
+.vs2 th,.vs2 td{padding:14px 16px;border-bottom:1px solid var(--hair2);text-align:left;vertical-align:middle;line-height:1.45;word-break:keep-all}
+.vs2 thead th{border-bottom:2px solid var(--ink)}
+.vs2 tbody th{width:210px;color:var(--ash);font-weight:700}
+.vs2 td{font-weight:600}
+/* 카드 */
+.cards2{display:grid;gap:18px;align-content:center}
+.card2{background:var(--soft);border-radius:22px;padding:30px 28px;min-height:250px;display:flex;flex-direction:column}
+.lab2{align-self:flex-start;background:var(--ac);color:#fff;font-weight:800;font-size:16px;border-radius:999px;padding:6px 16px}
+.card2 h3{font-size:28px;margin:18px 0 12px;font-weight:800;word-break:keep-all}
+.card2 p{font-size:19px;line-height:1.55;color:var(--ash);margin:0;word-break:keep-all}
+/* 넘김 막대의 '설명서 처음' */
+.ui .ui-home{color:inherit;text-decoration:none;font-size:13px;padding:0 10px;opacity:.8}
+.ui .ui-home:hover{opacity:1}

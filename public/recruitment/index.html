@@ -13,7 +13,7 @@
     try{s.call(localStorage,P+'airoom_auth_token','copy-demo');s.call(localStorage,P+'airoom_auth_role','admin');}catch(e){}
     function api(u){return (typeof u==='string'&&u.indexOf('/api/')===0&&u.indexOf('/api/copy/')!==0)?'/api/copy/'+u.slice(5):u;}
     var APP=/^\/(recruitment|rental|calandar|calendar|vibecoding|sign\/|doc\/)/;
-    function page(u){if(typeof u!=='string'||u.indexOf('/copy')===0)return u;if(u==='/'||u==='')return '/copy';if(APP.test(u)&&!/^\/recruitment\/(privacy|terms)/.test(u))return '/copy'+u;return api(u);}
+    function page(u){if(typeof u!=='string'||u.indexOf('/copy')===0)return u;if(u==='/'||u==='')return '/copy';if(APP.test(u)&&!/^\/recruitment\/(privacy|terms|manual)/.test(u))return '/copy'+u;return api(u);}
     var f=window.fetch.bind(window);window.fetch=function(u,o){return f(api(u),o);};
     ['pushState','replaceState'].forEach(function(n){var h=history[n].bind(history);history[n]=function(st,t,u){return h(st,t,page(u));};});
     function fix(el){
@@ -35,5 +35,5 @@
     });
 })();
 </script><title>채용 관리 · 백암이</title><link rel="stylesheet" href="/recruitment/style.css"></head>
-<body><header class="topbar"><a class="brand" href="/recruitment">백암이 <span>채용 관리</span></a><div class="toolbar"><a href="/">AI 교무실로</a></div></header>
+<body><header class="topbar"><a class="brand" href="/recruitment">백암이 <span>채용 관리</span></a><div class="toolbar"><a href="/recruitment/manual/" target="_blank" rel="noopener">사용 설명서</a><a href="/">AI 교무실로</a></div></header>
 <main id="app" aria-live="polite"><section class="panel"><h1>채용 관리</h1><p>로그인 상태를 확인하고 있습니다.</p></section></main><footer class="page-footer"><a href="/recruitment/privacy.html">개인정보처리방침</a><a href="/recruitment/terms.html">서비스 약관</a><span class="muted">백암이 채용 관리</span></footer><div id="message" role="status" hidden></div><script src="/recruitment/qr.js" defer></script><script src="/recruitment/sheets.js" defer></script><script src="/recruitment/app.js" defer></script></body></html>

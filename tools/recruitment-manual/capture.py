@@ -65,6 +65,15 @@ def score_all(page, ci_seed=0):
             cell.dispatch_event('change')
 
 
+def goto(pg, url):
+    """실서버는 가끔 첫 응답이 늦다. 60초씩 세 번까지 다시 연다."""
+    for i in range(3):
+        try: return pg.goto(url, wait_until='domcontentloaded', timeout=60000)
+        except Exception as e:
+            if i == 2: raise
+            print('  다시 여는 중', i + 1, str(e).split(chr(10))[0][:80], flush=True); pg.wait_for_timeout(3000)
+
+
 STAGE_KO = {'document': '서류심사', 'interview': '면접심사', 'demo': '수업실연'}
 
 
@@ -82,7 +91,7 @@ with sync_playwright() as pw:
     page.on('dialog', lambda d: d.accept() if d.type in ('confirm', 'alert') else None)
 
     # ── 1. 로그인 ──
-    page.goto(a.base + '/recruitment', wait_until='domcontentloaded')
+    goto(page, a.base + '/recruitment')
     expect(page.locator('#login-form')).to_be_visible(timeout=20000)
     page.fill('#login-form [name=code]', a.code)
     shot(page, '01-login', mark=page.locator('#login-form .field'))
@@ -133,7 +142,7 @@ with sync_playwright() as pw:
     def reviewer(idx, link, mobile, stage_shots):
         ctx = b.new_context(viewport={'width': 390, 'height': 844} if mobile else {'width': 1440, 'height': 900}, device_scale_factor=2 if mobile else 1, is_mobile=mobile, has_touch=mobile, locale='ko-KR')
         rp = ctx.new_page(); rp.on('dialog', lambda d: d.accept())
-        rp.goto(link, wait_until='domcontentloaded')
+        goto(rp, link)
         expect(rp.locator('#score-form, #sign-pad').first).to_be_visible(timeout=20000)
         pre = 'm' if mobile else 'p'
         if rp.locator('#sign-pad').count():
@@ -163,15 +172,16 @@ with sync_playwright() as pw:
             done = rp.locator('.stage-switch') if rp.locator('.stage-switch').count() and not rp.locator('.notice.ok-note').count() else rp.locator('.notice.ok-note, section.next.done')
             shot(rp, f'{pre}{stage_tag}-d-done', mark=done.first, scroll=done.first)
 
-    contexts = []
+    # 위원 화면은 한 번만 열어 두고, 다음 전형은 화면의 [새로고침]으로 이어 간다(실제 위원도 그렇게 한다).
+    sessions = []
     for i, link in enumerate(links):
         mobile = i == 0
         ctx, rp = reviewer(i, link, mobile, stage_shots=(i <= 1))
         do_stage(rp, mobile, shots=(i <= 1), seed=i, stage_tag='12-doc')
-        ctx.close()
+        sessions.append((ctx, rp))
 
     # ── 5. 담당자: 제출 현황 · 서류 통계 · 면접 대상자 ──
-    page.reload(); page.wait_for_timeout(1500)
+    page.locator('.list-head [data-action=refresh]').click(); page.wait_for_timeout(2500)
     page.locator('[data-action=tab][data-tab=evaluation]').click(); page.wait_for_timeout(500)
     shot(page, '13-progress', mark=page.locator('.status-list').first)
     page.locator('[data-action=tab][data-tab=results]').click(); page.wait_for_timeout(800)
@@ -184,11 +194,9 @@ with sync_playwright() as pw:
     page.wait_for_timeout(2500)
 
     # ── 6. 위원: 면접(계약제는 수업실연까지) ──
-    for i, link in enumerate(links):
+    for i, (ctx, rp) in enumerate(sessions):
         mobile = i == 0
-        ctx = b.new_context(viewport={'width': 390, 'height': 844} if mobile else {'width': 1440, 'height': 900}, device_scale_factor=2 if mobile else 1, is_mobile=mobile, has_touch=mobile, locale='ko-KR')
-        rp = ctx.new_page(); rp.on('dialog', lambda d: d.accept())
-        rp.goto(link, wait_until='domcontentloaded'); rp.wait_for_timeout(1500)
+        rp.locator('[data-action=refresh]').first.click(); rp.wait_for_timeout(2500)
         pre = 'm' if mobile else 'p'
         if a.kind == 'contract' and i <= 1:
             shot(rp, f'{pre}16-stage-switch', mark=rp.locator('.stage-switch'), scroll=rp.locator('.stage-switch'))
@@ -202,7 +210,7 @@ with sync_playwright() as pw:
         ctx.close()
 
     # ── 7. 결과 확정 · 문서 받기 ──
-    page.reload(); page.wait_for_timeout(1500)
+    page.locator('.list-head [data-action=refresh]').click(); page.wait_for_timeout(2500)
     page.locator('[data-action=tab][data-tab=results]').click(); page.wait_for_timeout(800)
     fin = page.locator('[data-action=finalize]')
     shot(page, '19-final', mark=fin, scroll=page.locator('#focus-final'))
