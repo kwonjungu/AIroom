@@ -32,7 +32,8 @@
     }
     function login(error = '') {
         // 학교 공간은 학교 로그인 화면(NEIS 학교 + 학교 코드)에서 들어온다. 여기서 코드를 묻지 않는다.
-        if (CTX.loginUrl && !token()) { $('#app').innerHTML = `<section class="panel login"><h1>학교 로그인이 필요합니다</h1><p class="muted">학교를 고르고 관리자가 준 학교 코드로 들어오세요. 평가위원은 받은 링크로 바로 들어갑니다.</p>${error ? `<p class="notice error">${esc(error)}</p>` : ''}<div class="actions" style="margin-top:20px"><a class="button primary" href="${esc(CTX.loginUrl)}">학교 로그인으로</a></div></section>`; return; }
+        // 서버의 '로그인이 필요' 안내는 백암이 접근 코드 기준이라 학교 공간에서는 보이지 않는다.
+        if (CTX.loginUrl && !token()) { $('#app').innerHTML = `<section class="panel login"><h1>학교 로그인이 필요합니다</h1><p class="muted">학교를 고르고 관리자가 준 학교 코드로 들어오세요. 평가위원은 받은 링크로 바로 들어갑니다.</p>${error && !/로그인이 필요/.test(error) ? `<p class="notice error">${esc(error)}</p>` : ''}<div class="actions" style="margin-top:20px"><a class="button primary" href="${esc(CTX.loginUrl)}">학교 로그인으로</a></div></section>`; return; }
         $('#app').innerHTML = `<section class="panel login"><h1>채용 관리 로그인</h1><p class="muted">백암이에 들어갈 때 쓰는 접근 코드를 넣으세요. 평가위원은 받은 링크로 바로 들어갑니다.</p>${error ? `<p class="notice error">${esc(error)}</p>` : ''}<form id="login-form"><label class="field">백암이 접근 코드<input type="password" name="code" autocomplete="current-password" required></label><div class="actions" style="margin-top:20px"><button class="primary">로그인</button><button type="button" class="secondary" data-action="exit">위원 링크 접속 해제</button></div></form></section>`;
     }
     const field = (title, name, value = '', type = 'text', extra = '') => `<label class="field">${title}<input name="${name}" type="${type}" value="${esc(value)}" ${extra} required></label>`;
