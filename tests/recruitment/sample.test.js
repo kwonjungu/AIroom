@@ -6,8 +6,9 @@ const { PRESETS, presetById } = require('../../lib/recruitment/presets');
 const { buildSample } = require('../../lib/recruitment/sample');
 const { exportResult } = require('../../lib/recruitment/exports');
 
-test('표준 심사표 하나만 두고, 영역은 비워 둔다(사람이 직접 적는다)', () => {
-    assert.equal(PRESETS.length, 1);
+test('강사 채용 표준과 계약제 교원 채용 표준 둘을 두고, 영역은 비워 둔다(사람이 직접 적는다)', () => {
+    assert.deepEqual(PRESETS.map(p => p.id), ['standard', 'contract-teacher']);
+    assert.deepEqual(PRESETS.map(p => p.name), ['강사 채용 표준', '계약제 교원 채용 표준']);
     assert.equal(PRESETS[0].id, 'standard'); assert.equal(PRESETS[0].field, '');
     assert.equal(presetById('basic-literacy'), PRESETS[0], '예전 영역 id 는 표준 심사표로 연다');
 });

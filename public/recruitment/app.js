@@ -34,7 +34,8 @@
     const field = (title, name, value = '', type = 'text', extra = '') => `<label class="field">${title}<input name="${name}" type="${type}" value="${esc(value)}" ${extra} required></label>`;
     function reviewerRow(v = {}) { return `<div class="reviewer">${field('위원 이름', 'reviewer-name', v.name || '', 'text', 'maxlength="50"')}${field('직위', 'reviewer-position', v.position || '교사', 'text', 'maxlength="50"')}<div><label class="check"><input type="checkbox" name="document" ${v.document === false ? '' : 'checked'}>서류</label><label class="check"><input type="checkbox" name="interview" ${v.interview === false ? '' : 'checked'}>면접</label></div><button type="button" class="secondary" data-action="remove-reviewer" aria-label="이 위원 삭제">삭제</button></div>`; }
     // 심사표 프리셋은 서버(lib/recruitment/presets.js)가 /config 로 내려준다. 화면에 따로 두지 않는다.
-    const presets = () => state.config?.presets || [];
+    // 계약제 교원 채용 표준(layout 'contract')은 세 전형·점수 칩 입력 화면이 붙을 때까지 생성 폼 목록에서 뺀다.
+    const presets = () => (state.config?.presets || []).filter(p => p.layout !== 'contract');
     const presetOf = id => presets().find(p => p.id === id) || null;
     const KIND_NAMES = { pick: '하나 고르기', sum: '해당 줄 합산', judge: '위원 재량 점수' };
     const KIND_HINTS = {
@@ -529,7 +530,7 @@ ${r.title}`);
                 const preset = $('#create-form [name=preset]')?.value; if (!preset) { notify('샘플은 심사표를 고른 뒤 볼 수 있습니다.'); return; }
                 const format = button.dataset.format; const popup = format === 'html' ? window.open('about:blank', '_blank') : null;
                 try { const response = await fetch(`/api/recruitments/sample/${encodeURIComponent(preset)}/${format}?field=${encodeURIComponent($('#create-form [name=field]')?.value.trim() || '')}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
-                    if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${$('#create-form [name=field]')?.value.trim() || '표준 심사표'}_샘플.${format}`; a.click(); }
+                    if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${$('#create-form [name=field]')?.value.trim() || '강사 채용 표준'}_샘플.${format}`; a.click(); }
                     setTimeout(() => URL.revokeObjectURL(url), 60000); notify(format === 'html' ? '샘플 인쇄본을 열었습니다.' : '샘플 한글 파일을 준비했습니다.');
                 } catch (e) { popup?.close(); throw e; }
             }
