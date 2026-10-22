@@ -109,7 +109,11 @@ test('서류만(계약제): 서약서 → 서류전형 → 서류 집계표 → 
         assert.equal(x.total, x.bonusExcluded ? doc.base : doc.score); assert.equal(x.interview, null);
         assert.equal(x.bonusExcluded, doc.base < 12, '40% 문턱은 서류 만점 30점의 40% = 12점');
     }
-    const subj = pages.find(p => p.title.includes('교과목별')).blocks[0].table;
+    const subjPage = pages.find(p => p.title.includes('교과목별'));
+    assert.ok(!subjPage.notes.some(n => n.includes('어느 한 영역')), '서류만이면 세 영역 주석 대신 서류 기준 문구');
+    assert.ok(subjPage.notes.some(n => n.includes('서류전형 평균')));
+    assert.ok(contractPages(buildContractSample({ candidates: 3, reviewers: 1 }).snapshot).find(p => p.title.includes('교과목별')).notes.some(n => n.includes('어느 한 영역')), '전체 전형은 원본 주석 그대로');
+    const subj = subjPage.blocks[0].table;
     assert.equal(subj.rows[1].cells.length, 2, '평가 점수 칸 = 서류(30) + 계');
     assert.match(subj.rows[1].cells[0].v, /^서류\(30\)/);
     const zip = await assertWellFormed((await exportResult(r, 'hwpx')).buffer);

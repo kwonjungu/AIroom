@@ -52,7 +52,9 @@
     const formStages = () => formDocOnly() ? ['document'] : stagesOfPreset(formPreset());
     function reviewerRow(v = {}, stageList = $('#create-form') ? formStages() : stagesOfPreset(presets()[0])) {
         const checks = stageList.map(s => `<label class="check"><input type="checkbox" name="${s}" ${v[s] === false ? '' : 'checked'}>${STAGE_SHORT[s]}</label>`).join('');
-        return `<div class="reviewer">${field('위원 이름', 'reviewer-name', v.name || '', 'text', 'maxlength="50"')}${field('직위', 'reviewer-position', v.position || '교사', 'text', 'maxlength="50"')}<div class="stage-checks">${checks}</div><button type="button" class="secondary" data-action="remove-reviewer" aria-label="이 위원 삭제">삭제</button></div>`;
+        // 화면에 없는 전형(서류만일 때 면접·수업실연)의 체크 상태도 data-stages 에 들고 있다가 '서류 + 면접'으로 돌아오면 되살린다.
+        const kept = Object.fromEntries(['document', 'interview', 'demo'].filter(s => v[s] === false).map(s => [s, false]));
+        return `<div class="reviewer" data-stages="${esc(JSON.stringify(kept))}">${field('위원 이름', 'reviewer-name', v.name || '', 'text', 'maxlength="50"')}${field('직위', 'reviewer-position', v.position || '교사', 'text', 'maxlength="50"')}<div class="stage-checks">${checks}</div><button type="button" class="secondary" data-action="remove-reviewer" aria-label="이 위원 삭제">삭제</button></div>`;
     }
     const KIND_NAMES = { pick: '하나 고르기', scale: '점수 고르기', sum: '해당 줄 합산', judge: '위원 재량 점수' };
     const KIND_HINTS = {
@@ -206,7 +208,7 @@
         form.querySelectorAll('[data-oral]').forEach(el => { el.hidden = only; el.querySelectorAll('input,select').forEach(x => { x.disabled = only; }); });
         for (const stage of ['interview', 'demo']) { const box = document.querySelector(`#rubric-${stage}`)?.closest('.rubric-box'); if (box) box.hidden = only; }
         const reviewers = Array.from(form.querySelectorAll('.reviewer')).map(row => ({ name: row.querySelector('[name=reviewer-name]').value, position: row.querySelector('[name=reviewer-position]').value,
-            ...Object.fromEntries(['document', 'interview', 'demo'].map(s => [s, row.querySelector(`[name=${s}]`) ? row.querySelector(`[name=${s}]`).checked : true])) }));
+            ...Object.fromEntries(['document', 'interview', 'demo'].map(s => { const box = row.querySelector(`[name=${s}]`), kept = JSON.parse(row.dataset.stages || '{}'); return [s, box ? box.checked : kept[s] !== false]; })) }));
         $('#reviewer-rows').innerHTML = (reviewers.length ? reviewers : [{}]).map(v => reviewerRow(v, stageList)).join('');
         form.elements.allowBonus.options[1].textContent = only
             ? (contract ? '사용 (서류 3/1.5점 · 서류 만점의 40% 이상 득점자 · 근거 입력)' : '사용 (0~5점, 0.5점 간격 · 서류 만점의 40% 이상 득점자 · 근거 입력)')

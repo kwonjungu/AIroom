@@ -31,6 +31,8 @@ const listOf = (s, stage) => stage === 'document' ? s.candidates : s.shortlist.m
 const documentOnly = s => s.stages.length === 1 && s.stages[0] === 'document';
 const finalList = s => documentOnly(s) ? s.candidates : listOf(s, 'interview');
 const finalDate = s => s.interviewDate || s.documentDate;
+// 서류만이면 '어느 한 영역이라도' 주석 대신 서류 기준 문구.
+const DOCUMENT_ONLY_NOTE = ['※  서류전형 평균(가산점 제외)이 40%미만이면 가산점 대상에서 제외'];
 const evRow = (s, stage, vid, cid) => s.evaluations[`${stage}:${vid}`]?.rows.find(x => x.candidateId === cid);
 const baseOf = row => Object.values(row.scores).reduce((a, b) => a + (b || 0), 0);
 const totalOf = row => !row ? '' : row.attendance === 'absent' ? '불참' : num(baseOf(row) + row.bonus);
@@ -244,7 +246,7 @@ function applicantPages(s) {
 function subjectPages(s) {
     const list = finalList(s), res = c => s.results.find(x => x.candidateId === c.id), stages = s.stages;
     const show = (x, stage) => { if (!x) return ''; const r = s[stage === 'document' ? 'documentResults' : stage === 'interview' ? 'results' : 'demoResults']?.find(y => y.candidateId === x.candidateId); if (!r) return ''; if (r.absent) return '불참'; return one(x.bonusExcluded ? r.base : r.score); };
-    const make = () => { const p = head(s, { title: '계약제교원 채용 [교과목별 평가 집계표]', orient: 'portrait', role: '집계 담당자', signers: [s.reviewers[0]], area: false, fair: false, date: finalDate(s) }); p.notes = noteLines(s, 'final'); return p; };
+    const make = () => { const p = head(s, { title: '계약제교원 채용 [교과목별 평가 집계표]', orient: 'portrait', role: '집계 담당자', signers: [s.reviewers[0]], area: false, fair: false, date: finalDate(s) }); p.notes = documentOnly(s) ? DOCUMENT_ONLY_NOTE : noteLines(s, 'final'); return p; };
     const headRows = [
         { head: true, h: 7.9, cells: [C('과목', 'h', 1, 2), C('관리\n번호', 'h', 1, 2), C('응모자 성명', 'h', 1, 2), C('평 가 점 수', 'h', stages.length + 1), C('순위', 'h', 1, 2)] },
         { head: true, h: 13.2, cells: [...stages.map(stage => C(stageHead(s, stage), 'h')), C(`계(${num(stages.reduce((a, st) => a + stageMax(s, st), 0))})\n+가산점`, 'h')] }
