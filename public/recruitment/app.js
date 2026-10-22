@@ -116,7 +116,22 @@
     const stageName = { document: '서류심사', interview: '면접심사', demo: '수업실연' };
     // 접수번호: 강사 채용 표준은 001부터, 계약제는 원본처럼 과목 + 두 자리(담임01).
     const code = (index, subject = '') => subject ? `${subject}${String(index + 1).padStart(2, '0')}` : String(index + 1).padStart(3, '0');
+    // 정해진 목록에서 줄을 고르는 항목(계약제 '전공/부전공 여부', 원본 B8:B10): 줄마다 자격증 이름 + 배점 드롭다운.
+    // 목록은 서버 프리셋(choices)이 내려준다. 이름을 비운 줄은 쓰지 않는다. 배점(상한점)은 고정.
+    const choiceOf = key => presets().find(p => p.choices?.[key])?.choices[key] || null;
+    function choiceRow(item) {
+        const choice = choiceOf(item.choose);
+        const look = Object.fromEntries(['head', 'join', 'print', 'choose'].filter(k => item[k] !== undefined).map(k => [k, item[k]]));
+        const line = (o, i) => `<div class="choice-line"><span class="choice-no">${i + 1}</span><select name="choice-label" aria-label="${i + 1}번째 줄 이름"><option value="">(이 줄 안 씀)</option>${choice.labels.map(v => `<option ${o?.label === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select><select name="choice-points" aria-label="${i + 1}번째 줄 배점">${choice.points.map(p => `<option value="${p}" ${(o ? o.points : choice.max) === p ? 'selected' : ''}>${p}점</option>`).join('')}</select></div>`;
+        return `<div class="rubric-row choice-row" data-look="${esc(JSON.stringify(look))}"><input name="label" value="${esc(item.label)}" aria-label="항목 이름" readonly><input name="max" type="number" value="${choice.max}" aria-label="배점(상한점 고정)" readonly><span></span><p class="kind-field muted small">자격증 줄을 최대 ${choice.rows}줄 고르세요. 위원은 이 중 하나(또는 해당 없음 0점)를 고릅니다. 상한점 ${choice.max}점 고정, 같은 자격증은 한 번만.</p><div class="choice-lines">${Array.from({ length: choice.rows }, (x, i) => line(item.options?.[i], i)).join('')}</div></div>`;
+    }
+    // 이미 다른 줄에서 고른 이름은 고르지 못하게 막는다.
+    function syncChoiceRow(row) {
+        const selects = Array.from(row.querySelectorAll('[name=choice-label]'));
+        for (const sel of selects) for (const opt of sel.options) opt.disabled = !!opt.value && selects.some(other => other !== sel && other.value === opt.value);
+    }
     function criterionRow(item = { label: '', max: '', kind: 'judge' }) {
+        if (item.choose && choiceOf(item.choose)) return choiceRow(item);
         const kind = item.kind || 'judge';
         const lines = kind === 'judge' ? (item.guide || '') : kind === 'scale' ? [item.guide, scaleLine(item.options || [])].filter(Boolean).join('\n') : (item.options || []).map(optionLine).join('\n');
         // 원본 인쇄 모양(평가 기준 글·칸 병합)은 화면에서 고치지 않고 그대로 넘긴다.
@@ -125,6 +140,13 @@
     }
     // 편집 칸 한 줄 → 서버에 보낼 항목.
     function readCriterion(row, stage) {
+        if (row.classList.contains('choice-row')) {
+            const look = JSON.parse(row.dataset.look), label = row.querySelector('[name=label]').value.trim();
+            const options = Array.from(row.querySelectorAll('.choice-line')).map(l => ({ label: l.querySelector('[name=choice-label]').value, points: Number(l.querySelector('[name=choice-points]').value) })).filter(o => o.label);
+            if (!options.length) throw new Error(`${stageName[stage]} ${label}: 자격증 줄을 하나 이상 고르세요.`);
+            if (new Set(options.map(o => o.label)).size !== options.length) throw new Error(`${stageName[stage]} ${label}: 같은 자격증을 두 번 고를 수 없습니다.`);
+            return { label, max: Number(row.querySelector('[name=max]').value), kind: 'pick', options, ...look };
+        }
         const label = row.querySelector('[name=label]').value.trim(), max = Number(row.querySelector('[name=max]').value), kind = row.querySelector('[name=kind]').value, lines = row.querySelector('[name=guide]').value.trim();
         const look = row.dataset.look ? JSON.parse(row.dataset.look) : {};
         if (kind === 'judge') return { label, max, kind, guide: lines, ...look };
@@ -155,6 +177,7 @@
         const preset = presetOf(id), contract = isContractPreset(preset), stageList = stagesOfPreset(preset), lim = limitsOf(preset);
         $('#rubric-editors').innerHTML = stageList.map(stage => rubricEditor(stage, preset)).join('');
         if (!preset) $('#rubric-editors').innerHTML = stageList.map(stage => rubricEditor(stage, null)).join('');
+        document.querySelectorAll('#rubric-editors .choice-row').forEach(syncChoiceRow);
         const reviewers = Array.from(form.querySelectorAll('.reviewer')).map(row => ({ name: row.querySelector('[name=reviewer-name]').value, position: row.querySelector('[name=reviewer-position]').value }));
         $('#reviewer-rows').innerHTML = (reviewers.length ? reviewers : [{}]).map(v => reviewerRow(v, stageList)).join('');
         $('#contract-box').innerHTML = contract ? contractFields(preset) : '';
@@ -606,6 +629,8 @@
         if (e.target.matches('#score-form input.score')) { cleanScore(e.target, true); syncScoreTotals(); }
         if (['recruitType', 'subject'].includes(e.target.name) && e.target.closest('#create-form')) syncContractField();
         if (e.target.name === 'stagePlan' && e.target.closest('#create-form')) { syncStagePlan(); state.dirty = true; }
+        if (e.target.name === 'choice-label') { syncChoiceRow(e.target.closest('.choice-row')); state.presetTouched = true; }
+        if (e.target.name === 'choice-points') state.presetTouched = true;
         if (e.target.name === 'kind') { const row = e.target.closest('.rubric-row'); row.querySelector('[name=guide]').placeholder = KIND_HINTS[e.target.value]; syncOptionPreview(row); }
     });
     $('#app').addEventListener('input', e => {

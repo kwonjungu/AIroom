@@ -426,6 +426,10 @@ dialog::backdrop{background:#0006}
 .option-preview th,.option-preview td{border-bottom:1px solid var(--line-light);padding:4px 6px;text-align:left}
 .option-preview th{color:var(--slate);font-weight:600}.option-preview .number{text-align:right;white-space:nowrap}
 .option-preview tr.bad td{color:var(--error)}
+.choice-row input[readonly]{background:var(--stone)}.choice-row p.kind-field{margin:0}
+.choice-lines{grid-column:1/-1;display:flex;flex-direction:column;gap:8px}
+.choice-line{display:grid;grid-template-columns:24px minmax(0,1fr) 92px;gap:8px;align-items:center}.choice-no{font-weight:600;text-align:center}
+.choice-line select{border:1px solid var(--hairline);border-radius:var(--r-xs);padding:9px 10px;font-size:14px;background:var(--surface);color:var(--ink);min-width:0}
 
 /* ── 터치로 고르는 채점(드롭다운 없음) ─────────────────────────────
    하나 고르기: 심사관점 줄 옆을 눌러 고른다. 점수 고르기·가점·참석: 알약 단추를 누른다. 손가락 기준 높이 44px. */
