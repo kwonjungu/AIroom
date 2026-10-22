@@ -27,6 +27,8 @@ const rankText = v => v === null || v === undefined ? '' : String(v);
 function chunk(list, size) { const out = []; for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size)); return out.length ? out : [[]]; }
 const C = (v, k, cs = 1, rs = 1) => ({ v: v === null || v === undefined ? '' : String(v), k, cs, rs });
 const stageList = (s, stage) => stage === 'document' ? s.candidates : s.candidates.filter(c => s.shortlist.includes(c.id));
+// 서류전형만 하는 채용(stages = ['document']): 면접 채점표·집계표 없이 서류 집계표의 순위가 곧 최종 순위다.
+const documentOnly = s => !!s.stages && s.stages.length === 1 && s.stages[0] === 'document';
 
 // 같은 바탕에 괄호만 다른 연속된 관점('… 졸업(4년제)', '… 졸업(2년제)')은 원본처럼 한 줄로 묶는다:
 // '채용 관련 전공 대학 졸업 / (4년제 5점, 2년제 4점)'. 채점은 선택지마다 따로 하고, 인쇄 줄만 합친다.
@@ -117,6 +119,7 @@ function summaryPages(s, stage, { fit = false } = {}) {
     const rows = land ? sheetRows(s, stage).map(r => ({ ...r, view: r.view.replace(/\n\(/g, ' (').replace(/\n/g, ', '), head: r.head.replace(/\n/g, ' ') })) : sheetRows(s, stage);
     const lead = land ? [4, 15, 21] : LEAD_COLS, leadSum = lead.reduce((a, b) => a + b, 0);
     const basis = s.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균';
+    const only = documentOnly(s);
     return chunk(list, size).map(group => {
         const slots = fit ? group : [...group, ...Array(size - group.length).fill(null)];
         const each = (x, fn) => reviewers.map(v => x ? fn(v) : C('', 'blank'));
@@ -131,16 +134,18 @@ function summaryPages(s, stage, { fit = false } = {}) {
                 ...bodyRows(s, stage, rows, sr => slots.flatMap(x => each(x, v => C(cellValue(evRow(s, stage, v.id, x.c.id), sr), 'n')))),
                 { cls: 'sum', cells: [C(stage === 'document' ? '총 계' : '소 계', 'h', 3), ...slots.flatMap(x => each(x, v => C(totalOf(evRow(s, stage, v.id, x.c.id)), 'n')))] },
                 ...(stage === 'document'
-                    ? [per('평 균', x => absent(x) ?? one(x.res?.score)), per('서류 심사 순위', x => absent(x) ?? rankText(x.res?.rank), 'sum rank')]
+                    ? [per('평 균', x => absent(x) ?? one(x.res?.score)), per(only ? '최종 순위' : '서류 심사 순위', x => absent(x) ?? rankText(x.res?.rank), 'sum rank')]
                     : [per('평 균', x => absent(x) ?? one(x.res?.interview)), per('서류전형 계', x => one(x.res?.document)), per('총 계', x => absent(x) ?? one(x.res?.total)), per('강사 순위', x => absent(x) ?? rankText(x.res?.rank), 'sum rank')])
             ]
         };
-        const note = stage === 'document'
+        const note = stage === 'document' && only
+            ? `서류전형만 실시 · 최종 순위 기준: 서류 평균${s.rules.allowBonus ? '(가점 포함)' : ''} · 평균은 배정 위원 전원 제출 후 소수 첫째 자리 반올림 · 동점은 공동순위이며 최종 선발은 기관 기준에 따라 별도로 결정합니다.`
+            : stage === 'document'
             ? `평균은 배정 위원 전원 제출 후 소수 첫째 자리 반올림 · 동점은 공동순위 · 면접대상자 선정 사유: ${s.shortlistReason ?? ''}`
             : `강사 순위 기준: ${basis} · 동점은 공동순위이며 최종 선발은 기관 기준에 따라 별도로 결정합니다.`;
         // 위원 칸 폭(mm). 가로 쪽에서 5mm 이상이면 작은 글씨(tight)를 쓰지 않는다.
         const cellMm = (land ? 277 : 190) * (100 - leadSum) / 100 / (slots.length * R || 1);
-        return { type: 'sheet', title: `${s.field} 채용 ${stage === 'document' ? '서류심사 집계표' : '면접 심사 집계 합산 및 순위'}`, field: s.field, signers: reviewers, table, tight: !land || cellMm < 5, roomy: stage === 'interview' && !land, orient: land ? 'landscape' : 'portrait', note, date: dotDate(stageDate(s, stage)), school: s.school };
+        return { type: 'sheet', title: `${s.field} 채용 ${stage === 'document' ? (only ? '서류심사 집계 및 순위' : '서류심사 집계표') : '면접 심사 집계 합산 및 순위'}`, field: s.field, signers: reviewers, table, tight: !land || cellMm < 5, roomy: stage === 'interview' && !land, orient: land ? 'landscape' : 'portrait', note, date: dotDate(stageDate(s, stage)), school: s.school };
     });
 }
 function pledgePageModel(s, reviewer) {
@@ -153,9 +158,9 @@ function printPages(s) {
     return [
         ...s.reviewers.map(v => pledgePageModel(s, v)),
         ...of('document').flatMap(v => scorePages(s, 'document', v)), ...summaryPages(s, 'document'),
-        ...of('interview').flatMap(v => scorePages(s, 'interview', v)), ...summaryPages(s, 'interview')
+        ...(documentOnly(s) ? [] : [...of('interview').flatMap(v => scorePages(s, 'interview', v)), ...summaryPages(s, 'interview')])
     ];
 }
-const api = { printPages, summaryPages, sheetRows, cellValue };
+const api = { printPages, summaryPages, sheetRows, cellValue, documentOnly };
 if (typeof module === 'object' && module.exports) module.exports = api; else root.RecruitmentSheets = api;
 })(typeof window !== 'undefined' ? window : globalThis);

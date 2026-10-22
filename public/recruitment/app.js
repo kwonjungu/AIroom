@@ -47,7 +47,10 @@
     // 인원 상한: 강사 채용 표준 지원자 20명·면접 4명, 계약제 지원자 100명·면접 10명.
     const LIMITS = { standard: { candidates: 20, shortlist: 4 }, contract: { candidates: 100, shortlist: 10 } };
     const limitsOf = p => LIMITS[isContractPreset(p) ? 'contract' : 'standard'];
-    function reviewerRow(v = {}, stageList = stagesOfPreset(formPreset() || presets()[0])) {
+    // 전형 구성: '서류만'이면 stages = ['document'] 로 만들고 면접 관련 칸(면접일·대상자 수·순위 기준·면접 배점·위원 면접 담당)을 숨긴다.
+    const formDocOnly = () => $('#create-form [name=stagePlan]')?.value === 'document';
+    const formStages = () => formDocOnly() ? ['document'] : stagesOfPreset(formPreset());
+    function reviewerRow(v = {}, stageList = $('#create-form') ? formStages() : stagesOfPreset(presets()[0])) {
         const checks = stageList.map(s => `<label class="check"><input type="checkbox" name="${s}" ${v[s] === false ? '' : 'checked'}>${STAGE_SHORT[s]}</label>`).join('');
         return `<div class="reviewer">${field('위원 이름', 'reviewer-name', v.name || '', 'text', 'maxlength="50"')}${field('직위', 'reviewer-position', v.position || '교사', 'text', 'maxlength="50"')}<div class="stage-checks">${checks}</div><button type="button" class="secondary" data-action="remove-reviewer" aria-label="이 위원 삭제">삭제</button></div>`;
     }
@@ -163,15 +166,30 @@
         form.elements.candidateCount.max = lim.candidates;
         form.querySelector('[data-label=interviewDate]').firstChild.textContent = contract ? '면접·수업실연일' : '면접일';
         form.querySelector('[data-summary-orient]').hidden = contract;
-        form.elements.allowBonus.options[1].textContent = contract ? '사용 (서류 3/1.5 · 면접 4/2 · 수업실연 3/1.5점 · 전형 만점의 40% 이상 득점자 · 근거 입력)' : '사용 (0~5점, 0.5점 간격 · 서류 만점의 40% 이상 득점자 · 근거 입력)';
+        form.elements.stagePlan.options[0].textContent = contract ? '서류 + 면접 + 수업실연' : '서류 + 면접';
         form.elements.rankingBasis.options[0].textContent = contract ? '서류 + 면접 + 수업실연 평균' : '서류 평균 + 면접 평균';
         form.elements.rankingBasis.options[1].textContent = contract ? '면접 + 수업실연 평균' : '면접 평균';
         $('#sample-note').textContent = contract
             ? '가상의 지원자 12명·위원 3명(원본 엑셀과 같은 규모)으로 끝까지 채점한 예시입니다. 서류전형·집계표는 A4 가로, 나머지는 세로로 나옵니다. 저장되지 않습니다.'
             : '가상의 지원자 5명·위원 3명으로 끝까지 채점한 예시입니다. 채용 분야 칸에 적은 영역이 제목에 들어갑니다. 저장되지 않으며, 2단계에서 고친 배점은 반영하지 않고 고른 심사표 그대로 보여 줍니다.';
-        $('#reviewer-hint').textContent = contract ? '최대 5명. 서류·면접·수업실연 중 맡을 전형을 한 줄에서 고르세요.' : '최대 5명. 한 위원이 두 전형을 모두 맡으면 한 줄에서 둘 다 선택하세요.';
         $('#candidate-hint').textContent = contract ? `최대 ${lim.candidates}명. 관리번호가 과목 이름 + 01부터 자동으로 붙습니다(예: 담임01). 서류전형 평가표는 10명마다 한 장씩 늘어납니다.` : `최대 ${lim.candidates}명. 인원수를 정하면 접수번호가 001부터 자동으로 붙습니다. 이름만 넣으세요.`;
-        syncContractField(); syncCandidates(); syncTotals();
+        syncContractField(); syncCandidates(); syncStagePlan(); syncTotals();
+    }
+    // 전형 구성에 맞춰 폼을 바꾼다. 숨긴 칸은 꺼 두므로(disabled) 필수 입력 검사·전송에서 빠진다.
+    // 면접·수업실연 배점 칸은 지우지 않고 숨기기만 한다(다시 '서류 + 면접'으로 돌아오면 고친 값이 남아 있게).
+    function syncStagePlan() {
+        const form = $('#create-form'); if (!form) return;
+        const only = formDocOnly(), contract = isContractPreset(formPreset()), stageList = formStages();
+        form.querySelectorAll('[data-oral]').forEach(el => { el.hidden = only; el.querySelectorAll('input,select').forEach(x => { x.disabled = only; }); });
+        for (const stage of ['interview', 'demo']) { const box = document.querySelector(`#rubric-${stage}`)?.closest('.rubric-box'); if (box) box.hidden = only; }
+        const reviewers = Array.from(form.querySelectorAll('.reviewer')).map(row => ({ name: row.querySelector('[name=reviewer-name]').value, position: row.querySelector('[name=reviewer-position]').value,
+            ...Object.fromEntries(['document', 'interview', 'demo'].map(s => [s, row.querySelector(`[name=${s}]`) ? row.querySelector(`[name=${s}]`).checked : true])) }));
+        $('#reviewer-rows').innerHTML = (reviewers.length ? reviewers : [{}]).map(v => reviewerRow(v, stageList)).join('');
+        form.elements.allowBonus.options[1].textContent = only
+            ? (contract ? '사용 (서류 3/1.5점 · 서류 만점의 40% 이상 득점자 · 근거 입력)' : '사용 (0~5점, 0.5점 간격 · 서류 만점의 40% 이상 득점자 · 근거 입력)')
+            : contract ? '사용 (서류 3/1.5 · 면접 4/2 · 수업실연 3/1.5점 · 전형 만점의 40% 이상 득점자 · 근거 입력)' : '사용 (0~5점, 0.5점 간격 · 서류 만점의 40% 이상 득점자 · 근거 입력)';
+        $('#reviewer-hint').textContent = only ? '최대 5명. 모두 서류심사를 맡습니다.' : contract ? '최대 5명. 서류·면접·수업실연 중 맡을 전형을 한 줄에서 고르세요.' : '최대 5명. 한 위원이 두 전형을 모두 맡으면 한 줄에서 둘 다 선택하세요.';
+        $('#flow-note').textContent = only ? '서류전형만 합니다. 모든 위원이 서류 평가를 제출하면 면접대상자 선정 없이 바로 결과를 확정하고, 순위는 서류 평균으로 매깁니다. 동점은 공동순위입니다.' : '동점은 공동순위로 매깁니다. 면접대상자는 서류 평가가 끝난 뒤 관리자가 고릅니다.';
     }
     // 접수번호는 입력받지 않고 순번으로 붙인다. 이름만 채우면 된다.
     function candidateRows(count, names = [], subject = '') {
@@ -193,7 +211,7 @@
     }
     function createForm() {
         const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10), first = presets()[0];
-        return `<section class="panel"><div class="split"><div><h2>새 채용 설정</h2><p class="muted small" style="margin:0">네 가지를 채우면 바로 평가를 시작할 수 있습니다. 생성 후에는 배점과 위원을 바꿀 수 없습니다.</p></div><button class="secondary" data-action="fill-example">예시 채우기</button></div><form id="create-form"><div class="preset-bar"><label class="field">심사표 불러오기<select name="preset">${presets().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}<option value="">빈 심사표로 직접 만들기</option></select></label><p class="muted small"><b>강사 채용 표준</b>: 방과후·늘봄 강사 등, 서류 → 면접. <b>계약제 교원 채용 표준</b>: 기간제교사·시간강사, 서류 → 면접 + 수업실연. 고르면 평가 항목·배점·심사관점이 그 표준대로 채워집니다.</p><div class="actions sample-actions"><button type="button" class="secondary" data-action="sample" data-format="html">샘플 심사표 인쇄본 보기</button><button type="button" class="secondary" data-action="sample" data-format="hwpx">샘플 한글(HWPX) 받기</button></div><p class="muted small" id="sample-note"></p></div><h3 class="step-title"><b>1</b>채용 정보</h3><div id="contract-box"></div><div class="grid">${field('학교명', 'school', '', 'text', 'maxlength="100"')}${field('채용명', 'title', '', 'text', 'maxlength="100"')}${field('채용 분야(영역)', 'field', '', 'text', 'maxlength="100" placeholder="예: 문화예술강사[국악], 방과후학교 강사[컴퓨터부]"')}${field('면접대상자 최대 수', 'shortlistLimit', '1', 'number', 'min="1" max="4"')}${field('서류전형일', 'documentDate', today, 'date')}<label class="field" data-label="interviewDate">면접일<input name="interviewDate" type="date" value="${today}" required></label><label class="field">최종 순위 기준<select name="rankingBasis"><option value="combined">서류 평균 + 면접 평균</option><option value="interview">면접 평균</option></select></label><label class="field" data-summary-orient>집계표 용지<select name="summaryOrient"><option value="portrait">A4 세로 (원본 · 한 장 40칸)</option><option value="landscape">A4 가로 (지원자 10명씩 · 글씨 큼)</option></select></label><label class="field">가점 사용<select name="allowBonus"><option value="false">미사용</option><option value="true">사용</option></select></label></div>
+        return `<section class="panel"><div class="split"><div><h2>새 채용 설정</h2><p class="muted small" style="margin:0">네 가지를 채우면 바로 평가를 시작할 수 있습니다. 생성 후에는 배점과 위원을 바꿀 수 없습니다.</p></div><button class="secondary" data-action="fill-example">예시 채우기</button></div><form id="create-form"><div class="preset-bar"><label class="field">심사표 불러오기<select name="preset">${presets().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}<option value="">빈 심사표로 직접 만들기</option></select></label><p class="muted small"><b>강사 채용 표준</b>: 방과후·늘봄 강사 등, 서류 → 면접. <b>계약제 교원 채용 표준</b>: 기간제교사·시간강사, 서류 → 면접 + 수업실연. 고르면 평가 항목·배점·심사관점이 그 표준대로 채워집니다.</p><div class="actions sample-actions"><button type="button" class="secondary" data-action="sample" data-format="html">샘플 심사표 인쇄본 보기</button><button type="button" class="secondary" data-action="sample" data-format="hwpx">샘플 한글(HWPX) 받기</button></div><p class="muted small" id="sample-note"></p></div><h3 class="step-title"><b>1</b>채용 정보</h3><div id="contract-box"></div><div class="grid">${field('학교명', 'school', '', 'text', 'maxlength="100"')}${field('채용 제목', 'title', '', 'text', 'maxlength="100"')}${field('채용 분야(영역)', 'field', '', 'text', 'maxlength="100" placeholder="예: 문화예술강사[국악], 방과후학교 강사[컴퓨터부]"')}<label class="field">전형 구성<select name="stagePlan"><option value="full">서류 + 면접</option><option value="document">서류만</option></select></label><label class="field" data-oral>면접대상자 최대 수<input name="shortlistLimit" type="number" value="1" min="1" max="4" required></label>${field('서류전형일', 'documentDate', today, 'date')}<label class="field" data-label="interviewDate" data-oral>면접일<input name="interviewDate" type="date" value="${today}" required></label><label class="field" data-oral>최종 순위 기준<select name="rankingBasis"><option value="combined">서류 평균 + 면접 평균</option><option value="interview">면접 평균</option></select></label><label class="field" data-summary-orient>집계표 용지<select name="summaryOrient"><option value="portrait">A4 세로 (원본 · 한 장 40칸)</option><option value="landscape">A4 가로 (지원자 10명씩 · 글씨 큼)</option></select></label><label class="field">가점 사용<select name="allowBonus"><option value="false">미사용</option><option value="true" selected>사용</option></select></label></div>
 
 <h3 class="step-title"><b>2</b>평가 항목과 배점</h3><p class="muted small">항목을 더하거나 지우고 배점·심사관점을 바꿀 수 있습니다. 0.5점 단위, 항목당 100점까지, 전형마다 12개까지. 위원은 여기 적힌 심사관점을 보고 채점합니다.</p><div class="grid" id="rubric-editors">${stagesOfPreset(first).map(stage => rubricEditor(stage, first)).join('')}</div><label class="field" style="margin-top:16px">심사 참고자료 (선택)<textarea name="guidance" class="guidance-input" maxlength="3000" placeholder="자격 요건, 결격 사유, 배점 해석처럼 위원 모두가 같이 알아야 할 내용을 적어 주세요. 채점 화면 맨 위에 펼쳐서 보여 줍니다."></textarea></label>
 
@@ -201,7 +219,7 @@
 
 <h3 class="step-title"><b>4</b>지원자</h3><p class="muted small" id="candidate-hint"></p><label class="field" style="max-width:200px">지원자 수<input name="candidateCount" type="number" min="1" max="20" value="3" required></label><div id="candidate-rows">${candidateRows(3)}</div>
 
-<p class="small muted" style="margin-top:18px">동점은 공동순위로 매깁니다. 면접대상자는 서류 평가가 끝난 뒤 관리자가 고릅니다.</p><div class="actions"><button class="primary">채용 생성</button><button type="button" class="secondary" data-action="cancel-new">취소</button></div></form></section>`;
+<p class="small muted" style="margin-top:18px" id="flow-note">동점은 공동순위로 매깁니다. 면접대상자는 서류 평가가 끝난 뒤 관리자가 고릅니다.</p><div class="actions"><button class="primary">채용 생성</button><button type="button" class="secondary" data-action="cancel-new">취소</button></div></form></section>`;
     }
     function navigation() {
         return `<aside><div class="list-head"><h2>채용 목록</h2><button class="ghost" data-action="refresh">새로고침</button></div><button class="primary block" data-action="new">+ 새 채용</button><div class="list">${state.list.map(r => `<button class="card ${state.current?.id === r.id && !state.isNew ? 'active' : ''}" data-action="open" data-id="${r.id}"><span class="tag ${r.status}">${labels[r.status]}</span><strong>${esc(r.title)}</strong><span class="muted small">${esc(r.school)} · 지원자 ${r.candidateCount}명</span></button>`).join('')}</div></aside>`;
@@ -235,8 +253,10 @@
     }
     // 지금 채점하는 전형들. 계약제는 면접 단계에서 면접·수업실연 두 표를 같이 연다.
     const stagesOf = r => r.stages || ['document', 'interview'];
+    // 서류전형만 하는 채용: 면접 단계·면접대상자 선정이 없고 서류 순위가 곧 최종 순위다. stages 가 없는 옛 채용은 전체 전형.
+    const docOnly = r => stagesOf(r).length === 1 && stagesOf(r)[0] === 'document';
     function activeStages(r) {
-        if (r.status === 'draft' || r.status === 'document') return ['document'];
+        if (r.status === 'draft' || r.status === 'document' || docOnly(r)) return ['document'];
         return stagesOf(r).filter(s => s !== 'document');
     }
     // 화면에 띄울 전형: 고른 것(state.evalStage) → 위원은 아직 제출 안 한 첫 전형 → 첫 전형.
@@ -261,6 +281,7 @@
             title: `${names} 채점을 기다리는 중입니다.`, body: `제출 ${submitted} / ${required}건${act.length > 1 ? ` (${act.map((s, i) => `${stages[s]} ${counts[i].submitted}/${counts[i].required}`).join(', ')})` : ''}. 아직 링크를 못 받은 위원이 있으면 발급해 보내세요.`,
             meter: [submitted, required], button: '<button class="primary" data-action="goto" data-tab="overview" data-focus="reviewers">위원 링크 보내기</button>'
         };
+        if (r.status === 'document' && docOnly(r)) return { title: '결과를 확정하세요.', body: `서류 채점 ${required}건이 모두 들어왔습니다. 서류전형만 하는 채용이라 면접대상자 선정 없이 바로 확정합니다.`, meter: [submitted, required], button: '<button class="primary" data-action="goto" data-tab="results" data-focus="final">결과 확정하러 가기</button>' };
         if (r.status === 'document') return { title: '면접대상자를 고르세요.', body: `서류 채점 ${required}명분이 모두 들어왔습니다.`, meter: [submitted, required], button: '<button class="primary" data-action="goto" data-tab="results" data-focus="shortlist">면접대상자 고르기</button>' };
         return { title: '결과를 확정하세요.', body: `${names} 채점 ${required}건이 모두 들어왔습니다.`, meter: [submitted, required], button: '<button class="primary" data-action="goto" data-tab="results" data-focus="final">결과 확정하러 가기</button>' };
     }
@@ -337,7 +358,8 @@
         if (!admin && !state.tabSet) state.tab = 'evaluation';
         if (!tabs.some(([id]) => id === state.tab)) state.tab = tabs[0][0];
         let steps;
-        if (admin) steps = rail(Object.values(labels), Object.keys(labels).indexOf(r.status));
+        // 서류만: 1 설정 완료 → 2 서류 평가 → 3 결과 확정(면접 단계 없음).
+        if (admin) { const flow = Object.keys(labels).filter(k => !(docOnly(r) && k === 'interview')); steps = rail(flow.map(k => labels[k]), flow.indexOf(r.status)); }
         else {
             const ev = r.evaluations[`${stage}:${r.actor.id}`];
             const signed = !!r.reviewers.find(v => v.id === r.actor.id)?.pledge?.signedAt;
@@ -380,7 +402,7 @@
             .card svg{width:100%;height:auto;max-width:190px}
             @media print{body{padding:0}.grid{gap:10px}}
         </style></head><body><h1>${esc(r.title)}</h1>
-            <div class="sub">${esc(r.school)} · ${esc(r.field)} · 서류 ${esc(r.documentDate)} · 면접 ${esc(r.interviewDate)}</div>
+            <div class="sub">${esc(r.school)} · ${esc(r.field)} · 서류 ${esc(r.documentDate)}${docOnly(r) ? ' · 서류전형만' : ` · 면접 ${esc(r.interviewDate)}`}</div>
             <div class="warn">각 QR 은 해당 위원 본인 전용입니다. 다른 사람이 스캔하면 그 위원 이름으로 채점됩니다. 발급일로부터 7일이 지나면 열리지 않으며, 다시 발급하면 이전 QR 은 즉시 막힙니다.</div>
             <div class="grid">${cards}</div></body></html>`);
         win.document.close();
@@ -390,7 +412,8 @@
     function overview(r) {
         const admin = r.actor.role === 'admin', open = admin && r.status !== 'finalized';
         const issued = r.reviewers.filter(v => state.invites[v.id]);
-        return `<section class="panel"><h2>기본 정보</h2><dl class="facts"><div><dt>서류전형일</dt><dd>${esc(r.documentDate)}</dd></div><div><dt>${r.layout === 'contract' ? '면접·수업실연일' : '면접일'}</dt><dd>${esc(r.interviewDate)}</dd></div><div><dt>최종 순위 기준</dt><dd>${r.layout === 'contract' ? (r.rules.rankingBasis === 'combined' ? '서류 + 면접 + 수업실연 평균' : '면접 + 수업실연 평균') : r.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균'}</dd></div><div><dt>집계표 용지</dt><dd>${r.layout === 'contract' ? '원본대로 서류전형·집계표 가로, 나머지 세로' : r.rules.summaryOrient === 'landscape' ? 'A4 가로 · 지원자 10명씩' : 'A4 세로'}</dd></div><div><dt>가점</dt><dd>${!r.rules.allowBonus ? '미사용' : r.rules.bonusByStage ? '사용 · 서류 3/1.5 · 면접 4/2 · 수업실연 3/1.5점, 근거 입력' : `서류 · 최대 ${bonusMax(r)}점, 근거 입력`}</dd></div></dl></section>${stagesOf(r).map((st, i) => guideDetails(r, st, { guidance: i === 0 })).join('')}<section class="panel" id="focus-reviewers"><div class="split"><h2>평가위원</h2>${open ? `<div class="actions"><button class="secondary" data-action="invite-all">위원 전체 링크 발급</button>${issued.length ? '<button class="primary" data-action="copy-all">전체 링크 복사</button><button class="secondary" data-action="print-qr">QR 배부표 인쇄</button>' : ''}</div>` : ''}</div>${open ? '<p class="muted small">링크를 발급해 해당 위원에게만 전달하세요. 링크를 열면 바로 서명하고 채점할 수 있습니다.</p>' : ''}<div class="table-wrap"><table><thead><tr><th>위원</th><th>직위</th><th>담당 전형</th><th>평가 링크</th><th class="qr-col">QR</th></tr></thead><tbody>${r.reviewers.map(v => `<tr><td>${esc(v.name)}</td><td>${esc(v.position)}</td><td>${v.stages.map(s => stages[s]).join(' · ')}</td><td>${open ? `<div class="actions"><button class="secondary" data-action="invite" data-id="${v.id}">${state.invites[v.id] ? '다시 발급' : '링크 발급'}</button>${state.invites[v.id] ? `<button class="secondary" data-action="copy-one" data-id="${v.id}">복사</button><a href="${esc(state.invites[v.id])}" target="_blank" rel="noopener noreferrer">열어보기</a>` : ''}</div>` : '배정 완료'}</td><td class="qr-col">${qrCell(state.invites[v.id])}</td></tr>`).join('')}</tbody></table></div>${issued.length ? `<div class="invite-box"><strong>발급된 링크 · 7일 동안 유효</strong><p class="small">링크를 가진 사람은 그 위원으로 채점할 수 있으니 본인에게만 보내세요. 다시 발급하면 이전 링크는 바로 막힙니다. 메일은 자동으로 가지 않습니다. <b>화면을 새로 불러오면 이 목록은 사라집니다. 지금 복사해 두세요.</b></p><textarea id="invite-list" class="invite-list" readonly rows="${Math.min(10, issued.length * 3)}">${esc(issued.map(v => `${v.name} (${v.position})\n${state.invites[v.id]}`).join('\n\n'))}</textarea></div>` : ''}</section><section class="panel"><h2>지원자 ${r.candidates.length}명</h2><div class="table-wrap"><table><thead><tr><th>접수번호</th><th>성명</th><th>면접대상</th></tr></thead><tbody>${r.candidates.map(c => `<tr><td>${esc(c.code)}</td><td>${esc(c.name)}</td><td>${r.shortlist.includes(c.id) ? '<span class="tag ok">선정</span>' : '—'}</td></tr>`).join('')}</tbody></table></div></section>${r.actor.role === 'admin' ? `<section class="panel danger-zone"><h2>채용 삭제</h2><p class="muted small">지원자 명단, 위원 평가와 서명, 결과 문서와 처리 이력이 모두 사라집니다. 되돌릴 수 없습니다.${r.status === 'finalized' ? ' 결과 문서가 필요하면 문서 출력 탭에서 먼저 내려받으세요.' : ' 아직 결과가 확정되지 않은 채용입니다.'}</p><button class="danger" data-action="delete-recruitment">이 채용 삭제</button></section>` : ''}`;
+        const only = docOnly(r);
+        return `<section class="panel"><h2>기본 정보</h2><dl class="facts"><div><dt>전형 구성</dt><dd>${only ? '서류만' : stagesOf(r).map(s => STAGE_SHORT[s]).join(' + ')}</dd></div><div><dt>서류전형일</dt><dd>${esc(r.documentDate)}</dd></div>${only ? '' : `<div><dt>${r.layout === 'contract' ? '면접·수업실연일' : '면접일'}</dt><dd>${esc(r.interviewDate)}</dd></div>`}<div><dt>최종 순위 기준</dt><dd>${only ? '서류 평균' : r.layout === 'contract' ? (r.rules.rankingBasis === 'combined' ? '서류 + 면접 + 수업실연 평균' : '면접 + 수업실연 평균') : r.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균'}</dd></div><div><dt>집계표 용지</dt><dd>${r.layout === 'contract' ? '원본대로 서류전형·집계표 가로, 나머지 세로' : r.rules.summaryOrient === 'landscape' ? 'A4 가로 · 지원자 10명씩' : 'A4 세로'}</dd></div><div><dt>가점</dt><dd>${!r.rules.allowBonus ? '미사용' : r.rules.bonusByStage ? `사용 · ${Object.entries(r.rules.bonusByStage).map(([s, b]) => `${STAGE_SHORT[s]} ${b.options.map(o => o.points).join('/')}`).join(' · ')}점, 근거 입력` : `서류 · 최대 ${bonusMax(r)}점, 근거 입력`}</dd></div></dl></section>${stagesOf(r).map((st, i) => guideDetails(r, st, { guidance: i === 0 })).join('')}<section class="panel" id="focus-reviewers"><div class="split"><h2>평가위원</h2>${open ? `<div class="actions"><button class="secondary" data-action="invite-all">위원 전체 링크 발급</button>${issued.length ? '<button class="primary" data-action="copy-all">전체 링크 복사</button><button class="secondary" data-action="print-qr">QR 배부표 인쇄</button>' : ''}</div>` : ''}</div>${open ? '<p class="muted small">링크를 발급해 해당 위원에게만 전달하세요. 링크를 열면 바로 서명하고 채점할 수 있습니다.</p>' : ''}<div class="table-wrap"><table><thead><tr><th>위원</th><th>직위</th><th>담당 전형</th><th>평가 링크</th><th class="qr-col">QR</th></tr></thead><tbody>${r.reviewers.map(v => `<tr><td>${esc(v.name)}</td><td>${esc(v.position)}</td><td>${v.stages.map(s => stages[s]).join(' · ')}</td><td>${open ? `<div class="actions"><button class="secondary" data-action="invite" data-id="${v.id}">${state.invites[v.id] ? '다시 발급' : '링크 발급'}</button>${state.invites[v.id] ? `<button class="secondary" data-action="copy-one" data-id="${v.id}">복사</button><a href="${esc(state.invites[v.id])}" target="_blank" rel="noopener noreferrer">열어보기</a>` : ''}</div>` : '배정 완료'}</td><td class="qr-col">${qrCell(state.invites[v.id])}</td></tr>`).join('')}</tbody></table></div>${issued.length ? `<div class="invite-box"><strong>발급된 링크 · 7일 동안 유효</strong><p class="small">링크를 가진 사람은 그 위원으로 채점할 수 있으니 본인에게만 보내세요. 다시 발급하면 이전 링크는 바로 막힙니다. 메일은 자동으로 가지 않습니다. <b>화면을 새로 불러오면 이 목록은 사라집니다. 지금 복사해 두세요.</b></p><textarea id="invite-list" class="invite-list" readonly rows="${Math.min(10, issued.length * 3)}">${esc(issued.map(v => `${v.name} (${v.position})\n${state.invites[v.id]}`).join('\n\n'))}</textarea></div>` : ''}</section><section class="panel"><h2>지원자 ${r.candidates.length}명</h2><div class="table-wrap"><table><thead><tr><th>접수번호</th><th>성명</th>${only ? '' : '<th>면접대상</th>'}</tr></thead><tbody>${r.candidates.map(c => `<tr><td>${esc(c.code)}</td><td>${esc(c.name)}</td>${only ? '' : `<td>${r.shortlist.includes(c.id) ? '<span class="tag ok">선정</span>' : '—'}</td>`}</tr>`).join('')}</tbody></table></div></section>${r.actor.role === 'admin' ? `<section class="panel danger-zone"><h2>채용 삭제</h2><p class="muted small">지원자 명단, 위원 평가와 서명, 결과 문서와 처리 이력이 모두 사라집니다. 되돌릴 수 없습니다.${r.status === 'finalized' ? ' 결과 문서가 필요하면 문서 출력 탭에서 먼저 내려받으세요.' : ' 아직 결과가 확정되지 않은 채용입니다.'}</p><button class="danger" data-action="delete-recruitment">이 채용 삭제</button></section>` : ''}`;
     }
     function evaluation(r) {
         if (r.status === 'draft') return '<section class="panel"><h2>아직 채점을 열지 않았습니다.</h2><p class="muted">위 ‘평가 시작하기’를 누르면 위원 링크를 만들 수 있습니다.</p></section>';
@@ -491,7 +514,7 @@
         const val = (row, reviewer) => { const ev = r.evaluations[`${stage}:${reviewer.id}`]; if (!ev?.submittedAt) return '미제출'; const item = ev.rows.find(x => x.candidateId === row.candidateId); return !item ? '—' : item.attendance === 'absent' ? '불참' : fmt(Object.values(item.scores).reduce((a, b) => a + b, 0) + item.bonus); };
         const sub = stage === 'document' ? (r.rules.allowBonus ? '가점 포함' : '서류 점수') : '면접 점수';
         const tally = c => c.conflict ? '<span class="tag warn">참석 표시 불일치</span>' : c.absent ? '<span class="tag">불참</span>' : c.complete ? '<span class="tag ok">완료</span>' : '<span class="tag wait">미제출 있음</span>';
-        return `<div class="table-wrap"><table class="result-table"><thead><tr><th>접수번호 / 이름</th>${stage === 'interview' ? '<th class="number">서류 평균</th>' : ''}${reviewers.map(v => `<th class="number">${esc(v.name)}<span class="sub">${sub}</span></th>`).join('')}<th class="number">제출/배정</th><th class="number">${stage === 'document' ? '서류' : '면접'} 평균</th>${stage === 'interview' ? '<th class="number">합산</th><th class="number">순위 기준</th>' : ''}<th class="number">${stage === 'document' ? '서류' : '최종'} 순위</th><th>상태</th></tr></thead><tbody>${rows.map(c => `<tr><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th>${stage === 'interview' ? `<td class="number">${fmt(c.document)}</td>` : ''}${reviewers.map(v => `<td class="number">${val(c, v)}</td>`).join('')}<td class="number">${c.submitted}/${c.required}</td><td class="number strong">${fmt(stage === 'document' ? c.score : c.interview)}</td>${stage === 'interview' ? `<td class="number">${fmt(c.total)}</td><td class="number strong">${fmt(c.rankingScore)}</td>` : ''}<td class="number rank">${c.rank ?? '—'}</td><td>${tally(c)}</td></tr>`).join('')}</tbody></table></div>`;
+        return `<div class="table-wrap"><table class="result-table"><thead><tr><th>접수번호 / 이름</th>${stage === 'interview' ? '<th class="number">서류 평균</th>' : ''}${reviewers.map(v => `<th class="number">${esc(v.name)}<span class="sub">${sub}</span></th>`).join('')}<th class="number">제출/배정</th><th class="number">${stage === 'document' ? '서류' : '면접'} 평균</th>${stage === 'interview' ? '<th class="number">합산</th><th class="number">순위 기준</th>' : ''}<th class="number">${stage === 'document' && !docOnly(r) ? '서류' : '최종'} 순위</th><th>상태</th></tr></thead><tbody>${rows.map(c => `<tr><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th>${stage === 'interview' ? `<td class="number">${fmt(c.document)}</td>` : ''}${reviewers.map(v => `<td class="number">${val(c, v)}</td>`).join('')}<td class="number">${c.submitted}/${c.required}</td><td class="number strong">${fmt(stage === 'document' ? c.score : c.interview)}</td>${stage === 'interview' ? `<td class="number">${fmt(c.total)}</td><td class="number strong">${fmt(c.rankingScore)}</td>` : ''}<td class="number rank">${c.rank ?? '—'}</td><td>${tally(c)}</td></tr>`).join('')}</tbody></table></div>`;
     }
     // 원본 시트 집계표와 같은 표: 심사관점 줄마다 지원자·위원별 점수, 아래에 총계·평균·순위.
     // 표 모형은 인쇄본·한/글·Excel 과 같은 sheets.js 가 만든다. 제출한 평가만 싣는다.
@@ -514,10 +537,26 @@
         return `<h3>${stages[stage]} 위원별 점수 <span class="muted small">제출 ${submitted}/${reviewers.length}</span></h3><div class="table-wrap"><table class="result-table"><thead><tr><th>관리번호 / 이름</th>${reviewers.map(v => `<th class="number">${esc(v.name)}<span class="sub">가점 포함</span></th>`).join('')}<th class="number">${stages[stage]} 평균</th></tr></thead><tbody>${r.finalResults.map(c => `<tr><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th>${reviewers.map(v => `<td class="number">${val(c, v)}</td>`).join('')}<td class="number strong">${fmt(stage === 'interview' ? c.interview : c.demo)}</td></tr>`).join('')}</tbody></table></div>`;
     }
     function contractFinalTable(r) {
+        const st = stagesOf(r), value = { document: c => c.document, interview: c => c.interview, demo: c => c.demo };
         const tally = c => c.conflict ? '<span class="tag warn">참석 표시 불일치</span>' : c.absent ? '<span class="tag">불참</span>' : c.complete ? (c.bonusExcluded ? '<span class="tag warn">가산점 제외</span>' : '<span class="tag ok">완료</span>') : '<span class="tag wait">미제출 있음</span>';
-        return `<h3>교과목별 평가 집계 <span class="muted small">출력물의 교과목별 평가 집계표와 같은 숫자</span></h3><div class="table-wrap"><table class="result-table"><thead><tr><th>관리번호 / 이름</th><th class="number">서류(${stageMax(r, 'document')})</th><th class="number">면접(${stageMax(r, 'interview')})</th><th class="number">수업실연(${stageMax(r, 'demo')})</th><th class="number">계</th><th class="number">순위</th><th>상태</th></tr></thead><tbody>${r.finalResults.map(c => `<tr><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th><td class="number">${fmt(c.document)}</td><td class="number">${fmt(c.interview)}</td><td class="number">${fmt(c.demo)}</td><td class="number strong">${fmt(c.total)}</td><td class="number rank">${c.rank ?? '—'}</td><td>${tally(c)}</td></tr>`).join('')}</tbody></table></div>`;
+        return `<h3>교과목별 평가 집계 <span class="muted small">출력물의 교과목별 평가 집계표와 같은 숫자</span></h3><div class="table-wrap"><table class="result-table"><thead><tr><th>관리번호 / 이름</th>${st.map(s => `<th class="number">${STAGE_SHORT[s]}(${stageMax(r, s)})</th>`).join('')}<th class="number">계</th><th class="number">순위</th><th>상태</th></tr></thead><tbody>${r.finalResults.map(c => `<tr><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th>${st.map(s => `<td class="number">${fmt(value[s](c))}</td>`).join('')}<td class="number strong">${fmt(c.total)}</td><td class="number rank">${c.rank ?? '—'}</td><td>${tally(c)}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    // 결과 확정 칸. 서류만 하는 채용은 서류 통계 아래에, 아니면 면접(·수업실연) 통계 아래에 둔다.
+    function finalizeBlock(r, ready, what) {
+        if (r.actor.role !== 'admin' || !['document', 'interview'].includes(r.status)) return '';
+        return `<div class="do-next" id="focus-final"><h3>결과 확정</h3><p class="muted small">${what} 모두 제출되면 확정할 수 있습니다. 확정하면 점수가 잠기고 결과 문서를 만들 수 있습니다. 되돌릴 수 없습니다.</p>${ready ? '' : '<p class="notice warning">아직 모든 위원이 제출하지 않았습니다.</p>'}<button class="primary" data-action="finalize" ${!ready ? 'disabled' : ''}>결과 확정 · 출력본 준비</button></div>`;
+    }
+    const finalizedNote = r => r.snapshot ? `<p class="notice ok-note">${stamp(r.snapshot.finalizedAt)} 확정 · v${r.snapshot.version}. 문서 출력에서 인쇄용 HTML·Excel·한글 파일을 받으세요.</p>` : '';
+    // 서류전형만 하는 채용: 서류 통계표 = 최종 순위표. 면접대상자 고르기 없이 바로 확정한다.
+    function documentOnlyResults(r) {
+        const contract = r.layout === 'contract', ready = r.documentResults.every(c => c.complete && !c.conflict);
+        const by = r.rules.bonusByStage?.document;
+        const bonus = !r.rules.allowBonus ? ' · 가점 미사용' : by ? ` + 가점 ${by.options.map(o => o.points).join('/')}점 · 서류 만점의 40%(${by.threshold}점) 이상 득점자만` : ` + 확인 가점 최대 ${bonusMax(r)}점 · ${r.rules.bonusThreshold}점 이상 득점자만`;
+        return `<section class="panel"><h2>${contract ? '서류전형' : '서류심사'} 통계표 · 최종 순위</h2><p class="muted small">서류전형만 하는 채용입니다. 면접이 없으므로 서류 순위가 곧 최종 순위입니다.</p>${scoreTable(r, 'document')}${contract ? contractFinalTable(r) : criteriaSheet(r, 'document')}${finalizeBlock(r, ready, '서류 평가가')}${finalizedNote(r)}</section>`
+            + `<details class="panel how"><summary>점수를 어떻게 계산하나요?</summary><ul class="rule-list small"><li>서류 기본 ${stageMax(r, 'document')}점${bonus}. 면접·수업실연은 하지 않습니다.</li>${contract && by ? '<li>가점을 뺀 서류 평균이 40% 미만이면 가산점을 빼고 계를 냅니다.</li>' : ''}<li>배정된 위원이 모두 제출해야 평균을 냅니다. 평균은 소수 첫째 자리에서 반올림합니다.</li><li>최종 순위 기준은 <strong>서류 평균${r.rules.allowBonus ? '(가점 포함)' : ''}</strong>. 동점은 공동순위(1, 2, 2, 4)이며 합격자는 자동으로 정하지 않습니다.</li><li>위원 전원이 불참으로 표시한 지원자는 순위에서 뺍니다. 위원마다 참석 표시가 다르면 확정을 막습니다.</li></ul></details>`;
     }
     function contractResultsView(r) {
+        if (docOnly(r)) return documentOnlyResults(r);
         const docReady = r.documentResults.every(c => c.complete && !c.conflict);
         const intReady = r.finalResults.length && r.finalResults.every(c => c.complete && !c.conflict);
         const basis = r.rules.rankingBasis === 'combined' ? '서류 + 면접 + 수업실연 평균' : '면접 + 수업실연 평균';
@@ -528,6 +567,7 @@
     }
     function results(r) {
         if (r.layout === 'contract') return contractResultsView(r);
+        if (docOnly(r)) return documentOnlyResults(r);
         const docReady = r.documentResults.every(c => c.complete && !c.conflict);
         const intReady = r.finalResults.length && r.finalResults.every(c => c.complete && !c.conflict);
         const basis = r.rules.rankingBasis === 'combined' ? '서류 평균 + 면접 평균' : '면접 평균';
@@ -565,6 +605,7 @@
         }
         if (e.target.matches('#score-form input.score')) { cleanScore(e.target, true); syncScoreTotals(); }
         if (['recruitType', 'subject'].includes(e.target.name) && e.target.closest('#create-form')) syncContractField();
+        if (e.target.name === 'stagePlan' && e.target.closest('#create-form')) { syncStagePlan(); state.dirty = true; }
         if (e.target.name === 'kind') { const row = e.target.closest('.rubric-row'); row.querySelector('[name=guide]').placeholder = KIND_HINTS[e.target.value]; syncOptionPreview(row); }
     });
     $('#app').addEventListener('input', e => {
@@ -582,13 +623,15 @@
         run(async () => {
             if (form.id === 'login-form') { const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Device-Id': (window.baekamDeviceId||(window.baekamDeviceId=(()=>{try{let v=localStorage.getItem('baekam_device_id');if(!/^[A-Za-z0-9_-]{16,64}$/.test(v||'')){v=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');localStorage.setItem('baekam_device_id',v)}return v}catch(e){return ''}})())) }, body: JSON.stringify({ code: new FormData(form).get('code') }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); if (!['admin', 'user'].includes(data.role)) throw new Error('백암이 접근 코드로 로그인하세요. 위원은 초대 링크를 사용합니다.'); localStorage.setItem('airoom_auth_token', data.token); if (token()) sessionStorage.removeItem(`recruitment-invite:${idFromUrl()}`); await load(); }
             if (form.id === 'create-form') {
-                const f = new FormData(form), preset = formPreset(), stageList = stagesOfPreset(preset), contract = isContractPreset(preset);
+                const f = new FormData(form), preset = formPreset(), only = formDocOnly(), stageList = formStages(), contract = isContractPreset(preset);
                 const reviewers = Array.from(form.querySelectorAll('.reviewer')).map(row => ({ name: row.querySelector('[name=reviewer-name]').value, position: row.querySelector('[name=reviewer-position]').value, stages: stageList.filter(s => row.querySelector(`[name=${s}]`)?.checked) }));
                 const subject = contract ? subjectOf(form) : '';
                 if (contract && !subject) throw new Error('세부 영역(과목)을 고르거나 적어 주세요.');
                 const candidates = Array.from(form.querySelectorAll('[name=candidate-name]')).map((el, k) => ({ code: code(k, subject), name: el.value.trim() }));
                 const rubrics = {}; for (const stage of stageList) rubrics[stage] = Array.from(form.querySelectorAll(`#rubric-${stage} .rubric-row`)).map(row => readCriterion(row, stage));
-                const r = await api('', 'POST', { school: f.get('school'), title: f.get('title'), field: f.get('field'), documentDate: f.get('documentDate'), interviewDate: f.get('interviewDate'), shortlistLimit: Number(f.get('shortlistLimit')), rankingBasis: f.get('rankingBasis'), allowBonus: f.get('allowBonus') === 'true', summaryOrient: f.get('summaryOrient') || 'portrait', guidance: (f.get('guidance') || '').trim(), preset: f.get('preset') || null, ...(contract ? { recruitType: f.get('recruitType'), subject } : {}), reviewers, candidates, rubrics }); state.isNew = false; state.invites = {}; state.tab = 'overview'; await load(r.id); notify('채용 설정을 저장했습니다.');
+                // 서류만: stages = ['document'], 면접일·면접대상자 수·순위 기준은 보내지 않는다.
+                const oral = only ? { stages: ['document'] } : { interviewDate: f.get('interviewDate'), shortlistLimit: Number(f.get('shortlistLimit')), rankingBasis: f.get('rankingBasis') };
+                const r = await api('', 'POST', { school: f.get('school'), title: f.get('title'), field: f.get('field'), documentDate: f.get('documentDate'), ...oral, allowBonus: f.get('allowBonus') === 'true', summaryOrient: f.get('summaryOrient') || 'portrait', guidance: (f.get('guidance') || '').trim(), preset: f.get('preset') || null, ...(contract ? { recruitType: f.get('recruitType'), subject } : {}), reviewers, candidates, rubrics }); state.isNew = false; state.invites = {}; state.tab = 'overview'; await load(r.id); notify('채용 설정을 저장했습니다.');
             }
             if (form.id === 'score-form') { const { stage, rows } = collectScores(); await mutate(`evaluations/${stage}/save`, { rows }); notify('평가를 임시 저장했습니다.'); }
             if (form.id === 'shortlist-form') { if (!confirm('면접대상자를 확정하면 서류 평가를 수정할 수 없습니다. 확정할까요?')) return; const data = new FormData(form); await mutate('shortlist', { candidateIds: data.getAll('candidateId'), reason: data.get('reason') }); notify('면접 평가를 시작합니다.'); }
@@ -612,11 +655,11 @@
             if (action === 'delete-recruitment') {
                 const r = state.current;
                 const typed = prompt(`이 채용을 지우면 평가와 결과 문서가 모두 사라지고 되돌릴 수 없습니다.
-지우려면 채용명을 그대로 입력하세요.
+지우려면 채용 제목을 그대로 입력하세요.
 
 ${r.title}`);
                 if (typed === null) return;
-                if (typed.trim() !== r.title) throw new Error('채용명이 일치하지 않아 삭제를 취소했습니다.');
+                if (typed.trim() !== r.title) throw new Error('채용 제목이 일치하지 않아 삭제를 취소했습니다.');
                 if (r.status !== 'finalized' && !confirm('아직 결과가 확정되지 않은 채용입니다. 그래도 삭제할까요?')) return;
                 await api(`/${r.id}`, 'DELETE', { confirmTitle: typed.trim(), confirmUnfinished: r.status !== 'finalized' });
                 state.current = null; state.invites = {}; state.tab = 'overview'; setId(null);
@@ -624,18 +667,19 @@ ${r.title}`);
             }
             if (action === 'refresh') { await load(); notify('최신 상태로 다시 불러왔습니다.'); }
             if (action === 'exit') { if (idFromUrl()) sessionStorage.removeItem(`recruitment-invite:${idFromUrl()}`); setId(null); state.current = null; try { await load(null); } catch (e) { login(e.message); } }
-            if (action === 'add-reviewer') { if (document.querySelectorAll('.reviewer').length >= 5) throw new Error('평가위원은 최대 5명입니다.'); $('#reviewer-rows').insertAdjacentHTML('beforeend', reviewerRow({}, stagesOfPreset(formPreset()))); state.dirty = true; }
+            if (action === 'add-reviewer') { if (document.querySelectorAll('.reviewer').length >= 5) throw new Error('평가위원은 최대 5명입니다.'); $('#reviewer-rows').insertAdjacentHTML('beforeend', reviewerRow({}, formStages())); state.dirty = true; }
             if (action === 'remove-reviewer') { if (document.querySelectorAll('.reviewer').length <= 1) throw new Error('위원이 최소 1명 필요합니다.'); button.closest('.reviewer').remove(); state.dirty = true; }
             if (action === 'fill-example') { const form = $('#create-form'); if (!form) return; if (state.dirty && !confirm('현재 입력을 예시로 바꿀까요?')) return;
                 if (isContractPreset(formPreset())) {
                     Object.entries({ school: '예시초등학교', title: '2026학년도 기간제교사(담임) 채용 (예시)', shortlistLimit: '3', candidateCount: '12' }).forEach(([k, v]) => { form.elements[k].value = v; });
                     form.elements.recruitType.value = '기간제교사'; form.elements.subject.value = '담임'; syncContractField();
                     syncCandidates(['김하늘', '이하늘', '박하늘', '최하늘', '정하늘', '강하늘', '조하늘', '윤하늘', '장하늘', '임하늘', '김서연', '이서연']);
-                    $('#reviewer-rows').innerHTML = [['예시위원 가', '교감'], ['예시위원 나', '교사'], ['예시위원 다', '교사']].map(([name, position]) => reviewerRow({ name, position }, stagesOfPreset(formPreset()))).join('');
+                    $('#reviewer-rows').innerHTML = [['예시위원 가', '교감'], ['예시위원 나', '교사'], ['예시위원 다', '교사']].map(([name, position]) => reviewerRow({ name, position }, formStages())).join('');
                 } else {
                     Object.entries({ school: '예시초등학교', title: '2026 기초학력 협력강사 채용 (예시)', field: '기초학력 협력강사', shortlistLimit: '2', candidateCount: '3' }).forEach(([k, v]) => { form.elements[k].value = v; });
                     syncCandidates(['예시지원자 가', '예시지원자 나', '예시지원자 다']); $('#reviewer-rows').innerHTML = reviewerRow({ name: '예시위원 가' }) + reviewerRow({ name: '예시위원 나' });
                 }
+                form.elements.allowBonus.value = 'true';
                 state.dirty = true; }
             if (action === 'add-criterion') { const box = document.querySelector(`#rubric-${button.dataset.stage}`); if (box.querySelectorAll('.rubric-row').length >= 12) throw new Error('항목은 전형별 최대 12개입니다.'); box.insertAdjacentHTML('beforeend', criterionRow()); syncTotals(); state.dirty = true; state.presetTouched = true; }
             if (action === 'remove-criterion') { const box = button.closest('.rubric-rows'); if (box.querySelectorAll('.rubric-row').length <= 1) throw new Error('항목이 최소 1개 필요합니다.'); button.closest('.rubric-row').remove(); syncTotals(); state.dirty = true; state.presetTouched = true; }
@@ -679,7 +723,7 @@ ${r.title}`);
             if (action === 'sample') {
                 const preset = $('#create-form [name=preset]')?.value; if (!preset) { notify('샘플은 심사표를 고른 뒤 볼 수 있습니다.'); return; }
                 const format = button.dataset.format; const popup = format === 'html' ? window.open('about:blank', '_blank') : null;
-                try { const response = await fetch(`${CTX.api}/sample/${encodeURIComponent(preset)}/${format}?field=${encodeURIComponent($('#create-form [name=field]')?.value.trim() || '')}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
+                try { const response = await fetch(`${CTX.api}/sample/${encodeURIComponent(preset)}/${format}?field=${encodeURIComponent($('#create-form [name=field]')?.value.trim() || '')}${formDocOnly() ? '&stages=document' : ''}`, { headers: headers() }); if (!response.ok) { const data = await response.json(); throw new Error(data.error); } const blob = await response.blob(), url = URL.createObjectURL(blob);
                     if (popup) { popup.opener = null; popup.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.download = `${$('#create-form [name=field]')?.value.trim() || '강사 채용 표준'}_샘플.${format}`; a.click(); }
                     setTimeout(() => URL.revokeObjectURL(url), 60000); notify(format === 'html' ? '샘플 인쇄본을 열었습니다.' : '샘플 한글 파일을 준비했습니다.');
                 } catch (e) { popup?.close(); throw e; }

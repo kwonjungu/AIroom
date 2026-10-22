@@ -5,6 +5,7 @@
 // 원본: 계약제교원 채용 [지원12, 심사3] 프로그램(KHSDO). 시트 순서와 용지 방향을 그대로 따른다.
 //   서약서(위원별, 세로) → 서류전형(위원별, 가로) → 서류전형 집계표(가로) → 면접(위원별, 세로)
 //   → 수업실연(위원별, 세로) → 응모자별 평가 집계표(세로) → 교과목별 평가 집계표(세로)
+//   서류전형만 하는 채용: 서약서 → 서류전형 → 서류전형 집계표 → 교과목별 평가 집계표(서류만·지원자 전원).
 // 원본과 다른 점(사용자 결정 2026-10-15):
 //   · 지원자 칸은 12칸이 아니라 10칸 한 장. 11명부터 같은 표를 한 장씩 더 만든다(21명 = 3장).
 //   · 심사위원은 3명 고정이 아니라 1~5명. 집계표는 지원자마다 위원 칸이, 응모자별 표는 위원 줄이 늘어난다.
@@ -26,6 +27,10 @@ const stageMax = (s, stage) => Math.round(s.rubrics[stage].reduce((a, c) => a + 
 const threshold = (s, stage) => Math.round(stageMax(s, stage) * 0.4 * 100) / 100;
 const reviewersOf = (s, stage) => s.reviewers.filter(v => v.stages.includes(stage));
 const listOf = (s, stage) => stage === 'document' ? s.candidates : s.shortlist.map(id => s.candidates.find(c => c.id === id)).filter(Boolean);
+// 서류전형만 하는 채용(stages = ['document']): 면접·수업실연 표와 응모자별 집계표 없이, 교과목별 집계표는 지원자 전원·서류만.
+const documentOnly = s => s.stages.length === 1 && s.stages[0] === 'document';
+const finalList = s => documentOnly(s) ? s.candidates : listOf(s, 'interview');
+const finalDate = s => s.interviewDate || s.documentDate;
 const evRow = (s, stage, vid, cid) => s.evaluations[`${stage}:${vid}`]?.rows.find(x => x.candidateId === cid);
 const baseOf = row => Object.values(row.scores).reduce((a, b) => a + (b || 0), 0);
 const totalOf = row => !row ? '' : row.attendance === 'absent' ? '불참' : num(baseOf(row) + row.bonus);
@@ -237,9 +242,9 @@ function applicantPages(s) {
 
 // ── 7. 교과목별 평가 집계표(세로, 대상자 한 줄씩) ─────────────────────────────────
 function subjectPages(s) {
-    const list = listOf(s, 'interview'), res = c => s.results.find(x => x.candidateId === c.id), stages = s.stages;
+    const list = finalList(s), res = c => s.results.find(x => x.candidateId === c.id), stages = s.stages;
     const show = (x, stage) => { if (!x) return ''; const r = s[stage === 'document' ? 'documentResults' : stage === 'interview' ? 'results' : 'demoResults']?.find(y => y.candidateId === x.candidateId); if (!r) return ''; if (r.absent) return '불참'; return one(x.bonusExcluded ? r.base : r.score); };
-    const make = () => { const p = head(s, { title: '계약제교원 채용 [교과목별 평가 집계표]', orient: 'portrait', role: '집계 담당자', signers: [s.reviewers[0]], area: false, fair: false, date: s.interviewDate }); p.notes = noteLines(s, 'final'); return p; };
+    const make = () => { const p = head(s, { title: '계약제교원 채용 [교과목별 평가 집계표]', orient: 'portrait', role: '집계 담당자', signers: [s.reviewers[0]], area: false, fair: false, date: finalDate(s) }); p.notes = noteLines(s, 'final'); return p; };
     const headRows = [
         { head: true, h: 7.9, cells: [C('과목', 'h', 1, 2), C('관리\n번호', 'h', 1, 2), C('응모자 성명', 'h', 1, 2), C('평 가 점 수', 'h', stages.length + 1), C('순위', 'h', 1, 2)] },
         { head: true, h: 13.2, cells: [...stages.map(stage => C(stageHead(s, stage), 'h')), C(`계(${num(stages.reduce((a, st) => a + stageMax(s, st), 0))})\n+가산점`, 'h')] }
@@ -265,7 +270,7 @@ function contractPages(s) {
         ...docR.flatMap(v => docGroups.map(g => documentSheet(s, v, g))),
         ...docGroups.map(g => documentSummary(s, g)),
         ...['interview', 'demo'].filter(st => s.stages.includes(st)).flatMap(stage => reviewersOf(s, stage).flatMap(v => { const ranks = reviewerRanks(s, stage, v); return chunk(listOf(s, stage), SLOTS[stage]).map(g => oralSheet(s, stage, v, g, ranks)); })),
-        ...applicantPages(s),
+        ...(documentOnly(s) ? [] : applicantPages(s)),
         ...subjectPages(s)
     ];
 }

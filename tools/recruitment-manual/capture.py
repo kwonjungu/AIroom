@@ -237,7 +237,7 @@ with sync_playwright() as pw:
     if not a.keep:
         page.locator('[data-action=tab][data-tab=overview]').click(); page.wait_for_timeout(500)
         shot(page, '24-delete', mark=page.locator('[data-action=delete-recruitment]'))
-        page.once('dialog', lambda d: d.accept(title))   # 채용명 확인 프롬프트(확인 창은 위 처리기가 받는다)
+        page.once('dialog', lambda d: d.accept(title))   # 채용 제목 확인 프롬프트(확인 창은 위 처리기가 받는다)
         page.locator('[data-action=delete-recruitment]').click()
         expect(page.locator('#message')).to_contain_text('삭제', timeout=20000)
     b.close()
