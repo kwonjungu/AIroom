@@ -5,5 +5,23 @@
       "path": "/api/recruitments/maintenance/purge",
       "schedule": "0 18 * * *"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/%EC%9A%A9%EC%B2%9C%EC%9D%B4",
+      "destination": "https://yongcheon.vercel.app/%EC%9A%A9%EC%B2%9C%EC%9D%B4/"
+    },
+    {
+      "source": "/%EC%9A%A9%EC%B2%9C%EC%9D%B4/(.*)",
+      "destination": "https://yongcheon.vercel.app/%EC%9A%A9%EC%B2%9C%EC%9D%B4/$1"
+    },
+    {
+      "source": "/용천이",
+      "destination": "https://yongcheon.vercel.app/%EC%9A%A9%EC%B2%9C%EC%9D%B4/"
+    },
+    {
+      "source": "/용천이/(.*)",
+      "destination": "https://yongcheon.vercel.app/%EC%9A%A9%EC%B2%9C%EC%9D%B4/$1"
+    }
   ]
 }
