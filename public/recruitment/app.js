@@ -526,7 +526,7 @@
     function jumpBottom() { const bar = document.querySelector('#score-form .cand-jump'); return stickyTop() + (bar && bar.offsetParent ? bar.offsetHeight : 0); }
     function jumpTo(id) {
         const tr = document.querySelector(`#score-form tr[data-candidate="${id}"]`); if (!tr) return;
-        window.scrollTo({ top: Math.max(0, tr.getBoundingClientRect().top + window.scrollY - jumpBottom() - 8), behavior: 'smooth' });
+        window.scrollTo({ top: Math.max(0, tr.getBoundingClientRect().top + window.scrollY - jumpBottom() - 8), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     }
     // 지금 보고 있는 지원자(바로가기 줄 바로 아래 카드)를 단추에 표시한다.
     function markCurrentJump() {

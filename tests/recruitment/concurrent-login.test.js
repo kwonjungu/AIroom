@@ -78,7 +78,7 @@ test('동시에 날아온 위원 저장 요청이 모두 반영된다(같은 순
     assert.equal(final.version, r.version + 2);
 });
 
-test('최신 상태 기준 검사는 그대로다: 재발급으로 막힌 링크, 제출 뒤 저장, 확정 뒤 서명은 여전히 거절', async t => {
+test('최신 상태 기준 검사는 그대로다: 재발급으로 막힌 링크, 제출 뒤 저장은 여전히 거절', async t => {
     const { request, r: start, tokens: [a, b] } = await setup(t);
     // 관리자가 을의 링크를 다시 발급하면 을의 옛 링크는 낡은 버전을 들고 있어도 들어오지 못한다.
     const re = await request(`/${start.id}/invites/${start.reviewers[1].id}`, 'POST', { version: start.version });

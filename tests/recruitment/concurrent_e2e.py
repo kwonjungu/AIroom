@@ -11,6 +11,7 @@
 """
 import json
 import sys
+sys.stdout.reconfigure(encoding='utf-8')  # Windows 기본 인코딩에서 출력이 멈추지 않게
 import urllib.request
 from playwright.sync_api import sync_playwright
 
