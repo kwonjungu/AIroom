@@ -472,3 +472,44 @@ dialog::backdrop{background:#0006}
   .score-table .opt-list{min-width:250px}
   .score-table .chips[data-bonus]{min-width:150px}
 }
+
+/* 지원자 바로가기 줄은 카드 보기(태블릿)에서만 쓴다. 휴대폰과 PC 표 보기는 예전 그대로. */
+.cand-jump{display:none}
+/* ── 태블릿 채점(2026-11-10, 감수 B 루프) ─────────────────────────────
+   위원은 태블릿을 들고 지원자를 한 명씩 채점한다. 641~1366px(또는 손가락 기기)에서는 넓은 표 대신
+   지원자 한 명이 카드 하나가 되고, 심사 항목은 화면 폭에 맞춰 1~3칸 격자로 놓인다. 옆으로 밀 일이 없다.
+   카드 머리에 참석·합계를 두어 점수를 넣으며 합계를 바로 본다. 휴대폰(640px 이하)과 PC 넓은 화면은 그대로다. */
+@media (min-width:641px) and (max-width:1366px), (min-width:641px) and (pointer:coarse){
+  .wide-only,.guide-switch,.guide-check{display:none}
+  .score-wrap{max-height:none;overflow:visible;border:0;background:transparent;border-radius:0}
+  .score-table,.score-table tbody{display:block;width:auto}
+  .score-table thead{display:none}
+  .score-table tr{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 28px;align-items:start;
+    border:1px solid var(--hairline);border-radius:var(--r-md);background:var(--surface);margin-bottom:16px;padding:0 22px 14px}
+  .score-table tbody th[scope=row]{grid-column:1/-1;order:-3;display:flex;align-items:baseline;gap:10px;position:static;min-width:0;border:0;
+    border-bottom:1px solid var(--near-black);padding:16px 0 12px;font-size:17px;background:transparent}
+  .score-table tbody th[scope=row] .code{display:inline}
+  .score-table td{display:block;border:0;padding:14px 0 6px;min-width:0}
+  .score-table td::before{content:attr(data-label);display:block;margin-bottom:8px;font-size:13.5px;color:var(--slate);overflow-wrap:anywhere}
+  .score-table td[data-label="참석 여부"]{order:-2}
+  .score-table td.row-total{order:-1;font-size:20px;white-space:normal}
+  .score-table td.note-cell{grid-column:1/-1;order:1}
+  .score-table .score-note{min-width:0}
+  .score-table td .score{width:120px}
+  .score-table .opt-list,.score-table .sum-pick{min-width:0;width:100%}
+  .score-table .chips.scale,.score-table .chips[data-bonus]{min-width:0;flex-wrap:wrap}
+  .score-table .chips.scale .chip{min-width:48px;padding:0 10px}
+  .score-table tr.is-absent{background:var(--stone)}
+  .score-table .sum-pick{gap:4px;font-size:14px}
+  .score-table .sum-pick label{min-height:44px}
+  .score-table .sum-pick .qty input{width:64px;min-height:44px}
+  .score-table .sum-pick input[type=checkbox]{width:22px;height:22px}
+  /* 지원자 바로가기 줄: 화면 위에 붙어 있고, 누르면 그 지원자 카드로 간다. 점 색으로 채점 상태를 보인다. */
+  .cand-jump{display:flex;flex-wrap:wrap;gap:6px;position:sticky;top:var(--jump-top,0px);z-index:5;background:var(--surface);padding:10px 0;margin-bottom:12px;border-bottom:1px solid var(--hairline)}
+  .cand-jump .jump{position:relative;min-width:56px;min-height:44px;padding:0 12px;border:1px solid var(--hairline);border-radius:999px;background:var(--surface);color:var(--ink);font:600 14px/1 var(--font-mono);font-variant-numeric:tabular-nums}
+  .cand-jump .jump::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:transparent}
+  .cand-jump .jump[data-state=blank]::after{background:#c77700}
+  .cand-jump .jump[data-state=done]{background:var(--near-black);border-color:var(--near-black);color:#fff}
+  .cand-jump .jump[data-state=absent]{background:var(--stone);color:var(--slate);text-decoration:line-through}
+  .cand-jump .jump[aria-current=true]{outline:3px solid var(--focus);outline-offset:2px}
+}

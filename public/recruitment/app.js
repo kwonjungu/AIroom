@@ -20,7 +20,7 @@
     function notify(message) { clearTimeout(messageTimer); $('#message').textContent = message; $('#message').hidden = false; messageTimer = setTimeout(() => { $('#message').hidden = true; }, 6000); }
     async function api(endpoint, method = 'GET', body) {
         const response = await fetch(CTX.api + endpoint, { method, headers: headers(), body: body === undefined ? undefined : JSON.stringify(body) });
-        const data = await response.json(); if (!response.ok) throw new Error(data.error || '요청을 처리하지 못했습니다.'); return data;
+        const data = await response.json(); if (!response.ok) throw Object.assign(new Error(data.error || '요청을 처리하지 못했습니다.'), { status: response.status, currentVersion: data.currentVersion, code: data.code }); return data;
     }
     function canLeave() { return !state.dirty || confirm('저장하지 않은 입력이 있습니다. 화면을 이동할까요?'); }
     window.addEventListener('beforeunload', event => { if (state.dirty) { event.preventDefault(); event.returnValue = ''; } });
@@ -451,7 +451,7 @@
         const total = r.rubrics[stage].reduce((a, c) => a + c.max, 0);
         const guided = r.rubrics[stage].some(c => c.guide);
         const bonus = bonusChoices(r, stage);
-        return pledgePanel(r) + stageSwitch(r, stage) + guideDetails(r, stage, { open: true }) + `<section class="panel"><div class="split"><h2>${stages[stage]} 채점표</h2><span class="muted small">지원자 ${candidates.length}명 · 만점 ${total}점</span></div><p class="muted small">심사관점 줄이나 점수 단추를 <b>눌러서</b> 고르면 점수가 저절로 매겨집니다. 재량 점수 칸의 빈칸은 아직 안 넣은 것, 0은 0점입니다.${locked ? '' : '<span class="wide-only"> 항목이 많으면 표를 좌우로 밀어서 보세요.</span>'}</p><form id="score-form" data-stage="${stage}">${guided ? '<input type="checkbox" id="show-guides" class="guide-check"><label class="guide-switch" for="show-guides">표 머리글에 평가 준거 함께 보기</label>' : ''}<div class="table-wrap score-wrap"><table class="score-table"><thead><tr><th>지원자</th><th>참석</th>${r.rubrics[stage].map(c => `<th>${esc(c.label)}<span class="max">${c.max}점</span>${c.guide ? `<span class="th-guide">${esc(c.guide)}</span>` : ''}</th>`).join('')}${bonus ? `<th>가점<span class="th-guide">${esc(bonus.label)}</span></th>` : ''}<th>합계</th><th>메모 / 불참·가점 근거</th></tr></thead><tbody>${candidates.map(c => { const row = ev?.rows.find(x => x.candidateId === c.id); const dis = locked ? 'disabled' : ''; return `<tr data-candidate="${c.id}"><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th><td data-label="참석 여부"><div class="chips att" data-att role="radiogroup" aria-label="${esc(c.code)} 참석 상태"><label class="chip"><input type="radio" name="a-${c.id}" value="present" ${row?.attendance === 'absent' ? '' : 'checked'} ${dis}><span>참석</span></label><label class="chip warn"><input type="radio" name="a-${c.id}" value="absent" ${row?.attendance === 'absent' ? 'checked' : ''} ${dis}><span>불참</span></label></div></td>${r.rubrics[stage].map(item => `<td data-label="${esc(item.label)} · ${item.max}점">${scoreCell(c, item, row, locked)}</td>`).join('')}${bonus ? `<td data-label="가점"><div class="chips" data-bonus role="radiogroup" aria-label="${esc(c.code)} 가점">${bonus.options.map(o => `<label class="chip" title="${esc(o.label)}"><input type="radio" name="b-${c.id}" value="${o.points}" ${(row?.bonus ?? 0) === o.points ? 'checked' : ''} ${dis}><span>${o.points ? `${o.points}${o.tag ? ` <small>${esc(o.tag)}</small>` : ''}` : '없음'}</span></label>`).join('')}</div></td>` : ''}<td class="row-total" data-label="합계">—</td><td class="note-cell" data-label="메모 / 불참·가점 근거"><textarea name="note" class="score-note" maxlength="1000" aria-label="${esc(c.code)} 평가 메모" ${dis}>${esc(row?.note || '')}</textarea></td></tr>`; }).join('')}</tbody></table></div>${!locked ? `<div class="actions submit-bar"><button type="button" class="primary" data-action="submit-evaluation" ${hasSigned ? '' : 'disabled'}>저장 후 ${stages[stage]} 제출</button><button class="secondary" type="submit">임시 저장</button>${hasSigned ? '<span class="muted small">제출하면 점수를 고칠 수 없습니다.</span>' : '<span class="muted small">서약서에 서명하면 제출할 수 있습니다.</span>'}</div>` : '<p class="notice ok-note">제출을 마쳤습니다. 고칠 것이 있으면 담당 선생님께 다시 열어 달라고 알려 주세요.</p>'}</form></section>`;
+        return pledgePanel(r) + stageSwitch(r, stage) + guideDetails(r, stage, { open: true }) + `<section class="panel"><div class="split"><h2>${stages[stage]} 채점표</h2><span class="muted small">지원자 ${candidates.length}명 · 만점 ${total}점</span></div><p class="muted small">심사관점 줄이나 점수 단추를 <b>눌러서</b> 고르면 점수가 저절로 매겨집니다. 재량 점수 칸의 빈칸은 아직 안 넣은 것, 0은 0점입니다.${locked ? '' : '<span class="wide-only"> 항목이 많으면 표를 좌우로 밀어서 보세요.</span>'}</p><form id="score-form" data-stage="${stage}">${guided ? '<input type="checkbox" id="show-guides" class="guide-check"><label class="guide-switch" for="show-guides">표 머리글에 평가 준거 함께 보기</label>' : ''}<nav class="cand-jump" aria-label="지원자 바로가기">${candidates.map(c => `<button type="button" class="jump" data-action="jump" data-id="${c.id}" data-code="${esc(c.code)}">${esc(c.code)}</button>`).join('')}</nav><div class="table-wrap score-wrap"><table class="score-table"><thead><tr><th>지원자</th><th>참석</th>${r.rubrics[stage].map(c => `<th>${esc(c.label)}<span class="max">${c.max}점</span>${c.guide ? `<span class="th-guide">${esc(c.guide)}</span>` : ''}</th>`).join('')}${bonus ? `<th>가점<span class="th-guide">${esc(bonus.label)}</span></th>` : ''}<th>합계</th><th>메모 / 불참·가점 근거</th></tr></thead><tbody>${candidates.map(c => { const row = ev?.rows.find(x => x.candidateId === c.id); const dis = locked ? 'disabled' : ''; return `<tr data-candidate="${c.id}"><th scope="row"><span class="code">${esc(c.code)}</span>${esc(c.name)}</th><td data-label="참석 여부"><div class="chips att" data-att role="radiogroup" aria-label="${esc(c.code)} 참석 상태"><label class="chip"><input type="radio" name="a-${c.id}" value="present" ${row?.attendance === 'absent' ? '' : 'checked'} ${dis}><span>참석</span></label><label class="chip warn"><input type="radio" name="a-${c.id}" value="absent" ${row?.attendance === 'absent' ? 'checked' : ''} ${dis}><span>불참</span></label></div></td>${r.rubrics[stage].map(item => `<td data-label="${esc(item.label)} · ${item.max}점">${scoreCell(c, item, row, locked)}</td>`).join('')}${bonus ? `<td data-label="가점"><div class="chips" data-bonus role="radiogroup" aria-label="${esc(c.code)} 가점">${bonus.options.map(o => `<label class="chip" title="${esc(o.label)}"><input type="radio" name="b-${c.id}" value="${o.points}" ${(row?.bonus ?? 0) === o.points ? 'checked' : ''} ${dis}><span>${o.points ? `${o.points}${o.tag ? ` <small>${esc(o.tag)}</small>` : ''}` : '없음'}</span></label>`).join('')}</div></td>` : ''}<td class="row-total" data-label="합계">—</td><td class="note-cell" data-label="메모 / 불참·가점 근거"><textarea name="note" class="score-note" maxlength="1000" aria-label="${esc(c.code)} 평가 메모" ${dis}>${esc(row?.note || '')}</textarea></td></tr>`; }).join('')}</tbody></table></div>${!locked ? `<div class="actions submit-bar"><button type="button" class="primary" data-action="submit-evaluation" ${hasSigned ? '' : 'disabled'}>저장 후 ${stages[stage]} 제출</button><button class="secondary" type="submit">임시 저장</button>${hasSigned ? '<span class="muted small">제출하면 점수를 고칠 수 없습니다.</span>' : '<span class="muted small">서약서에 서명하면 제출할 수 있습니다.</span>'}</div>` : '<p class="notice ok-note">제출을 마쳤습니다. 고칠 것이 있으면 담당 선생님께 다시 열어 달라고 알려 주세요.</p>'}</form></section>`;
     }
     // 채점 칸. 심사관점이 정해진 항목은 점수를 직접 넣지 않고 눌러서 고른다(드롭다운 없음).
     //   pick : 심사관점 줄 옆 단추 하나 · scale : 점수 단추 하나 · sum : 해당 줄 체크 / 개수 · judge : 숫자 직접 입력
@@ -515,8 +515,32 @@
     }
     const attendanceOf = tr => tr.querySelector('[data-att] input:checked')?.value || 'present';
     const bonusOf = tr => Number(tr.querySelector('[data-bonus] input:checked')?.value || 0);
+    // 태블릿 지원자 바로가기. 줄이 두 줄로 넘어가도(지원자 12~20명) 카드 머리가 줄 밑에 가리지 않도록
+    // 줄의 실제 높이와 화면 위에 붙은 띠(카피본 시연 바)만큼 비켜서 멈춘다.
+    function stickyTop() {
+        const first = document.body.firstElementChild;
+        if (!first || first.id === 'app' || first.tagName === 'HEADER') return 0;
+        const pos = getComputedStyle(first).position;
+        return pos === 'sticky' || pos === 'fixed' ? first.offsetHeight : 0;
+    }
+    function jumpBottom() { const bar = document.querySelector('#score-form .cand-jump'); return stickyTop() + (bar && bar.offsetParent ? bar.offsetHeight : 0); }
+    function jumpTo(id) {
+        const tr = document.querySelector(`#score-form tr[data-candidate="${id}"]`); if (!tr) return;
+        window.scrollTo({ top: Math.max(0, tr.getBoundingClientRect().top + window.scrollY - jumpBottom() - 8), behavior: 'smooth' });
+    }
+    // 지금 보고 있는 지원자(바로가기 줄 바로 아래 카드)를 단추에 표시한다.
+    function markCurrentJump() {
+        const bar = document.querySelector('#score-form .cand-jump'); if (!bar || !bar.offsetParent) return;
+        const edge = jumpBottom() + 12;
+        const rows = [...document.querySelectorAll('#score-form tr[data-candidate]')];
+        const current = rows.find(tr => tr.getBoundingClientRect().bottom > edge) || rows[rows.length - 1];
+        bar.querySelectorAll('.jump').forEach(b => { if (b.dataset.id === current?.dataset.candidate) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    }
+    let jumpTick = false;
+    window.addEventListener('scroll', () => { if (jumpTick) return; jumpTick = true; requestAnimationFrame(() => { jumpTick = false; markCurrentJump(); }); }, { passive: true });
     function syncScoreTotals() {
         const form = $('#score-form'); if (!form || !state.current) return;
+        form.style.setProperty('--jump-top', `${stickyTop()}px`);
         const rubric = state.current.rubrics[form.dataset.stage];
         form.querySelectorAll('tr[data-candidate]').forEach(tr => {
             let total = 0, blank = false;
@@ -531,7 +555,10 @@
             const absent = attendanceOf(tr) === 'absent';
             tr.classList.toggle('is-absent', absent);
             tr.querySelector('.row-total').textContent = absent ? '불참' : `${fmt(total + bonusOf(tr))}점${blank ? ' · 빈칸 있음' : ''}`;
+            const jump = form.querySelector(`.cand-jump [data-id="${tr.dataset.candidate}"]`);
+            if (jump) { const st = absent ? 'absent' : blank ? 'blank' : 'done'; jump.dataset.state = st; jump.setAttribute('aria-label', `${jump.dataset.code} ${{ absent: '불참', blank: '빈칸 있음', done: '다 채움' }[st]}`); }
         });
+        markCurrentJump();
     }
     function scoreTable(r, stage) {
         const rows = stage === 'document' ? r.documentResults : r.finalResults;
@@ -608,10 +635,31 @@
     function historyPanel(r) { return `<section class="panel"><h2>처리 이력</h2>${[...r.audit].reverse().map(e => `<div class="audit"><time>${stamp(e.at)}</time><strong>${esc(e.action)}</strong> · ${e.actor === 'admin' ? '관리자' : esc(r.reviewers.find(v => v.id === e.actor)?.name || e.actor)}${e.detail ? `<p class="muted small">${esc(e.detail)}</p>` : ''}</div>`).join('')}</section>`; }
     // 서버는 토큰 해시만 저장한다. 원본 링크는 발급 응답에만 있으므로 화면에서 붙잡아 둔다.
     async function issueInvite(reviewerId) {
-        const data = await api(`/${state.current.id}/invites/${reviewerId}`, 'POST', { version: state.current.version });
+        let data; try { data = await api(`/${state.current.id}/invites/${reviewerId}`, 'POST', { version: state.current.version }); } catch (e) { if (e.status === 409) await catchUp(e); throw e; }
         state.current = data.recruitment; state.invites[reviewerId] = location.origin + (window.IS_COPY ? '/copy' : '') + data.invitationPath; return data;
     }
-    async function mutate(path, body = {}) { const r = await api(`/${state.current.id}/${path}`, 'POST', { ...body, version: state.current.version }); state.current = r; if (!token()) { const list = await api(''); state.list = list.items; } state.dirty = false; render(); return r; }
+    async function mutate(path, body = {}) {
+        let r;
+        // 위원 채점 저장·제출은 내가 본 내 채점표 시각(base)을 함께 보낸다. 같은 위원의 다른 기기가 먼저 저장했으면 서버가 막는다.
+        const own = /^evaluations\/([a-z]+)\/(save|submit)$/.exec(path);
+        if (own && state.current.actor?.role === 'reviewer') body = { ...body, base: state.current.evaluations?.[`${own[1]}:${state.current.actor.id}`]?.updatedAt ?? null };
+        try { r = await api(`/${state.current.id}/${path}`, 'POST', { ...body, version: state.current.version }); }
+        catch (e) { if (e.status === 409) await catchUp(e); throw e; }
+        state.current = r; if (!token()) { const list = await api(''); state.list = list.items; } state.dirty = false; render(); return r;
+    }
+    // 같은 채용을 다른 분(다른 위원·담당 선생님)이 먼저 저장해 버전이 낡았을 때: 최신 채용을 다시 불러와 다음 누름이 통하게 한다.
+    // 입력 중인 점수가 있으면 화면을 다시 그리지 않고 버전만 맞춰 입력값을 지킨다. 예전에는 새로고침 전까지 모든 단추가 막혔다.
+    async function catchUp(e) {
+        if (!state.current) return;
+        try {
+            const latest = await api('/' + state.current.id);
+            // 관리자 결정은 낡은 화면을 근거로 하면 안 되므로 늘 다시 그린다(입력 보존은 위원 채점표만).
+            // 같은 위원의 다른 기기가 먼저 저장한 경우(own_conflict)는 그쪽 점수를 보여 준다(조용히 덮어쓰지 않는다).
+            if (state.dirty && state.current.actor?.role === 'reviewer' && e.code !== 'own_conflict') state.current = { ...state.current, version: latest.version };
+            else { state.current = latest; state.dirty = false; render(); }
+            if (/다른 사용자가 변경|동시 변경/.test(e.message)) e.message = '다른 분이 먼저 저장해 최신 내용을 불러왔습니다. 내용을 확인한 뒤 다시 눌러 주세요.';
+        } catch (x) { /* 다시 불러오기도 실패하면 원래 오류를 그대로 보여 준다 */ }
+    }
     function collectScores() {
         const form = $('#score-form'), stage = form.dataset.stage, rubric = state.current.rubrics[stage];
         const judged = rubric.filter(c => c.kind === 'judge' || !c.kind), picked = rubric.filter(c => c.kind === 'pick' || c.kind === 'sum' || c.kind === 'scale');
@@ -665,6 +713,7 @@
         });
     });
     $('#app').addEventListener('click', e => { const button = e.target.closest('[data-action]'); if (!button) return; const action = button.dataset.action;
+        if (action === 'jump') { jumpTo(button.dataset.id); return; }
         run(async () => {
             if (['new', 'open', 'tab', 'goto', 'refresh', 'cancel-new', 'exit', 'eval-stage'].includes(action) && !canLeave()) return;
             if (action === 'eval-stage') { state.evalStage = button.dataset.stage; render(); }
