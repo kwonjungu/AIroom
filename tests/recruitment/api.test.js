@@ -26,8 +26,10 @@ test('HTTP journey: permissions, invitation rotation, versions, finalization, HT
     let { json: r } = await request('', 'POST', payload()); assert.ok(r.id);
     let invite = await request(`/${r.id}/invites/${r.reviewers[0].id}`, 'POST', { version: r.version }); r = invite.json.recruitment; const oldToken = invite.json.invitationPath.split('invite=')[1];
     invite = await request(`/${r.id}/invites/${r.reviewers[0].id}`, 'POST', { version: r.version }); r = invite.json.recruitment; const token = invite.json.invitationPath.split('invite=')[1];
-    assert.equal((await request(`/${r.id}`, 'GET', undefined, oldToken)).res.status, 401);
-    const view = await request(`/${r.id}`, 'GET', undefined, token); assert.equal(view.json.actor.role, 'reviewer'); assert.ok(!JSON.stringify(view.json).includes('inviteHash'));
+    // 위원 링크는 하나로 고정된다. 다시 눌러도 같은 링크, 버전도 그대로.
+    assert.equal(token, oldToken);
+    assert.ok(r.reviewers[0].invitePath.endsWith(token), '관리자 화면에는 링크가 남아 있다');
+    const view = await request(`/${r.id}`, 'GET', undefined, token); assert.equal(view.json.actor.role, 'reviewer'); assert.ok(!JSON.stringify(view.json).includes('inviteHash')); assert.ok(!JSON.stringify(view.json).includes(token), '위원 화면에는 링크 원문이 없다');
     const other = (await request('', 'POST', payload())).json; assert.equal((await request(`/${other.id}`, 'GET', undefined, token)).res.status, 401);
     r = (await request(`/${r.id}/provision`, 'POST', { version: r.version })).json; assert.equal(r.status, 'document'); assert.equal(r.link.spreadsheetUrl, null);
     assert.equal((await request(`/${r.id}/finalize`, 'POST', { version: r.version }, token)).res.status, 401);

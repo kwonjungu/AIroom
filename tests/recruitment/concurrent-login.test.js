@@ -78,12 +78,12 @@ test('동시에 날아온 위원 저장 요청이 모두 반영된다(같은 순
     assert.equal(final.version, r.version + 2);
 });
 
-test('최신 상태 기준 검사는 그대로다: 재발급으로 막힌 링크, 제출 뒤 저장은 여전히 거절', async t => {
+test('위원 링크는 하나로 고정된다: 다시 눌러도 옛 링크가 그대로 통하고, 제출 뒤 저장은 여전히 거절', async t => {
     const { request, r: start, tokens: [a, b] } = await setup(t);
-    // 관리자가 을의 링크를 다시 발급하면 을의 옛 링크는 낡은 버전을 들고 있어도 들어오지 못한다.
+    // 관리자가 을의 링크를 다시 눌러도 같은 링크가 돌아오고, 을은 계속 들어온다.
     const re = await request(`/${start.id}/invites/${start.reviewers[1].id}`, 'POST', { version: start.version });
-    assert.equal(re.res.status, 200);
-    assert.equal((await request(`/${start.id}/evaluations/document/save`, 'POST', { version: start.version, base: null, rows: rowsOf(start, 'document') }, b)).res.status, 401);
+    assert.equal(re.res.status, 200); assert.equal(re.json.invitationPath.split('invite=')[1], b);
+    assert.equal((await request(`/${start.id}/evaluations/document/save`, 'POST', { version: start.version, base: null, rows: rowsOf(start, 'document') }, b)).res.status, 200);
     // 제출한 평가는 다시 저장할 수 없다(최신 base 로 보내도 409).
     let r = (await request(`/${start.id}/evaluations/document/save`, 'POST', { version: start.version, base: null, rows: rowsOf(start, 'document') }, a)).json;
     r = (await request(`/${start.id}/pledge`, 'POST', { version: r.version, image: PNG }, a)).json;
@@ -118,9 +118,9 @@ test('base 를 보내지 않는 옛 화면은 예전처럼 엄격한 버전 검�
 });
 
 test('관리자 결정(면접 대상 선정 등)은 여전히 버전이 맞아야 한다 — 낡은 화면으로 덮어쓰지 않는다', async t => {
-    const { request, r } = await setup(t);
+    const { request, r, tokens: [a] } = await setup(t);
     const stale = r.version;
-    await request(`/${r.id}/invites/${r.reviewers[0].id}`, 'POST', { version: r.version }, 'admin-2'); // 다른 관리자가 먼저 작업
+    assert.equal((await request(`/${r.id}/pledge`, 'POST', { version: r.version, image: PNG }, a)).res.status, 200); // 그사이 저장본이 바뀜
     const res = await request(`/${r.id}/provision`, 'POST', { version: stale }, 'admin-1');
     assert.equal(res.res.status, 409);
     assert.ok(Number.isInteger(res.json.currentVersion), '충돌 응답에 최신 버전을 알려 주어 화면이 스스로 다시 불러올 수 있어야 한다');

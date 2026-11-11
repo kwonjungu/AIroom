@@ -178,7 +178,7 @@ async function calendar() {
     const samples = [finalized, inProgress].map(id => {
         const r = JSON.parse(fs.readFileSync(path.join(DATA, 'recruitment', id + '.json'), 'utf-8'));
         // 초대 링크 흔적은 싣지 않는다(시연자가 새로 발급)
-        for (const v of r.reviewers) { delete v.inviteHash; delete v.inviteExpiresAt; }
+        for (const v of r.reviewers) { delete v.inviteHash; delete v.inviteExpiresAt; delete v.inviteToken; delete v.legacyInviteHashes; }
         return r;
     });
     fs.writeFileSync(path.join(OUT, 'recruitment-samples.json'), JSON.stringify(samples, null, 2));

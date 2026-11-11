@@ -513,3 +513,4 @@ dialog::backdrop{background:#0006}
   .cand-jump .jump[data-state=absent]{background:var(--stone);color:var(--slate);text-decoration:line-through}
   .cand-jump .jump[aria-current=true]{outline:3px solid var(--focus);outline-offset:2px}
 }
+.consent-panel{border:2px solid var(--near-black)}

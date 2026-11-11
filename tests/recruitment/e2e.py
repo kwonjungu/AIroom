@@ -158,8 +158,7 @@ with sync_playwright() as pw:
     links = []
 
     def invite_all():
-        page.once("dialog", lambda d: d.accept())
-        page.get_by_role("button", name="위원 전체 링크 발급").click()
+        page.get_by_role("button", name="위원 전체 링크 발급").click()  # 확인 창 없음: 링크는 위원마다 하나로 고정
         expect(page.locator("#invite-list")).to_be_visible(timeout=10000)
         text = page.locator("#invite-list").input_value()
         found = re.findall(r"https?://\S+#invite=[a-f0-9]{64}", text)
@@ -167,6 +166,13 @@ with sync_playwright() as pw:
         links.extend(found)
         expect(page.get_by_role("button", name="전체 링크 복사")).to_be_visible()
         assert page.locator('[data-action="copy-one"]').count() == 2
+        # 새로 불러와도 같은 링크가 남아 있고, '다시 발급' 버튼은 없다.
+        page.reload()
+        expect(page.locator("#invite-list")).to_be_visible(timeout=10000)
+        assert re.findall(r"https?://\S+#invite=[a-f0-9]{64}", page.locator("#invite-list").input_value()) == found
+        assert page.get_by_role("button", name="다시 발급").count() == 0
+        assert page.get_by_role("button", name="위원 전체 링크 발급").count() == 0
+        assert page.get_by_role("button", name="동의서 내려받기 (한/글)").is_visible()
 
     step("위원 전체 링크 발급·목록 노출", invite_all)
 
