@@ -103,6 +103,7 @@
     <button onclick="copyCsv()">📋 계정 CSV 복사</button>
     <button onclick="loadAccounts()">계정 새로고침</button>
     <button onclick="logout()">잠그기</button>
+    <button id="resetAllBtn" onclick="resetAll()" title="현재 발급 도메인이 아닌 주소를 01번부터 차례대로 새로 발급합니다">🔁 전체 초기화</button>
 </header>
 
 <div class="layout">
@@ -299,6 +300,67 @@ function renderAccounts() {
         grid.appendChild(chip);
     });
     document.getElementById('acctCount').textContent = created + ' / 99 생성됨';
+}
+
+// ===== 전체 초기화 =====
+// mail.tm은 활성 도메인을 주기적으로 바꾸고, 예전 도메인 주소로는 메일을 받지 않는다.
+// 01번부터 차례대로 점검해 현재 도메인 주소가 아니거나 열리지 않는 계정만 새로 발급한다.
+// 예전 계정은 지우지 않는다(mail.tm은 지운 주소를 다시 쓸 수 없다).
+let resetRunning = false;
+async function reissueOne(name, domain) {
+    for (const suf of ['', 'a', 'b', 'c', 'd', 'e', 'f', 'g']) {
+        const address = name + suf + '@' + domain;
+        try {
+            try {
+                await tm('/accounts', { method: 'POST', body: { address, password: mailKey } });
+            } catch (e2) {
+                if (e2.status !== 422) throw e2;
+                tmTokens.delete(address);
+                await tmToken(address, false); // 이미 있는 주소 — 우리 비밀번호로 열리면 우리 계정
+            }
+            const r = await api('POST', '/api/mail/accounts/' + name, { address });
+            return r.account.address;
+        } catch (e) {
+            if (e.status === 429) throw e;
+        }
+    }
+    return null;
+}
+async function resetAll() {
+    if (resetRunning) return;
+    const btn = document.getElementById('resetAllBtn');
+    try { localStorage.removeItem('tm_proxy_domain_v1'); } catch (e) {}
+    let domain;
+    try { domain = await tmActiveDomain(); } catch (e) { toast('도메인 조회 실패: ' + e.message); return; }
+    if (!confirm('지금 발급 도메인은 @' + domain + ' 입니다.\n01번부터 99번까지 차례대로 점검해 이 도메인 주소가 아닌 계정을 새로 발급합니다.\n바뀌는 계정의 예전 메일은 더 이상 볼 수 없습니다. 진행할까요?')) return;
+    resetRunning = true;
+    btn.disabled = true;
+    let ok = 0, changed = 0, failed = [];
+    try {
+        await loadAccounts();
+        const list = accountsCache.slice().sort((a, b) => a.name.localeCompare(b.name));
+        for (let i = 0; i < list.length; i++) {
+            const a = list[i];
+            btn.textContent = '점검 중 ' + (i + 1) + '/' + list.length;
+            let good = false;
+            if (a.address && a.address.endsWith('@' + domain)) {
+                try { await tmToken(a.address, false); good = true; } catch (e) { if (e.status === 429) { i--; await new Promise(r => setTimeout(r, 5000)); continue; } }
+            }
+            if (good) { ok++; continue; }
+            let addr = null;
+            try { addr = await reissueOne(a.name, domain); }
+            catch (e) { i--; await new Promise(r => setTimeout(r, 5000)); continue; } // 429면 잠시 쉬고 같은 번호 다시
+            if (addr) { a.address = addr; changed++; ok++; } else failed.push(a.name.replace('backam', ''));
+            renderAccounts();
+            await new Promise(r => setTimeout(r, 300));
+        }
+    } finally {
+        resetRunning = false;
+        btn.disabled = false;
+        btn.textContent = '🔁 전체 초기화';
+        await loadAccounts();
+    }
+    alert('초기화 끝: 사용 가능 ' + ok + '개 (새로 발급 ' + changed + '개)' + (failed.length ? '\n실패: ' + failed.join(', ') + '번 — 잠시 후 다시 눌러 주세요.' : ''));
 }
 
 // Ask before replacing an address incompatible with the current provider.
