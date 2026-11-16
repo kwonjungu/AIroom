@@ -1039,9 +1039,13 @@ app.patch('/api/winter-schedule/entries/:staffId', requireAuth, async (req, res)
 // 방학 세팅 (config 설정) — 인증된 사용자. 이 요청은 전체 entries를 날린다.
 app.post('/api/winter-schedule/setup', requireAuth, async (req, res) => {
     try {
-        const { startDate, endDate, holidays } = req.body || {};
+        const body = req.body || {};
+        const holidays = body.holidays;
+        const norm = (v) => { const t = String(v || '').trim(); const m = t.match(/^(\d{4})(\d{2})(\d{2})$/) || t.match(/^(\d{4})\s*[-.\/]\s*(\d{1,2})\s*[-.\/]\s*(\d{1,2})\.?$/); return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null; };
+        const startDate = norm(body.startDate);
+        const endDate = norm(body.endDate);
         if (!startDate || !endDate) {
-            return res.status(400).json({ error: '시작일과 종료일을 모두 지정해야 합니다.' });
+            return res.status(400).json({ error: '시작일과 종료일을 YYYY-MM-DD 형식으로 지정해야 합니다.' });
         }
         const newConfig = {
             config: {

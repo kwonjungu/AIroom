@@ -12897,6 +12897,16 @@ function wsIsoDateRange(s, e){
     }
     return out;
 }
+function wsNormDate(v){
+    // 20270102 / 2027.1.2 / 2027-1-2 / 2027/01/02 → 2027-01-02. 형식이 틀리면 null
+    const t=String(v||'').trim();
+    let m=t.match(/^(\d{4})(\d{2})(\d{2})$/)||t.match(/^(\d{4})\s*[-.\/]\s*(\d{1,2})\s*[-.\/]\s*(\d{1,2})\.?$/);
+    if(!m)return null;
+    const y=+m[1],mo=+m[2],d=+m[3];
+    const dt=new Date(Date.UTC(y,mo-1,d));
+    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==mo-1||dt.getUTCDate()!==d)return null;
+    return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
 function wsStatusByValue(v){ return WS_STATUSES.find(s=>s.value===v)||WS_STATUSES[0]; }
 function wsIsHolidayOrWeekend(iso, holidays){
     const d=new Date(iso+'T00:00:00Z').getUTCDay();
@@ -12911,6 +12921,7 @@ async function wsLoad(){
     if(data)wsData=data;
     if(!wsData.config)wsData.config={ startDate:'', endDate:'', holidays:[], setAt:null };
     if(!wsData.entries)wsData.entries={};
+    ['startDate','endDate'].forEach(k=>{const n=wsNormDate(wsData.config[k]);if(n)wsData.config[k]=n;});
 }
 function wsFindStaffByName(n){
     const trim=(n||'').trim();
@@ -13221,10 +13232,15 @@ async function wsDownloadXlsx(){
 }
 async function wsSetupVacation(){
     if(!isAdmin){showToast('관리자만 가능합니다','error');return;}
-    const startDate=prompt('방학 시작일 (YYYY-MM-DD)','2026-01-05');
-    if(!startDate)return;
-    const endDate=prompt('방학 종료일 (YYYY-MM-DD)','2026-02-13');
-    if(!endDate)return;
+    const rawStart=prompt('방학 시작일 (예: 2027-01-02 또는 20270102)','');
+    if(!rawStart)return;
+    const startDate=wsNormDate(rawStart);
+    if(!startDate){showToast(`시작일 "${rawStart}" 형식을 알 수 없습니다`,'error');return;}
+    const rawEnd=prompt('방학 종료일 (예: 2027-03-01 또는 20270301)','');
+    if(!rawEnd)return;
+    const endDate=wsNormDate(rawEnd);
+    if(!endDate){showToast(`종료일 "${rawEnd}" 형식을 알 수 없습니다`,'error');return;}
+    if(endDate<startDate){showToast('종료일이 시작일보다 앞섭니다','error');return;}
     const entriesCount=Object.keys(wsData.entries||{}).length;
     const warn=`⚠️ 방학 세팅을 실행합니다.\n\n    • 기간: ${startDate} ~ ${endDate}\n    • 기존 저장 내용: ${entriesCount}명분 — 전부 삭제됩니다\n\n    정말 진행할까요? 되돌릴 수 없습니다.`;
     if(!confirm(warn))return;
