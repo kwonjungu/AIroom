@@ -47,3 +47,6 @@ export function fontCssFor(families) {
   }
   return css;
 }
+
+/** 적재된 글꼴 바이트 목록(PPTX 변환기의 fonts 옵션용). */
+export function fontBytes() { return bytesByFile; }

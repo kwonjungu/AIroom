@@ -169,7 +169,7 @@ match /zzoom/{mid}/up/{uploadId}/{file} {
 
 ### C-1. 출력과 한도
 `convert(file, {onProgress, signal}) → {kind, pages:[{blob, w, h}], thumbs:[blob], warnings:[]}`
-- 긴 변 **2000px**, WebP 0.85. 썸네일 긴 변 320px. 쪽 수 60, 원본 50MB, 쪽당 픽셀 2000×2000, 전체 처리 3분 상한. [감사 20]
+- 긴 변 **2000px**, WebP 0.85. 썸네일 긴 변 320px. 쪽 수 200(2026-11-25 사용자: 일시 데이터라 60에서 올림), 원본 50MB, 쪽당 픽셀 2000×2000, 전체 처리 6분 상한. [감사 20]
 - **한 쪽씩 순서대로** 그리고 곧바로 WebP로 바꾼 뒤 canvas·ImageBitmap을 해제한다. 원해상도 쪽을 동시에 두 장 이상 메모리에 두지 않는다. 미리보기는 썸네일만. [감사 20]
 - 취소(`signal`)하면 Worker를 바로 끝낸다.
 

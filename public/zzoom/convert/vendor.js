@@ -28,13 +28,15 @@ export const VENDOR_DEFAULT = {
     // 글꼴 없는 PDF 의 한글·표준 글꼴, JBIG2 용. 쓸 때만 받아서 해시 없이 쓴다.
     base: JSD + 'pdfjs-dist@6.5.438/',
   },
-  officeKit: {
-    // jsDelivr 가 즉석에서 묶어 주는 ESM. 안에서 fflate·@office-kit/pptx 를 절대 경로로 다시 부르므로
-    // 해시로 막지 못하고 버전 고정으로만 막는다. 2026-11-25 관찰값: pptx 901904 B, preview 160654 B.
-    pptx: JSD + '@office-kit/pptx@0.30.0/+esm',
-    pptxSeenSha256: 'e266764f8b0cb4e5e433b92ae0b51be4f36c62212230025584fcd31c84e05232',
-    preview: JSD + '@office-kit/pptx-preview@0.23.0/+esm',
-    previewSeenSha256: '75df27813bde7457cd0c4d78641f6855e902b0b04937d49af2cf309ce09c030c',
+  silurus: {
+    // @silurus/ooxml 0.90.2 (MIT). 진입 파일 pptx.mjs(1197B)가 같은 폴더의 조각 파일 수십 개를 상대 경로로 부르므로
+    // 조각은 해시로 막지 못하고 버전 고정으로만 막는다. 진입 파일과 WASM 은 해시를 확인한다(2026-11-25, 두 CDN 같음).
+    version: '0.90.2',
+    entry: both('@silurus/ooxml@0.90.2/dist/pptx.mjs'),
+    entrySha256: '1d8255979b80349ae58402b4ab75049bb0bb565ca0d53a3c3f0420aab5122c69',
+    wasm: both('@silurus/ooxml@0.90.2/dist/pptx_parser_bg.wasm'),
+    wasmSha256: '89f8d41a91fb5e574a2a6d2f58163e831367a305346590d1b41da891a8e380d8',
+    wasmBytes: 2030801,
   },
   // Noto Sans KR · Noto Serif KR (SIL OFL 1.1, @fontsource 5.3.1). 한글 전체 'korean' + 'latin' + 'latin-ext'.
   // 함초롬체 재배포 조건이 확실하지 않아 쓰지 않는다. 한글 글자는 모두 'korean' 파일 안에 있다.
@@ -62,5 +64,5 @@ export function getVendor() {
   if (!o) return VENDOR_DEFAULT;
   return { ...VENDOR_DEFAULT, ...o, rhwp: { ...VENDOR_DEFAULT.rhwp, ...(o.rhwp || {}) },
     pdfjs: { ...VENDOR_DEFAULT.pdfjs, ...(o.pdfjs || {}) },
-    officeKit: { ...VENDOR_DEFAULT.officeKit, ...(o.officeKit || {}) } };
+    silurus: { ...VENDOR_DEFAULT.silurus, ...(o.silurus || {}) } };
 }

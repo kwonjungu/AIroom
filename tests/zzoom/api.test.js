@@ -508,7 +508,7 @@ test('업로드: 허가·commit 위조·빠진 파일·형식·크기·재시도
     const A2 = await h.join(mid2, '관리자', 'admin');
     const bad = async (body, code) => assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body })).json.error, code);
     await bad({ kind: 'ppt', pages: 1, bytes: 10 }, 'bad_kind');
-    await bad({ kind: 'pdf', pages: 61, bytes: 10 }, 'bad_pages');
+    await bad({ kind: 'pdf', pages: 201, bytes: 10 }, 'bad_pages');
     await bad({ kind: 'pdf', pages: 0, bytes: 10 }, 'bad_pages');
     await bad({ kind: 'pdf', pages: 2, bytes: 52428800 }, 'too_large');
     await bad({ kind: 'image', pages: 1, bytes: 10, ext: 'svg' }, 'bad_ext');
@@ -676,4 +676,13 @@ test('cron: CRON_SECRET 이 없으면 거절', async t => {
     const h = await setup({ router: { env: {} } }); t.after(h.close);
     const r = await h.call('GET', '/maintenance/purge', { headers: { Authorization: 'Bearer ' } });
     assert.equal(r.status, 503); assert.equal(r.json.error, 'no_cron_secret');
+});
+
+test('업로드 쪽 수 한도: 200쪽 허용, 201쪽 거절', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const up = n => h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind: 'pdf', pages: n, bytes: 10 } });
+    assert.equal((await up(200)).status, 201);
+    assert.equal((await up(201)).json.error, 'bad_pages');
 });

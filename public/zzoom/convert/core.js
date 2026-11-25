@@ -1,9 +1,9 @@
 // 변환 엔진 공통: 오류, 한도, 취소·시간 확인, 해시 확인 내려받기, WebP·썸네일.
 
 export const LIMITS = Object.freeze({
-  maxPages: 60,
+  maxPages: 200,
   maxBytes: 50 * 1024 * 1024,
-  maxMs: 3 * 60 * 1000,
+  maxMs: 6 * 60 * 1000,
   longSide: 2000,
   thumbSide: 320,
   webpQuality: 0.85,
@@ -16,9 +16,9 @@ export const ERROR_MESSAGES_KO = Object.freeze({
   PPT_LEGACY: '옛 PowerPoint(.ppt) 파일은 열 수 없습니다. PowerPoint에서 PPTX나 PDF로 저장해 올려 주세요.',
   HEIC_UNSUPPORTED: 'HEIC 사진은 이 브라우저에서 열 수 없습니다. JPG나 PNG로 바꿔 올려 주세요.',
   FILE_TOO_LARGE: '파일이 50MB를 넘습니다. 파일을 줄이거나 나눠서 올려 주세요.',
-  TOO_MANY_PAGES: '쪽 수가 60쪽을 넘습니다. 60쪽 이하로 나눠서 올려 주세요.',
+  TOO_MANY_PAGES: '쪽 수가 200쪽을 넘습니다. 200쪽 이하로 나눠서 올려 주세요.',
   IMAGE_TOO_LARGE: '그림이 너무 큽니다. 크기를 줄여서 올려 주세요.',
-  TIMEOUT: '변환이 3분을 넘어 멈췄습니다. 쪽 수를 줄여 다시 올려 주세요.',
+  TIMEOUT: '변환이 6분을 넘어 멈췄습니다. 쪽 수를 줄여 다시 올려 주세요.',
   ABORTED: '변환을 취소했습니다.',
   EMPTY_DOCUMENT: '쪽이 없는 문서입니다.',
   VENDOR_LOAD: '변환에 필요한 구성 요소를 받지 못했습니다. 네트워크를 확인하고 다시 시도해 주세요.',
@@ -107,8 +107,8 @@ export async function fetchVerified(urls, sha256, ctx, failCode = 'VENDOR_LOAD')
   throw new ConvertError(mismatch ? 'HASH_MISMATCH' : failCode, lastErr);
 }
 
-export function blobModuleUrl(bytes) {
-  return URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }));
+export function blobModuleUrl(bytes, type = 'text/javascript') {
+  return URL.createObjectURL(new Blob([bytes], { type }));
 }
 
 export function makeCanvas(w, h) {
