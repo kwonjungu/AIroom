@@ -2271,6 +2271,7 @@ async function initFirebase(){
 }
 // 백암이 로그인 → 서버가 주는 맞춤 토큰으로 Firebase 로그인(storage.rules 가 이 출입증만 통과시킴)
 let storageAuthPromise=null;
+let storageAuthForce=false;
 // 출입증 claim 이 지금 화면(실서비스 ba / 카피본 cp)에 맞고 until(ms)이 1분 넘게 남았는지(지적12)
 function storageClaimsOk(c){
     if(!c)return false;
@@ -2279,15 +2280,20 @@ function storageClaimsOk(c){
 }
 // 결과: 'ok' 출입증 있음 / 'legacy' 서버 키가 아직 없음(예전처럼 비로그인) / 'none' Firebase·로그인 없음.
 // 출입증을 받아야 하는데 못 받으면 오류를 던진다 — 규칙에 막힐 업로드를 조용히 시도하지 않게(지적13)
-function ensureStorageAuth(){
+function ensureStorageAuth(force){
     if(!firebaseStorage||!firebase.auth)return Promise.resolve('none');
     if(!authToken)return Promise.resolve('none');
+    // 진행 중인 약속이 비강제인데 강제 요청이 오면, 그 약속이 끝난 뒤 강제로 새로 받는다(N4)
+    if(storageAuthPromise&&force&&!storageAuthForce){
+        return storageAuthPromise.catch(()=>{}).then(()=>ensureStorageAuth(true));
+    }
     if(!storageAuthPromise){
+        storageAuthForce=!!force;
         storageAuthPromise=(async()=>{
             const u=firebase.auth().currentUser;
             if(u){
                 let c=null;try{c=(await u.getIdTokenResult()).claims;}catch(e){}
-                if(storageClaimsOk(c))return 'ok';
+                if(!force&&storageClaimsOk(c))return 'ok';
             }
             const r=await fetch('/api/firebase-token',{headers:{'X-Auth-Token':authToken}});
             let j={};try{j=await r.json();}catch(e){}
@@ -2298,7 +2304,7 @@ function ensureStorageAuth(){
             if(u){try{await firebase.auth().signOut();}catch(e){}}
             await firebase.auth().signInWithCustomToken(j.token);
             return 'ok';
-        })().finally(()=>{storageAuthPromise=null;});
+        })().finally(()=>{storageAuthPromise=null;storageAuthForce=false;});
     }
     return storageAuthPromise;
 }
@@ -2311,14 +2317,66 @@ async function uploadToFirebase(file,path){
     if(!firebaseStorage)throw new Error('Firebase 미연결');
     await ensureStorageAuth();
     const ref=firebaseStorage.ref().child(storagePathFor(path));
-    await ref.put(file);
+    try{await ref.put(file);}
+    catch(e){
+        // PC 시계가 늦어 아직 유효해 보이는 출입증이 거절된 경우: 새로 받아 한 번만 다시 시도(N2)
+        const code=String((e&&e.code)||'');
+        if(code!=='storage/unauthorized'&&code!=='storage/unauthenticated')throw e;
+        await ensureStorageAuth(true);
+        await ref.put(file);
+    }
     return await ref.getDownloadURL();
 }
-async function deleteFromFirebase(path){
+async function deleteFromFirebase(path,opt){
+    // opt.silent: 안내 토스트를 띄우지 않음(교체 때) / opt.state: 일괄 삭제가 출입증·안내를 한 번만 하게 공유하는 객체
+    opt=opt||{};const st=opt.state||{};
     if(!firebaseStorage)return;
     if(window.IS_COPY&&!String(path||'').startsWith('copy/'))return; // 카피본은 실서비스 파일을 지우지 않음
-    await ensureStorageAuth();
-    try{await firebaseStorage.ref().child(path).delete();}catch(e){}
+    if(st.authFailed)return;
+    const notice=()=>{
+        st.authFailed=true;
+        if(opt.silent)return;
+        try{showToast('저장소 연결이 불안정해 첨부 파일은 지우지 못했습니다. 기록만 삭제합니다.','error');}catch(_){}
+    };
+    if(!st.authOk){
+        try{await ensureStorageAuth();st.authOk=true;}
+        catch(e){
+            // 출입증을 못 받아도 삭제 창이 멈추지 않게: 안내만 하고 기록 삭제는 이어 간다(파일은 남을 수 있음)(N1)
+            console.warn('창고 출입증 실패',e);
+            notice();
+            return;
+        }
+    }
+    const ref=firebaseStorage.ref().child(path);
+    // 인증 외 오류(네트워크·재시도 한도 등): 파일이 남았을 수 있으니 안내하고 실패 경로를 state.failed 에 남긴다(AL04).
+    // 다음 파일 삭제는 계속한다(출입증 문제가 아니므로 authFailed 를 세우지 않음). 이미 없는 파일만 조용히 넘어간다.
+    const failed=err=>{
+        console.warn('창고 삭제 실패',path,err);
+        (st.failed=st.failed||[]).push(path);
+        if(opt.silent||st.failNoticed)return false;
+        st.failNoticed=true;
+        try{showToast('첨부 파일을 지우지 못했습니다. 파일이 저장소에 남았을 수 있습니다. 잠시 뒤 다시 시도하거나 관리자에게 알려 주세요.','error');}catch(_){}
+        return false;
+    };
+    try{await ref.delete();return true;}
+    catch(e){
+        const code=String((e&&e.code)||'');
+        if(code==='storage/object-not-found')return true;
+        if(code!=='storage/unauthorized'&&code!=='storage/unauthenticated')return failed(e);
+        // 시계가 늦어 거절된 경우: 출입증을 새로 받아 한 번만 다시 지운다. 그래도 안 되면 안내(N5)
+        try{await ensureStorageAuth(true);await ref.delete();return true;}
+        catch(e2){
+            const c2=String((e2&&e2.code)||'');
+            if(c2==='storage/object-not-found')return true;
+            if(c2==='storage/unauthorized'||c2==='storage/unauthenticated'){
+                console.warn('창고 삭제 실패',e2);
+                (st.failed=st.failed||[]).push(path);
+                notice();
+                return false;
+            }
+            return failed(e2);
+        }
+    }
 }
 
 // ===== 배너 이미지 =====
@@ -2358,7 +2416,7 @@ async function handleBannerUpload(e){
             const storagePath=storagePathFor(`banner/${Date.now()}_${file.name}`);
             const url=await uploadToFirebase(file,storagePath);
             // 기존 배너 삭제
-            if(bannerData&&bannerData.path)await deleteFromFirebase(bannerData.path);
+            if(bannerData&&bannerData.path)await deleteFromFirebase(bannerData.path,{silent:true});
             bannerData={url,path:storagePath};
             await saveBannerSettings();
             applyBanner();
@@ -3185,7 +3243,7 @@ async function submitScheduleEdit(){
         if(item.filePath)await deleteFromFirebase(item.filePath);
         item.fileUrl='';item.fileName='';item.filePath='';
     } else if(schEditPendingFile&&firebaseStorage){
-        if(item.filePath)await deleteFromFirebase(item.filePath);
+        if(item.filePath)await deleteFromFirebase(item.filePath,{silent:true});
         const storagePath=storagePathFor('schedules/'+id+'/'+Date.now()+'_'+schEditPendingFile.name);
         const url=await uploadToFirebase(schEditPendingFile,storagePath);
         item.fileUrl=url;item.fileName=schEditPendingFile.name;item.filePath=storagePath;
@@ -7965,8 +8023,9 @@ async function submitCollectionDelete(){
     if(pw!==col.password){showToast('비밀번호가 일치하지 않습니다','error');return;}
     // Firebase Storage에서 파일 삭제
     if(col.submissions){
+        const delState={}; // 출입증은 한 번만 받고 안내도 한 번만
         for(const f of col.submissions){
-            if(f.storagePath) await deleteFromFirebase(f.storagePath);
+            if(f.storagePath) await deleteFromFirebase(f.storagePath,{state:delState});
         }
     }
     collections=collections.filter(c=>c.id!==colId);

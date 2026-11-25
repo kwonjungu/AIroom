@@ -79,14 +79,14 @@ export function mount(ctx) {
   // 주관자 막대: 화이트보드 띄우기
   const openBtn = el('button', 'zz-btn zd-board-open');
   openBtn.type = 'button';
-  openBtn.append(icon('icon-board'), el('span', null, t('화이트보드 띄우기')));
+  openBtn.append(icon('icon-board'), el('span', 'zd-board-open-text', t('빈 칠판 띄우기')));   // 글자는 휴대폰에서도 보인다(EASY_UX)
   openBtn.addEventListener('click', chooseBg);
 
   // 쪽 막대: + 새 쪽
   const addBtn = el('button', 'zz-btn ghost zd-board-add');
   addBtn.type = 'button';
   addBtn.append(el('span', 'zd-plus', '+'), el('span', null, t('새 쪽')));
-  addBtn.setAttribute('aria-label', t('화이트보드에 새 쪽 더하기'));
+  addBtn.setAttribute('aria-label', t('칠판에 새 쪽 더하기'));
   addBtn.addEventListener('click', addPage);
 
   function render() {
@@ -128,11 +128,11 @@ export function mount(ctx) {
     });
     const sync = () => cards.forEach(c => c.setAttribute('aria-checked', String(c.dataset.bg === pick)));
     sync();
-    const hint = el('p', 'zd-bg-hint', t('띄우면 안건 목록 끝에 화이트보드가 생기고, 진행 중이면 모두 그 판으로 옮겨 가요.'));
+    const hint = el('p', 'zd-bg-hint', t('띄우면 안건 목록 끝에 칠판이 생겨요. 회의 중이면 모두 그 칠판으로 옮겨 가요.'));
     body.append(...cards);
     const wrap = el('div'); wrap.append(body, hint);
     const m = ctx.modal({
-      title: t('화이트보드 띄우기'), body: wrap,
+      title: t('빈 칠판 띄우기'), body: wrap,
       actions: [
         { label: t('취소'), onClick: () => m.close() },
         { label: t('띄우기'), primary: true, onClick: () => { m.close(); create(pick); } },
@@ -144,12 +144,12 @@ export function mount(ctx) {
     busy = true; render();
     try {
       const r = await api.createBoard(mid, bg);
-      const title = r?.agenda?.title || t('화이트보드');
-      ctx.toast(t('{이름} 판을 띄웠어요', { 이름: title }), 'ok');
+      const title = r?.agenda?.title || t('칠판');
+      ctx.toast(t('「{이름}」을 띄웠어요', { 이름: title }), 'ok');
       // 진행자가 아니면 서버가 진행을 옮기지 않으므로 내 화면만 그 판으로
       if (r?.aid && !r?.live) store.emit('cmd:nav', { aid: r.aid, page: 1 });
     } catch (e) {
-      ctx.toast(e?.message || t('화이트보드를 띄우지 못했어요'), 'error');
+      ctx.toast(e?.message || t('칠판을 띄우지 못했어요'), 'error');
     } finally { busy = false; render(); }
   }
 

@@ -4,9 +4,12 @@ import assert from 'node:assert/strict';
 import { formatWhen, toInputValue, fromInputValue, daysLeftText } from '../../public/zzoom/list.js';
 
 test('daysLeftText', () => {
-  assert.equal(daysLeftText(10), '10일 뒤 삭제돼요');
-  assert.equal(daysLeftText(1), '1일 안에 삭제돼요');
-  assert.equal(daysLeftText(0), '곧 삭제돼요');
+  // EASY_UX: 2일 이하일 때만 보인다
+  assert.equal(daysLeftText(10), '');
+  assert.equal(daysLeftText(3), '');
+  assert.equal(daysLeftText(2), '2일 뒤 지워져요');
+  assert.equal(daysLeftText(1), '1일 안에 지워져요');
+  assert.equal(daysLeftText(0), '곧 지워져요');
   assert.equal(daysLeftText(NaN), '');
 });
 test('formatWhen 한국 시간으로', () => {

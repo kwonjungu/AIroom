@@ -1,0 +1,4 @@
+{
+  "firestore": [{ "database": "kwon", "rules": "firestore.publish.rules" }],
+  "storage": { "rules": "storage.publish+lock.rules" }
+}

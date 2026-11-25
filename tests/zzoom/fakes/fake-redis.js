@@ -48,6 +48,7 @@ function createFakeRedis({ now = Date.now } = {}) {
             case 'HDEL': return cmd.hdel(args[0], ...args.slice(1));
             case 'HEXISTS': return cmd.hexists(args[0], args[1]);
             case 'HKEYS': return cmd.hkeys(args[0]);
+            case 'HGETALL': { const o = cmd.hgetall(args[0]) || {}; return Object.entries(o).flat(); }   // Redis 처럼 [필드, 값, …]
             case 'HINCRBY': {
                 if (!/^-?\d+$/.test(String(args[2]))) throw new Error('ERR value is not an integer');
                 return cmd.hincrby(args[0], args[1], Number(args[2]));

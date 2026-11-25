@@ -24,7 +24,7 @@ const store = {
 };
 class ZzError extends Error { constructor(status, code, message, extra) { super(message); this.status = status; this.code = code; this.extra = extra || {}; } }
 // 가짜 서버 상태
-const db = { strokes: [], epochs: {}, seq: {}, calls: [], fail: null, n: 0, lastOk: 0, force429: 0, sub: {}, unsub: {}, r429: 0 };
+const db = { strokes: [], epochs: {}, seq: {}, calls: [], fail: null, n: 0, lastOk: 0, force429: 0, sub: {}, unsub: {}, r429: 0, epochDelay: 0, esub: {}, eunsub: {} };
 const subs = { strokes: new Map(), epoch: new Map() };
 const tellStrokes = key => (subs.strokes.get(key) || []).forEach(cb => cb.length === 0 ? cb() : cb(db.strokes.filter(s => s.pageKey === key).sort((a, b) => a.seq - b.seq)));
 const tellEpoch = key => (subs.epoch.get(key) || []).forEach(cb => cb(db.epochs[key] || 0));
@@ -33,7 +33,7 @@ const ME = { cid: 'c_me', name: '권선생' };
 const api = {
   subscribePageStrokes(key, cb) { db.sub[key] = (db.sub[key] || 0) + 1; db.via = 'page'; const f = () => cb(db.strokes.filter(s => s.pageKey === key && s.epoch === (db.epochs[key] || 0)).sort((a, b) => a.seq - b.seq)); if (!subs.strokes.has(key)) subs.strokes.set(key, []); subs.strokes.get(key).push(f); setTimeout(f, 5); return () => { db.unsub[key] = (db.unsub[key] || 0) + 1; const a = subs.strokes.get(key); a.splice(a.indexOf(f), 1); }; },
   subscribeStrokes(mid, key, cb) { db.sub[key] = (db.sub[key] || 0) + 1; db.via = 'old'; const u0 = () => { db.unsub[key] = (db.unsub[key] || 0) + 1; }; if (!subs.strokes.has(key)) subs.strokes.set(key, []); subs.strokes.get(key).push(cb); setTimeout(() => cb(db.strokes.filter(s => s.pageKey === key)), 5); return () => { u0(); const a = subs.strokes.get(key); a.splice(a.indexOf(cb), 1); }; },
-  subscribePageEpoch(mid, key, cb) { if (!subs.epoch.has(key)) subs.epoch.set(key, []); subs.epoch.get(key).push(cb); setTimeout(() => cb(db.epochs[key] || 0), 5); return () => { const a = subs.epoch.get(key); a.splice(a.indexOf(cb), 1); }; },
+  subscribePageEpoch(mid, key, cb) { if (!subs.epoch.has(key)) subs.epoch.set(key, []); subs.epoch.get(key).push(cb); db.esub[key] = (db.esub[key] || 0) + 1; setTimeout(() => cb(db.epochs[key] || 0), db.epochDelay || 5); return () => { db.eunsub[key] = (db.eunsub[key] || 0) + 1; const a = subs.epoch.get(key); a.splice(a.indexOf(cb), 1); }; },
   saveStrokes(mid, list) {
     db.calls.push(['save', list.length, Date.now()]);
     return later(() => {
@@ -117,6 +117,8 @@ new ResizeObserver(() => layout()).observe(stage);
 document.body.classList.add('route-meeting', 'zz');
 document.body.classList.remove('route-list');
 el('zz-meeting').hidden = false;
+// 1024px 미만 새 배치: 옆칸은 덮개(처음엔 닫힘) — 진짜 app.js 처럼 side-closed 로 시작
+if (innerWidth < 1024) document.body.classList.add('side-closed');
 const role = qs.get('role') || 'host';
 if (role === 'host') document.body.classList.add('is-host');
 store.set('role', { role, cid: ME.cid, name: ME.name, presenter: role === 'host' });
@@ -188,7 +190,8 @@ def run(pw, browser_name, size, old=False):
         check(f'{tag} 도구 막대 그려짐', page.locator('#zz-toolbar .zd-bar').count() == 1)
         check(f'{tag} 보기 모드에서는 도구 숨김', page.locator('.zd-tools').is_hidden())
         page.screenshot(path=str(SHOTS / f'{tag}-1-view.png'))
-        page.get_by_role('button', name='펜 모드').click()
+        page.get_by_role('button', name='펜으로 쓰기').click()
+        check(f'{tag} 단추 글자가 「펜 끄기」로', page.locator('.zd-pen-toggle').inner_text().strip() == '펜 끄기')
         check(f'{tag} 펜 모드 → body.is-pen', page.evaluate("document.body.classList.contains('is-pen')"))
         check(f'{tag} store tool.mode=pen', page.evaluate("window.__zz.store.get('tool').mode") == 'pen')
         check(f'{tag} 44px 터치 영역', page.evaluate("""() => [...document.querySelectorAll('#zz-toolbar button:not([hidden])')].filter(b => b.offsetParent).every(b => { const r = b.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; })"""))
@@ -239,6 +242,14 @@ def run(pw, browser_name, size, old=False):
         check(f'{tag} 실패 안내 문구', '선 1개를 보내지 못했어요' in page.inner_text('.zd-retry'))
         page.screenshot(path=str(SHOTS / f'{tag}-3-failed.png'))
         before = page.evaluate("window.__zz.db.strokes.length")
+        c0 = page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length")
+        page.evaluate("window.__zz.store.set('conn', { server: 'ok', firebase: 'ok' }); window.__zz.store.set('conn', { server: 'ok', firebase: 'ok' })")
+        page.wait_for_timeout(400)
+        check(f'{tag} heartbeat 마다 같은 ok 는 다시 보내기 안 함', page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length") == c0 and page.locator('.zd-retry').is_visible())
+        page.evaluate("window.__zz.store.set('conn', { server: 'off', firebase: 'ok' }); window.__zz.store.set('conn', { server: 'ok', firebase: 'ok' })")
+        page.wait_for_timeout(400)
+        check(f'{tag} 연결 off 에서 ok 로 돌아오면 한 번 다시 보냄', page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length") > c0)
+        page.wait_for_selector('.zd-retry:not([hidden])', timeout=5000)
         page.evaluate("window.__zz.db.fail = null")
         page.get_by_role('button', name='다시 보내기').click()
         page.wait_for_function(f"window.__zz.db.strokes.length > {before}", timeout=5000)
@@ -260,10 +271,10 @@ def run(pw, browser_name, size, old=False):
         page.wait_for_function(f"!window.__zz.db.strokes.some(s => s.id === '{mine}')", timeout=4000)
         check(f'{tag} 지우개로 내 선 지움', True)
         # 9. 쪽 지우기(주관자) → epoch+1, 화면 비움
-        page.get_by_role('button', name='쪽 지우기').click()
+        page.get_by_role('button', name='이 쪽 글씨 모두 지우기').click()
         page.wait_for_timeout(300)
         page.screenshot(path=str(SHOTS / f'{tag}-4-clear-modal.png'))
-        page.get_by_role('button', name='모두 지우기').click()
+        page.get_by_role('button', name='모두 지우기', exact=True).click()
         page.wait_for_function("window.__zz.db.epochs['apdf00001_1'] === 1", timeout=3000)
         page.wait_for_timeout(200)
         check(f'{tag} 쪽 지우기 뒤 선 0', ink_pixels(page) == 0)
@@ -306,8 +317,31 @@ def run(pw, browser_name, size, old=False):
         check(f'{tag} 구독 경로 ({OLD and "옛 함수 어댑터" or "subscribePageStrokes"})', page.evaluate("window.__zz.db.via") == ('old' if OLD else 'page'))
         check(f'{tag} 다시 온 쪽 선이 다시 보임', ink_pixels(page) > 300)
         page.evaluate("window.__zz.store.emit('cmd:nav', { aid: 'apdf00001', page: 1 })")
+        # 10-5. U03: 지운 적 있는 쪽으로 넘기자마자(epoch 도착 전) 그린 선은 버리지 않고 그 epoch 로 저장
+        page.evaluate("window.__zz.db.epochs['apdf00001_3'] = 4; window.__zz.db.epochDelay = 700; window.__toasts.length = 0")
+        page.evaluate("window.__zz.store.emit('cmd:nav', { aid: 'apdf00001', page: 3 })")
+        page.wait_for_timeout(60)
+        drag(page, [(b['x'] + b['w']*0.2, b['y'] + b['h']*0.7), (b['x'] + b['w']*0.5, b['y'] + b['h']*0.72)])
+        page.wait_for_timeout(40)
+        check(f'{tag} epoch 모를 때 그린 선도 바로 보임', ink_pixels(page) > 50)
+        page.wait_for_function("window.__zz.db.strokes.some(s => s.pageKey === 'apdf00001_3')", timeout=5000)
+        page.wait_for_timeout(200)
+        s3 = page.evaluate("window.__zz.db.strokes.filter(s => s.pageKey === 'apdf00001_3').map(s => s.epoch)")
+        check(f'{tag} U03 epoch 도착 뒤 그 epoch 로 저장', s3 == [4], str(s3))
+        check(f'{tag} U03 선이 남고 「지워져서」 안내 없음', ink_pixels(page) > 50 and not page.evaluate("window.__toasts.some(t => t.text.includes('지워져서'))"))
+        # 넘기자마자 그리고 epoch 도착 전에 또 넘겨도(구독은 epoch 받을 때까지 유지) 저장
+        page.evaluate("window.__zz.db.epochs['apdf00001_2'] = 3")
+        page.evaluate("window.__zz.store.emit('cmd:nav', { aid: 'apdf00001', page: 2 })")
+        page.wait_for_timeout(60)
+        drag(page, [(b['x'] + b['w']*0.6, b['y'] + b['h']*0.15), (b['x'] + b['w']*0.8, b['y'] + b['h']*0.2)])
+        page.evaluate("window.__zz.store.emit('cmd:nav', { aid: 'apdf00001', page: 1 })")
+        page.wait_for_function("window.__zz.db.strokes.some(s => s.pageKey === 'apdf00001_2' && s.epoch === 3)", timeout=5000)
+        page.wait_for_timeout(100)
+        es, eu = page.evaluate("window.__zz.db.esub['apdf00001_2']"), page.evaluate("window.__zz.db.eunsub['apdf00001_2'] || 0")
+        check(f'{tag} U03 떠난 쪽 선도 epoch 받은 뒤 저장, 그 뒤 구독 끊음', es == eu, f'{es} {eu}')
+        page.evaluate("window.__zz.db.epochDelay = 0")
         # 11. 화이트보드 띄우기 → 모눈 → + 새 쪽
-        page.get_by_role('button', name='화이트보드 띄우기').click()
+        page.get_by_role('button', name='빈 칠판 띄우기').click()
         page.wait_for_selector('.zd-bg-card')
         page.locator('.zd-bg-card[data-bg="grid"]').click()
         page.wait_for_timeout(300)  # 모달 나타나는 움직임 끝난 뒤
@@ -336,12 +370,12 @@ def run(pw, browser_name, size, old=False):
         page.evaluate("window.__zz.store.set('role', { role: 'viewer', cid: 'c_me', name: '권선생', presenter: false }); window.__zz.store.patch('meeting', { penLock: true })")
         page.wait_for_timeout(100)
         check(f'{tag} 잠금 → 보기 모드로', page.evaluate("window.__zz.store.get('tool').mode") == 'view' and not page.evaluate("document.body.classList.contains('is-pen')"))
-        check(f'{tag} 잠금 → 펜 모드 단추 막힘·안내', page.get_by_role('button', name='펜 모드').is_disabled() and '잠갔어요' in page.inner_text('.zd-note'))
+        check(f'{tag} 잠금 → 펜 단추 숨김·안내', page.locator('.zd-pen-toggle').is_hidden() and '회의 담당자만' in page.inner_text('.zd-note'))
         check(f'{tag} viewer 에게는 화이트보드 단추 없음', page.locator('#zz-hostbar-board button').count() == 0 and page.locator('#zz-board-actions button').count() == 0)
         page.screenshot(path=str(SHOTS / f'{tag}-7-locked.png'))
         # 13. 풀리면 다시, viewer 는 남의 선 못 지움
         page.evaluate("window.__zz.store.patch('meeting', { penLock: false })")
-        page.get_by_role('button', name='펜 모드').click()
+        page.get_by_role('button', name='펜으로 쓰기').click()
         page.evaluate("window.__zz.store.emit('cmd:nav', { aid: 'bboard01', page: 1 })")
         page.wait_for_timeout(200)
         page.evaluate("window.__zz.otherStroke({ tool: 'pen', color: '#2F6FEB', w: 0.004, pts: [0.1,0.9,0.5, 0.9,0.9,0.5] })")
@@ -353,8 +387,20 @@ def run(pw, browser_name, size, old=False):
         check(f'{tag} viewer 는 남의 선 지우기 요청 안 함', page.evaluate("window.__zz.db.calls.filter(c => c[0]==='delete').length") == n1)
         # 14. 쪽 지우기 단추는 host 만
         check(f'{tag} viewer 에게 쪽 지우기 없음', page.locator('.zd-clear').is_hidden())
-        # 15. unmount 정리
+        # 15-0. U05: 보내기 기다리는 중 unmount 하면 늦게라도 보내지 않음
+        # 앞 보내기가 1초 넘게 전이면 손을 떼는 즉시 보내므로(기다리는 것 없음) 결과가 기기 속도에 따라 달랐다.
+        # 먼저 한 획을 보내 draw.js 의 1초 간격(SEND_GAP)을 걸고, 그 안에 두 번째 획을 그린 뒤 바로 unmount 한다.
+        page.get_by_role('button', name='펜', exact=True).click()
+        n4 = page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length")
+        drag(page, [(b3['x'] + b3['w']*0.2, b3['y'] + b3['h']*0.2), (b3['x'] + b3['w']*0.4, b3['y'] + b3['h']*0.25)])
+        page.wait_for_function(f"window.__zz.db.calls.filter(c => c[0]==='save').length > {n4}", timeout=3000)
+        n5 = page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length")
+        drag(page, [(b3['x'] + b3['w']*0.2, b3['y'] + b3['h']*0.3), (b3['x'] + b3['w']*0.4, b3['y'] + b3['h']*0.35)])
+        check(f'{tag} U05 두 번째 획은 간격 때문에 기다리는 중', page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length") == n5)
         page.evaluate("window.__zz.mods.forEach(m => m.unmount())")
+        page.wait_for_timeout(1600)
+        check(f'{tag} U05 unmount 뒤 보내지 않음', page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length") == n5)
+        # 15. unmount 정리
         check(f'{tag} unmount 뒤 구독 모두 끊음', page.evaluate("Object.keys(window.__zz.db.sub).every(k => window.__zz.db.sub[k] === (window.__zz.db.unsub[k] || 0))"), json.dumps(page.evaluate("[window.__zz.db.sub, window.__zz.db.unsub]")))
         check(f'{tag} unmount 뒤 자리 비움', page.evaluate("document.getElementById('zz-toolbar').children.length + document.getElementById('zz-hostbar-board').children.length + document.getElementById('zz-board-actions').children.length") == 0)
         check(f'{tag} 콘솔 오류 0', not errors, ' | '.join(errors[:3]))
@@ -366,7 +412,46 @@ def run(pw, browser_name, size, old=False):
     finally:
         br.close()
 
+def run_narrow(pw, browser_name):
+    # 600px 미만: 「빈 칠판 띄우기」도 글자가 보인다(EASY_UX: 그림만 단추 금지)
+    tag = f'{browser_name}-390x844'
+    print(f'== {tag}')
+    kw = {'channel': 'msedge'} if browser_name == 'msedge' else {}
+    br = pw.chromium.launch(**kw)
+    errors = []
+    try:
+        cx = br.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, has_touch=True)
+        cx.route(f'{BASE}/**', route)
+        cx.route('https://cdn.jsdelivr.net/**', lambda r: r.fulfill(status=200, content_type='text/css', body=''))
+        page = cx.new_page()
+        page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.goto(f'{BASE}/zzoom/#/m/mtest01')
+        page.wait_for_function('window.__ready === true', timeout=10000)
+        page.wait_for_timeout(300)
+        btn = page.get_by_role('button', name='빈 칠판 띄우기')
+        box = btn.bounding_box()
+        check(f'{tag} 칠판 단추 44px 이상', btn.count() == 1 and box['height'] >= 44, str(box))
+        check(f'{tag} 글자가 보임', page.locator('.zd-board-open-text').is_visible())
+        page.get_by_role('button', name='펜으로 쓰기').click()
+        check(f'{tag} 도구 막대 무대 안', page.evaluate("(() => { const b = document.querySelector('.zd-bar').getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth; })()"))
+        page.screenshot(path=str(SHOTS / f'{tag}-hostbar.png'))
+        btn.click()
+        page.wait_for_selector('.zd-bg-card')
+        page.wait_for_timeout(300)
+        page.screenshot(path=str(SHOTS / f'{tag}-board-modal.png'))
+        check(f'{tag} 콘솔 오류 0', not errors, ' | '.join(errors[:3]))
+    except Exception as e:
+        traceback.print_exc()
+        check(f'{tag} 예외 없이 끝남', False, str(e)[:200])
+    finally:
+        br.close()
+
 with sync_playwright() as pw:
+    if os.environ.get('ZZ_ONLY_NARROW'):
+        for bn in ('msedge', 'chromium'): run_narrow(pw, bn)
+        ok = sum(1 for r in results if r[1]); print(f'결과: 통과 {ok} / 실패 {len(results) - ok}'); sys.exit(1 if ok < len(results) else 0)
+    for bn in ('msedge', 'chromium'): run_narrow(pw, bn)
     for bn in ('msedge', 'chromium'):
         for size in ((1280, 800), (820, 1180)):
             run(pw, bn, size)

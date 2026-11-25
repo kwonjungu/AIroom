@@ -21,23 +21,41 @@ export class ZzError extends Error {
 let store = null;
 export function bindStore(s) { store = s; }
 const sset = (k, v) => store && store.set(k, v);
-const spatch = (k, v) => store && store.patch(k, v);
+const spatch = (k, v) => {
+  if (!store) return;
+  // 값이 같으면 이벤트를 내지 않는다(듣는 쪽이 바뀔 때만 알게, 감사 U06)
+  const cur = store.get(k) || {};
+  if (v && typeof v === 'object' && Object.keys(v).every(x => cur[x] === v[x])) return;
+  store.patch(k, v);
+};
 const toast = (text, kind = 'error') => store && store.emit('toast', { text, kind });
 
 // ================= 기본 요청 =================
 export function authToken() {
   try { return localStorage.getItem('airoom_auth_token') || null; } catch { return null; }
 }
-async function request(method, path, { body, pt, raw, contentType, auth = true } = {}) {
+// 이 기기의 백암이 기기 id(백암이 로그인 화면과 같은 localStorage 값). 서버는 회의를 만든 사람을 로그인 세션과 이 값으로 알아본다 —
+// 백암이 로그인은 공용 코드라 계정이 없어서, 다시 로그인해도 「같은 사람」으로 알아볼 수 있는 것은 이 기기 id 뿐이다(감사 R2 M5).
+export function deviceId() {
+  try {
+    let v = localStorage.getItem('baekam_device_id');
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(v || '')) {
+      v = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g, '');
+      localStorage.setItem('baekam_device_id', v);
+    }
+    return v;
+  } catch { return ''; }
+}
+async function request(method, path, { body, pt, raw, contentType, auth = true, keepalive = false } = {}) {
   const headers = {};
-  if (auth) { const t = authToken(); if (t) headers['X-Auth-Token'] = t; }
+  if (auth) { const t = authToken(); if (t) headers['X-Auth-Token'] = t; const d = deviceId(); if (d) headers['X-Device-Id'] = d; }
   if (pt) headers['X-Zzoom-Pt'] = pt;
   let payload;
   if (raw !== undefined) { payload = raw; if (contentType) headers['Content-Type'] = contentType; }
   else if (body !== undefined) { payload = JSON.stringify(body); headers['Content-Type'] = 'application/json'; }
   let r;
-  try { r = await fetch(path.startsWith('/') ? path : BASE + '/' + path, { method, headers, body: payload, credentials: 'same-origin' }); }
-  catch { throw new ZzError(0, 'network', '서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요.'); }
+  try { r = await fetch(path.startsWith('/') ? path : BASE + '/' + path, { method, headers, body: payload, credentials: 'same-origin', keepalive }); }
+  catch { throw new ZzError(0, 'network', '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.'); }
   return r;
 }
 async function asJson(r) {
@@ -69,16 +87,7 @@ export const createMeeting = b => call('POST', '/meetings', { body: b });
 export const updateMeeting = (mid, b) => call('PATCH', `/meetings/${enc(mid)}`, { body: b });
 export const deleteMeeting = mid => call('DELETE', `/meetings/${enc(mid)}`);
 export const unlockHost = mid => call('POST', `/meetings/${enc(mid)}/unlock`, { body: {} });
-export async function staffNames() {
-  try {
-    const r = await request('GET', '/api/staff');
-    if (!r.ok) return [];
-    const list = await r.json();
-    return Array.isArray(list) ? [...new Set(list.map(s => String(s?.name || '').trim()).filter(Boolean))] : [];
-  } catch { return []; }
-}
-export function rememberedName() { try { return localStorage.getItem('airoom_ws_name') || ''; } catch { return ''; } }
-export function rememberName(n) { try { localStorage.setItem('airoom_ws_name', String(n || '').slice(0, 20)); } catch { /* 저장 못 해도 됨 */ } }
+// 익명(ANON): 교직원 명부·airoom_ws_name 을 읽지도 쓰지도 않는다(staffNames·rememberedName·rememberName 없앰).
 const enc = encodeURIComponent;
 
 // ================= Firebase (앱 'zzoom', inMemory, DB kwon) =================
@@ -90,7 +99,7 @@ function firebase() {
   if (fbp) return fbp;
   fbp = (async () => {
     const cfg = await asJson(await request('GET', '/api/firebase-config')).catch(() => null);
-    if (!cfg || !cfg.apiKey) throw new ZzError(503, 'no_firebase_config', 'Firebase 설정을 가져오지 못했습니다.');
+    if (!cfg || !cfg.apiKey) throw new ZzError(503, 'no_firebase_config', '실시간 연결 설정을 가져오지 못했어요.');
     const [A, Au, F, S] = await Promise.all([import(FB('app')), import(FB('auth')), import(FB('firestore')), import(FB('storage'))]);
     const app = A.getApps().find(a => a.name === 'zzoom') || A.initializeApp(cfg, 'zzoom');
     let auth;
@@ -102,7 +111,19 @@ function firebase() {
   fbp.catch(() => { fbp = null; });
   return fbp;
 }
-async function fbSignIn(token) {
+// 로그인·로그아웃은 한 줄로 세운다(감사 U15). 회의 A 의 늦은 로그인이 회의 B 의 로그인 뒤에 끝나 사용자를 바꾸지 못하게 한다.
+// authSeq 는 줄에 넣은 순서 번호다. 늦게 끝난 옛 입장은 자기 뒤에 다른 로그인이 들어왔으면 로그아웃하지 않는다.
+let authChain = Promise.resolve();
+let authSeq = 0;
+function authOp(fn) {
+  authSeq++;
+  const run = authChain.then(fn, fn);
+  authChain = run.catch(() => {});
+  return run;
+}
+export function authState() { return { seq: authSeq }; }   // 시험용
+function fbSignIn(token) { return authOp(() => fbSignInNow(token)); }
+async function fbSignInNow(token) {
   spatch('conn', { firebase: 'connecting' });
   try {
     const f = await firebase();
@@ -112,10 +133,11 @@ async function fbSignIn(token) {
     return f;
   } catch (e) {
     spatch('conn', { firebase: 'off' });
-    throw e instanceof ZzError ? e : new ZzError(0, 'firebase_auth', '실시간 연결(Firebase)에 실패했습니다.', { detail: String(e?.code || e?.message || e) });
+    throw e instanceof ZzError ? e : new ZzError(0, 'firebase_auth', '실시간 연결에 실패했어요. 잠시 뒤 다시 입장해 주세요.', { detail: String(e?.code || e?.message || e) });
   }
 }
-async function fbSignOut() {
+function fbSignOut() { return authOp(() => fbSignOutNow()); }
+async function fbSignOutNow() {
   if (!fbp) return;
   try { const f = await fbp; await f.Au.signOut(f.auth); } catch { /* 무시 */ }
   newSignedIn();
@@ -123,7 +145,7 @@ async function fbSignOut() {
 }
 
 // ================= 2-2. 입장·자격 =================
-let S = null;   // 지금 회의 자격 { mid, pt, cid, name, role, exp, until, timers }
+let S = null;   // 지금 회의 자격 { mid, pt, cid, role, exp, until, timers } (이름 없음, ANON)
 const tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
 let chan = null;
 function channel() {
@@ -148,20 +170,41 @@ function cidInUse(cid) {
   });
 }
 function saveGrant(mid, g) {
-  try { sessionStorage.setItem(PT_KEY(mid), JSON.stringify({ pt: g.pt, cid: g.cid, name: g.name, role: g.role, exp: g.exp, until: g.until })); } catch { /* 무시 */ }
+  try { sessionStorage.setItem(PT_KEY(mid), JSON.stringify({ pt: g.pt, cid: g.cid, role: g.role, exp: g.exp, until: g.until })); } catch { /* 무시 */ }
 }
 function loadGrant(mid) { try { return JSON.parse(sessionStorage.getItem(PT_KEY(mid)) || 'null'); } catch { return null; } }
 function dropGrant(mid) { try { sessionStorage.removeItem(PT_KEY(mid)); } catch { /* 무시 */ } }
 
-async function begin(mid, g, token) {
+// 세대 번호: leave 할 때마다 올린다. 입장(join·resume·becomeHost) 도중 leave 가 끼면 늦게 끝난 입장은 아무것도 남기지 않는다(감사 U02).
+let gen = 0;
+const aborted = () => new ZzError(0, 'aborted', '입장을 그만뒀어요.');
+async function begin(mid, g, token, myGen) {
+  if (myGen !== gen) { quietLeave(mid, g.pt); throw aborted(); }
   stopTimers();
-  S = { mid, pt: g.pt, cid: g.cid, name: g.name, role: g.role, exp: g.exp, until: g.until, timers: {} };
+  S = { mid, pt: g.pt, cid: g.cid, role: g.role, exp: g.exp, until: g.until, timers: {} };
   saveGrant(mid, S);
   channel();
-  await fbSignIn(token);
+  const mySeq = authSeq + 1;   // 바로 아래 fbSignIn 이 받을 순서 번호
+  try { await fbSignIn(token); }
+  catch (e) {
+    // 실시간 로그인 실패: 반쯤 입장한 채로 두지 않는다. 자격(sessionStorage)은 남겨 다시 누르면 같은 cid 로 재시도(감사 U13)
+    if (S && S.pt === g.pt) { stopTimers(); S = null; }
+    throw e;
+  }
+  if (myGen !== gen || !S || S.pt !== g.pt) {
+    if (S && S.pt === g.pt) { stopTimers(); S = null; }
+    quietLeave(mid, g.pt);
+    // 내 로그인 뒤에 새 입장의 로그인이 줄에 들어왔으면 그 로그인을 끊지 않는다(U15)
+    if (myGen !== gen && authSeq === mySeq) fbSignOut();
+    throw aborted();
+  }
   scheduleRefresh();
   startHeartbeat();
-  sset('role', { role: S.role, cid: S.cid, name: S.name, presenter: false });
+  sset('role', { role: S.role, cid: S.cid, presenter: false });
+}
+// 버려진 입장의 자격으로 「나감」을 알린다(접속자 명단에 남지 않게)
+function quietLeave(mid, pt) {
+  try { if (pt && navigator.sendBeacon) navigator.sendBeacon(`${BASE}/${enc(mid)}/heartbeat`, new Blob([JSON.stringify({ pt, leaving: true })], { type: 'application/json' })); } catch { /* 최선 노력 */ }
 }
 function scheduleRefresh() {
   if (!S) return;
@@ -170,19 +213,29 @@ function scheduleRefresh() {
   S.timers.refresh = setTimeout(() => { refresh(mid).catch(e => console.warn('[zzoom] 토큰 갱신 실패', e)); }, REFRESH_MS);
 }
 
-export async function join(mid, name) {
-  const d = await call('POST', `/${enc(mid)}/join`, { body: { name } });
-  await begin(mid, d, d.token);
+export async function join(mid) {   // 익명(ANON): 이름을 받지 않는다(옛 호출의 두 번째 인자는 무시)
+  const myGen = gen;
+  // 앞 입장이 실시간 로그인에서 실패해 자격만 남아 있으면 같은 cid 로 다시 시도한다(감사 U13)
+  const old = loadGrant(mid);
+  if (old && old.pt && (!old.exp || old.exp > Date.now())) {
+    const r = await resume(mid).catch(e => { if (e.code === 'aborted') throw e; return null; });
+    if (r) return r;
+  }
+  if (myGen !== gen) throw aborted();
+  const d = await call('POST', `/${enc(mid)}/join`, { body: {} });
+  await begin(mid, d, d.token, myGen);
   if (d.meeting) sset('meeting', { ...d.meeting, id: mid });
-  return { cid: d.cid, name: d.name, role: d.role, meeting: d.meeting };
+  return { cid: d.cid, role: d.role, meeting: d.meeting };
 }
 export async function resume(mid) {
+  const myGen = gen;
   const g = loadGrant(mid);
   if (!g || !g.pt || (g.exp && g.exp < Date.now())) { dropGrant(mid); return null; }
   if (await cidInUse(g.cid)) {
+    if (myGen !== gen) throw aborted();
     // 복제된 탭: 같은 자격을 함께 쓰지 않도록 새로 입장한다
     dropGrant(mid);
-    return join(mid, g.name);
+    return join(mid);
   }
   let d;
   try { d = await call('POST', `/${enc(mid)}/refresh`, { pt: g.pt, body: {} }); }
@@ -190,34 +243,40 @@ export async function resume(mid) {
     if ([401, 403, 404, 410].includes(e.status)) { dropGrant(mid); if (e.status === 410) sset('meeting', { gone: true, id: mid }); return null; }
     throw e;
   }
-  await begin(mid, { ...g, role: d.role, exp: d.exp, until: d.until, name: d.name, cid: d.cid }, d.token);
+  await begin(mid, { ...g, role: d.role, exp: d.exp, until: d.until, cid: d.cid }, d.token, myGen);
   if (d.meeting) sset('meeting', { ...d.meeting, id: mid });
-  return { cid: d.cid, name: d.name, role: d.role, meeting: d.meeting };
+  return { cid: d.cid, role: d.role, meeting: d.meeting };
 }
 export async function becomeHost(mid, code) {
+  const myGen = gen;
   const d = await mcall(mid, 'POST', '/host', { body: { code: String(code || '') } });
   // 새 pt 로 바꿔 저장(옛 pt 는 서버가 폐기)
-  await begin(mid, d, d.token);
-  return { cid: d.cid, name: d.name, role: d.role };
+  await begin(mid, d, d.token, myGen);
+  return { cid: d.cid, role: d.role };
 }
 export async function refresh(mid) {
   const d = await mcall(mid, 'POST', '/refresh', { body: {} });
+  if (!S || S.mid !== mid) return { role: null };     // 그사이 나감(감사 U01)
   const before = S.role;
   S.role = d.role; S.exp = d.exp; S.until = d.until;
   saveGrant(mid, S);
-  await fbSignIn(d.token);
+  // 업로드 중에는 업로드 전용 출입증으로 로그인해 있으므로 새 토큰은 업로드가 끝난 뒤 쓴다
+  if (uploading) uploading.pending = d.token;
+  else await fbSignIn(d.token);
+  if (!S || S.mid !== mid) return { role: null };
   scheduleRefresh();
-  if (before !== d.role) sset('role', { role: d.role, cid: S.cid, name: S.name, presenter: false });
+  if (before !== d.role) sset('role', { role: d.role, cid: S.cid, presenter: false });
   return { role: d.role };
 }
 export async function leave(mid) {
+  gen++;
   if (S && S.mid === mid) { beacon(true); stopTimers(); S = null; }
   releaseImages();
   await fbSignOut();
 }
 export function session(mid) {
   if (!S || (mid && S.mid !== mid)) return null;
-  return { cid: S.cid, name: S.name, role: S.role, exp: S.exp, until: S.until };
+  return { cid: S.cid, role: S.role, exp: S.exp, until: S.until };
 }
 function stopTimers() {
   if (!S) return;
@@ -227,7 +286,7 @@ function stopTimers() {
 }
 // 회의 API 공통: pt 자동, 자격 오류면 자격을 지우고 다시 입장하게 한다
 async function mcall(mid, method, path, opts = {}) {
-  if (!S || S.mid !== mid) throw new ZzError(401, 'pt_required', '참가 자격이 없습니다. 다시 입장하세요.');
+  if (!S || S.mid !== mid) throw new ZzError(401, 'pt_required', '참가 자격이 없어요. 다시 입장해 주세요.');
   try { return await call(method, `/${enc(mid)}${path}`, { ...opts, pt: S.pt }); }
   catch (e) { onGrantError(mid, e); throw e; }
 }
@@ -270,7 +329,8 @@ function beacon(leaving) {
 }
 
 // ================= 2-3. 회의 API =================
-export const setState = (mid, action, value) => mcall(mid, 'POST', '/state', { body: value === undefined ? { action } : { action, value } });
+// 탭을 닫는 순간 보내는 작은 알림(녹음 멈춤 등)도 끝까지 가게 keepalive
+export const setState = (mid, action, value) => mcall(mid, 'POST', '/state', { body: value === undefined ? { action } : { action, value }, keepalive: true });
 export const takePresenter = mid => mcall(mid, 'POST', '/presenter', { body: {} });
 // 진행 상태: baseRev·epoch 는 store live 에서 읽는다. 409 면 e.extra.live 로 맞추면 된다(서버가 최신 상태를 줌).
 export async function sendLive(mid, { aid, page, view, force = false }) {
@@ -314,7 +374,12 @@ export const lowerAllHands = mid => mcall(mid, 'POST', '/hand', { body: { all: t
 export const createPoll = (mid, b) => mcall(mid, 'POST', '/polls', { body: b });
 export const vote = (mid, pid, optionId) => mcall(mid, 'POST', `/polls/${enc(pid)}/vote`, { body: { optionId } });
 export const myVote = (mid, pid) => mcall(mid, 'GET', `/polls/${enc(pid)}/mine`);
-export const pollTally = (mid, pid) => mcall(mid, 'GET', `/polls/${enc(pid)}/tally`);
+// 응답이 오는 사이 주관자에서 내려왔으면 숫자를 주지 않는다(비공개 투표, 감사 U07)
+export async function pollTally(mid, pid) {
+  const d = await mcall(mid, 'GET', `/polls/${enc(pid)}/tally`);
+  if (!S || S.mid !== mid || S.role !== 'host') throw new ZzError(403, 'host_only', '주관자만 볼 수 있어요.');
+  return d;
+}
 export const closePoll = (mid, pid) => mcall(mid, 'POST', `/polls/${enc(pid)}/close`, { body: {} });
 export const revealPoll = (mid, pid) => mcall(mid, 'POST', `/polls/${enc(pid)}/reveal`, { body: {} });
 export function transcribe(mid, blob, { n, at, aid, page } = {}) {
@@ -325,7 +390,7 @@ export function transcribe(mid, blob, { n, at, aid, page } = {}) {
   return mcall(mid, 'POST', `/transcribe?${q}`, { raw: blob, contentType: blob.type || 'audio/webm' });
 }
 export async function exportMd(mid) {
-  if (!S || S.mid !== mid) throw new ZzError(401, 'pt_required', '참가 자격이 없습니다.');
+  if (!S || S.mid !== mid) throw new ZzError(401, 'pt_required', '참가 자격이 없어요. 다시 입장해 주세요.');
   const r = await request('GET', `${BASE}/${enc(mid)}/export.md`, { pt: S.pt });
   if (!r.ok) { try { await asJson(r); } catch (e) { onGrantError(mid, e); throw e; } }
   const blob = await r.blob();
@@ -348,46 +413,87 @@ export async function convertFile(file, opts = {}) {
   convertMod = convertMod || await import('/zzoom/convert/index.js');
   return convertMod.convert(file, opts);
 }
+// 원본 확장자 → 형식(서버 lib/zzoom/contract.js 와 같은 표, 서버가 originalTypes 를 주면 그것을 우선)
 const ORIGINAL_TYPE = {
-  pdf: 'application/pdf',
+  pdf: 'application/pdf', hwp: 'application/x-hwp', hwpx: 'application/hwp+zip',
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  hwp: 'application/octet-stream', hwpx: 'application/octet-stream',
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp'
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif',
+  bmp: 'image/bmp', avif: 'image/avif', heic: 'image/heic', heif: 'image/heif'
 };
-export async function uploadAgenda(mid, { file, converted, title, onProgress, signal } = {}) {
-  const pages = converted?.pages || [], thumbs = converted?.thumbs || [];
-  if (!pages.length) throw new ZzError(0, 'empty', '올릴 쪽이 없습니다.');
-  const notWebp = [...pages.map(p => p.type || p.blob?.type), ...thumbs.map(t => t.type)].some(t => t !== 'image/webp');
-  if (notWebp) throw new ZzError(0, 'webp_unsupported', '이 브라우저는 WebP 그림을 만들지 못합니다. 크롬이나 엣지에서 올려 주세요.');
+const DOC_KINDS = ['pdf', 'hwp', 'hwpx', 'pptx'];
+let uploading = null;            // 업로드 중이면 { pending: 그사이 받은 보통 토큰 }
+// 익명(U19): 원본 파일 이름(사람 이름이 들어 있을 수 있음)은 서버에 보내지 않는다. 확장자만 남긴다.
+function anonName(file) {
   const ext = String(file?.name || '').toLowerCase().split('.').pop();
-  let kind, upExt, withOriginal = !!file;
-  if (['pdf', 'hwp', 'hwpx', 'pptx'].includes(ext)) { kind = ext; upExt = ext; }
-  else { kind = 'image'; upExt = ['png', 'jpg', 'jpeg', 'webp'].includes(ext) ? ext : 'webp'; if (upExt !== ext) withOriginal = false; }
-  const permit = await startUpload(mid, kind === 'image'
-    ? { kind, pages: pages.length, bytes: file?.size || 1, ext: upExt }
-    : { kind, pages: pages.length, bytes: file.size });
-  const f = await signedIn.promise;
-  const jobs = [];
-  pages.forEach((p, i) => jobs.push({ name: permit.files.pages[i], blob: p.blob, type: 'image/webp' }));
-  thumbs.forEach((t, i) => { if (permit.files.thumbs[i]) jobs.push({ name: permit.files.thumbs[i], blob: t, type: 'image/webp' }); });
-  if (withOriginal) jobs.push({ name: permit.files.original, blob: file, type: ORIGINAL_TYPE[upExt] || 'application/octet-stream' });
-  let done = 0;
-  const total = jobs.length;
-  onProgress && onProgress({ phase: 'upload', done, total });
-  const put = async j => {
-    for (let a = 0; ; a++) {
-      if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했습니다.');
-      try { await f.S.uploadBytes(f.S.ref(f.st, permit.path + j.name), j.blob, { contentType: j.type }); return; }
-      catch (e) { if (a >= 2) throw new ZzError(0, 'upload_failed', `${j.name} 올리기에 실패했습니다.`, { detail: String(e?.code || e) }); }
+  return ORIGINAL_TYPE[ext] ? `원본.${ext}` : '원본';
+}
+/** 원본 받기 때 쓸 파일 이름: 안건 제목 + 원본 확장자(원본 파일 이름은 쓰지 않는다) */
+export function originalFileName(agenda) {
+  const ext = String(agenda?.original?.name || agenda?.original?.path || '').toLowerCase().split('.').pop();
+  const base = String(agenda?.title || '안건').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || '안건';
+  return ORIGINAL_TYPE[ext] ? `${base}.${ext}` : base;
+}
+let uploadChain = Promise.resolve();
+// 업로드는 한 번에 하나씩(업로드 전용 출입증 로그인이 앱 하나를 같이 쓰므로)
+export function uploadAgenda(mid, opts = {}) {
+  const run = uploadChain.then(() => uploadOne(mid, opts));
+  uploadChain = run.catch(() => {});
+  return run;
+}
+async function uploadOne(mid, { file, converted, title, onProgress, signal } = {}) {
+  const pages = converted?.pages || [], thumbs = converted?.thumbs || [];
+  if (!pages.length) throw new ZzError(0, 'empty', '올릴 쪽이 없어요.');
+  const notWebp = [...pages.map(p => p.type || p.blob?.type), ...thumbs.map(t => t.type)].some(t => t !== 'image/webp');
+  if (notWebp) throw new ZzError(0, 'webp_unsupported', '이 브라우저는 WebP 그림을 만들지 못해요. 엣지나 크롬에서 올려 주세요.');
+  const ext = String(file?.name || '').toLowerCase().split('.').pop();
+  if (!ORIGINAL_TYPE[ext]) throw new ZzError(0, 'bad_ext', '올릴 수 없는 파일 형식이에요.');
+  const kind = DOC_KINDS.includes(ext) ? ext : 'image';
+  const permit = await startUpload(mid, { kind, ext, pages: pages.length, bytes: file.size });
+  // 허가를 받은 뒤 실패·취소·commit 실패로 끝나면 허가 자리를 바로 돌려준다(서버 감사 R4 P3, CONTRACTS 업로드 허가 취소)
+  try {
+    if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
+    const types = Array.isArray(permit.originalTypes) && permit.originalTypes.length ? permit.originalTypes : [ORIGINAL_TYPE[ext]];
+    const origType = types.includes(file.type) ? file.type : types[0];
+    const jobs = [];
+    pages.forEach((p, i) => jobs.push({ name: permit.files.pages[i], blob: p.blob, type: 'image/webp', label: `${i + 1}쪽 그림` }));
+    thumbs.forEach((t, i) => { if (permit.files.thumbs[i]) jobs.push({ name: permit.files.thumbs[i], blob: t, type: 'image/webp', label: `${i + 1}쪽 미리보기` }); });
+    jobs.push({ name: permit.files.original, blob: file, type: origType, label: '원본 파일' });
+    // Storage 쓰기는 이 허가에만 주는 업로드 전용 출입증(up claim)으로만 된다 → 그 토큰으로 로그인하고, 끝나면 보통 토큰으로 돌아간다
+    uploading = { pending: null };
+    try {
+      const f = permit.token ? await fbSignIn(permit.token) : await signedIn.promise;
+      const tokenUntil = permit.tokenUntil || Infinity;
+      let done = 0;
+      const total = jobs.length;
+      onProgress && onProgress({ phase: 'upload', done, total });
+      const put = async j => {
+        for (let a = 0; ; a++) {
+          if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
+          if (Date.now() > tokenUntil - 30000) throw new ZzError(0, 'upload_expired', '올리는 시간이 너무 길어 끊겼어요. 다시 올려 주세요.');
+          try { await f.S.uploadBytes(f.S.ref(f.st, permit.path + j.name), j.blob, { contentType: j.type }); return; }
+          catch (e) { if (a >= 2) throw new ZzError(0, 'upload_failed', `${j.label}을 올리지 못했어요. 다시 올려 주세요.`, { detail: String(e?.code || e), file: j.name }); }
+        }
+      };
+      let next = 0;
+      const worker = async () => { while (next < jobs.length) { const j = jobs[next++]; await put(j); done++; onProgress && onProgress({ phase: 'upload', done, total }); } };
+      await Promise.all([worker(), worker(), worker()]);
+      if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
+      onProgress && onProgress({ phase: 'commit', done: total, total });
+    } finally {
+      const pending = uploading && uploading.pending;
+      uploading = null;
+      // 보통 토큰으로 되돌린다: 업로드 중 갱신해 둔 것이 있으면 그것, 없으면 새로 받는다
+      if (permit.token && S && S.mid === mid) {
+        if (pending) await fbSignIn(pending).catch(e => console.warn('[zzoom] 로그인 되돌리기 실패', e));
+        else await refresh(mid).catch(e => console.warn('[zzoom] 토큰 다시 받기 실패', e));
+      }
     }
-  };
-  let next = 0;
-  const worker = async () => { while (next < jobs.length) { const j = jobs[next++]; await put(j); done++; onProgress && onProgress({ phase: 'upload', done, total }); } };
-  await Promise.all([worker(), worker(), worker()]);
-  if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했습니다.');
-  onProgress && onProgress({ phase: 'commit', done: total, total });
-  const sizes = pages.map(p => [Math.round(p.w), Math.round(p.h)]);
-  return commitUpload(mid, permit.uploadId, { title: title || file?.name || '안건', pages: pages.length, sizes, originalName: withOriginal ? file.name : undefined });
+    const sizes = pages.map(p => [Math.round(p.w), Math.round(p.h)]);
+    return await commitUpload(mid, permit.uploadId, { title: title || '안건', pages: pages.length, sizes, originalName: anonName(file) });
+  } catch (e) {
+    releasePermit(mid, permit.uploadId);
+    throw e;
+  }
 }
 
 // ================= 2-4. 실시간 구독 =================
@@ -400,7 +506,7 @@ function live(make, cb, label) {
       unsub = make(f, snap => cb(snap), err => {
         console.warn('[zzoom] 구독 오류', label, err?.code || err);
         spatch('conn', { firebase: 'off' });
-        if (err?.code === 'permission-denied') toast('실시간 자료를 읽을 권한이 없습니다. 다시 입장해 주세요.', 'warn');
+        if (err?.code === 'permission-denied') toast('실시간 자료를 읽을 권한이 없어요. 다시 입장해 주세요.', 'warn');
       });
     } catch (e) { console.warn('[zzoom] 구독 실패', label, e); }
   });
@@ -412,7 +518,7 @@ const docs = snap => snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
 export const subscribeMeeting = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(mref(f, mid), s => ok(s.exists() ? { ...s.data(), id: mid } : { gone: true, id: mid }), bad), cb, 'meeting');
 export const subscribeAgenda = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(cref(f, mid, 'agenda'), s => ok(docs(s).map(d => ({ aid: d.id, ...d }))), bad), cb, 'agenda');
-export const subscribeHands = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(cref(f, mid, 'hands'), s => ok(docs(s).map(d => ({ cid: d.id, name: d.name, at: d.at })).sort((a, b) => (a.at - b.at) || (a.cid < b.cid ? -1 : 1))), bad), cb, 'hands');
+export const subscribeHands = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(cref(f, mid, 'hands'), s => ok(docs(s).map(d => ({ cid: d.id, at: d.at })).sort((a, b) => (a.at - b.at) || (a.cid < b.cid ? -1 : 1))), bad), cb, 'hands');
 export const subscribeChat = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(f.F.query(cref(f, mid, 'chat'), f.F.orderBy('at', 'desc'), f.F.limit(200)), s => ok(docs(s).reverse()), bad), cb, 'chat');
 export const subscribePolls = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(cref(f, mid, 'polls'), s => ok(docs(s).map(d => ({ pid: d.id, ...d })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))), bad), cb, 'polls');
 export const subscribeTranscript = (mid, cb) => live((f, ok, bad) => f.F.onSnapshot(cref(f, mid, 'transcript'), s => ok(docs(s).sort((a, b) => a.n - b.n)), bad), cb, 'transcript');
@@ -422,21 +528,25 @@ export const subscribeStrokes = (mid, pageKey, cb) => live((f, ok, bad) => f.F.o
 export const subscribePageEpoch = (mid, pageKey, cb) => live((f, ok, bad) => f.F.onSnapshot(mref(f, mid, 'pages', pageKey), s => ok(s.exists() ? (s.data().epoch || 0) : 0), bad), cb, 'page');
 
 // ================= 2-5. 그림(Storage) =================
-const imgCache = new Map();   // path → Promise<objectURL>
+const imgCache = new Map();   // path → { p: Promise<objectURL>, url: 받은 뒤 URL }
 export function pageImageUrl(agenda, page, { thumb = false } = {}) {
   if (!agenda || agenda.kind === 'board' || !agenda.base) return Promise.resolve(null);
   const path = `${agenda.base}/${thumb ? 't' : 'p'}${String(page).padStart(3, '0')}.webp`;
   if (!imgCache.has(path)) {
-    const p = signedIn.promise.then(f => f.S.getBlob(f.S.ref(f.st, path))).then(b => URL.createObjectURL(b));
-    p.catch(() => imgCache.delete(path));
-    imgCache.set(path, p);
+    const ent = { p: null, url: null };
+    ent.p = signedIn.promise.then(f => f.S.getBlob(f.S.ref(f.st, path))).then(b => (ent.url = URL.createObjectURL(b)));
+    ent.p.catch(() => { if (imgCache.get(path) === ent) imgCache.delete(path); });
+    imgCache.set(path, ent);
   }
-  return imgCache.get(path);
+  return imgCache.get(path).p;
 }
+// keep = 남길 object URL 또는 Storage 경로. 아직 받는 중인 그림은 건드리지 않는다(곧 쓸 다음 쪽일 수 있어서, 감사 U08).
 export function releaseImages(keep = []) {
   const k = new Set(keep);
-  for (const [path, p] of imgCache) {
-    p.then(url => { if (!k.has(url)) { URL.revokeObjectURL(url); imgCache.delete(path); } }).catch(() => {});
+  for (const [path, ent] of imgCache) {
+    if (!ent.url || k.has(ent.url) || k.has(path)) continue;
+    URL.revokeObjectURL(ent.url);
+    imgCache.delete(path);
   }
 }
 export async function originalBlob(agenda) {
@@ -445,5 +555,99 @@ export async function originalBlob(agenda) {
   return f.S.getBlob(f.S.ref(f.st, agenda.original.path));
 }
 export function downloadOriginal(agenda) {
-  return originalBlob(agenda).then(b => { if (b) saveBlob(b, agenda.original.name || 'original'); return !!b; });
+  return originalBlob(agenda).then(b => { if (b) saveBlob(b, originalFileName(agenda)); return !!b; });
+}
+
+// ================= AGENDA_OPEN (2026-11-25): 누구나 안건 만들기·자료 붙이기·발표하기 =================
+// 위 줄은 그대로 두고 새 함수만 덧붙였다(뼈대 담당이 U02·U14 를 고치는 중). 익명: 이름은 보내지도 받지도 않는다.
+export const createAgenda = (mid, title) => mcall(mid, 'POST', '/agenda', { body: { title } });
+// 내가 올린 안건 aid 목록(다시 들어와 cid 가 바뀌어도 같은 사람이면 나온다)
+export const myAgenda = mid => mcall(mid, 'GET', '/agenda/mine').then(d => (Array.isArray(d?.aids) ? d.aids : []));
+// 발표하기: 진행자가 되고, aid 를 주면 그 안건 page(기본 1)로 모두를 끌어온다(서버가 forceSeq 를 올림)
+export async function present(mid, aid, page) {
+  const body = aid ? (page ? { aid, page } : { aid }) : {};
+  const d = await mcall(mid, 'POST', '/presenter', { body });
+  // 회의 문서 스냅숏이 오기 전에 쪽을 넘겨도 epoch 가 맞도록 store 를 먼저 맞춘다(스냅숏이 곧 같은 값으로 덮는다)
+  const m = store?.get('meeting');
+  if (m && !m.gone && d?.presenter) store.set('meeting', { ...m, presenter: d.presenter, ...(d.live ? { live: d.live } : {}) });
+  if (d?.live) acceptLive(d.live);
+  return d;
+}
+// 이미 있는 안건(제목만 만든 것, 또는 자료 바꾸기)에 파일을 붙인다. 모양은 uploadAgenda 와 같고 aid 만 더 받는다.
+export function attachAgendaFile(mid, aid, opts = {}) {
+  const run = uploadChain.then(() => uploadToAgenda(mid, aid, opts));
+  uploadChain = run.catch(() => {});
+  return run;
+}
+async function uploadToAgenda(mid, aid, { file, converted, onProgress, signal } = {}) {
+  const pages = converted?.pages || [], thumbs = converted?.thumbs || [];
+  if (!aid) throw new ZzError(0, 'bad_aid', '안건을 골라 주세요.');
+  if (!pages.length) throw new ZzError(0, 'empty', '올릴 쪽이 없어요.');
+  const notWebp = [...pages.map(p => p.type || p.blob?.type), ...thumbs.map(t => t.type)].some(t => t !== 'image/webp');
+  if (notWebp) throw new ZzError(0, 'webp_unsupported', '이 브라우저는 WebP 그림을 만들지 못해요. 엣지나 크롬에서 올려 주세요.');
+  const ext = String(file?.name || '').toLowerCase().split('.').pop();
+  if (!ORIGINAL_TYPE[ext]) throw new ZzError(0, 'bad_ext', '올릴 수 없는 파일 형식이에요.');
+  const kind = DOC_KINDS.includes(ext) ? ext : 'image';
+  const permit = await startUpload(mid, { kind, ext, pages: pages.length, bytes: file.size, aid });
+  // 허가를 받은 뒤 실패·취소·commit 실패로 끝나면 허가 자리를 바로 돌려준다(서버 감사 R4 P3, CONTRACTS 업로드 허가 취소)
+  try {
+    if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
+    const types = Array.isArray(permit.originalTypes) && permit.originalTypes.length ? permit.originalTypes : [ORIGINAL_TYPE[ext]];
+    const origType = types.includes(file.type) ? file.type : types[0];
+    const jobs = [];
+    pages.forEach((p, i) => jobs.push({ name: permit.files.pages[i], blob: p.blob, type: 'image/webp', label: `${i + 1}쪽 그림` }));
+    thumbs.forEach((t, i) => { if (permit.files.thumbs[i]) jobs.push({ name: permit.files.thumbs[i], blob: t, type: 'image/webp', label: `${i + 1}쪽 미리보기` }); });
+    jobs.push({ name: permit.files.original, blob: file, type: origType, label: '원본 파일' });
+    uploading = { pending: null };
+    try {
+      const f = permit.token ? await fbSignIn(permit.token) : await signedIn.promise;
+      const tokenUntil = permit.tokenUntil || Infinity;
+      let done = 0;
+      const total = jobs.length;
+      onProgress && onProgress({ phase: 'upload', done, total });
+      const put = async j => {
+        for (let a = 0; ; a++) {
+          if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
+          if (Date.now() > tokenUntil - 30000) throw new ZzError(0, 'upload_expired', '올리는 시간이 너무 길어 끊겼어요. 다시 올려 주세요.');
+          try { await f.S.uploadBytes(f.S.ref(f.st, permit.path + j.name), j.blob, { contentType: j.type }); return; }
+          catch (e) { if (a >= 2) throw new ZzError(0, 'upload_failed', '쪽 그림을 올리지 못했어요. 다시 올려 주세요.', { detail: String(e?.code || e) }); }
+        }
+      };
+      let next = 0;
+      const worker = async () => { while (next < jobs.length) { const j = jobs[next++]; await put(j); done++; onProgress && onProgress({ phase: 'upload', done, total }); } };
+      await Promise.all([worker(), worker(), worker()]);
+      if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
+      onProgress && onProgress({ phase: 'commit', done: total, total });
+    } finally {
+      const pending = uploading && uploading.pending;
+      uploading = null;
+      if (permit.token && S && S.mid === mid) {
+        if (pending) await fbSignIn(pending).catch(e => console.warn('[zzoom] 로그인 되돌리기 실패', e));
+        else await refresh(mid).catch(e => console.warn('[zzoom] 토큰 다시 받기 실패', e));
+      }
+    }
+    const sizes = pages.map(p => [Math.round(p.w), Math.round(p.h)]);
+    return await commitUpload(mid, permit.uploadId, { aid, pages: pages.length, sizes, originalName: anonName(file) });
+  } catch (e) {
+    releasePermit(mid, permit.uploadId);
+    throw e;
+  }
+}
+// ================= EASY_UX (2026-11-26): 발표 마치기 =================
+// 지금 발표자 본인이나 담당자만. 서버가 presenter.cid 를 비우고 live.aid 를 null 로 돌려 모두 「오늘의 안건」 대기 화면으로 간다.
+export async function presenterEnd(mid) {
+  const d = await mcall(mid, 'POST', '/presenter/end', { body: {} });
+  const m = store?.get('meeting');
+  if (m && !m.gone && d && 'presenter' in d) store.set('meeting', { ...m, presenter: d.presenter, ...(d.live ? { live: d.live } : {}) });
+  if (d?.live) acceptLive(d.live);
+  return d;
+}
+// ================= 서버 감사 R4 P3 (2026-11-26): 업로드 허가 취소 =================
+// 본인 허가만. 없거나 이미 확정된 허가(404 upload_unknown)는 조용히 넘긴다.
+export const cancelUpload = (mid, uploadId) => mcall(mid, 'DELETE', `/uploads/${enc(uploadId)}`);
+function releasePermit(mid, uploadId) {
+  if (!uploadId) return;
+  Promise.resolve().then(() => cancelUpload(mid, uploadId)).catch(e => {
+    if (e?.status !== 404) console.warn('[zzoom] 업로드 허가 돌려주기 실패', e?.code || e);
+  });
 }

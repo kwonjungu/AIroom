@@ -22,11 +22,11 @@ export function clockText(at) {
   return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
-/** 붙인 쪽의 말: 「안건 2의 5쪽」 */
+/** 붙인 쪽의 말: 「2번 안건 5쪽」 */
 export function refLabel(agenda, ref) {
   const i = (agenda || []).findIndex(a => a.aid === ref.aid);
-  const name = i >= 0 ? `안건 ${i + 1}` : '안건';
-  return `${name}의 ${ref.page}쪽`;
+  const name = i >= 0 ? `${i + 1}번 안건` : '안건';
+  return `${name} ${ref.page}쪽`;
 }
 
 /** 서버가 준 글과 아직 안 돌아온 내 글을 합친다. 같은 글이 돌아왔으면 내 임시 글은 숨긴다. */
@@ -40,7 +40,7 @@ export function mergeMessages(list, pending) {
       const hit = list.find(m => !claimed.has(m.id) && m.cid === p.cid && m.text === p.text && (toMs(m.at) ?? Infinity) >= p.at - 10000);
       if (hit) { claimed.add(hit.id); byText = true; }
     }
-    if (!byId && !byText) out.push({ id: p.tmp, cid: p.cid, name: p.name, text: p.text, ref: p.ref, at: p.at, _p: p });
+    if (!byId && !byText) out.push({ id: p.tmp, cid: p.cid, text: p.text, ref: p.ref, at: p.at, _p: p });
   }
   return out;
 }
@@ -75,13 +75,16 @@ export function mount(ctx) {
 
   const list = h('div', { class: 'zs-chat-list', role: 'log', 'aria-live': 'polite', 'aria-label': t('채팅 글') });
   const fresh = h('button', { type: 'button', class: 'zz-btn zs-newbtn', hidden: true, onclick: () => { scrollEnd(); } }, t('새 글 보기'));
-  const attachBtn = h('button', { type: 'button', class: 'zs-chip zs-attach', 'aria-pressed': 'false', onclick: toggleAttach });
+  // 쉬운 화면(B10): 「보고 있는 쪽도 함께 보내기」는 입력 칸 아래 작은 확인 칸
+  const attachBtn = h('input', { type: 'checkbox', class: 'zs-attach', id: 'zs-attach', onchange: toggleAttach });
+  const attachText = h('span', { class: 'zs-attach-text' });
+  const attachRow = h('label', { class: 'zs-check zs-attach-row', for: 'zs-attach' }, attachBtn, attachText);
   const ta = h('textarea', { class: 'zs-input', rows: '2', maxlength: String(MAX), placeholder: t('글을 입력해 주세요'), 'aria-label': t('채팅 입력') });
   const count = h('span', { class: 'zs-count zz-num' }, `0/${MAX}`);
   const hint = h('span', { class: 'zs-hint', role: 'status' });
   const sendBtn = h('button', { type: 'submit', class: 'zz-btn primary zs-send' }, t('보내기'));
   const form = h('form', { class: 'zs-composer', onsubmit: e => { e.preventDefault(); send(); } },
-    attachBtn, ta, h('div', { class: 'zs-foot' }, hint, count, sendBtn));
+    ta, attachRow, h('div', { class: 'zs-foot' }, hint, count, sendBtn));
   root.replaceChildren(h('div', { class: 'zs-chat' }, list, fresh, form));
 
   ta.addEventListener('input', () => { count.textContent = `${ta.value.length}/${MAX}`; hint.textContent = ''; });
@@ -104,8 +107,7 @@ export function mount(ctx) {
   function sideOnChat() { const s = store.get('side'); return !!(s && s.open && s.tab === 'chat'); }
 
   function toggleAttach() {
-    if (!curRef()) return;
-    attach = !attach;
+    attach = !!curRef() && attachBtn.checked;
     paintComposer();
   }
 
@@ -113,9 +115,10 @@ export function mount(ctx) {
     const ref = curRef();
     if (!ref) attach = false;
     attachBtn.disabled = !ref || locked();
-    attachBtn.setAttribute('aria-pressed', String(attach));
-    attachBtn.classList.toggle('on', attach);
-    attachBtn.textContent = ref ? `${t('지금 쪽 붙이기')} (${refLabel(store.get('agenda'), ref)})` : t('지금 쪽 붙이기');
+    attachBtn.checked = attach;
+    attachRow.classList.toggle('on', attach);
+    attachRow.hidden = !ref || locked();
+    attachText.textContent = ref ? `${t('보고 있는 쪽도 함께 보내기')} (${refLabel(store.get('agenda'), ref)})` : t('보고 있는 쪽도 함께 보내기');
     const lk = locked();
     ta.disabled = lk; sendBtn.disabled = lk;
     ta.placeholder = lk ? t('회의가 끝나서 글을 쓸 수 없어요') : t('글을 입력해 주세요');
@@ -134,7 +137,7 @@ export function mount(ctx) {
     if (Date.now() - lastSendAt < GAP_MS) { hint.textContent = t('잠시 뒤에 다시 보내 주세요'); return; }
     const ref = attach ? curRef() : null;
     const role = store.get('role') || {};
-    const p = { tmp: 'tmp' + (++seq), text, ref, at: Date.now(), cid: role.cid, name: role.name, state: 'sending', id: null };
+    const p = { tmp: 'tmp' + (++seq), text, ref, at: Date.now(), cid: role.cid, state: 'sending', id: null };
     pending.push(p);
     ta.value = ''; count.textContent = `0/${MAX}`; hint.textContent = '';
     attach = false; paintComposer();
@@ -174,12 +177,12 @@ export function mount(ctx) {
       const p = m._p;
       const row = h('div', { class: 'zs-msg' + (mine ? ' mine' : '') + (p ? ' pending' : '') + (p && p.state === 'failed' ? ' failed' : ''), 'data-id': m.id },
         h('div', { class: 'zs-msg-head' },
-          h('span', { class: 'zs-name' }, m.name || t('이름 없음')),
+          mine ? h('span', { class: 'zs-name' }, t('나')) : null,   // 익명(ANON): 내 글만 「나」, 남의 글은 표시 없음
           h('span', { class: 'zs-time zz-num' }, p ? (p.state === 'sending' ? t('보내는 중') : '') : clockText(m.at))),
         h('div', { class: 'zs-text' }, m.text));
       if (m.ref && m.ref.aid) {
         row.append(h('button', { type: 'button', class: 'zs-ref', onclick: () => store.emit('cmd:nav', { aid: m.ref.aid, page: m.ref.page }) },
-          h('img', { class: 'zz-icon zs-ref-ic', src: ctx.assets('icon-follow'), alt: '' }), refLabel(agenda, m.ref) + t(' 보러 가기')));
+          h('img', { class: 'zz-icon zs-ref-ic', src: ctx.assets('icon-follow'), alt: '' }), refLabel(agenda, m.ref) + t(' 보기')));
       }
       if (p && p.state === 'failed') {
         row.append(h('div', { class: 'zs-fail' },
@@ -187,7 +190,7 @@ export function mount(ctx) {
           h('button', { type: 'button', class: 'zz-btn zs-mini', onclick: () => retry(p) }, t('다시 보내기')),
           h('button', { type: 'button', class: 'zz-btn ghost zs-mini', onclick: () => discard(p) }, t('버리기'))));
       } else if (!p && (mine || host)) {
-        row.append(h('button', { type: 'button', class: 'zz-btn ghost zs-mini zs-del', 'aria-label': `${m.name || ''} ${t('글 지우기')}`, onclick: () => removeMsg(m) }, t('지우기')));
+        row.append(h('button', { type: 'button', class: 'zz-btn ghost zs-mini zs-del', 'aria-label': mine ? t('내 글 지우기') : t('글 지우기'), onclick: () => removeMsg(m) }, t('지우기')));
       }
       return row;
     });

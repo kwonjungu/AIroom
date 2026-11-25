@@ -1,0 +1,12 @@
+import { i as e } from "./slide-pull-client-D2ZoyzhO.js";
+import { t } from "./substitutions-_KDT_mVq.js";
+import { n, t as r } from "./ooxml-error-DbICW35n.js";
+import { f as i, u as a } from "./pixel-budget-DI82Hn3R.js";
+import { i as o, t as s } from "./tiff-contract-DEd8CGuz.js";
+import { x as c } from "./canvas-viewer-mechanics-DrH37lzF.js";
+import { a as l, o as u } from "./chart-context-DqNY4BWJ.js";
+import { t as d } from "./presentation-Cti32_db.js";
+import { r as f } from "./hyperlink-BOJHX05H.js";
+import { i as p, o as m, r as h, s as g } from "./source-GXgH3t1X.js";
+import { a as _, i as v, n as y, o as b, r as x } from "./pptx-D9TE6fK3.js";
+export { a as OoxmlDecodedImageLimitError, r as OoxmlError, n as OoxmlResourceLimitError, d as PptxPresentation, y as PptxScrollViewer, x as PptxViewer, s as TiffDecodeError, c as autoResize, _ as buildPptxHighlightLayer, b as buildPptxTextLayer, h as fontCss, p as fontCssApi, m as fontFiles, g as fontResolver, u as googleFonts, l as googleFontsSubstitutions, i as isOoxmlDecodedImageLimitError, o as isTiffDecodeError, t as officeFontSubstitutions, f as openExternalHyperlink, v as readPptxTextSelectionContext, e as renderSlide };

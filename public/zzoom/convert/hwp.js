@@ -1,14 +1,13 @@
 // HWP·HWPX → 쪽 그림. @rhwp/core 의 renderPageToCanvas 를 메인 스레드에서 한 쪽씩 쓴다(0단계 실험 경로 2).
 // Worker 에서는 rhwp 가 HTMLCanvasElement 만 받아 쓸 수 없고, SVG 경로는 그림 안에서 웹폰트를 못 써서 택하지 않았다.
 import { getVendor } from './vendor.js';
-import { ConvertError, fetchVerified, blobModuleUrl, makeCanvas, emitPage, checkPageCount, fitScale, yieldToUi } from './core.js';
+import { ConvertError, fetchVerified, blobModuleUrl, makeCanvas, freeCanvas, emitPage, checkPageCount, fitScale, yieldToUi, sharedLoader, fitCanvas } from './core.js';
 import { loadFonts } from './fonts.js';
 
-let rhwpP = null;
 
-function loadRhwp(ctx) {
-  if (!rhwpP) {
-    rhwpP = (async () => {
+// 적재는 여러 변환이 나눠 쓰고, 한 변환의 취소에 묶이지 않는다(R1-N11)
+const loadRhwp = sharedLoader(async (ctx) => {
+    {
       const v = getVendor().rhwp;
       ctx.progress('load', 0, 1, '한/글 변환기를 받는 중');
       const [js, wasm] = await Promise.all([
@@ -24,15 +23,12 @@ function loadRhwp(ctx) {
       };
       const url = blobModuleUrl(js);
       try {
-        const mod = await import(/* @vite-ignore */ url);
-        await mod.default({ module_or_path: wasm });
+        const mod = await ctx.race(import(/* @vite-ignore */ url));
+        await ctx.race(mod.default({ module_or_path: wasm }));
         return mod;
       } finally { URL.revokeObjectURL(url); }
-    })();
-    rhwpP.catch(() => { rhwpP = null; });
-  }
-  return rhwpP;
-}
+    }
+});
 
 function openError(e) {
   const msg = String((e && (e.message || e)) || '');
@@ -49,7 +45,7 @@ export async function convertHwp(file, ctx, out) {
   try { doc = new rhwp.HwpDocument(bytes); } catch (e) { throw openError(e); }
   try {
     const n = doc.pageCount();
-    checkPageCount(n);
+    checkPageCount(n, ctx);
     for (let i = 0; i < n; i++) {
       ctx.check();
       ctx.progress('render', i, n, `${i + 1}/${n}쪽`);
@@ -64,7 +60,11 @@ export async function convertHwp(file, ctx, out) {
         g.fillStyle = '#fff';
         g.fillRect(0, 0, canvas.width, canvas.height);
         g.globalCompositeOperation = 'source-over';
+        // rhwp 가 크기를 정하므로 올림으로 2001px 이 나올 수 있다 — PDF 처럼 긴 변 2000px 안으로 줄인다(R1-N6)
+        canvas = fitCanvas(canvas);
       } catch (e) {
+        if (canvas) freeCanvas(canvas);   // 실패한 쪽 캔버스도 비운다(지적10)
+        // rhwp 의 쪽 그리기는 동기 WASM 호출이라 도중에 끊을 수 없다 — 쪽 사이에서만 시한·취소를 본다.
         throw new ConvertError('HWP_RENDER', `${i + 1}쪽: ${e && (e.message || e)}`, e);
       }
       await emitPage(canvas, out, ctx);

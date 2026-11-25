@@ -231,6 +231,8 @@ export function mount(ctx) {
   // 쪽별 구독 묶음. 최근 본 PAGE_LRU 쪽은 끊지 않고 둔다(다시 와도 선 2,000개를 새로 읽지 않게).
   // {key, strokes(구독 그대로, seq 순), epoch, epochKnown, hidden(지우는 중 숨긴 id), unsubS, unsubE}
   const pages = new Map();
+  const lingering = new Map();          // 떠났지만 epoch 를 기다리는 내 선이 있어 아직 듣는 쪽
+  const unresolved = key => pending.some(p => p.pageKey === key && p.epoch === null);
   const subscribePageStrokes = pageStrokesSource(api, mid);
   const blank = key => ({ key, strokes: [], epoch: 0, epochKnown: false, hidden: new Set(), unsubS: null, unsubE: null });
   let cur = blank(null);
@@ -240,7 +242,8 @@ export function mount(ctx) {
   let penSeen = false;                  // 펜을 한 번이라도 쓰면 손바닥(터치)은 그리지 않음
   let raf = 0, inkDirty = false, tempDirty = false;
   let sendTimer = 0, lastSend = 0, sending = false;
-  let streak = 0, holdUntil = 0;        // 연속 실패 수, 다음 보내기 가능 시각(백오프)
+  let streak = 0, holdUntil = 0;
+  let dead = false;                     // unmount 뒤에는 늦게 끝난 요청이 타이머를 다시 잡지 않게        // 연속 실패 수, 다음 보내기 가능 시각(백오프)
   const delQueue = []; let delTimer = 0, lastDel = 0;
   let eraserAt = null;                  // 지우개 동그라미 위치
 
@@ -280,7 +283,7 @@ export function mount(ctx) {
     }
     // 내 선(아직 구독에 안 온 것)은 위에. 실패한 선은 흐리게.
     for (const p of pending) {
-      if (p.pageKey !== pageKey || p.epoch !== cur.epoch || p.erased) continue;
+      if (p.pageKey !== pageKey || (p.epoch !== null && p.epoch !== cur.epoch) || p.erased) continue;
       if (p.parts.length && p.parts.every(x => x.id && shownByServer.has(x.id))) continue;
       renderStroke(ictx, p.stroke, vp.pageW, vp.pageH, { cacheKey: 'l' + p.lid, alpha: p.status === 'failed' ? FAIL_ALPHA : 1 });
     }
@@ -311,6 +314,8 @@ export function mount(ctx) {
     en.unsubE = api.subscribePageEpoch(mid, key, e => {
       en.epoch = Number(e) || 0; en.epochKnown = true;
       dropStale(en);
+      resolveEpoch(en);
+      if (lingering.get(key) === en && !unresolved(key)) { lingering.delete(key); closePage(en); }
       if (en === cur) schedule();
     });
     en.unsubS = subscribePageStrokes(key, list => {
@@ -333,12 +338,15 @@ export function mount(ctx) {
     pageKey = key || null;
     if (!pageKey) { cur = blank(null); schedule(); return; }
     let en = pages.get(pageKey);
+    if (!en && lingering.has(pageKey)) { en = lingering.get(pageKey); lingering.delete(pageKey); pages.set(pageKey, en); }
     if (en) pages.delete(pageKey); else en = subscribePage(pageKey);
     pages.set(pageKey, en);                        // Map 끝 = 가장 최근
     cur = en;
     while (pages.size > PAGE_LRU) {                // 가장 오래 안 본 쪽부터 끊음
       const [k, old] = pages.entries().next().value;
-      pages.delete(k); closePage(old);
+      pages.delete(k);
+      if (unresolved(k)) lingering.set(k, old);     // epoch 를 기다리는 내 선이 있으면 그때까지 듣는다
+      else closePage(old);
     }
     schedule();
   }
@@ -347,7 +355,7 @@ export function mount(ctx) {
     if (!en.epochKnown) return;
     for (let i = pending.length - 1; i >= 0; i--) {
       const p = pending[i];
-      if (p.pageKey === en.key && p.epoch < en.epoch && p.status !== 'sending') pending.splice(i, 1);
+      if (p.pageKey === en.key && p.epoch !== null && p.epoch < en.epoch && p.status !== 'sending') pending.splice(i, 1);
     }
     renderBar();
   }
@@ -367,17 +375,26 @@ export function mount(ctx) {
     schedule();
     flushSoon();
   }
+  // epoch 를 모를 때 그린 선(epoch null)에 그 쪽 epoch 를 정한다(그 epoch 가 지금 값이므로 버리지 않는다)
+  function resolveEpoch(en) {
+    let n = 0;
+    for (const p of pending) {
+      if (p.pageKey !== en.key || p.epoch !== null) continue;
+      p.epoch = en.epoch; for (const x of p.parts) x.body.epoch = en.epoch; n++;
+    }
+    if (n) flushSoon();
+  }
   function flushSoon() {
-    if (sendTimer || sending) return;
+    if (dead || sendTimer || sending) return;
     // 1초 1회(서버 한도). 대기열은 그동안 모여 다음 묶음(최대 20개)으로 간다.
     const wait = Math.max(0, lastSend + SEND_GAP - Date.now(), holdUntil - Date.now());
     sendTimer = setTimeout(() => { sendTimer = 0; flush(); }, wait);
   }
   async function flush() {
-    if (sending) return;
+    if (dead || sending) return;
     const batch = [];
     for (const p of pending) {
-      if (p.status !== 'queued') continue;
+      if (p.status !== 'queued' || p.epoch === null) continue;   // epoch 를 모르면 기다림
       const need = p.parts.filter(x => !x.id);
       if (batch.length + need.length > 20 && batch.length) break;
       for (const part of need) batch.push({ p, part });
@@ -409,7 +426,7 @@ export function mount(ctx) {
         ctx.toast(t('쪽이 지워져서 그 선은 저장하지 않았어요'), 'warn');
       } else if (code === 'pen_locked') {
         ps.forEach(remove);
-        ctx.toast(t('주관자가 판서를 잠갔어요'), 'warn');
+        ctx.toast(t('지금은 회의 담당자만 쓸 수 있어요'), 'warn');
       } else if (status === 429 || status === 0 || status >= 500 || !status) {
         // 한도·연결 끊김·서버 오류: 화면에는 그대로 두고 백오프 뒤 다시. 여러 번 실패한 것만 흐리게.
         streak++; holdUntil = Date.now() + backoff(streak);
@@ -424,6 +441,7 @@ export function mount(ctx) {
       }
     } finally {
       sending = false;
+      if (dead) return;
       renderBar(); schedule();
       if (pending.some(p => p.status === 'queued')) flushSoon();
     }
@@ -442,7 +460,7 @@ export function mount(ctx) {
     pumpDelete();
   }
   function pumpDelete() {
-    if (delTimer || !delQueue.length) return;
+    if (dead || delTimer || !delQueue.length) return;
     const wait = Math.max(0, lastDel + DEL_GAP - Date.now());
     delTimer = setTimeout(async () => {
       delTimer = 0;
@@ -502,7 +520,7 @@ export function mount(ctx) {
     if (e.button > 0 && e.pointerType === 'mouse') return;
     if (drawing || erasing) { cancelDrawing(); return; } // 두 번째 손가락 = 2팀 손짓
     if (!e.isPrimary) return;
-    if (!canDraw()) { if (locked()) ctx.toast(t('주관자가 판서를 잠갔어요'), 'warn'); return; }
+    if (!canDraw()) { if (locked()) ctx.toast(t('지금은 회의 담당자만 쓸 수 있어요'), 'warn'); return; }
     if (!vp || !pageKey || vp.pageKey !== pageKey) return;
     try { temp.setPointerCapture(e.pointerId); } catch { /* 없어도 됨 */ }
     if (tool.tool === 'eraser') {
@@ -512,7 +530,7 @@ export function mount(ctx) {
       return;
     }
     // 획을 시작할 때 쪽·epoch·화면 배율을 고정(획 중 쪽이 바뀌어도 원래 쪽에 저장)
-    drawing = { pointerId: e.pointerId, vp: { ...vp }, pageKey, epoch: cur.epoch, tool: tool.tool, color: tool.color, w: tool.w, pts: [], lastSx: 0, lastSy: 0 };
+    drawing = { pointerId: e.pointerId, vp: { ...vp }, pageKey, epoch: cur.epochKnown ? cur.epoch : null, tool: tool.tool, color: tool.color, w: tool.w, pts: [], lastSx: 0, lastSy: 0 };
     addPoint(e);
     schedule(false);
   }
@@ -565,12 +583,11 @@ export function mount(ctx) {
   wrap.setAttribute('role', 'toolbar');
   wrap.setAttribute('aria-label', t('판서 도구'));
 
-  const modeSeg = el('div', 'zd-seg');
-  const btnView = el('button', 'zd-seg-btn', t('보기'));
-  const btnPen = el('button', 'zd-seg-btn');
-  btnView.type = btnPen.type = 'button';
-  btnPen.append(icon('icon-pen'), el('span', null, t('펜 모드')));
-  modeSeg.append(btnView, btnPen);
+  // EASY_UX B5: 「보기 / 펜 모드」 둘 대신 단추 하나. 누르면 펜 도구가 펼쳐지고 글자가 「펜 끄기」로 바뀐다.
+  const btnPen = el('button', 'zd-pen-toggle');
+  btnPen.type = 'button';
+  const penLabel = el('span', 'zd-pen-label', t('펜으로 쓰기'));
+  btnPen.append(icon('icon-pen'), penLabel);
 
   const tools = el('div', 'zd-tools');
   const toolBtns = {};
@@ -582,13 +599,13 @@ export function mount(ctx) {
   }
   const colors = el('div', 'zd-colors');
   const clearBtn = el('button', 'zd-clear', null); clearBtn.type = 'button';
-  clearBtn.append(el('span', 'zd-clear-mark'), el('span', 'zd-tool-label', t('쪽 지우기')));
+  clearBtn.append(el('span', 'zd-clear-mark'), el('span', 'zd-tool-label', t('이 쪽 글씨 모두 지우기')));
   const retry = el('div', 'zd-retry'); retry.setAttribute('role', 'status');
   const retryText = el('span', 'zd-retry-text');
   const retryBtn = el('button', 'zd-retry-btn', t('다시 보내기')); retryBtn.type = 'button';
   retry.append(retryText, retryBtn);
   const note = el('span', 'zd-note'); note.setAttribute('role', 'status');
-  wrap.append(modeSeg, tools, colors, clearBtn, retry, note);
+  wrap.append(btnPen, tools, colors, clearBtn, retry, note);
   bar.replaceChildren(wrap);
   // 막대가 무대(#zz-center) 너비를 넘지 않게: 좁으면 줄바꿈 대신 가로로 밀어 봄. 다른 자리는 크기만 읽는다.
   const center = bar.offsetParent || bar.parentElement;
@@ -597,14 +614,20 @@ export function mount(ctx) {
   if (ro && center) { ro.observe(center); offs.push(() => ro.disconnect()); }
   fit();
 
-  btnView.addEventListener('click', () => setMode('view'));
-  btnPen.addEventListener('click', () => setMode('pen'));
+  btnPen.addEventListener('click', () => setMode(tool.mode === 'pen' ? 'view' : 'pen'));
+  // 무대 오른쪽 아래, 쪽 막대 바로 위에 둔다(위쪽 「지금 상태」 띠와 왼쪽 위 「오늘의 안건 펼치기」를 가리지 않게).
+  // 자리 #zz-toolbar 의 아래 여백만 쪽 막대 높이로 맞춘다(쪽 막대 크기는 읽기만).
+  const pagebar = document.getElementById('zz-pagebar');
+  const below = () => { bar.style.setProperty('--zd-below', ((pagebar && pagebar.offsetHeight) || 0) + 'px'); };
+  const ro2 = typeof ResizeObserver === 'function' && pagebar ? new ResizeObserver(below) : null;
+  if (ro2) { ro2.observe(pagebar); offs.push(() => ro2.disconnect()); }
+  below();
   retryBtn.addEventListener('click', retryFailed);
   clearBtn.addEventListener('click', confirmClear);
 
   function setMode(m) {
     if (m === 'pen' && !canDraw()) {
-      ctx.toast(locked() ? t('주관자가 판서를 잠갔어요') : t('지금은 판서할 수 없어요'), 'warn');
+      ctx.toast(locked() ? t('지금은 회의 담당자만 쓸 수 있어요') : t('지금은 판서할 수 없어요'), 'warn');
       return;
     }
     tool.mode = m;
@@ -614,9 +637,11 @@ export function mount(ctx) {
   }
   function renderBar() {
     const pen = tool.mode === 'pen';
-    btnView.setAttribute('aria-pressed', String(!pen));
     btnPen.setAttribute('aria-pressed', String(pen));
-    btnPen.disabled = !canDraw();
+    penLabel.textContent = pen ? t('펜 끄기') : t('펜으로 쓰기');
+    // 회의 시작 전(담당자는 미리 쓸 수 있음)과 판서 잠금, 끝난 회의에는 단추를 숨긴다
+    const st = meeting().status;
+    btnPen.hidden = !canDraw() || (st === 'ready' && !isHost());
     tools.hidden = !pen;
     for (const [k, b] of Object.entries(toolBtns)) b.setAttribute('aria-pressed', String(tool.tool === k));
     // 색
@@ -638,7 +663,8 @@ export function mount(ctx) {
     retryText.textContent = t('선 {n}개를 보내지 못했어요', { n: failed });
     const s = meeting().status;
     note.hidden = !(locked() || s === 'ended');
-    note.textContent = s === 'ended' ? t('끝난 회의라 판서할 수 없어요') : t('주관자가 판서를 잠갔어요');
+    note.textContent = s === 'ended' ? t('끝난 회의라 판서할 수 없어요') : t('지금은 회의 담당자만 쓸 수 있어요');
+    wrap.hidden = btnPen.hidden && note.hidden && retry.hidden;
     wrap.classList.toggle('is-pen', pen);
   }
   function confirmClear() {
@@ -646,7 +672,7 @@ export function mount(ctx) {
     const key = pageKey;
     const body = el('p', 'zd-modal-text', t('이 쪽에 그린 선을 모두 지울까요? 모든 사람 화면에서 지워져요.'));
     const m = ctx.modal({
-      title: t('쪽 지우기'), body,
+      title: t('이 쪽 글씨 모두 지우기'), body,
       actions: [
         { label: t('취소'), onClick: () => m.close() },
         { label: t('모두 지우기'), primary: true, onClick: async () => {
@@ -673,14 +699,16 @@ export function mount(ctx) {
   const onRule = () => {
     if (tool.mode === 'pen' && !canDraw()) {
       tool.mode = 'view'; cancelDrawing(); publishTool();
-      if (locked()) ctx.toast(t('주관자가 판서를 잠갔어요'), 'warn');
+      if (locked()) ctx.toast(t('지금은 회의 담당자만 쓸 수 있어요'), 'warn');
     }
     renderBar();
   };
   offs.push(store.on('meeting', onRule));
   offs.push(store.on('role', onRule));
   // 연결이 돌아오면 실패한 선을 한 번 다시 보냄
-  offs.push(store.on('conn', c => { if (c?.server === 'ok' && pending.some(p => p.status === 'failed')) retryFailed(); }));
+  offs.push(store.on('conn', (c, prev) => {
+    if (c?.server === 'ok' && prev?.server && prev.server !== 'ok' && pending.some(p => p.status === 'failed')) retryFailed();
+  }));
 
   publishTool();
   if (pageKey) setPage(pageKey); else schedule();
@@ -689,7 +717,10 @@ export function mount(ctx) {
   return {
     unmount() {
       offs.splice(0).forEach(f => { try { f(); } catch { /* 무시 */ } });
+      dead = true;
       for (const en of pages.values()) closePage(en);
+      for (const en of lingering.values()) closePage(en);
+      lingering.clear();
       pages.clear();
       clearTimeout(sendTimer); clearTimeout(delTimer);
       if (raf) cancelAnimationFrame(raf);

@@ -1,0 +1,91 @@
+// 백암이 Storage 규칙 전체본 (2026-11-25: 기존 공개 규칙 잠금 + 쭘).
+// 운영 원본 백업: docs/meeting-2026-11-25/rules-backup/2026-11-25_storage_live.rules
+// 규칙은 OR 라서 기존 앱 블록에서 zzoom/·zzoom-vendor/ 를 빼야 쭘 파일이 열리지 않는다.
+// Storage 규칙은 Firestore 를 읽을 수 없어 맞춤 토큰 claim 만 본다.
+// 쭘 claim: zz==1, mid, role, until(ms, 발급 뒤 1시간 이하). 업로드 출입증은 여기에 up(uploadId)·upPages·upExt·upBytes.
+// 기존 앱 claim: ba==1 또는 cp==1, 그리고 until(ms, 세션 만료와 1시간 중 이른 것)(lib/storage-token.js, 지적12).
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── 기존 앱(2026-11-25 잠금): 백암이 로그인 출입증(ba)만. 카피본 출입증(cp)은 copy/ 아래만 ───
+    // 이미 화면에 박힌 다운로드 주소(?token=)는 규칙을 거치지 않아 그대로 열린다.
+    // allPaths 는 문자열이 아니라 경로라서 matches 를 못 쓴다 → 첫 폴더 이름으로 가른다.
+    // until(ms) 이 지난 출입증은 거절 — 로그아웃·세션 만료 뒤 브라우저에 남은 Firebase 로그인을 막는다(지적12)
+    function baekam() {
+      return request.auth != null && request.auth.token.get('ba', 0) == 1
+        && request.auth.token.get('until', 0) is number && request.time.toMillis() < request.auth.token.get('until', 0);
+    }
+    function demo(top) {
+      return top == 'copy' && request.auth != null && request.auth.token.get('cp', 0) == 1
+        && request.auth.token.get('until', 0) is number && request.time.toMillis() < request.auth.token.get('until', 0);
+    }
+    function notZz(top) {
+      return top != 'zzoom' && top != 'zzoom-vendor';
+    }
+    match /{file} {
+      allow read, delete: if baekam();
+      allow create, update: if baekam() && request.resource.size < 10 * 1024 * 1024;
+    }
+    match /{top}/{rest=**} {
+      allow read, delete: if notZz(top) && (baekam() || demo(top));
+      allow create, update: if notZz(top) && (baekam() || demo(top))
+        && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function zzOk(mid) {
+      return request.auth != null
+        && request.auth.token.get('zz', 0) == 1
+        && request.auth.token.get('mid', '') == mid
+        && request.auth.token.get('until', 0) is number
+        && request.time.toMillis() < request.auth.token.get('until', 0);
+    }
+    function zzHost(mid) {
+      return zzOk(mid) && request.auth.token.get('role', '') == 'host';
+    }
+
+    // 회의 파일: 같은 회의 claim 이면 파일 하나 읽기(get)만. 목록(list)은 막는다 — uploadId 는 추측할 수 없으므로
+    // 안건으로 확정되기 전 업로드 폴더는 그 id 를 아는 사람(허가를 받은 주관자나 참석자, AGENDA_OPEN)만 닿는다(지적02, 감사 R3 P6). 화면은 getBlob() 만 쓴다(getDownloadURL 금지).
+    match /zzoom/{mid}/{rest=**} {
+      allow get: if zzOk(mid);
+      allow list: if false;
+      allow write: if false;
+    }
+
+    // 업로드: 그 허가(uploadId)에서 받은 업로드 전용 출입증으로만 새 파일 create. 덮어쓰기·삭제 불가(지적01·02).
+    // 2026-11-25 AGENDA_OPEN: 참석자(role viewer)도 안건 자료를 올린다. up claim 은 서버가 허가마다 하나만 주므로
+    // role 은 보지 않고 「같은 회의 + 이 uploadId 의 up claim」만 본다. 보통 출입증(up 없음)으로는 어디에도 못 쓴다.
+    // 쪽 그림 p001~pNNN.webp(4MiB 이하)·작은 그림 t001~tNNN.webp(512KiB 이하), NNN ≤ 허가 쪽 수.
+    // 원본은 original.<허가 확장자> 하나, 크기는 허가 바이트와 같고 형식은 아래 목록(lib/zzoom/contract.js 와 같음).
+    function upToken(mid, uploadId) {
+      return zzOk(mid) && request.auth.token.get('up', '') is string
+        && request.auth.token.get('up', '') != '' && request.auth.token.get('up', '') == uploadId;
+    }
+    function upPage(file) {
+      return file.matches('[pt][0-9]{3}[.]webp')
+        && int(file.replace('^[pt]', '').replace('[.]webp$', '')) >= 1
+        && int(file.replace('^[pt]', '').replace('[.]webp$', '')) <= request.auth.token.get('upPages', 0)
+        && request.resource.contentType == 'image/webp'
+        && request.resource.size <= (file.matches('p.*') ? 4 * 1024 * 1024 : 512 * 1024)
+        // 허가 하나의 합계 상한(감사 R2 M2): 서버가 쪽 수로 나눈 파일당 상한 claim(lib/zzoom/contract.js pageCaps). 옛 출입증은 claim 이 없어 위 상한만.
+        && request.resource.size <= (file.matches('p.*') ? request.auth.token.get('upPageMax', 4 * 1024 * 1024) : request.auth.token.get('upThumbMax', 512 * 1024));
+    }
+    function upOriginal(file) {
+      return file == 'original.' + request.auth.token.get('upExt', '')
+        && request.resource.size == request.auth.token.get('upBytes', -1)
+        && request.resource.size < 52428800
+        // ORIGINAL_TYPES (lib/zzoom/contract.js SOURCES + application/octet-stream)
+        && request.resource.contentType.matches('application/pdf|application/x-hwp|application/haansofthwpx?|application/vnd[.]hancom[.]hwpx?|application/hwp[+]zip|application/vnd[.]openxmlformats-officedocument[.]presentationml[.]presentation|image/(png|jpeg|webp|gif|bmp|avif|heic|heif)|application/octet-stream');
+    }
+    match /zzoom/{mid}/up/{uploadId}/{file} {
+      // resource == null: 같은 경로 덮어쓰기는 에뮬레이터에서도 거절(실엔진은 update 로 이미 거절)
+      allow create: if resource == null && upToken(mid, uploadId) && (upPage(file) || upOriginal(file));
+    }
+
+    // 변환 엔진 도구 모음(공개 읽기·쓰기 모두 금지). 서버(Admin SDK)만 접근.
+    match /zzoom-vendor/{rest=**} {
+      allow read, write: if false;
+    }
+  }
+}

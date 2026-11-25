@@ -67,6 +67,8 @@ export const AGENDA = [
 
 let handle = null;
 async function mount(opts = {}) {
+  // 진짜 app.js 처럼 1024 미만에서는 옆칸 서랍을 닫은 채 시작한다
+  if (window.matchMedia('(max-width: 1023.98px)').matches) document.body.classList.add('side-closed');
   if (opts.delays) Object.assign(delays, opts.delays);
   store = createStore({
     meeting: opts.meeting || { id: 'm1', status: 'live', presenter: { cid: 'h1', name: '주관', epoch: 1 } },
@@ -112,4 +114,7 @@ window.__d2 = {
   },
   hex(hx) { return [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16)); },
 };
+// app.js 의 「안건 목록」 단추(768~1023px) 배선을 그대로 흉내 낸다
+{ const ag = document.getElementById('zz-agenda'), btn = document.getElementById('zz-agenda-toggle');
+  btn?.addEventListener('click', () => { if (ag.hasAttribute('data-open')) ag.removeAttribute('data-open'); else ag.setAttribute('data-open', ''); }); }
 window.__d2ready = true;

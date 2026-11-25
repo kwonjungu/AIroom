@@ -39,7 +39,8 @@ async function setup(opts = {}) {
     const redis = createFakeRedis({ now });
     const fb = createFakeFb({ now });
     const groq = { async transcribe() { return { ok: true, text: '말' }; } };
-    const validateSession = async t => t === TOKENS.admin ? { role: 'admin' } : (t === TOKENS.user || t === TOKENS.user2) ? { role: 'user' } : null;
+    // 'user-t#라벨' 은 같은 계정의 서로 다른 로그인 세션(ANON: 사람 = 세션 토큰 해시)
+    const validateSession = async t => { const b = String(t || '').split('#')[0]; return b === TOKENS.admin ? { role: 'admin' } : (b === TOKENS.user || b === TOKENS.user2) ? { role: 'user' } : null; };
     const app = express();
     app.set('trust proxy', true);   // server.js 와 같다
     app.use((req, res, next) => { if (req.url.startsWith('/api/copy/')) { req.url = '/api/' + req.url.slice('/api/copy/'.length); req.isCopy = true; } next(); });
@@ -67,8 +68,9 @@ async function setup(opts = {}) {
         assert.equal(r.status, 201, r.text);
         return r.json.meeting.id;
     }
+    // 익명(ANON): 서버는 이름을 버린다. name 은 시험용 사람 표시 — 같은 name = 같은 로그인 세션(다시 들어온 같은 사람)
     async function join(mid, name = '참석자', auth = 'user') {
-        const r = await call('POST', `/${mid}/join`, { auth, body: { name }, ip: `10.9.${Math.floor(ipSeq / 200)}.${ipSeq++ % 200}` });
+        const r = await call('POST', `/${mid}/join`, { auth: (TOKENS[auth] || auth) + '#' + encodeURIComponent(name), body: { name }, ip: `10.9.${Math.floor(ipSeq / 200)}.${ipSeq++ % 200}` });
         assert.equal(r.status, 200, r.text);
         return r.json;
     }
@@ -244,14 +246,26 @@ test('RT 업로드: 허가 없이·남의 uploadId·경로 탈출·형식·크�
     const h = await setup(); t.after(h.close);
     const mid = await h.createMeeting(), mid2 = await h.createMeeting();
     const host = await h.asHost(mid), host2 = await h.asHost(mid2, '다른회의주관');
-    const v = await h.join(mid);
+    const v = await h.join(mid, '참석자', 'user2');   // 주관자와 다른 로그인(다른 사람)
     let r = await h.call('POST', `/${mid}/uploads`, { pt: v.pt, body: { kind: 'pdf', pages: 1, bytes: 100 } });
-    rec('참석자가 업로드 허가 받기', 'POST /:mid/uploads', '403', `${r.status} ${r.json?.error}`, r.status === 403, '중간');
+    // AGENDA_OPEN(2026-11-25 사용자 결정): 참석자도 안건 자료를 올린다. 대신 출입증은 viewer claim 에 이 uploadId 하나만(up) 쓸 수 있어야 한다.
+    const vc = r.json?.token ? JSON.parse(Buffer.from(String(r.json.token).split('.')[1], 'base64url').toString()).claims : {};
+    rec('참석자 업로드 허가(설계상 허용) — 출입증이 host 로 올라가지 않음', 'POST /:mid/uploads', '201, claim role viewer·up=이 uploadId', `${r.status} role=${vc.role} up=${vc.up === r.json?.uploadId}`, r.status === 201 && vc.role === 'viewer' && vc.up === r.json?.uploadId, '높음');
+    assert.equal(r.status, 201); assert.equal(vc.role, 'viewer'); assert.equal(vc.up, r.json.uploadId);
+    // 참석자는 남(주관자)의 허가를 확정하지 못한다
+    const hp = (await h.call('POST', `/${mid}/uploads`, { pt: host.pt, body: { kind: 'pdf', pages: 1, bytes: 100 } })).json;
+    r = await h.call('POST', `/${mid}/uploads/${hp.uploadId}/commit`, { pt: v.pt, body: { pages: 1, sizes: [[800, 600]] } });
+    rec('참석자가 남의 uploadId 확정', 'POST /:mid/uploads/:id/commit', '403 not_your_upload', `${r.status} ${r.json?.error}`, r.status === 403, '높음');
     assert.equal(r.status, 403);
-    const permit = async (pages = 1, bytes = 100, hh = host, m = mid) => (await h.call('POST', `/${m}/uploads`, { pt: hh.pt, body: { kind: 'pdf', pages, bytes } })).json;
+    // 감사 R2 M2: 확정 전 허가는 사람당 3개(출입증 1시간). 위조 사례마다 허가를 새로 받으므로 앞 허가의 출입증 시간을 흘려보낸다.
+    const permit = async (pages = 1, bytes = 100, hh = host, m = mid) => { h.clock.t += 3600000 + 1; return (await h.call('POST', `/${m}/uploads`, { pt: hh.pt, body: { kind: 'pdf', pages, bytes } })).json; };
     const putOk = (m, u, pages = 1) => { for (let i = 1; i <= pages; i++) { const p = String(i).padStart(3, '0'); h.fb.put(`zzoom/${m}/up/${u}/p${p}.webp`, 1000, 'image/webp'); h.fb.put(`zzoom/${m}/up/${u}/t${p}.webp`, 100, 'image/webp'); } };
     const commit = (m, u, hh, body = {}) => h.call('POST', `/${m}/uploads/${u}/commit`, { pt: hh.pt, body: { pages: 1, sizes: [[800, 600]], ...body } });
 
+    // 확정하지 않은 허가 쌓기(감사 R2 M2): 같은 사람이 허가를 계속 받으면 넷째부터 429
+    { let last; for (let i = 0; i < 4; i++) last = await h.call('POST', `/${mid}/uploads`, { pt: v.pt, body: { kind: 'pdf', pages: 1, bytes: 100 } });
+      rec('확정 안 한 업로드 허가 쌓기(사람당 3개)', 'POST /:mid/uploads ×4', '넷째 429 upload_busy', `${last.status} ${last.json?.error}`, last.status === 429 && last.json?.error === 'upload_busy', '중간');
+      assert.equal(last.status, 429); }
     // 다른 회의의 uploadId 를 내 회의로 commit
     const p2 = await permit(1, 100, host2, mid2); putOk(mid2, p2.uploadId);
     r = await commit(mid, p2.uploadId, host);
@@ -423,12 +437,15 @@ test('RT 판서·채팅: 상한 우회·잠금 우회·끝난 회의', async t =
     const c2 = await Promise.all([0, 1, 2].map(i => h.call('POST', `/${mid}/chat`, { pt: v.pt, body: { text: '도배' + i }, tick: 0 })));
     rec('같은 1초에 채팅 3개', 'POST /:mid/chat', '1개만 201', c2.map(x => x.status).join(','), c2.filter(x => x.status === 201).length === 1, '낮음');
     assert.equal(c2.filter(x => x.status === 201).length, 1);
-    // 1초 1글 규칙을 재입장 pt 여러 개로 우회
-    const bots = await Promise.all(Array.from({ length: 10 }, (_, i) => h.join(mid, '봇' + i)));
+    // 1초 1글 규칙을 재입장(새 로그인) 여러 개로 우회 → 회의 전체 상한(물통 30, 초당 15)으로 묶인다(감사 R3 P2)
+    const bots = await Promise.all(Array.from({ length: 40 }, (_, i) => h.join(mid, '봇' + i)));
     const flood = await Promise.all(bots.map(b => h.call('POST', `/${mid}/chat`, { pt: b.pt, body: { text: '도배' }, tick: 0 })));
     const fl = flood.filter(x => x.status === 201).length;
-    rec('재입장 10번으로 1초 1글 우회(채팅 도배)', 'POST /:mid/chat', '사람당 1초 1글', `1초에 ${fl}글`, fl <= 1, '낮음');
-    await t.test('채팅 도배', { todo: '뚫림(낮음): 속도 제한이 pt 단위. 입장은 IP 분당 20회(XFF 위조 시 무제한)' }, () => assert.ok(fl <= 1));
+    h.clock.t += 1000;
+    const flood2 = await Promise.all(bots.map(b => h.call('POST', `/${mid}/chat`, { pt: b.pt, body: { text: '도배2' }, tick: 0 })));
+    const fl2 = flood2.filter(x => x.status === 201).length;
+    rec('재입장 40번으로 1초 1글 우회(채팅 도배)', 'POST /:mid/chat', '회의 전체 물통 30, 그 뒤 초당 15', `첫 순간 ${fl}글, 1초 뒤 ${fl2}글`, fl <= 30 && fl2 <= 15, '낮음');
+    assert.ok(fl <= 30, `첫 순간 ${fl}`); assert.ok(fl2 <= 15, `1초 뒤 ${fl2}`);
     // 끝난 회의
     await h.call('POST', `/${mid}/state`, { pt: host.pt, body: { action: 'start' } });
     await h.call('POST', `/${mid}/state`, { pt: host.pt, body: { action: 'end' } });
@@ -530,7 +547,7 @@ async function rulesTest(fileName, src, cases) {
     const auth = require(path.join(process.env.APPDATA || '', 'npm/node_modules/firebase-tools/lib/auth.js'));
     const cfg = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.config/configstore/firebase-tools.json'), 'utf8'));
     const tk = (await auth.getAccessToken(cfg.tokens.refresh_token, [])).access_token;
-    const body = { source: { files: [{ name: fileName, content: src }] }, testSuite: { testCases: cases.map(c => ({ request: c.req, expectation: c.expect })) } };
+    const body = { source: { files: [{ name: fileName, content: src }] }, testSuite: { testCases: cases.map(c => ({ request: c.req, expectation: c.expect, ...(c.req.method === 'create' && fileName === 'storage.rules' ? { resource: null } : {}) })) } };   // create 는 「있는 파일 없음」(resource == null)을 밝혀 준다(AGENDA_OPEN 덮어쓰기 막기)
     const r = await fetch('https://firebaserules.googleapis.com/v1/projects/airoom-ebce3:test', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const js = await r.json();
     if (!js.testResults) throw new Error(r.status + ' ' + JSON.stringify(js).slice(0, 500));
@@ -553,7 +570,8 @@ test('RT 규칙: 맞춤 토큰 교차 사용·until 경계·경로 탈출 (Stora
         T('ba+zz 섞인 claim 으로 vendor', 'DENY', 'get', 'zzoom-vendor/rhwp.wasm', { ba: 1, zz: 1, mid: 'zzoom-vendor', until: now + DAY }),
         T('cp 토큰으로 실서비스 읽기', 'DENY', 'get', 'training-tracker/s3/a.pdf', { cp: 1 }),
         T('cp 토큰으로 쭘 읽기', 'DENY', 'get', `${M}/p001.webp`, { cp: 1 }),
-        T('cp 토큰으로 copy/ 쓰기(설계상 허용)', 'ALLOW', 'create', 'copy/banner/a.png', { cp: 1 }, 100, 'image/png', '-'),
+        T('cp 토큰으로 copy/ 쓰기(설계상 허용, until 안)', 'ALLOW', 'create', 'copy/banner/a.png', { cp: 1, until: now + 3600000 }, 100, 'image/png', '-'),
+        T('cp 토큰 until 없음으로 copy/ 쓰기(지적12)', 'DENY', 'create', 'copy/banner/a.png', { cp: 1 }, 100, 'image/png'),
         T('다른 회의 토큰으로 읽기', 'DENY', 'get', `${M}/up/u1/p001.webp`, zz({ mid: 'mzzzzzzzzzzzz' })),
         T('until 1ms 전 읽기', 'ALLOW', 'get', `${M}/up/u1/p001.webp`, zz({ until: now + 1 }), null, null, '-'),
         T('until 정각 읽기', 'DENY', 'get', `${M}/up/u1/p001.webp`, zz({ until: now })),
@@ -561,17 +579,23 @@ test('RT 규칙: 맞춤 토큰 교차 사용·until 경계·경로 탈출 (Stora
         T('until 없음', 'DENY', 'get', `${M}/up/u1/p001.webp`, zz({ until: undefined })),
         T('zz=true(형 위조)', 'DENY', 'get', `${M}/up/u1/p001.webp`, zz({ zz: true })),
         T('viewer 토큰으로 업로드', 'DENY', 'create', `${M}/up/u1/p001.webp`, zz(), 100),
-        T('host 토큰 업로드(허가 없는 uploadId 도 됨)', 'ALLOW', 'create', `${M}/up/uNOPERMIT/p001.webp`, zz({ role: 'host' }), 100, null, '-'),
+        T('host 토큰 업로드(허가 없는 uploadId, 업로드 토큰 필요 — 지적02)', 'DENY', 'create', `${M}/up/uNOPERMIT/p001.webp`, zz({ role: 'host' }), 100),
         T('host 토큰 덮어쓰기(update)', 'DENY', 'update', `${M}/up/u1/p001.webp`, zz({ role: 'host' }), 100),
         T('host 토큰 지우기', 'DENY', 'delete', `${M}/up/u1/p001.webp`, zz({ role: 'host' })),
         T('host 토큰 up 밖 쓰기', 'DENY', 'create', `${M}/p001.webp`, zz({ role: 'host' }), 100),
         T('host 경로 탈출(../ 다른 회의)', 'DENY', 'create', `${M}/up/u1/../../mzzzzzzzzzzzz/up/u1/x.webp`, zz({ role: 'host' }), 100),
-        T('host 인코딩 %2F 이름(같은 폴더 안 한 낱말, commit 이 거절)', 'ALLOW', 'create', `${M}/up/u1/a%2F..%2F..%2Fx.webp`, zz({ role: 'host' }), 100, null, '-'),
+        T('host 인코딩 %2F 이름(파일 이름 규칙이 거절)', 'DENY', 'create', `${M}/up/u1/a%2F..%2F..%2Fx.webp`, zz({ role: 'host' }), 100),
         T('host text/html 업로드', 'DENY', 'create', `${M}/up/u1/x.html`, zz({ role: 'host' }), 100, 'text/html'),
         T('host image/svg+xml 업로드', 'DENY', 'create', `${M}/up/u1/x.svg`, zz({ role: 'host' }), 100, 'image/svg+xml'),
         T('host application/vnd.ms-html 류(vnd.* 허용)', 'DENY', 'create', `${M}/up/u1/x.htm`, zz({ role: 'host' }), 100, 'application/vnd.wap.xhtml+xml', '낮음'),
         T('host 50MB 업로드', 'DENY', 'create', `${M}/up/u1/original.pdf`, zz({ role: 'host' }), 52428800, 'application/pdf'),
         T('회수된 주관자(host claim 남음, until 9일 뒤) 업로드', 'DENY', 'create', `${M}/up/u9/p001.webp`, zz({ role: 'host', until: now + 9 * DAY }), 100),
+        // AGENDA_OPEN: 참석자(viewer)도 자기 업로드 출입증(up)으로는 그 uploadId 경로에만 올린다
+        T('viewer 업로드 출입증으로 자기 uploadId 쪽 그림 올리기(설계상 허용)', 'ALLOW', 'create', `${M}/up/u1/p001.webp`, zz({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024, until: now + 3600000 }), 100),
+        T('viewer 업로드 출입증으로 다른 uploadId 경로', 'DENY', 'create', `${M}/up/u2/p001.webp`, zz({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024, until: now + 3600000 }), 100),
+        T('viewer 업로드 출입증으로 덮어쓰기(update)', 'DENY', 'update', `${M}/up/u1/p001.webp`, zz({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024, until: now + 3600000 }), 100),
+        T('viewer 업로드 출입증으로 지우기', 'DENY', 'delete', `${M}/up/u1/p001.webp`, zz({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024, until: now + 3600000 })),
+        T('viewer 업로드 출입증으로 up 밖 쓰기', 'DENY', 'create', `${M}/p001.webp`, zz({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024, until: now + 3600000 }), 100),
         T('비로그인 쭘 읽기', 'DENY', 'get', `${M}/up/u1/p001.webp`, null)
     ];
     for (const c of cases) if (c.req.auth?.token) for (const k of Object.keys(c.req.auth.token)) if (c.req.auth.token[k] === undefined) delete c.req.auth.token[k];

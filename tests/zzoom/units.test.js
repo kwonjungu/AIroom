@@ -88,6 +88,17 @@ test('지적07: scoped(기한) 어댑터는 남은 시간 안에서 네트워크
     await assert.rejects(g.scoped(Date.now() - 1).get('a/b'), e => e.code === 'deadline');
 });
 
+test('R1-N8: 접근 토큰 발급도 남은 시간(deadline) 안에서 끊긴다', async () => {
+    const { createGcp } = require('../../lib/zzoom/gcp');
+    // 토큰 주소에서 멈추는 fetch(콜드 스타트에 토큰 발급이 늦는 경우)
+    const hang = (url, init) => new Promise((_, rej) => init.signal?.addEventListener('abort', () => rej(init.signal.reason || new Error('abort'))));
+    const g = createGcp({ serviceAccount: SA, bucket: 'b', fetchImpl: hang });
+    const t0 = Date.now();
+    const r = await Promise.race([g.scoped(Date.now() + 300).get('a/b').then(() => 'OK', e => e.code || 'ERR'), new Promise(res => setTimeout(() => res('HANG'), 5000))]);
+    assert.notEqual(r, 'HANG', '고정 15초를 기다리지 않는다');
+    assert.ok(Date.now() - t0 < 2000, `${Date.now() - t0}ms`);
+});
+
 test('지적07: Whisper 는 키를 돌아도 전체 예산을 넘기지 않는다', async () => {
     const { createWhisper } = require('../../lib/zzoom/whisper');
     const hang = (url, init) => new Promise((_, rej) => init.signal?.addEventListener('abort', () => rej(new Error('timeout'))));

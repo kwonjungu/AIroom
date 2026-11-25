@@ -33,7 +33,7 @@ const ctx = {
   el: id => document.getElementById(id), toast: (text, kind) => { (window.__toasts ||= []).push([text, kind]); },
   modal: () => ({ close() {} }),
 };
-store.set('role', { role: params.get('role') || 'viewer', cid: 'me', name: '나', presenter: false });
+store.set('role', { role: params.get('role') || 'viewer', cid: 'me', presenter: false });
 store.set('meeting', { status: params.get('status') || 'live' });
 store.set('agenda', [{ aid: 'a1', title: 'A', pages: 5 }, { aid: 'a2', title: 'B', pages: 9 }]);
 store.set('page', { aid: 'a2', page: 3 });

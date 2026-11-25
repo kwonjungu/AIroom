@@ -76,3 +76,42 @@ CONTRACTS.md 도 고침: 4절 1024px·768px 배치와 `--zz-follow-h`, 2-3절 `a
 ### 2팀에 알림(요청)
 - 768~1023px 의 안건 덮개는 머리줄 app 단추가 연다. 2팀 「안건」 단추(`.zv-only-narrow`)는 지금처럼 768 미만에서만 보이면 된다. 둘 다 `data-open` 만 쓰므로 바깥 누르기·Esc 닫기는 그대로 동작한다.
 - api.js 캐시·LRU 는 비용 줄이기 취소 지시에 따라 하지 않았다.
+
+---
+
+## 덧붙임 2: 화면 감사 R1 통합 몫 (진행 중 저장)
+
+| 지적 | 고친 곳 | 어떻게 |
+|---|---|---|
+| U02 중요 | `api.js` begin·join·resume·becomeHost·leave | 세대 번호 `gen`. `leave` 가 올리고, 입장 도중 세대가 바뀌면 늦게 끝난 begin 은 S·heartbeat·갱신 예약을 남기지 않고 그 자격으로 「나감」 sendBeacon, Firebase 로그아웃, `aborted` 를 던진다(app.js 는 seq 가 달라 무시) |
+| U14 사소 | `zzoom.css` | 1024px 미만 오른쪽 덮개 아래끝을 쪽 막대 위(주관자면 + 주관자 막대)로. ✋ 손들기·쪽 넘기기가 옆칸을 연 채로도 눌린다 |
+| U07 사소(store 쪽) | `api.js` pollTally | 응답이 온 뒤 내 자격이 host 가 아니면 숫자 대신 403 `host_only` 를 던진다. poll.js 쪽 `resultView` 역할 확인은 4팀 몫 |
+| FIX_ENGINE 10-4 | `api.js` uploadAgenda | 허가 응답의 업로드 전용 출입증 `permit.token` 으로 `signInWithCustomToken` 한 뒤 `uploadBytes`. 끝나면(성공·실패·취소 모두) 보통 토큰으로 돌아감: 업로드 중 50분 갱신이 오면 그 토큰을 보류했다가 쓰고, 없으면 `/refresh`. 출입증 `tokenUntil` 30초 전이면 「다시 올려 주세요」. 업로드는 한 번에 하나씩 줄 세움(로그인이 앱 하나를 같이 쓰므로). 원본은 서버 형식표대로 모든 확장자를 올리고 형식은 `permit.originalTypes` 를 따름 |
+| U01 사소 | `api.js` refresh | 응답 뒤 S 가 없거나 다른 회의면 그냥 끝 |
+| U06 사소(api 쪽) | `api.js` spatch | `conn` 등은 값이 실제로 바뀔 때만 이벤트. 60초마다 같은 `server:'ok'` 로 draw.js 재시도가 다시 도는 일이 없어짐(draw.js 의 prev 비교는 3팀 몫) |
+| U08 사소 | `api.js` 그림 캐시 | 받는 중인 그림은 releaseImages 가 건드리지 않음. keep 에 URL 또는 Storage 경로 둘 다 받음 |
+| U11 사소 | `api.js`·`app.js`·`index.html` | 뼈대 문구를 「~어요」로. 업로드 실패에 파일 이름 대신 「n쪽 그림」「n쪽 미리보기」「원본 파일」 |
+| U13 사소 | `api.js` begin·join | 실시간 로그인 실패면 S·타이머를 비우고 자격은 남김. 다시 「입장하기」를 누르면 같은 자격으로 resume 부터(cid 가 늘지 않음) |
+
+손대지 않음: list.js, lib/zzoom/routes.js(조정 담당이 고치는 중), 팀 모듈과 팀 시험.
+
+### R1 결과 (끝)
+
+- 덧붙여 D5 요청: `setState` 에 fetch `keepalive: true`(request 에 keepalive 선택지). 탭을 닫는 순간의 녹음 멈춤 알림도 나간다.
+- `CONTRACTS.md` 갱신: uploadAgenda(업로드 출입증 로그인·차례 처리), releaseImages(keep 에 경로, 받는 중 그림 제외), pollTally(host_only), setState(keepalive).
+- 고친 방식은 기존 줄 수정 위주. 새로 생긴 것은 api.js 안의 내부 함수(`quietLeave`, `uploadOne`)와 변수(`gen`, `uploading`, `uploadChain`)뿐이고 내보내는 함수 이름·인자는 그대로다.
+
+| 시험 | 결과 |
+|---|---|
+| `node --check` api.js·app.js | 통과 |
+| R1 전용 시험(가짜 서버·가짜 Firebase SDK, 엣지 158·크로미움 145): U02 입장 직후 나가기, U13 로그인 실패 뒤 재입장, 업로드 출입증으로 모든 uploadBytes·끝나고 보통 토큰 복귀·hwpx 원본 형식, U07 강등 뒤 집계 거절, 콘솔 오류 | 26 / 0 |
+| `layout_real.py` 1280·820·390 두 브라우저 + U14(820 에서 옆칸 연 채 손들기 단추가 elementFromPoint 로 맞는지) | 70 / 0 |
+| `tests/zzoom/e2e_skeleton.py` | 12 / 0, 콘솔 오류 0 |
+
+스크린샷 `edge_820_3_side.png` 로 옆칸이 쪽 막대 위에서 끝나 「손들기」가 보이는 것을 눈으로 확인했다(390 좁은 화면은 아래 서랍이라 원래 겹치지 않음).
+
+#### 요청(다른 팀 몫, 손대지 않음)
+- d2·draw·d4 시험 하네스: 1024px 미만에서는 옆칸이 처음에 닫혀 있고(`body.side-closed`) 안건 목록은 덮개(`#zz-agenda[data-open]`, 768~1023 은 `#zz-agenda-toggle`)다. 옆칸 단추를 누르거나 덮개를 연 뒤 찾도록 각 팀이 고쳐 주세요.
+- 4팀 poll.js: 결과 보기도 `role` 이 host 일 때만(U07 화면 쪽). 3팀 draw.js: `conn` 이전 값과 비교(U06 화면 쪽). U03·U04·U05·U09·U10·U12 는 각 팀 몫.
+- `tests/zzoom/d5_fake_api.js` 는 바뀐 인자가 없어 그대로 써도 된다. 업로드 출입증 흐름을 흉내 내려면 `startUpload` 응답에 `token`·`tokenUntil`·`originalTypes` 를 넣으면 된다.
+- 커밋하지 않았다.

@@ -3,19 +3,25 @@
 // (쭘 블록·파일 머리말·rules_version 은 그대로)
 //
 // 출입증(맞춤 토큰 claim) — lib/storage-token.js
-//   ba==1          백암이 로그인(GET /api/firebase-token). 카피본은 cp==1 이라 codocs 가 안 열린다.
-//   bp, br         급식일지 로그인(GET /api/bap/firebase-token). bp=학교(bap|bap2|bap3), br=m(담당자)|b(결재자)
+//   ba==1, until   백암이 로그인(GET /api/firebase-token). 카피본은 cp==1 이라 codocs 가 안 열린다.
+//   bp, br, until  급식일지 로그인(GET /api/bap/firebase-token). bp=학교(bap|bap2|bap3), br=m(담당자)|b(결재자)
 //   zz/mid/role    쭘 회의(여기서는 아무것도 못 한다)
 //
 // 공개로 남기는 것: bap*_menus 읽기(식단 조회 화면은 로그인 없이 본다. 식단은 학교가 가정에 알리는 정보).
 
     // ─── 공통 함수 ───
+    // until(ms) = min(서버 세션 만료, 발급+1시간)(lib/storage-token.js, AL01). Firebase 로그인은 서버 세션과 따로 살아 있으므로
+    // until 이 지난 출입증은 거절한다. 화면(codocs.js·bap)은 until 1분 전에 새 출입증으로 다시 로그인한다.
+    function fresh() {
+      return request.auth.token.get('until', 0) is number
+        && request.time.toMillis() < request.auth.token.get('until', 0);
+    }
     function isBa() {
-      return request.auth != null && request.auth.token.get('ba', 0) == 1;
+      return request.auth != null && request.auth.token.get('ba', 0) == 1 && fresh();
     }
     function bapOk(school) {
       return request.auth != null && request.auth.token.get('bp', '') == school
-        && request.auth.token.get('br', '') in ['m', 'b'];
+        && request.auth.token.get('br', '') in ['m', 'b'] && fresh();
     }
     function bapBoss(school) {
       return bapOk(school) && request.auth.token.get('br', '') == 'b';
@@ -117,9 +123,11 @@
       // 접속 표시(누가 어느 셀을 편집 중인지). 20초 하트비트, 창 닫으면 삭제.
       match /presence/{clientId} {
         allow read: if isBa();
-        allow write: if isBa() && (request.resource == null
-                  || (request.resource.data.name is string
-                      && request.resource.data.name.size() < 30));
+        // 삭제는 기존 문서(resource)만 본다. 삭제 요청에는 request.resource 가 없다.
+        allow delete: if isBa();
+        allow create, update: if isBa()
+                  && request.resource.data.name is string
+                  && request.resource.data.name.size() < 30;
       }
     }
 

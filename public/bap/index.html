@@ -132,7 +132,7 @@
   </div>
 </div>
 
-<!-- ════════ 0-1. 월별 식단 업로드 (로그인 불필요) ════════ -->
+<!-- ════════ 0-1. 월별 식단 업로드 (조회는 로그인 불필요, 저장은 담당자·결재자 로그인 필요) ════════ -->
 <div id="view-menu-upload" class="view">
   <div class="min-h-screen px-4 py-8">
     <div class="max-w-3xl mx-auto">
@@ -140,7 +140,7 @@
       <div class="text-center mb-6">
         <span class="text-5xl">🍚</span>
         <h2 class="text-2xl font-bold text-gray-800 mt-2">월별 식단 입력하기</h2>
-        <p class="text-sm text-gray-500 mt-1">한글(HWPX) 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출해 저장합니다.</p>
+        <p class="text-sm text-gray-500 mt-1">한글(HWPX) 식단표지를 업로드하면 AI가 날짜별 메뉴를 추출해 저장합니다. 저장은 담당자나 결재자로 로그인한 뒤에 됩니다.</p>
       </div>
       <div class="bg-gray-50 border border-gray-300 rounded-none p-3 mb-4 text-sm text-gray-800">
         <p class="font-bold">⚠️ HWPX 또는 PDF 형식만 가능합니다.</p>
@@ -736,6 +736,70 @@ import {
   getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection,
   query, where, getDocs, orderBy, documentId, runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {
+  getAuth, setPersistence, inMemoryPersistence, signInWithCustomToken, signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// 급식일지 Firestore 출입증 관리(AL02·AL01). 테스트(tests/zzoom/astra-locks.test.js)가 이 원문을 잘라 가짜 Auth 로 돌린다.
+// - 토큰(세션)이 바뀌거나 로그아웃하면 이전 Firebase 인증을 곧바로 signOut 한다.
+// - 요청마다 세대 번호를 붙여, 더 새 요청·로그아웃이 생긴 뒤 도착한 늦은 응답은 버린다.
+// - 다른 토큰의 요청은 진행 중인 요청에 합류하지 않는다(같은 토큰끼리만 합류).
+// - 로그인·로그아웃은 한 줄로 세워(serial) 늦은 로그인이 새 상태를 덮지 못하게 한다.
+// - until(세션 만료와 발급+1시간 중 이른 것) 1분 전이면 같은 토큰이라도 새 출입증으로 다시 로그인한다.
+// 돌려주는 값: true(출입증 받음) / 'unconfigured'(서버에 키 없음 → 예전처럼 비로그인) / false(실패·로그아웃).
+function bapTokenUntil(token) {
+  try {
+    const p = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const u = Number(JSON.parse(atob(p + '==='.slice((p.length + 3) % 4))).claims.until);
+    return Number.isFinite(u) && u > 0 ? u : 0;
+  } catch (e) { return 0; }
+}
+function makeBapAuth(auth, d) {
+  let authedFor = '', authedUntil = 0, gen = 0, pending = null, pendingFor = '';
+  let lock = Promise.resolve();
+  const serial = fn => { const p = lock.then(fn); lock = p.catch(() => {}); return p; };
+  const drop = () => serial(async () => {
+    authedFor = ''; authedUntil = 0;
+    if (auth.currentUser) { try { await d.signOut(auth); } catch (e) {} }
+  });
+  return async function ensureAuth(bapToken) {
+    if (!bapToken) {
+      gen++; pending = null; pendingFor = '';
+      await drop();
+      return false;
+    }
+    if (authedFor === bapToken && auth.currentUser && authedUntil - Date.now() > 60000) return true;
+    if (pending && pendingFor === bapToken) return pending;
+    const my = ++gen;
+    // 다른 세션의 인증은 새 출입증을 기다리지 않고 바로 버린다(실패해도 이전 사람 권한이 남지 않게)
+    const dropFirst = authedFor !== bapToken ? drop() : null;
+    const p = (async () => {
+      if (dropFirst) await dropFirst;
+      let r = null;
+      try { r = await d.fetch('/api/bap/firebase-token', { headers: { 'X-Bap-Token': bapToken, 'X-Bap-School': d.school() } }); }
+      catch (e) { r = null; }
+      if (my !== gen) return false;
+      if (r && r.status === 503) { await drop(); return 'unconfigured'; }
+      let token = null;
+      if (r && r.ok) { try { token = (await r.json()).token; } catch (e) { token = null; } }
+      if (my !== gen) return false;
+      if (!token) { await drop(); return false; }
+      return serial(async () => {
+        if (my !== gen) return false;
+        await d.signInWithCustomToken(auth, token);
+        authedFor = bapToken;
+        authedUntil = bapTokenUntil(token) || (Date.now() + 55 * 60000);
+        return true;
+      });
+    })().catch(async e => {
+      console.warn('[bap] Firestore 출입증 실패', e && e.message);
+      if (my === gen) await drop();
+      return false;
+    }).finally(() => { if (pending === p) { pending = null; pendingFor = ''; } });
+    pending = p; pendingFor = bapToken;
+    return p;
+  };
+}
 
 async function bootstrap() {
   try {
@@ -744,9 +808,14 @@ async function bootstrap() {
     const cfg = await res.json();
     const app = initializeApp(cfg);
     const db = getFirestore(app, 'kwon');
+    // 급식일지 Firestore 출입증: 로그인 세션(X-Bap-Token)으로 서버에서 맞춤 토큰을 받는다.
+    // 탭 메모리에만 둔다(학교·역할이 바뀌면 다시 받는다). 서버에 키가 없으면(503) 예전처럼 비로그인.
+    const auth = getAuth(app);
+    try { await setPersistence(auth, inMemoryPersistence); } catch (e) {}
+    const ensureAuth = makeBapAuth(auth, { fetch: (u, o) => fetch(u, o), signInWithCustomToken, signOut, school: () => SCHOOL.key });
     window.__bap = {
       db, doc, setDoc, getDoc, updateDoc, deleteDoc, collection,
-      query, where, getDocs, orderBy, documentId, runTransaction
+      query, where, getDocs, orderBy, documentId, runTransaction, ensureAuth
     };
     document.dispatchEvent(new Event('bap-ready'));
   } catch (e) {
@@ -1007,7 +1076,11 @@ document.addEventListener('keydown', (e) => {
 // ═══════════════════════════════════════════════
 function getBapToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch(e){ return ''; } }
 function setBapToken(t) { try { localStorage.setItem(TOKEN_KEY, t || ''); } catch(e){} }
-function clearBapToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(e){} }
+function clearBapToken() {
+  try { localStorage.removeItem(TOKEN_KEY); } catch(e){}
+  // 로그아웃·세션 만료: 이전 Firebase 인증도 버린다(AL02). 진행 중인 발급 응답도 무효가 된다.
+  try { if (window.__bap && window.__bap.ensureAuth) window.__bap.ensureAuth('').catch(() => {}); } catch(e){}
+}
 
 async function bapApi(method, path, body) {
   const headers = { 'Content-Type': 'application/json', 'X-Bap-School': SCHOOL.key };
@@ -1028,10 +1101,11 @@ async function bapApi(method, path, body) {
 // Firestore 래퍼 (bap-ready 이벤트 후)
 // ═══════════════════════════════════════════════
 function db() { return window.__bap; }
-async function fsGet(coll, id) { const d = await db().getDoc(db().doc(db().db, coll, id)); return d.exists() ? d.data() : null; }
-async function fsSet(coll, id, data) { return db().setDoc(db().doc(db().db, coll, id), data, { merge: true }); }
-async function fsUpdate(coll, id, data) { return db().updateDoc(db().doc(db().db, coll, id), data); }
+async function fsGet(coll, id) { await (coll === MENU_COLL ? waitForBapPublic() : waitForBap()); const d = await db().getDoc(db().doc(db().db, coll, id)); return d.exists() ? d.data() : null; }
+async function fsSet(coll, id, data) { await waitForBap(); return db().setDoc(db().doc(db().db, coll, id), data, { merge: true }); }
+async function fsUpdate(coll, id, data) { await waitForBap(); return db().updateDoc(db().doc(db().db, coll, id), data); }
 async function fsQuery(coll, ...wheres) {
+  await (coll === MENU_COLL ? waitForBapPublic() : waitForBap());
   const { query, where, getDocs, collection } = db();
   const q = wheres.length > 0 ? query(collection(db().db, coll), ...wheres) : query(collection(db().db, coll));
   const snap = await getDocs(q);
@@ -1436,7 +1510,7 @@ async function mgrLoadMenu() {
   const date = $('mgr-date').value;
   if (!date) return;
   try {
-    await waitForBap();
+    await waitForBapPublic();
     const m = await fsGet(MENU_COLL, date);
     if (m && m.lunch) {
       $('mgr-menu').value = m.lunch;
@@ -1597,7 +1671,7 @@ async function mgrSubmit() {
     hideLoading();
     if (e.message === 'APPROVED') alert('결재 완료된 일지는 수정할 수 없습니다.');
     else if (e.message === 'OTHER_MANAGER') alert('다른 담당자가 작성 중인 일지입니다.');
-    else alert('제출 실패: ' + e.message);
+    else alert('제출 실패: ' + fsDeniedMsg(e));
   }
 }
 
@@ -1836,7 +1910,7 @@ async function adminConfirmDelete(dates) {
     await loadAdminView();
   } catch (e) {
     hideLoading();
-    alert('삭제 실패: ' + e.message);
+    alert('삭제 실패: ' + fsDeniedMsg(e));
   }
 }
 
@@ -2091,7 +2165,7 @@ async function approveFromPreview() {
     hideLoading();
     if (e.message === 'NOT_FOUND') alert('일지가 삭제되었습니다. 목록을 새로고침하세요.');
     else if (e.message.startsWith('NOT_SUBMITTED:')) alert('이미 다른 상태(' + e.message.split(':')[1] + ')로 변경되었습니다. 목록을 새로고침하세요.');
-    else alert('결재 실패: ' + e.message);
+    else alert('결재 실패: ' + fsDeniedMsg(e));
   }
 }
 
@@ -2158,7 +2232,7 @@ async function batchDownload(approvedOnly) {
     a.download = `${y}년${pad(m)}월_급식일지_${approvedOnly?'결재완료':'전체'}.html`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-  } catch(e) { hideLoading(); alert('다운로드 실패: ' + e.message); }
+  } catch(e) { hideLoading(); alert('다운로드 실패: ' + fsDeniedMsg(e)); }
 }
 
 // ═══════════════════════════════════════════════
@@ -2215,7 +2289,7 @@ async function loadMenuList() {
   const wrap = $('menu-list');
   wrap.innerHTML = '<div class="text-gray-400 text-xs">로딩...</div>';
   try {
-    await waitForBap();
+    await waitForBapPublic();
     const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId } = db();
     const rangeStart = `${y}-${pad(m)}-01`;
     const rangeEnd   = `${y}-${pad(m)}-31`;
@@ -2305,6 +2379,8 @@ async function muUpload() {
   if (!file) return alert('HWPX 또는 PDF 파일을 선택하세요.');
   if (!/\.(hwpx|pdf)$/i.test(file.name)) return alert('HWPX 또는 PDF 형식만 업로드 가능합니다.');
   if (file.size > 30 * 1024 * 1024) return alert('파일이 너무 큽니다 (30MB 이하).');
+  // 식단 저장은 로그인한 담당자·결재자만(firestore.rules). 조회는 로그인 없이 된다.
+  if (!getBapToken()) return alert('식단 저장은 담당자나 결재자로 로그인한 뒤에 할 수 있습니다. 처음 화면에서 「담당자」로 로그인한 뒤 다시 오세요. (저장된 식단 조회는 로그인 없이 됩니다)');
 
   // 1) 같은 월에 이미 저장된 식단이 있으면 확인
   showLoading('기존 식단 확인 중...');
@@ -2465,6 +2541,7 @@ async function mrSave() {
   const s = _mrState;
   const menus = collectReviewMenus();
   const entries = Object.entries(menus).sort((a, b) => a[0].localeCompare(b[0]));
+  if (!getBapToken()) return alert('식단 저장은 담당자나 결재자로 로그인한 뒤에 할 수 있습니다.');
   if (!entries.length) return alert('저장할 메뉴가 없습니다.');
 
   showLoading('기존 데이터 정리 중...');
@@ -2498,7 +2575,7 @@ async function mrSave() {
     _mrState = null;
   } catch (e) {
     hideLoading();
-    alert('저장 실패: ' + e.message);
+    alert('저장 실패: ' + fsDeniedMsg(e));
   }
 }
 
@@ -2563,7 +2640,7 @@ async function muList() {
   const wrap = $('mu-list');
   wrap.innerHTML = '<div class="text-gray-400 text-xs">로딩...</div>';
   try {
-    await waitForBap();
+    await waitForBapPublic();
     const { db: firestore, collection: coll, query: qy, where: whereFn, getDocs: gdFn, documentId: docId } = db();
     const rangeStart = `${y}-${pad(m)}-01`;
     const rangeEnd   = `${y}-${pad(m)}-31`;
@@ -2589,7 +2666,7 @@ async function muList() {
 // ═══════════════════════════════════════════════
 function showErr(id, msg) { const el = $(id); el.innerText = msg; el.classList.remove('hidden'); }
 
-function waitForBap() {
+function waitForBapInit() {
   return new Promise((resolve, reject) => {
     if (window.__bap) return resolve();
     let done = false;
@@ -2597,6 +2674,32 @@ function waitForBap() {
     document.addEventListener('bap-ready', onReady, { once: true });
     setTimeout(() => { if (!done) { done = true; reject(new Error('Firebase 초기화 대기 초과')); } }, 10000);
   });
+}
+// 보호된 작업(일지 읽기·쓰기, 식단 쓰기·지우기) 전에 늘 부른다: 초기화 + 지금 세션의 출입증.
+// 출입증을 못 받으면 예외를 던져 작업을 멈춘다(AL02) — 이전 사람의 인증으로 쓰는 일이 없게.
+// 서버에 키가 없을 때('unconfigured')만 예전처럼 비로그인으로 진행한다.
+async function waitForBap() {
+  await waitForBapInit();
+  if (!window.__bap.ensureAuth) return;
+  const t = getBapToken();
+  const r = await window.__bap.ensureAuth(t);
+  if (r === false) {
+    const e = new Error(t ? '급식일지 출입 확인에 실패했습니다. 잠시 뒤 다시 해 보고, 계속 안 되면 다시 로그인해 주세요.'
+                          : '로그인이 필요합니다. 담당자나 결재자로 로그인한 뒤 해 보세요.');
+    e.code = 'bap-auth';
+    throw e;
+  }
+}
+// 공개 식단 읽기 전용: 출입증 실패와 상관없이 읽는다(식단 읽기는 규칙상 공개). 실패하면 이전 인증은 이미 버려져 비로그인으로 읽는다.
+async function waitForBapPublic() {
+  await waitForBapInit();
+  if (window.__bap.ensureAuth) { try { await window.__bap.ensureAuth(getBapToken()); } catch (e) {} }
+}
+// 출입증이 없어 막혔을 때 화면 안내
+function fsDeniedMsg(e) {
+  if (e && (e.code === 'permission-denied' || /permission/i.test(e.message || '')))
+    return '권한이 없습니다. 담당자나 결재자로 다시 로그인한 뒤 해 보세요.';
+  return e && e.message;
 }
 
 // ═══════════════════════════════════════════════

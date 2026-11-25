@@ -46,7 +46,7 @@ service firebase.storage {
     }
 
     // 회의 파일: 같은 회의 claim 이면 파일 하나 읽기(get)만. 목록(list)은 막는다 — uploadId 는 추측할 수 없으므로
-    // 안건으로 확정되기 전 업로드 폴더는 그 id 를 아는 주관자만 닿는다(지적02). 화면은 getBlob() 만 쓴다(getDownloadURL 금지).
+    // 안건으로 확정되기 전 업로드 폴더는 그 id 를 아는 사람(허가를 받은 주관자나 참석자, AGENDA_OPEN)만 닿는다(지적02, 감사 R3 P6). 화면은 getBlob() 만 쓴다(getDownloadURL 금지).
     match /zzoom/{mid}/{rest=**} {
       allow get: if zzOk(mid);
       allow list: if false;
@@ -54,17 +54,22 @@ service firebase.storage {
     }
 
     // 업로드: 그 허가(uploadId)에서 받은 업로드 전용 출입증으로만 새 파일 create. 덮어쓰기·삭제 불가(지적01·02).
+    // 2026-11-25 AGENDA_OPEN: 참석자(role viewer)도 안건 자료를 올린다. up claim 은 서버가 허가마다 하나만 주므로
+    // role 은 보지 않고 「같은 회의 + 이 uploadId 의 up claim」만 본다. 보통 출입증(up 없음)으로는 어디에도 못 쓴다.
     // 쪽 그림 p001~pNNN.webp(4MiB 이하)·작은 그림 t001~tNNN.webp(512KiB 이하), NNN ≤ 허가 쪽 수.
     // 원본은 original.<허가 확장자> 하나, 크기는 허가 바이트와 같고 형식은 아래 목록(lib/zzoom/contract.js 와 같음).
     function upToken(mid, uploadId) {
-      return zzHost(mid) && request.auth.token.get('up', '') == uploadId;
+      return zzOk(mid) && request.auth.token.get('up', '') is string
+        && request.auth.token.get('up', '') != '' && request.auth.token.get('up', '') == uploadId;
     }
     function upPage(file) {
       return file.matches('[pt][0-9]{3}[.]webp')
         && int(file.replace('^[pt]', '').replace('[.]webp$', '')) >= 1
         && int(file.replace('^[pt]', '').replace('[.]webp$', '')) <= request.auth.token.get('upPages', 0)
         && request.resource.contentType == 'image/webp'
-        && request.resource.size <= (file.matches('p.*') ? 4 * 1024 * 1024 : 512 * 1024);
+        && request.resource.size <= (file.matches('p.*') ? 4 * 1024 * 1024 : 512 * 1024)
+        // 허가 하나의 합계 상한(감사 R2 M2): 서버가 쪽 수로 나눈 파일당 상한 claim(lib/zzoom/contract.js pageCaps). 옛 출입증은 claim 이 없어 위 상한만.
+        && request.resource.size <= (file.matches('p.*') ? request.auth.token.get('upPageMax', 4 * 1024 * 1024) : request.auth.token.get('upThumbMax', 512 * 1024));
     }
     function upOriginal(file) {
       return file == 'original.' + request.auth.token.get('upExt', '')
@@ -74,7 +79,8 @@ service firebase.storage {
         && request.resource.contentType.matches('application/pdf|application/x-hwp|application/haansofthwpx?|application/vnd[.]hancom[.]hwpx?|application/hwp[+]zip|application/vnd[.]openxmlformats-officedocument[.]presentationml[.]presentation|image/(png|jpeg|webp|gif|bmp|avif|heic|heif)|application/octet-stream');
     }
     match /zzoom/{mid}/up/{uploadId}/{file} {
-      allow create: if upToken(mid, uploadId) && (upPage(file) || upOriginal(file));
+      // resource == null: 같은 경로 덮어쓰기는 에뮬레이터에서도 거절(실엔진은 update 로 이미 거절)
+      allow create: if resource == null && upToken(mid, uploadId) && (upPage(file) || upOriginal(file));
     }
 
     // 변환 엔진 도구 모음(공개 읽기·쓰기 모두 금지). 서버(Admin SDK)만 접근.

@@ -23,15 +23,11 @@ export function currentPoll(polls) {
   return l.slice().reverse().find(p => p.status === 'open') || l[l.length - 1] || null;
 }
 
-/** 결과로 보여 줄 숫자. 비공개는 reveal 전 숫자가 null 이면 null. 이름은 공개 투표가 reveal 된 때만. */
+/** 결과로 보여 줄 숫자. reveal 전 숫자가 null 이면 null. 익명(ANON): 모든 투표가 비공개라 이름은 언제나 없다. */
 export function resultView(poll, hostTally) {
   const src = poll.revealed ? poll.tally : (hostTally || null);
   const total = poll.revealed ? (poll.total || 0) : (hostTally ? Object.values(hostTally).reduce((a, b) => a + (+b || 0), 0) : 0);
-  const showNames = !!(poll.revealed && poll.anonymous === false && poll.names);
-  return {
-    tally: src, total,
-    names: showNames ? poll.names : null,
-  };
+  return { tally: src, total, names: null };
 }
 
 export function mount(ctx) {
@@ -47,7 +43,7 @@ export function mount(ctx) {
   let tallyPid = null;
   let timer = null;
   let busy = false;
-  let draft = { q: '', opts: DEFAULT_OPTS.slice(), anonymous: true };
+  let draft = { q: '', opts: DEFAULT_OPTS.slice() };
   let creating = false;
   let seenIds = new Set();
   let baselined = false;
@@ -93,10 +89,10 @@ export function mount(ctx) {
     const q = draft.q.trim();
     const options = draft.opts.map(s => s.trim()).filter(Boolean);
     if (!q) { ctx.toast(t('질문을 적어 주세요'), 'warn'); return; }
-    if (options.length < 2) { ctx.toast(t('선택지는 두 개 이상 필요해요'), 'warn'); return; }
+    if (options.length < 2) { ctx.toast(t('고를 것은 두 개 이상 필요해요'), 'warn'); return; }
     await act(async () => {
-      await api.createPoll(mid, { q, options, anonymous: draft.anonymous });
-      draft = { q: '', opts: DEFAULT_OPTS.slice(), anonymous: true }; creating = false;
+      await api.createPoll(mid, { q, options });
+      draft = { q: '', opts: DEFAULT_OPTS.slice() }; creating = false;
     }, t('투표를 열지 못했어요'));
   }
 
@@ -130,11 +126,7 @@ export function mount(ctx) {
       h('span', { class: 'zs-opt-label' }, o.label),
       myPick ? h('span', { class: 'zs-mine-tag' }, t('내 선택')) : null,
       n != null ? h('span', { class: 'zs-opt-n zz-num' }, `${n}${t('표')}`) : null);
-    const wrap = h('div', { class: 'zs-opt-wrap' }, el);
-    if (view.names && Array.isArray(view.names[o.id]) && view.names[o.id].length) {
-      wrap.append(h('div', { class: 'zs-names' }, view.names[o.id].join(', ')));
-    }
-    return wrap;
+    return h('div', { class: 'zs-opt-wrap' }, el);
   }
 
   function pollCard(p) {
@@ -144,49 +136,46 @@ export function mount(ctx) {
     const canVote = open && live() && !p.revealed;
     const card = h('div', { class: 'zz-card zs-pollcard' },
       h('div', { class: 'zs-poll-head' },
-        h('span', { class: 'zs-chip ' + (open ? 'live' : '') }, open ? t('투표 중') : t('마감')),
-        h('span', { class: 'zs-chip' }, p.anonymous === false ? t('공개 투표') : t('비공개 투표'))),
+        h('span', { class: 'zs-chip ' + (open ? 'live' : '') }, open ? t('투표 중') : t('투표 끝'))),
       h('h3', { class: 'zs-q' }, p.q));
-    if (p.anonymous === false && !p.revealed) card.append(h('p', { class: 'zs-note warn' }, t('결과를 보일 때 이름이 함께 공개돼요')));
+    if (canVote && !mine[p.pid]) card.append(h('p', { class: 'zs-howto' }, t('하나를 눌러 골라 주세요.')));
     card.append(...p.options.map(o => optionRow(p, o, view, canVote)));
 
-    if (open && !host && mine[p.pid]) card.append(h('p', { class: 'zs-note' }, t('다른 항목을 누르면 바꿀 수 있어요')));
+    if (open && mine[p.pid]) card.append(h('p', { class: 'zs-note' }, t('골랐어요. 다른 항목을 누르면 바꿀 수 있어요.')));
     if (open && host && view.tally) card.append(h('p', { class: 'zs-note zz-num' }, `${t('지금까지')} ${view.total}${t('명')}`));
-    if (!open && !p.revealed && !host) card.append(h('p', { class: 'zs-note' }, t('마감됐어요. 주관자가 결과를 보이면 나와요')));
+    if (!open && !p.revealed && !host) card.append(h('p', { class: 'zs-note' }, t('투표가 끝났어요. 회의 담당자가 결과를 보여 주면 여기에 나와요.')));
     if (p.revealed) card.append(h('p', { class: 'zs-note zz-num' }, `${t('총')} ${p.total || 0}${t('표')}`));
 
-    card.append(h('p', { class: 'zs-fine' }, t('한 탭 한 표, 의견 확인용')));
+    card.append(h('p', { class: 'zs-fine' }, t('한 사람이 하나만 고를 수 있어요. 누가 무엇을 골랐는지는 아무도 몰라요.')));
 
     if (host) {
       const bar = h('div', { class: 'zs-poll-actions' });
-      if (open) bar.append(h('button', { type: 'button', class: 'zz-btn', disabled: busy, onclick: () => act(() => api.closePoll(mid, p.pid), t('마감하지 못했어요')) }, t('마감하기')));
-      if (!p.revealed) bar.append(h('button', { type: 'button', class: 'zz-btn primary', disabled: busy, onclick: () => act(async () => { await api.revealPoll(mid, p.pid); }, t('결과를 보이지 못했어요')) }, t('결과 보이기')));
+      if (open) bar.append(h('button', { type: 'button', class: 'zz-btn', disabled: busy, onclick: () => act(() => api.closePoll(mid, p.pid), t('투표를 끝내지 못했어요')) }, t('투표 끝내기')));
+      if (!p.revealed) bar.append(h('button', { type: 'button', class: 'zz-btn primary', disabled: busy, onclick: () => act(async () => { await api.revealPoll(mid, p.pid); }, t('결과를 보여 주지 못했어요')) }, t('결과 모두에게 보여 주기')));
       card.append(bar);
     }
     return card;
   }
 
   function createForm() {
-    const q = h('input', { class: 'zs-field', type: 'text', maxlength: '200', value: draft.q, placeholder: t('질문을 적어 주세요'), 'aria-label': t('질문') });
+    const q = h('input', { class: 'zs-field', id: 'zs-newpoll-q', type: 'text', maxlength: '200', value: draft.q, placeholder: t('예: 체육대회 날짜를 이대로 정할까요?'), 'aria-label': t('질문') });
     q.addEventListener('input', () => { draft.q = q.value; });
     const rows = draft.opts.map((v, i) => {
-      const inp = h('input', { class: 'zs-field', type: 'text', maxlength: '40', value: v, 'aria-label': `${t('선택지')} ${i + 1}` });
+      const inp = h('input', { class: 'zs-field', type: 'text', maxlength: '40', value: v, 'aria-label': `${t('고를 것')} ${i + 1}` });
       inp.addEventListener('input', () => { draft.opts[i] = inp.value; });
       return h('div', { class: 'zs-optrow' }, inp,
         draft.opts.length > 2 ? h('button', { type: 'button', class: 'zz-btn ghost zs-mini', onclick: () => { draft.opts.splice(i, 1); render(); } }, t('빼기')) : null);
     });
-    const anon = h('input', { type: 'checkbox', id: 'zs-anon' });
-    anon.checked = draft.anonymous;
-    anon.addEventListener('change', () => { draft.anonymous = anon.checked; render(); });
     return h('div', { class: 'zz-card zs-pollcard' },
-      h('h3', { class: 'zs-q' }, t('새 투표')), q, ...rows,
-      draft.opts.length < 6 ? h('button', { type: 'button', class: 'zz-btn ghost zs-mini', onclick: () => { draft.opts.push(''); render(); } }, t('선택지 더하기')) : null,
-      h('label', { class: 'zs-check', for: 'zs-anon' }, anon, h('span', {}, t('비공개로 하기'))),
-      draft.anonymous ? null : h('p', { class: 'zs-note warn' }, t('공개 투표는 결과를 보일 때 이름이 공개돼요')),
+      h('h3', { class: 'zs-q' }, t('새 투표')),
+      h('label', { class: 'zs-label', for: 'zs-newpoll-q' }, t('질문')), q,
+      h('p', { class: 'zs-label' }, t('고를 것')), ...rows,
+      draft.opts.length < 6 ? h('button', { type: 'button', class: 'zz-btn ghost zs-mini', onclick: () => { draft.opts.push(''); render(); } }, t('고를 것 더하기')) : null,
+      h('p', { class: 'zs-note' }, t('누가 무엇을 골랐는지는 아무도 볼 수 없어요')),
       h('div', { class: 'zs-poll-actions' },
         h('button', { type: 'button', class: 'zz-btn ghost', onclick: () => { creating = false; render(); } }, t('취소')),
-        h('button', { type: 'button', class: 'zz-btn primary', disabled: busy || !live(), onclick: create }, t('투표 열기'))),
-      live() ? null : h('p', { class: 'zs-note' }, t('회의가 시작되면 투표를 열 수 있어요')));
+        h('button', { type: 'button', class: 'zz-btn primary', disabled: busy || !live(), onclick: create }, t('투표 시작하기'))),
+      live() ? null : h('p', { class: 'zs-note' }, t('회의가 시작되면 투표를 시작할 수 있어요')));
   }
 
   function render() {
@@ -199,7 +188,7 @@ export function mount(ctx) {
     else {
       if (p) { loadMine(p); kids.push(pollCard(p)); }
       else kids.push(h('div', { class: 'zs-empty' }, h('img', { class: 'zz-icon', src: ctx.assets('icon-poll'), alt: '' }),
-        h('p', {}, host ? t('아직 투표가 없어요') : t('열린 투표가 없어요'))));
+        h('p', {}, host ? t('아직 투표가 없어요. 「새 투표 만들기」로 열어 보세요.') : t('지금 열린 투표가 없어요. 투표가 열리면 알려 드려요.'))));
       if (host && (!p || p.status !== 'open')) {
         kids.push(h('button', { type: 'button', class: 'zz-btn primary zs-newpoll', onclick: () => { creating = true; render(); } }, t('새 투표 만들기')));
       }
@@ -216,7 +205,11 @@ export function mount(ctx) {
     // 새로 열린 투표가 있고 투표 칸이 닫혀 있으면 알림 숫자 1
     const fresh = open.filter(p => !seenIds.has(p.pid) && !mine[p.pid]);
     list.forEach(p => seenIds.add(p.pid));
-    if (!isHost() && fresh.length && !sideOnPoll()) setBadge(1);
+    if (!isHost() && fresh.length && !sideOnPoll()) {
+      setBadge(1);
+      // 쉬운 화면(B10): 옆칸이 닫힌 태블릿과 휴대폰에서도 알 수 있게 한 번 알린다
+      ctx.toast(t('새 투표가 열렸어요. 「채팅과 투표」에서 골라 주세요.'), 'info');
+    }
     if (sideOnPoll() || !open.length) setBadge(0);
     render();
   }

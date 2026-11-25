@@ -92,13 +92,24 @@ def run(pw, label, launch_kw, base, size):
     btn = lambda text: pg.locator(f'#zz-hostbar-main button[aria-label^="{text}"], #zz-hostbar-main button:not([aria-label]):has-text("{text}")')
     modal = lambda: pg.locator('#zz-modal-root .zz-modal')
     narrow = w < 1024
+    phone = w < 600
+    def more_items():
+        btn('더 보기').click()
+        return modal().locator('.zh-more-item')
     def tool(text):
-        # 1024px 미만은 「더 보기」 창 안에서 누른다
-        if narrow:
-            btn('더 보기').click()
-            modal().locator('.zh-more-item', has_text=text).click()
+        # 쉬운 화면(B11): 드문 기능은 너비와 상관없이 「더 보기」 창 안에 있다
+        more_items().filter(has_text=text).first.click()
+    def rec_click(page, text):
+        # 휴대폰 너비에서는 녹음 단추가 「더 보기」 안 글자 줄로 들어간다
+        if phone:
+            page.locator('#zz-hostbar-main button', has_text='더 보기').click()
+            page.locator('#zz-modal-root .zh-more-item', has_text=text).click()
         else:
-            btn(text).click()
+            page.locator('#zz-hostbar-record button', has_text=text).click()
+    def rec_shown(text, timeout=5000):
+        loc = pg.locator('#zz-hostbar-record button', has_text=text)
+        if phone: expect(loc).to_be_attached(timeout=timeout)
+        else: expect(loc).to_be_visible(timeout=timeout)
     def fits():
         # 5팀 자리의 보이는 단추가 화면 밖으로 잘리지 않는지
         out = pg.evaluate("""() => [...document.querySelectorAll('#zz-hostbar-main button, #zz-hostbar-upload button, #zz-hostbar-record button, #zz-hostbar-record .zh-rec-time')]
@@ -107,12 +118,22 @@ def run(pw, label, launch_kw, base, size):
         assert not out, f'화면 밖으로 잘린 단추 {out}'
 
     def ready_bar():
-        expect(btn('회의 시작')).to_be_visible(timeout=8000)
-        expect(pg.locator('#zz-hostbar-upload button', has_text='안건 올리기')).to_be_visible()
-        expect(pg.locator('#zz-hostbar-record button', has_text='녹음 시작')).to_be_disabled()
-        expect(btn('접속자 3명')).to_be_attached()   # 접속 중 2 + 연결 확인 중 1
-        if narrow: expect(btn('더 보기')).to_be_visible()
-        else: expect(btn('접속자 3명')).to_be_visible()
+        expect(btn('회의 시작하기')).to_be_visible(timeout=8000)
+        expect(btn('회의 시작하기')).to_have_class(__import__('re').compile('primary'))
+        # 주 단추는 하나만(B11): 막대에서 주황(primary) 단추는 「회의 시작하기」 하나
+        prim = pg.evaluate("[...document.querySelectorAll('#zz-hostbar button.primary')].filter(b=>b.offsetParent).length")
+        assert prim == 1, f'주황 단추 {prim}개'
+        # 「안건 올리기」 막대 단추는 숨김(「안건 추가」 한 길로, B7)
+        expect(pg.locator('#zz-hostbar-upload button', has_text='안건 올리기')).to_be_hidden()
+        expect(pg.locator('#zz-hostbar-record button', has_text='녹음 시작하기')).to_be_disabled()
+        expect(pg.locator('.zh-status-text')).to_have_text('시작 전이에요')
+        expect(pg.locator('.zh-status-people')).to_have_text('3명 참여 중')   # 접속 중 2 + 연결 확인 중 1
+        expect(btn('더 보기')).to_be_visible()
+        # 아이콘만 있는 단추 금지: 보이는 단추는 모두 글자가 보인다
+        bare = pg.evaluate("[...document.querySelectorAll('#zz-hostbar button')].filter(b=>b.offsetParent && !b.innerText.trim()).length")
+        assert bare == 0, f'글자 없는 단추 {bare}개'
+        size = pg.evaluate("getComputedStyle(document.querySelector('.zh-status-text')).fontSize")
+        assert float(size[:-2]) >= 15, size
         fits()
         expect(btn('회의 끝내기')).to_be_hidden()
         assert pg.locator('link[href="/zzoom/host.css"]').count() == 1, 'host.css 가 한 번만 붙어야 함'
@@ -120,66 +141,86 @@ def run(pw, label, launch_kw, base, size):
         small = pg.evaluate("""[...document.querySelectorAll('#zz-hostbar button')].filter(b=>b.offsetParent).map(b=>b.getBoundingClientRect()).filter(r=>r.height<44||r.width<44).length""")
         assert small == 0, f'44px 보다 작은 단추 {small}개'
         shot(pg, '01_ready')
-    step('시작 전 막대(회의 시작·안건 올리기·녹음 막힘·접속자 수·44px)', ready_bar)
+    step('시작 전 막대(회의 시작하기 하나만 주황, 안건 올리기 숨김, 녹음 막힘, 참여 수, 글자 있는 단추, 44px)', ready_bar)
 
     def start():
-        btn('회의 시작').click()
+        btn('회의 시작하기').click()
         expect(btn('회의 끝내기')).to_be_visible()
+        expect(btn('회의 시작하기')).to_be_hidden()
         assert calls(pg, 'setState')[-1][0] == 'start', calls(pg, 'setState')
-        expect(btn('모두 내 화면으로')).to_be_visible()
-        expect(pg.locator('.zh-status')).to_have_text('내가 진행 중')
+        expect(pg.locator('.zh-status-text')).to_have_text('내가 발표 중이에요')
+        expect(btn('발표 가져오기')).to_be_hidden()
         pg.evaluate("() => { window.__forced = 0; window.__fake.store.on('cmd:force', () => { window.__forced++; }); }")
-        btn('모두 내 화면으로').click()
+        tool('모두 내 쪽으로 데려오기')
         assert pg.evaluate('window.__forced') == 1, pg.evaluate('window.__forced')
-        expect(pg.locator('#zz-hostbar-record button', has_text='녹음 시작')).to_be_enabled()
+        expect(pg.locator('#zz-hostbar-record button', has_text='녹음 시작하기')).to_be_enabled()
         fits()
         shot(pg, '01b_live')
-    step('회의 시작 → 끝내기·모두 내 화면으로(cmd:force)', start)
+    step('회의 시작하기 → 회의 끝내기, 더 보기 「모두 내 쪽으로 데려오기」(cmd:force)', start)
 
     def take():
         pg.evaluate("window.__fake.setMeeting({presenter:{cid:'c9',name:'최교감',epoch:5}})")
-        expect(pg.locator('.zh-status')).to_have_text('최교감 님이 진행 중')
-        expect(btn('모두 내 화면으로')).to_be_hidden()
-        btn('진행 넘겨받기').click()
-        expect(btn('진행 넘겨받기')).to_be_hidden()
+        expect(pg.locator('.zh-status-text')).to_have_text('다른 분이 발표 중이에요')   # 익명(ANON): 옛 문서에 이름이 있어도 안 보임
+        assert '최교감' not in pg.locator('#zz-hostbar').inner_text()
+        if phone: tool('발표 가져오기')
+        else: btn('발표 가져오기').click()
+        # 발표하기와 같은 확인 창(문구는 사용자 지정 그대로), 첫 초점은 「아니오」
+        expect(modal()).to_contain_text('지금 다른 분이 발표 중이에요.')
+        expect(modal()).to_contain_text('지금부터 화면이 전송됩니다')
+        pg.wait_for_timeout(50)
+        assert pg.evaluate('document.activeElement && document.activeElement.textContent') == '아니오'
+        shot(pg, '01c_take_confirm')
+        modal().locator('button', has_text='아니오').click()
+        assert len(calls(pg, 'takePresenter')) == 0, '아니오인데 가져감'
+        if phone: tool('발표 가져오기')
+        else: btn('발표 가져오기').click()
+        modal().locator('button', has_text='예').click()
+        expect(btn('발표 가져오기')).to_be_hidden()
         assert len(calls(pg, 'takePresenter')) == 1
-        expect(btn('모두 내 화면으로')).to_be_visible()
-    step('다른 진행자 → 진행 넘겨받기', take)
+        expect(pg.locator('.zh-status-text')).to_have_text('내가 발표 중이에요')
+        items = more_items()
+        expect(items.filter(has_text='모두 내 쪽으로 데려오기')).to_have_count(1)
+        modal().locator('button', has_text='닫기').click()
+    step('다른 분 발표 중 → 발표 가져오기(확인 창 예·아니오)', take)
 
     def lock():
-        tool('판서 잠금')
-        expect(btn('판서 잠금 풀기')).to_have_attribute('aria-pressed', 'true')
+        tool('판서 잠그기 (담당자만 쓰기)')
+        pg.wait_for_function("window.__fake.calls.filter(c=>c.name==='setState').pop().args[0]==='penLock'")
         assert calls(pg, 'setState')[-1] == ['penLock', True]
-        if narrow:
-            btn('더 보기').click()
-            expect(modal().locator('.zh-more-item', has_text='판서 잠금 풀기')).to_have_attribute('aria-pressed', 'true')
-            shot(pg, '02a_more')
-            modal().locator('.zh-more-item', has_text='판서 잠금 풀기').click()
-        else:
-            btn('판서 잠금 풀기').click()
-        expect(btn('판서 잠금')).to_have_attribute('aria-pressed', 'false')
+        items = more_items()
+        expect(items.filter(has_text='판서 잠금 풀기')).to_have_attribute('aria-pressed', 'true')
+        shot(pg, '02a_more')
+        items.filter(has_text='판서 잠금 풀기').click()
+        pg.wait_for_function("window.__fake.calls.filter(c=>c.name==='setState').pop().args[1]===false")
+        items = more_items()
+        expect(items.filter(has_text='판서 잠그기 (담당자만 쓰기)')).to_have_attribute('aria-pressed', 'false')
+        modal().locator('button', has_text='닫기').click()
         assert calls(pg, 'setState')[-1] == ['penLock', False]
     step('판서 잠금 켜고 끄기', lock)
 
     def people():
-        tool('접속자')
+        tool('참석자 수 보기 (3명)')
         expect(modal()).to_contain_text('연결 확인 중')
-        expect(modal().locator('.zh-person')).to_have_count(4)
+        # 익명(ANON): 이름 목록 없이 상태별 수만(가짜 people 에 이름이 있어도 안 보임)
+        expect(modal().locator('.zh-person')).to_have_count(2)
         states = modal().locator('.zh-person-state').all_inner_texts()
-        assert states == ['접속 중', '접속 중', '연결 확인 중', '나감'], states
+        assert states == ['접속 중', '연결 확인 중'], states
+        assert modal().locator('.zh-person-count').all_inner_texts() == ['2명', '1명'], modal().locator('.zh-person-count').all_inner_texts()
+        txt = modal().inner_text()
+        assert all(n not in txt for n in ['권주관', '김교사', '박교사', '이교사']), txt
         shot(pg, '02_people')
         modal().locator('button', has_text='닫기').click()
         expect(modal()).to_have_count(0)
-    step('접속자 창(접속 중·연결 확인 중·나감)', people)
+    step('참석자 수 창(익명: 접속 중·연결 확인 중 수만)', people)
 
     def export():
-        tool('AI용 기록 받기')
-        expect(pg.locator('#zz-toast')).to_contain_text('AI용 기록 파일을 받았어요')
+        tool('회의 기록 파일 받기 (AI용)')
+        expect(pg.locator('#zz-toast')).to_contain_text('회의 기록 파일을 받았어요')
         assert len(calls(pg, 'exportMd')) == 1
-    step('AI용 기록 받기(exportMd)', export)
+    step('회의 기록 파일 받기 (AI용)(exportMd)', export)
 
     def agenda():
-        tool('안건 관리')
+        tool('안건 순서 바꾸기')
         items = modal().locator('.zh-agenda-item')
         expect(items).to_have_count(2)
         # 진행 중 안건(첫째)은 지우기 막힘
@@ -203,7 +244,8 @@ def run(pw, label, launch_kw, base, size):
         # 원본 받기
         with pg.expect_download() as dl:
             items.nth(0).locator('button', has_text='원본 받기').click()
-        assert dl.value.suggested_filename == '교육과정.pdf', dl.value.suggested_filename
+        # 원본은 「안건 제목 + 확장자」로 받는다(익명화로 원본 파일 이름은 쓰지 않음)
+        assert dl.value.suggested_filename == '2027 교육과정 운영 계획.pdf', dl.value.suggested_filename
         # 보기 → cmd:nav, 창 닫힘
         pg.evaluate("() => { window.__nav = null; window.__fake.store.on('cmd:nav', d => { window.__nav = d; }); }")
         items.nth(0).locator('button', has_text='보기').click()
@@ -218,7 +260,7 @@ def run(pw, label, launch_kw, base, size):
         upload_input.set_input_files(P_PNG)
         expect(modal()).to_contain_text('이대로 올리기', timeout=30000)
         expect(modal().locator('.zh-thumb img')).to_have_count(1)
-        expect(modal().locator('#zh-up-title')).to_have_value('운영 계획 표')
+        expect(modal().locator('#zh-up-title')).to_have_value('')   # 익명(U19): 파일 이름으로 미리 채우지 않는다
         assert pg.evaluate("document.querySelector('.zh-thumb img').naturalWidth") > 0, '썸네일이 안 그려짐'
         shot(pg, '04_upload_preview')
         modal().locator('#zh-up-title').fill('운영 계획 그림')
@@ -269,7 +311,7 @@ def run(pw, label, launch_kw, base, size):
         modal().locator('button', has_text='다시 올리기').click()
         modal().locator('button', has_text='이대로 올리기').click()
         expect(modal()).to_have_count(0, timeout=15000)
-        expect(pg.locator('#zz-toast')).to_contain_text('「운영 계획 표」 안건을 올렸어요')
+        expect(pg.locator('#zz-toast')).to_contain_text('「새 안건」 안건을 올렸어요')   # 이름을 비우면 「새 안건」(익명: 파일 이름을 쓰지 않음)
         # .ppt 는 창 없이 안내
         upload_input.set_input_files(P_PPT)
         expect(pg.locator('#zz-toast')).to_contain_text('PPTX 나 PDF 로 저장해')
@@ -279,21 +321,22 @@ def run(pw, label, launch_kw, base, size):
     def record():
         pg.evaluate("""async () => { const m = await import('/zzoom/record.js'); m.config.chunkMs = 2000; m.config.retryDelays.splice(0, 3, 300, 300, 300); }""")
         pg.evaluate("window.__fake.store.set('side',{open:true,tab:'log'})")
-        expect(pg.locator('#zz-side-log')).to_contain_text('아직 대화 기록이 없어요')
-        pg.locator('#zz-hostbar-record button', has_text='녹음 시작').click()
+        expect(pg.locator('#zz-side-log')).to_contain_text('아직 녹음 기록이 없어요')
+        rec_click(pg, '녹음 시작하기')
         expect(modal()).to_contain_text('참석자에게 녹음을 알렸나요?')
-        expect(modal()).to_contain_text('Groq')
+        expect(modal()).to_contain_text('바깥 음성 인식 서비스')
+        assert 'Groq' not in modal().inner_text()
         shot(pg, '08_record_notice')
         modal().locator('button', has_text='알렸어요, 녹음 시작').click()
-        expect(pg.locator('#zz-hostbar-record button', has_text='녹음 멈추기')).to_be_visible(timeout=8000)
+        rec_shown('녹음 멈추기', 8000)
         assert calls(pg, 'setState')[-1] == ['recording', True]
         expect(pg.locator('.zh-rec-banner')).to_be_visible()
-        expect(pg.locator('.zh-rec-time')).to_contain_text('●')
+        expect(pg.locator('.zh-rec-time')).to_contain_text('● 녹음 중')
         # 첫 조각
         expect(pg.locator('.zh-log-item')).to_have_count(1, timeout=10000)
         t = calls(pg, 'transcribe')[0][0]
         assert t['size'] > 0 and t['type'] in ('audio/webm', 'audio/ogg', 'audio/mp4') and t['n'] == 0 and t['aid'], t
-        expect(pg.locator('.zh-log-item').first).to_contain_text('안건1 1쪽')
+        expect(pg.locator('.zh-log-item').first).to_contain_text('1번 안건 1쪽')
         # 연결 오류 2번 → 대기열에서 다시 보내 성공
         pg.evaluate('window.__fake.transcribeFail = 2')
         expect(pg.locator('.zh-log-item')).to_have_count(2, timeout=12000)
@@ -306,8 +349,8 @@ def run(pw, label, launch_kw, base, size):
         pg.locator('.zh-q.is-failed button', has_text='다시 보내기').first.click()
         expect(pg.locator('.zh-log-item')).to_have_count(3, timeout=8000)
         # 멈추기
-        pg.locator('#zz-hostbar-record button', has_text='녹음 멈추기').click()
-        expect(pg.locator('#zz-hostbar-record button', has_text='녹음 시작')).to_be_visible()
+        rec_click(pg, '녹음 멈추기')
+        rec_shown('녹음 시작하기')
         assert calls(pg, 'setState')[-1] == ['recording', False]
         expect(pg.locator('.zh-rec-banner')).to_be_hidden()
         # 기록 위치 누르면 그 쪽으로
@@ -328,10 +371,12 @@ def run(pw, label, launch_kw, base, size):
         btn('회의 끝내기').click()
         expect(modal()).to_contain_text('끝내면 다시 열 수 없어요')
         modal().locator('button', has_text='회의 끝내기').click()
-        expect(pg.locator('.zh-status')).to_have_text('회의가 끝났어요')
+        expect(pg.locator('.zh-status-text')).to_have_text('회의가 끝났어요')
         assert calls(pg, 'setState')[-1][0] == 'end', calls(pg, 'setState')
         expect(btn('회의 끝내기')).to_be_hidden()
-        expect(btn('판서 잠금')).to_be_hidden()
+        items = more_items()
+        assert all('판서' not in t for t in items.all_inner_texts()), items.all_inner_texts()
+        modal().locator('button', has_text='닫기').click()
         expect(pg.locator('#zz-hostbar-upload button')).to_be_disabled()
         expect(pg.locator('#zz-hostbar-record button')).to_be_disabled()
         shot(pg, '10_ended')
@@ -351,6 +396,53 @@ def run(pw, label, launch_kw, base, size):
         shot(p2, '11_viewer_log')
         c2.close()
     step('참석자: 녹음 중 안내만, 주관자 막대·녹음 단추 없음', viewer)
+
+    def stop_present():
+        c4, p4 = new_page(status='live')
+        p4.locator('#zz-hostbar-main button', has_text='회의 끝내기').wait_for(timeout=8000)
+        p4.evaluate("window.__fake.setMeeting({presenter:{cid:'c9',epoch:5}, live:{aid:'aaaaaaa1',page:2,rev:1,epoch:5,forceSeq:0}})")
+        expect(p4.locator('.zh-status-text')).to_have_text('다른 분이 발표 중이에요')
+        p4.locator('#zz-hostbar-main button', has_text='더 보기').click()
+        p4.locator('#zz-modal-root .zh-more-item', has_text='발표 마치기').click()
+        expect(p4.locator('#zz-modal-root .zz-modal')).to_contain_text('「오늘의 안건」 화면으로 돌아가요')
+        p4.locator('#zz-modal-root .zz-modal button', has_text='발표 마치기').click()
+        p4.wait_for_function("window.__fake.calls.some(c=>c.name==='presenterEnd')")
+        expect(p4.locator('.zh-status-text')).to_have_text('회의 중이에요')
+        expect(p4.locator('#zz-hostbar-main button', has_text='발표 가져오기')).to_be_hidden()
+        p4.locator('#zz-hostbar-main button', has_text='더 보기').click()
+        assert p4.locator('#zz-modal-root .zh-more-item', has_text='발표 마치기').count() == 0
+        shot(p4, '12_after_stop_present')
+        c4.close()
+    step('담당자: 더 보기 「발표 마치기」(presenterEnd) → 회의 중이에요', stop_present)
+
+    def leave_while_recording(how):
+        # U09: 녹음 중에 회의를 나가면(목록으로 이동 / 탭 닫기) 마지막 조각과 남은 대기열을 보내고 녹음 멈춤을 알린다
+        c3, p3 = new_page(status='live')
+        p3.evaluate("""async () => { const m = await import('/zzoom/record.js'); m.config.chunkMs = 2000; m.config.retryDelays.splice(0, 3, 60000, 60000, 60000); }""")
+        rec_click(p3, '녹음 시작하기')
+        p3.locator('#zz-modal-root .zz-modal button', has_text='알렸어요, 녹음 시작').click()
+        expect(p3.locator('#zz-hostbar-record button', has_text='녹음 멈추기')).to_be_attached(timeout=8000)
+        p3.wait_for_function("window.__fake.transcript.some(t => t.n === 0)", timeout=10000)   # 첫 조각은 글로 바뀜
+        p3.evaluate('window.__fake.transcribeFail = 99')     # 둘째 조각은 실패해 대기열에 남는다
+        p3.wait_for_function("window.__fake.calls.some(c => c.name === 'transcribe' && c.args[0].n === 1)", timeout=10000)
+        p3.wait_for_timeout(1500)                           # 셋째 조각을 1.5초쯤 녹음한 때
+        before = len(calls(p3, 'transcribe'))
+        if how == 'nav':
+            p3.evaluate("location.hash = '#/'")
+        else:
+            p3.evaluate("window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }))")
+        p3.wait_for_timeout(300)
+        after = calls(p3, 'transcribe')[before:]
+        ns = sorted(c[0]['n'] for c in after)
+        assert ns == [1, 2], f'나갈 때 보낸 조각 {ns}'
+        part = [c[0] for c in after if c[0]['n'] == 2][0]
+        assert part['size'] > 0, part
+        assert calls(p3, 'setState')[-1] == ['recording', False], calls(p3, 'setState')
+        mic = p3.evaluate("window.__fake.meeting.recording")
+        assert mic is False, '서버 녹음 상태가 꺼지지 않음'
+        c3.close()
+    step('녹음 중 목록으로 나가기: 마지막 조각·대기열 보내고 녹음 멈춤(U09)', lambda: leave_while_recording('nav'))
+    step('녹음 중 탭 닫기(pagehide): 마지막 조각·대기열 보내고 녹음 멈춤(U09)', lambda: leave_while_recording('pagehide'))
 
     real_err = [e for e in errors if 'favicon' not in e]
     if REAL:

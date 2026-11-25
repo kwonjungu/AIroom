@@ -8,7 +8,7 @@ export async function convertImage(file, ctx, out) {
     try { await createImageBitmap(file).then((b) => b.close()); } catch (e) { throw new ConvertError('HEIC_UNSUPPORTED', e && e.message, e); }
   }
   let bmp;
-  try { bmp = await createImageBitmap(file); } catch (e) { throw new ConvertError('IMAGE_DECODE', e && e.message, e); }
+  try { bmp = await ctx.race(createImageBitmap(file)); } catch (e) { if (e instanceof ConvertError) throw e; throw new ConvertError('IMAGE_DECODE', e && e.message, e); }
   try {
     if (bmp.width * bmp.height > LIMITS.maxImagePixels) throw new ConvertError('IMAGE_TOO_LARGE', `${bmp.width}×${bmp.height}`);
     const s = Math.min(1, LIMITS.longSide / Math.max(bmp.width, bmp.height));

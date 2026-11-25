@@ -124,7 +124,9 @@ const up = (ctx, p, n, type) => ctx.storage().ref(p).put(bytes(n), { contentType
 const upTok = (o = {}) => as(Object.assign({ role: 'host', up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024 }, o));
 const UPD = 'zzoom/m1/up/u1/';
 const webp = 'image/webp';
-T('storage: viewer 업로드 거절', () => no(up(as({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024 }), UPD + 'p001.webp', 10, webp)));
+// AGENDA_OPEN(2026-11-25): 참석자도 안건 자료를 올린다 — 규칙은 role 이 아니라 그 uploadId 의 up claim 만 본다.
+T('storage: viewer 도 자기 업로드 출입증(up)으로는 올린다(AGENDA_OPEN)', () => ok(up(as({ up: 'u7', upPages: 2, upExt: 'pdf', upBytes: 1024 }), 'zzoom/m1/up/u7/p001.webp', 10, webp)));
+T('storage: viewer 회의 출입증(up 없음)으로는 업로드 거절', () => no(up(as({}), UPD + 'p001.webp', 10, webp)));
 T('storage: claim 없음 업로드 거절', () => no(up(env.authenticatedContext('u1'), UPD + 'p001.webp', 10, webp)));
 T('storage: 업로드 출입증 없는 host(회의 출입증) 거절(지적01)', () => no(up(as({ role: 'host' }), UPD + 'p001.webp', 10, webp)));
 T('storage: 다른 uploadId 의 출입증 거절', () => no(up(upTok({ up: 'u9' }), UPD + 'p001.webp', 10, webp)));
@@ -157,10 +159,20 @@ T('storage: 원본은 허가 확장자·바이트·형식만(지적02·09)', asy
   await ok(up(upTok({ up: 'u2', upExt: 'pptx' }), 'zzoom/m1/up/u2/original.pptx', 1024, 'application/vnd.openxmlformats-officedocument.presentationml.presentation'));
   await no(up(upTok({ up: 'u3', upExt: 'pptx' }), 'zzoom/m1/up/u3/original.pptx', 1024, 'application/vnd.ms-excel'));
 });
+// 같은 경로 덮어쓰기: 규칙 create 에 resource == null 을 넣어 에뮬레이터에서도 거절(실엔진은 update 로 거절, AGENDA_OPEN).
 T('storage: 덮어쓰기 거절', async () => {
   const h = upTok();
   await ok(up(h, UPD + 'p002.webp', 1000, webp));
   await no(up(h, UPD + 'p002.webp', 1000, webp));
+});
+T('storage: 출입증의 파일당 상한(upPageMax·upThumbMax)을 넘는 쪽·썸네일 거절(감사 R2 M2)', async () => {
+  // 다른 시험이 쓴 파일과 겹치지 않게 다른 uploadId 폴더(u7)를 쓴다(덮어쓰기는 resource == null 로 거절되므로)
+  const h = upTok({ up: 'u7', upPages: 200, upPageMax: 1048576, upThumbMax: 104857 });
+  const D = 'zzoom/m1/up/u7/';
+  await no(up(h, D + 'p001.webp', 1048577, webp));
+  await ok(up(h, D + 'p002.webp', 1048576, webp));
+  await no(up(h, D + 't001.webp', 104858, webp));
+  await ok(up(h, D + 't002.webp', 104857, webp));
 });
 T('storage: host 가 up 밖 경로에 쓰기 거절', () => no(up(upTok(), 'zzoom/m1/pages/p001.webp', 100, webp)));
 T('storage: zzoom-vendor 는 읽기·쓰기 모두 거절', async () => {

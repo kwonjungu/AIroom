@@ -28,3 +28,4 @@ data-hub/
 public/zzoom/assets/_src/
 
 __pycache__/
+firestore-debug.log

@@ -1,0 +1,83 @@
+/* 쭘 대기 화면 「오늘의 안건」(AGENDA_OPEN). 접두사 .za- 만, 색은 --zz-* 만. 자리 #zz-wait 는 무대 위 덮개(agenda.js 가 크기를 맞춘다) */
+#zz-wait { position: absolute; z-index: 6; box-sizing: border-box; }
+#zz-wait[hidden] { display: none; }
+#zz-wait.is-full { display: flex; align-items: stretch; justify-content: center; padding: var(--zz-s4); background: var(--zz-stage); overflow: hidden; }
+/* 작은 단추만: 덮개가 무대 손짓을 막지 않게 */
+#zz-wait.is-mini { pointer-events: none; background: none; }
+.za-mini { position: absolute; left: var(--zz-s3); top: var(--zz-s3); min-height: 48px; font-size: 16px; font-weight: 600; pointer-events: auto; box-shadow: var(--zz-shadow); gap: var(--zz-s2); }
+.za-mini-n { min-width: 22px; height: 22px; padding: 0 6px; border-radius: var(--zz-r-chip); background: var(--zz-accent-soft); color: var(--zz-accent-ink); font-size: 15px; display: inline-flex; align-items: center; justify-content: center; }
+
+.za-panel { width: min(760px, 100%); display: flex; flex-direction: column; min-height: 0; padding: var(--zz-s6); box-shadow: var(--zz-shadow); }
+.za-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--zz-s4); flex-wrap: wrap; padding-bottom: var(--zz-s4); border-bottom: 1px solid var(--zz-line); }
+.za-head-text { min-width: 0; flex: 1 1 260px; }
+.za-title { margin: 0; font-size: 26px; font-weight: 700; display: flex; align-items: center; gap: var(--zz-s3); color: var(--zz-ink); }
+.za-count { font-size: 15px; font-weight: 600; color: var(--zz-accent-ink); background: var(--zz-accent-soft); border-radius: var(--zz-r-chip); padding: 2px 10px; }
+.za-sub { margin: var(--zz-s2) 0 0; color: var(--zz-muted); font-size: 16px; line-height: 1.5; }
+.za-sub + .za-sub { margin-top: 2px; }
+.za-head-actions { display: flex; gap: var(--zz-s2); flex: none; }
+.za-head-actions .zz-btn, .za-actions .zz-btn { min-height: var(--zz-touch); }
+
+.za-list { list-style: none; margin: 0; padding: var(--zz-s2) 0 0; overflow-y: auto; min-height: 0; flex: 1; }
+.za-item { display: flex; align-items: center; gap: var(--zz-s3); padding: var(--zz-s3) 0; border-bottom: 1px solid var(--zz-line); flex-wrap: wrap; }
+.za-item:last-child { border-bottom: 0; }
+.za-item.is-live .za-no { background: var(--zz-accent); color: #fff; }
+.za-main { flex: 1 1 280px; min-width: 0; display: flex; align-items: center; gap: var(--zz-s4); padding: var(--zz-s2); margin: 0; border: 0; border-radius: var(--zz-r-btn); background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; min-height: var(--zz-touch); }
+.za-main:hover, .za-main:focus-visible { background: var(--zz-accent-soft); }
+.za-no { flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--zz-canvas); display: inline-flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--zz-ink); }
+.za-text { min-width: 0; display: flex; flex-direction: column; gap: var(--zz-s1); }
+.za-name { font-size: 20px; font-weight: 600; color: var(--zz-ink); overflow-wrap: anywhere; line-height: 1.35; }
+.za-meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--zz-s2); font-size: 15px; color: var(--zz-muted); }
+.za-meta .zz-chip { height: 28px; font-size: 14px; }
+.za-chip-mine { background: var(--zz-accent-soft); color: var(--zz-accent-ink); font-weight: 600; }
+.za-item.is-nofile .za-name { color: var(--zz-muted); }
+.za-actions { display: flex; flex-wrap: wrap; gap: var(--zz-s2); justify-content: flex-end; flex: 0 1 auto; }
+.za-present { font-weight: 600; }
+.za-edit[aria-expanded="true"] { background: var(--zz-canvas); }
+.za-edit-menu { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zz-s2); justify-content: flex-end; padding: var(--zz-s2) var(--zz-s3); border-radius: var(--zz-r-btn); background: var(--zz-canvas); }
+.za-edit-menu .zz-btn { min-height: var(--zz-touch); }
+.za-edit-menu .za-muted { flex-basis: 100%; text-align: right; }
+.za-first { margin-top: var(--zz-s2); }
+.za-empty { padding: var(--zz-s8) var(--zz-s4); }
+
+/* 창 안쪽(안건 추가·이름 바꾸기·자료 올리기·발표 확인) */
+.za-form { display: flex; flex-direction: column; gap: var(--zz-s4); }
+.za-field { display: flex; flex-direction: column; gap: var(--zz-s2); font-size: 16px; color: var(--zz-muted); }
+.za-input { font: inherit; font-size: 16px; color: var(--zz-ink); min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); box-sizing: border-box; width: 100%; }
+.za-input:focus { outline: 2px solid var(--zz-accent); outline-offset: 1px; }
+.za-file-row { display: flex; align-items: center; gap: var(--zz-s3); flex-wrap: wrap; }
+.za-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.za-file-name { color: var(--zz-ink); overflow-wrap: anywhere; font-size: 16px; }
+.za-muted { margin: 0; color: var(--zz-muted); font-size: 15px; line-height: 1.5; }
+.za-err { margin: 0; min-height: 1em; color: var(--zz-live); font-size: 16px; }
+.za-err:empty { display: none; }
+.za-confirm p { margin: 0 0 var(--zz-s3); line-height: 1.5; }
+.za-confirm-busy { color: var(--zz-ink); font-weight: 600; }
+.za-confirm-main { font-size: 18px; color: var(--zz-ink); }
+.za-up { display: flex; flex-direction: column; gap: var(--zz-s3); }
+.za-up-file { margin: 0; font-size: 16px; color: var(--zz-ink); overflow-wrap: anywhere; }
+.za-up-main { display: flex; flex-direction: column; gap: var(--zz-s3); }
+.za-up-actions { display: flex; justify-content: flex-end; gap: var(--zz-s2); flex-wrap: wrap; }
+.za-progress { height: 8px; border-radius: var(--zz-r-chip); background: var(--zz-canvas); overflow: hidden; }
+.za-progress-fill { height: 100%; width: 0; background: var(--zz-accent); border-radius: inherit; transition: width var(--zz-dur) ease; }
+.za-progress-text { margin: 0; font-size: 16px; color: var(--zz-ink); }
+.za-thumbs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: var(--zz-s2); max-height: 240px; overflow-y: auto; }
+.za-thumb { position: relative; border: 1px solid var(--zz-line); border-radius: 8px; overflow: hidden; background: var(--zz-canvas); }
+.za-thumb img { display: block; width: 100%; height: auto; }
+.za-thumb span { position: absolute; right: 4px; bottom: 4px; font-size: 14px; background: rgba(29, 29, 31, .7); color: #fff; padding: 0 5px; border-radius: 6px; }
+.za-warns { margin: 0; padding-left: 1.2em; font-size: 15px; color: #7a4b00; }
+.za-error p { margin: 0; color: var(--zz-live); }
+
+@media (max-width: 767.98px) {
+  #zz-wait.is-full { padding: var(--zz-s2); }
+  .za-panel { padding: var(--zz-s4); }
+  .za-title { font-size: 21px; }
+  .za-name { font-size: 17px; }
+  .za-no { width: 36px; height: 36px; font-size: 17px; }
+  .za-main { flex-basis: 100%; gap: var(--zz-s3); }
+  .za-actions { justify-content: flex-start; padding-left: calc(36px + var(--zz-s3) + var(--zz-s2)); flex-wrap: nowrap; }
+  .za-present, .za-actions .za-upload { flex: 1; }
+  .za-edit-menu { justify-content: flex-start; }
+  .za-edit-menu .za-muted { text-align: left; }
+  .za-head-actions { width: 100%; }
+  .za-head-actions .za-add { flex: 1; }
+}

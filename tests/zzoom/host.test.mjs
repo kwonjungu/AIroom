@@ -28,6 +28,8 @@ test('sortPeople·countOnline', () => {
   assert.equal(host.countOnline(ppl, { people: 9 }, NOW), 2);
   assert.equal(host.countOnline([], { people: 9 }, NOW), 9);
   assert.equal(host.countOnline(null, null, NOW), 0);
+  // 익명(ANON): 접속자는 상태별 수만
+  assert.deepEqual(host.presenceCounts(ppl, NOW), { on: 1, checking: 1, left: 2 });
 });
 
 test('moveIndex 경계', () => {
@@ -82,8 +84,8 @@ test('record 보조 함수', () => {
   assert.equal(rec.elapsed(61_500), '01:01');
   assert.equal(rec.elapsed(3_661_000), '1:01:01');
   const ag = [{ aid: 'a1', kind: 'pdf' }, { aid: 'b1', kind: 'board' }];
-  assert.equal(rec.placeText({ aid: 'a1', page: 5 }, ag), '안건1 5쪽');
-  assert.equal(rec.placeText({ aid: 'b1', page: 2 }, ag), '화이트보드 2쪽');
+  assert.equal(rec.placeText({ aid: 'a1', page: 5 }, ag), '1번 안건 5쪽');
+  assert.equal(rec.placeText({ aid: 'b1', page: 2 }, ag), '칠판 2쪽');
   assert.equal(rec.placeText({ aid: 'zz', page: 2 }, ag), '지운 안건 2쪽');
   assert.equal(rec.placeText({}, ag), '');
   assert.equal(rec.isFatal({ status: 0 }), false);
@@ -169,4 +171,16 @@ test('ChunkQueue: 429 는 더 오래 쉼', async () => {
   assert.ok(timer.q.length === 1 && timer.q[0].at - t0 >= 59000);
   q.close();
   assert.equal(timer.q.length, 0);
+});
+
+test('ChunkQueue.takeAll: 보내는 중인 것은 두고 나머지(실패 포함)를 n 순서로 꺼내고 닫음', () => {
+  const q = new rec.ChunkQueue({ send: () => new Promise(() => {}), timer: fakeTimer() });
+  q.add({ n: 3, blob: { size: 1 } });   // 바로 보내는 중이 됨
+  q.list.push({ n: 5, blob: { size: 1 }, state: 'retry', tries: 1 });
+  q.list.push({ n: 4, blob: { size: 1 }, state: 'failed', tries: 4 });
+  q.list.push({ n: 6, blob: null, state: 'failed', tries: 0 });  // 소리 없는 실패 표시는 못 보냄
+  const out = q.takeAll();
+  assert.deepEqual(out.map(x => x.n), [4, 5]);
+  assert.deepEqual(q.list.map(x => x.n), [3]);
+  assert.equal(q.closed, true);
 });

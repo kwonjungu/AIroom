@@ -19,6 +19,9 @@ import {
     getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc,
     getDocs, writeBatch, serverTimestamp, query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {
+    getAuth, setPersistence, inMemoryPersistence, signInWithCustomToken, signOut
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const HOST = () => window.CODOCS_HOST || {};
 const toast = (m, t) => { const h = HOST(); if (h.toast) h.toast(m, t); else console.log('[codocs]', m); };
@@ -27,7 +30,12 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 /* ===================== 상태 ===================== */
 let db = null;
 let ready = false;            // Firestore 연결 완료
+let authState = 'none';       // Firestore 출입증: ok(받음) / unconfigured(서버에 키 없음 → 예전처럼 비로그인) / failed
 let booting = null;           // 부트 Promise (중복 호출 방지)
+let codocsApp = null;         // 'codocs' Firebase 앱(출입증 갱신에 쓴다)
+let codocsAuthUntil = 0;      // 지금 출입증의 until(ms). 0 이면 모름 → 새로 받는다
+let codocsRefreshTimer = null;
+const CODOCS_REFRESH_MARGIN = 60000;   // until 1분 전에 다시 로그인(AL01)
 let sheets = [];              // 시트 메타 목록
 let activeSheetId = null;
 let rows = [];                // 활성 시트의 행
@@ -171,9 +179,7 @@ async function boot() {
     if (ready) return true;
     if (booting) return booting;
     booting = (async () => {
-        const headers = {};
-        const t = HOST().authToken;
-        if (t) headers['X-Auth-Token'] = t;
+        const headers = codocsAuthHeaders();
         let cfg = null;
         try { cfg = await fetch('/api/firebase-config', { headers }).then(r => r.json()); } catch (e) { cfg = null; }
         if (!cfg || !cfg.apiKey) throw new Error('Firebase 설정을 가져오지 못했습니다 (FIREBASE_* 환경변수 확인)');
@@ -181,10 +187,90 @@ async function boot() {
             ? getApp('codocs')
             : initializeApp(cfg, 'codocs');
         db = getFirestore(app, 'kwon');   // ⚠ DB 이름이 (default)가 아니라 'kwon'
+        codocsApp = app;
+        await signInCodocs(app);
         ready = true;
         return true;
     })();
     try { return await booting; } finally { booting = null; }
+}
+
+/* Firestore 출입증 — firestore.rules 는 codocs_* 를 백암이 출입증(claim ba==1, until 이 안 지난 것)에게만 연다.
+   codocs 앱('codocs')은 SPA 창고용 compat 앱과 다른 Firebase 앱이라 따로 로그인한다.
+   서버 GET /api/firebase-token(백암이 로그인 세션) → 맞춤 토큰 → signInWithCustomToken.
+   출입증은 탭 메모리에만(실서비스·카피본이 같은 도메인). 서버에 키가 없으면(503) 예전처럼 비로그인으로 둔다.
+   until = min(서버 세션 만료, 발급+1시간)이라 until 1분 전에 새 토큰으로 다시 로그인한다(AL01).
+   같은 uid 로 다시 로그인하므로 Firestore 구독(onSnapshot)은 끊기지 않고 새 토큰으로 이어진다. */
+function codocsTokenUntil(token) {
+    try {
+        const p = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        const u = Number(JSON.parse(atob(p + '==='.slice((p.length + 3) % 4))).claims.until);
+        return Number.isFinite(u) && u > 0 ? u : 0;
+    } catch (e) { return 0; }
+}
+function codocsAuthHeaders() {
+    const headers = {};
+    const t = HOST().authToken;
+    if (t) headers['X-Auth-Token'] = t;
+    return headers;
+}
+async function signInCodocs(app) {
+    const auth = getAuth(app);
+    // currentUser 만으로 통과시키지 않는다: until 을 알고 1분 넘게 남았을 때만 그대로 쓴다
+    if (auth.currentUser && authState === 'ok' && codocsAuthUntil - Date.now() > CODOCS_REFRESH_MARGIN) return;
+    try { await setPersistence(auth, inMemoryPersistence); } catch (e) { }
+    let r = null;
+    try { r = await fetch('/api/firebase-token', { headers: codocsAuthHeaders() }); } catch (e) { r = null; }
+    if (r && r.status === 503) { authState = 'unconfigured'; return; }
+    let token = null;
+    if (r && r.ok) { try { token = (await r.json()).token; } catch (e) { token = null; } }
+    if (!token) {
+        const kind = r && r.status === 401 ? 'LOGIN' : 'TOKEN';
+        // 서버 세션이 끝났거나(401) 기존 출입증도 이미 지났으면 남은 Firebase 인증을 버린다
+        if (auth.currentUser && (kind === 'LOGIN' || codocsAuthUntil <= Date.now())) {
+            try { await signOut(auth); } catch (e) { }
+            codocsAuthUntil = 0;
+        }
+        if (!auth.currentUser) authState = 'failed';
+        throw new Error(kind);
+    }
+    try { await signInWithCustomToken(auth, token); authState = 'ok'; }
+    catch (e) { authState = 'failed'; console.warn('[codocs] 출입증 로그인 실패', e && e.code); throw new Error('TOKEN'); }
+    codocsAuthUntil = codocsTokenUntil(token) || (Date.now() + 55 * 60000);
+    scheduleCodocsRefresh(app);
+}
+/* until 1분 전에 다시 받는다. 일시 실패면 until 전까지 30초 간격으로 다시, 로그인이 풀렸으면(401) 안내 */
+function scheduleCodocsRefresh(app) {
+    if (codocsRefreshTimer) clearTimeout(codocsRefreshTimer);
+    const wait = Math.max(0, codocsAuthUntil - CODOCS_REFRESH_MARGIN - Date.now());
+    codocsRefreshTimer = setTimeout(async () => {
+        codocsRefreshTimer = null;
+        try { await signInCodocs(app); }
+        catch (e) {
+            if (e && e.message === 'LOGIN') { showAuthHelp('LOGIN'); return; }
+            if (codocsAuthUntil > Date.now()) {
+                codocsRefreshTimer = setTimeout(() => scheduleCodocsRefresh(app), 30000);
+            } else showAuthHelp('TOKEN');
+        }
+    }, Math.min(wait, 2147483647));
+}
+
+/* 출입증을 못 받았거나(로그인 만료 등) 규칙이 막을 때의 화면 안내 */
+function showAuthHelp(kind) {
+    const page = document.getElementById('page-codocs');
+    if (!page) return;
+    const msg = kind === 'LOGIN'
+        ? '로그인이 풀려 문서를 열 수 없습니다. 화면을 새로고침하고 접속 코드로 다시 로그인해 주세요.'
+        : '문서 서버 출입 확인에 실패했습니다. 잠시 뒤 새로고침해 보고, 계속 안 되면 관리자에게 알려 주세요.';
+    page.innerHTML = shell(`<div class="cd-empty">🔒 ${esc(msg)}
+        <div style="margin-top:10px;"><button class="btn btn-primary" data-cd="reloadPage">🔄 새로고침</button></div></div>`);
+    const b = page.querySelector('[data-cd=reloadPage]');
+    if (b) b.addEventListener('click', () => location.reload());
+}
+// permission-denied: 출입증이 있으면 규칙 문제(게시 안내), 없으면 로그인 문제
+function onDenied() {
+    if (authState === 'ok' || authState === 'unconfigured') showRulesHelp();
+    else showAuthHelp('TOKEN');
 }
 
 /* ===================== 구독 ===================== */
@@ -199,7 +285,7 @@ function watchSheets() {
         render();
     }, err => {
         console.warn('[codocs] sheets', err);
-        if (err.code === 'permission-denied') showRulesHelp();
+        if (err.code === 'permission-denied') onDenied();
         else showFatal('시트 목록을 불러오지 못했습니다: ' + err.message);
     });
 }
@@ -252,7 +338,7 @@ function watchMembers() {
         render();
     }, err => {
         console.warn('[codocs] members', err);
-        if (err.code === 'permission-denied') showRulesHelp();
+        if (err.code === 'permission-denied') onDenied();
     });
 }
 
@@ -307,11 +393,25 @@ export async function open() {
     const page = document.getElementById('page-codocs');
     if (!page) return;
     opened = true;
+    // 시연용 카피본·공유 데모에서는 실제 학교 문서(IP 대장·명부)를 열지 않는다(Firestore 에 붙지 않음)
+    if (window.IS_COPY || /^\/posting(\/|$)/.test(location.pathname)) {
+        page.innerHTML = shell('<div class="cd-empty">🔒 함께 만드는 문서는 시연에서 제외했습니다. 실제 학교 문서(IP 대장·교직원 명부)가 들어 있어 학교 계정으로 로그인한 화면에서만 열립니다.</div>');
+        return;
+    }
     if (!ready) {
         page.innerHTML = shell('<div class="cd-empty">🔌 실시간 서버에 연결하는 중…</div>');
-        try { await boot(); } catch (e) { showFatal(e.message); return; }
+        try { await boot(); } catch (e) {
+            if (e.message === 'LOGIN' || e.message === 'TOKEN') showAuthHelp(e.message); else showFatal(e.message);
+            return;
+        }
         watchMembers();
         watchSheets();
+    } else if (codocsApp) {
+        // 다시 열 때도 출입증 기한을 본다(지났으면 새로 받는다)
+        try { await signInCodocs(codocsApp); } catch (e) {
+            if (e.message === 'LOGIN' || e.message === 'TOKEN') showAuthHelp(e.message); else showFatal(e.message);
+            return;
+        }
     }
     render();
     startBeat();

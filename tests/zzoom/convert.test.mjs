@@ -7,13 +7,14 @@ const require = createRequire(import.meta.url);
 
 // 캔버스 흉내: toBlob 이 돌려줄 형식을 시험마다 정한다
 let encodeAs = 'image/webp';
+let sizeFor = null;   // (품질, 캔버스) → 만들 blob 바이트 수(시험용)
 globalThis.document = {
   createElement(tag) {
     assert.equal(tag, 'canvas');
     return {
       width: 0, height: 0,
       getContext: () => ({ drawImage() {}, fillRect() {}, set imageSmoothingQuality(_) {} }),
-      toBlob(cb, type) { setTimeout(() => cb(encodeAs === null ? null : new Blob(['x'], { type: encodeAs === 'same' ? type : encodeAs })), 0); },
+      toBlob(cb, type, q) { setTimeout(() => cb(encodeAs === null ? null : new Blob([sizeFor ? new Uint8Array(sizeFor(q, this)) : 'x'], { type: encodeAs === 'same' ? type : encodeAs })), 0); },
     };
   },
 };
@@ -101,4 +102,71 @@ test('지적09: Storage 규칙의 원본 형식 목록은 형식표 MIME 을 모
   for (const s of Object.values(SOURCES)) for (const t of s.mimes) assert.ok(re.test(t), t);
   assert.ok(re.test('application/octet-stream'));
   assert.ok(!re.test('text/html')); assert.ok(!re.test('image/svg+xml'));
+});
+
+test('R1-N7: 쪽 WebP 가 4MiB 를 넘으면 품질을 낮춰 다시 저장하고, 끝내 넘으면 분명히 멈춘다', async () => {
+  const { emitPage, Ctx, ConvertError, LIMITS } = await import('../../public/zzoom/convert/core.js');
+  encodeAs = 'same';
+  const qs = [];
+  sizeFor = (q, c) => { if (c.width > 400) { qs.push(q); return q > 0.6 ? 5 * 1024 * 1024 : 3 * 1024 * 1024; } return 1000; };
+  const out = { pages: [], thumbs: [] };
+  await emitPage(canvas(2000, 1400), out, new Ctx());
+  assert.equal(out.pages.length, 1);
+  assert.ok(out.pages[0].blob.size <= LIMITS.maxPageBytes, '4MiB 이하');
+  assert.ok(qs.length >= 2 && qs[qs.length - 1] < qs[0], '품질을 낮춰 다시 저장');
+  sizeFor = (q, c) => c.width > 400 ? 6 * 1024 * 1024 : 1000;
+  const c = canvas(2000, 1400);
+  await assert.rejects(emitPage(c, { pages: [], thumbs: [] }, new Ctx()), (e) => e instanceof ConvertError && e.code === 'PAGE_TOO_LARGE');
+  assert.equal(c.width, 0);
+  sizeFor = null;
+});
+
+test('R1-N6: HWP 쪽 캔버스도 긴 변 2000px 을 넘지 않게 줄인다(PDF 와 같은 반올림·자르기)', async () => {
+  const { fitCanvas } = await import('../../public/zzoom/convert/core.js');
+  const big = canvas(2001, 1415);
+  const f = fitCanvas(big);
+  assert.ok(Math.max(f.width, f.height) <= 2000, `${f.width}x${f.height}`);
+  assert.equal(f.width, 2000); assert.equal(f.height, 1414);
+  assert.equal(big.width, 0, '원래 캔버스는 비운다');
+  const ok = canvas(1414, 2000);
+  assert.equal(fitCanvas(ok), ok, '한도 안이면 그대로');
+  const src = fs.readFileSync(new URL('../../public/zzoom/convert/hwp.js', import.meta.url), 'utf8');
+  assert.match(src, /fitCanvas\(/, 'hwp.js 가 그린 뒤 fitCanvas 로 줄인다');
+});
+
+test('R1-N11: 라이브러리 적재는 처음 변환의 취소에 묶이지 않는다(동시 변환 중 하나를 취소해도 다른 하나는 계속)', async () => {
+  const { sharedLoader, Ctx } = await import('../../public/zzoom/convert/core.js');
+  let release; const gate = new Promise((r) => { release = r; });
+  let seen = null;
+  const load = sharedLoader(async (lctx) => { seen = lctx; await gate; return 'LIB'; });
+  const ac = new AbortController();
+  const c1 = new Ctx({ signal: ac.signal }), c2 = new Ctx();
+  const p1 = load(c1), p2 = load(c2);
+  ac.abort();
+  await assert.rejects(p1, (e) => e.code === 'ABORTED');
+  assert.equal(seen.signal.aborted, false, '적재 신호는 첫 변환의 취소와 따로');
+  release();
+  assert.equal(await p2, 'LIB');
+  assert.equal(await load(new Ctx()), 'LIB', '한 번 받은 것은 다시 쓴다');
+  for (const f of ['pdf.js', 'hwp.js', 'pptx.js']) {
+    const src = fs.readFileSync(new URL('../../public/zzoom/convert/' + f, import.meta.url), 'utf8');
+    assert.match(src, /sharedLoader\(/, f + ' 가 sharedLoader 로 적재한다');
+  }
+});
+
+test('R2-M2: 쪽이 많으면 변환기도 서버 허가와 같은 파일당 상한(합계 200MiB)으로 저장한다', async () => {
+  const { emitPage, Ctx, checkPageCount } = await import('../../public/zzoom/convert/core.js');
+  const client = await import('../../public/zzoom/convert/contract.js');
+  const server = require('../../lib/zzoom/contract.js');
+  for (const n of [1, 37, 120, 200]) assert.deepEqual(client.pageCaps(n), server.pageCaps(n), '형식표처럼 두 쪽 계산이 같다');
+  encodeAs = 'same';
+  const ctx = new Ctx();
+  checkPageCount(200, ctx);
+  assert.equal(ctx.caps.page, 1048576);
+  const seen = [];
+  sizeFor = (q, c) => { if (c.width > 400) { seen.push(q); return q > 0.5 ? 1.5 * 1048576 : 900 * 1024; } return 1000; };
+  const out = { pages: [], thumbs: [] };
+  await emitPage(canvas(2000, 1400), out, ctx);
+  assert.ok(out.pages[0].blob.size <= 1048576 && seen.length > 1, '1MiB 안으로 다시 저장');
+  sizeFor = null;
 });

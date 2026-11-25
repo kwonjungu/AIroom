@@ -13,12 +13,12 @@ test('toMs 여러 시각 형식', () => {
   assert.match(clockText(new Date(2026, 0, 1, 9, 5).getTime()), /^09:05$/);
 });
 test('refLabel', () => {
-  assert.equal(refLabel([{ aid: 'a' }, { aid: 'b' }], { aid: 'b', page: 5 }), '안건 2의 5쪽');
-  assert.equal(refLabel([], { aid: 'x', page: 1 }), '안건의 1쪽');
+  assert.equal(refLabel([{ aid: 'a' }, { aid: 'b' }], { aid: 'b', page: 5 }), '2번 안건 5쪽');
+  assert.equal(refLabel([], { aid: 'x', page: 1 }), '안건 1쪽');
 });
 test('mergeMessages: 돌아온 내 글은 임시 글을 숨긴다', () => {
   const list = [{ id: 'm1', cid: 'c1', text: '안녕', at: 2000 }];
-  const pend = [{ tmp: 't1', id: null, cid: 'c1', text: '안녕', at: 1500, name: 'a' }, { tmp: 't2', id: null, cid: 'c1', text: '다른 글', at: 1600, name: 'a' }];
+  const pend = [{ tmp: 't1', id: null, cid: 'c1', text: '안녕', at: 1500 }, { tmp: 't2', id: null, cid: 'c1', text: '다른 글', at: 1600 }];
   const r = mergeMessages(list, pend);
   assert.equal(r.length, 2);
   assert.equal(r[1].id, 't2');
@@ -43,7 +43,7 @@ test('resultView: 비공개는 이름을 절대 내지 않고, reveal 전 참석
   const v2 = resultView({ ...secret, revealed: true }, null);
   assert.equal(v2.names, null); assert.deepEqual(v2.tally, { o1: 3 });
   const pub = { revealed: true, anonymous: false, tally: { o1: 1 }, total: 1, names: { o1: ['김가'] } };
-  assert.deepEqual(resultView(pub, null).names, { o1: ['김가'] });
+  assert.equal(resultView(pub, null).names, null, '익명(ANON): 옛 공개 투표 문서여도 이름을 내지 않는다');
   const pubHidden = { ...pub, revealed: false };
   assert.equal(resultView(pubHidden, null).names, null);
   assert.equal(resultView({ revealed: false, anonymous: true }, { o1: 2, o2: 1 }).total, 3);

@@ -16,19 +16,18 @@ let meetings = [
   { id: 'a3', title: '지난 회의', startsAt: now - 5 * DAY, status: 'ended', agendaCount: 1, expiresAt: now + 1 * DAY, daysLeft: 1, allowRecording: true },
 ];
 if (scen === 'empty') meetings = [];
+if (scen === 'user') meetings[0].mine = true;   // 일반 사용자: 자기가 만든 회의(a1)만 관리
 const calls = (window.__calls = []);
 class ZzError extends Error { constructor(status, code, message, extra) { super(message); this.status = status; this.code = code; this.extra = extra; } }
 const api = {
   async listMeetings() { calls.push('list'); if (scen === 'neterr') throw new ZzError(0, 'network', '연결 끊김'); return { meetings: meetings.slice(), isAdmin: scen !== 'user' }; },
-  async createMeeting(b) { calls.push(['create', b]); if (scen === 'createfail') throw new ZzError(400, 'bad_code', '주관 코드는 숫자 6자리입니다.'); meetings.unshift({ id: 'n' + meetings.length, title: b.title, startsAt: b.startsAt, status: 'ready', agendaCount: 0, daysLeft: 10, allowRecording: b.allowRecording }); return {}; },
+  async createMeeting(b) { calls.push(['create', b]); if (scen === 'createfail') throw new ZzError(400, 'bad_code', '주관 코드는 숫자 6자리입니다.'); const nm = { id: 'n' + meetings.length, title: b.title, startsAt: b.startsAt, status: 'ready', agendaCount: 0, daysLeft: 10, allowRecording: b.allowRecording, mine: true }; meetings.unshift(nm); return { meeting: { ...nm } }; },
   async updateMeeting(id, p) { calls.push(['update', id, p]); const m = meetings.find(x => x.id === id); Object.assign(m, p); return { codeChanged: p.hostCode !== undefined }; },
   async deleteMeeting(id) { calls.push(['delete', id]); meetings = meetings.filter(x => x.id !== id); return { deleted: true, queued: false }; },
   async unlockHost(id) { calls.push(['unlock', id]); meetings.find(x => x.id === id).hostLocked = false; return { ok: true }; },
-  async staffNames() { return scen === 'nonames' ? [] : ['교사가', '교사나', '교사다', '교사라']; },
-  rememberedName: () => localStorage.getItem('airoom_ws_name') || '',
-  rememberName: n => localStorage.setItem('airoom_ws_name', n),
+  // 익명(ANON): 명부·이름 기억 함수는 없다. join 은 mid 만 받는다(인자 수를 기록해 이름을 안 보내는지 본다)
   session: () => null,
-  async join(mid, name) { calls.push(['join', mid, name]); if (scen === 'joinfail') throw new ZzError(0, 'network', '연결 끊김'); store.set('role', { role: 'viewer', cid: 'c1', name, presenter: false }); return {}; },
+  async join(...a) { calls.push(['join', ...a]); if (scen === 'joinfail') throw new ZzError(0, 'network', '연결 끊김'); store.set('role', { role: 'viewer', cid: 'c1', presenter: false }); return {}; },
   async becomeHost(mid, code) { calls.push(['host', code]); if (code !== '123456') throw new ZzError(403, 'wrong_code', '틀렸습니다', { left: 4 }); store.set('role', { ...state.role, role: 'host' }); return {}; },
 };
 const modalRoot = document.getElementById('zz-modal-root');

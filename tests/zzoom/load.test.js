@@ -63,7 +63,8 @@ async function setup() {
     const redis = createFakeRedis({ now });
     const raw = createFakeFb({ now });
     const { fb, c: fbc } = countingFb(raw);
-    const validateSession = async t => t === TOKENS.admin ? { role: 'admin' } : t === TOKENS.user ? { role: 'user' } : null;
+    // 'user-t#p3' 처럼 # 뒤는 교사별 로그인 세션(ANON: 사람 = 세션 토큰 해시)
+    const validateSession = async t => { const b = String(t || '').split('#')[0]; return b === TOKENS.admin ? { role: 'admin' } : b === TOKENS.user ? { role: 'user' } : null; };
     const app = express();
     app.set('trust proxy', true);
     const lat = [];   // 서버 처리 시간 {route, ms, status}
@@ -79,7 +80,7 @@ async function setup() {
     const calls = [];   // {t, who, route, status, error, expectOk}
     async function call(method, url, { body, auth, pt, ip = '10.0.0.1', who = '?', expectOk = true } = {}) {
         const h = { 'X-Forwarded-For': ip };
-        if (auth) h['X-Auth-Token'] = TOKENS[auth];
+        if (auth) h['X-Auth-Token'] = TOKENS[auth] + (who && who !== '?' ? '#' + who : '');
         if (pt) h['X-Zzoom-Pt'] = pt;
         if (body !== undefined) h['Content-Type'] = 'application/json';
         const res = await fetch(base + '/api/zzoom' + url, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -178,6 +179,10 @@ test('LD-2 교직원 30명 회의 1시간 압축(heartbeat·진행·판서·채�
     const joined = await Promise.all(Array.from({ length: PEOPLE }, (_, i) =>
         h.call('POST', `/${mid}/join`, { auth: 'user', body: { name: '교사' + (i + 1) }, ip: `10.2.0.${i + 1}`, who: 'p' + i })));
     joined.forEach((r, i) => { assert.equal(r.status, 200, r.text); P.push({ i, name: '교사' + (i + 1), pt: r.json.pt, cid: r.json.cid, ip: `10.2.0.${i + 1}`, role: 'viewer' }); });
+    // 입장 직후 채팅(감사 R3 P2): 들어온 지 5초 뒤 30명이 같은 순간 인사해도 모두 올라가야 한다
+    h.clock.t += 5000;
+    const hello = await Promise.all(P.map(p => h.call('POST', `/${mid}/chat`, { pt: p.pt, body: { text: '안녕하세요' }, who: 'p' + p.i, expectOk: true })));
+    assert.equal(hello.filter(r => r.status === 201).length, PEOPLE, '입장 직후 인사 ' + hello.map(r => r.status).join(','));
     // 주관자 둘(p0 교감, p1 부장) 코드로
     for (const i of [0, 1]) {
         h.clock.t += 1000;
@@ -305,9 +310,10 @@ test('LD-2 교직원 30명 회의 1시간 압축(heartbeat·진행·판서·채�
     for (const p of P) {
         go(1200, () => chat(p, 0, true));
         go(1200.5, () => chat(p, 1, false));        // 1초 안 두 번째 → 429 가 맞음
-        go(1201.2, () => chat(p, 2, true));
-        for (let s = 0; s < 10; s++) go(1210 + s * 1.0, () => chat(p, 10 + s, true));   // 딱 1초 간격 10글
-        for (let s = 0; s < 5; s++) go(1230 + s * 1.05 + p.i * 0.013, () => chat(p, 30 + s, true)); // 1.05초 간격(경계 안 맞음)
+        // 회의 전체 채팅은 초당 15개(물통 30, 감사 R3 P2). 30명이 함께 쓰므로 한 사람이 2.2초에 한 글이면 회의 전체가 초당 13.6글이다.
+        go(1202.4, () => chat(p, 2, true));
+        for (let s = 0; s < 10; s++) go(1210 + s * 2.2, () => chat(p, 10 + s, true));   // 2.2초 간격 10글
+        for (let s = 0; s < 5; s++) go(1240 + s * 2.25 + p.i * 0.013, () => chat(p, 30 + s, true)); // 2.25초 간격(경계 안 맞음)
     }
 
     // ---- 30분: 투표 30명 동시·바꾸기·마감 경쟁 ----
@@ -340,7 +346,7 @@ test('LD-2 교직원 30명 회의 1시간 압축(heartbeat·진행·판서·채�
             if (JSON.stringify(v) !== JSON.stringify(exp)) issues.push({ kind: 'tally_mismatch', detail: `${k} ${JSON.stringify(v)} ≠ 기대 ${JSON.stringify(exp)}` });
         }
     });
-    // 공개 투표: 이름 수 = 표 수
+    // 익명(ANON): 공개 투표를 달라고 해도 비공개, 결과에 이름 0개, 수 = 표 수
     let pid2 = null; const vote2 = {};
     go(1900, async () => { const r = await h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '공개 투표', options: ['가', '나'], anonymous: false }, who: 'p0' }); pid2 = r.json?.pid; pollRes.publicCreate = r.status; });
     for (const p of P) go(1901, async () => { const r = await h.call('POST', `/${mid}/polls/${pid2}/vote`, { pt: p.pt, body: { optionId: p.i % 2 ? 'o2' : 'o1' }, who: 'p' + p.i }); if (r.status === 200) vote2[p.cid] = p.i % 2 ? 'o2' : 'o1'; });
@@ -349,7 +355,7 @@ test('LD-2 교직원 30명 회의 1시간 압축(heartbeat·진행·판서·채�
         const poll = rv.json?.poll || {};
         const nNames = Object.values(poll.names || {}).reduce((a, b) => a + b.length, 0);
         pollRes.public = { total: poll.total, names: nNames, tally: poll.tally };
-        if (!(poll.total === Object.keys(vote2).length && nNames === poll.total)) issues.push({ kind: 'public_poll_mismatch', detail: JSON.stringify(pollRes.public) });
+        if (!(poll.total === Object.keys(vote2).length && nNames === 0 && poll.anonymous === true)) issues.push({ kind: 'public_poll_mismatch', detail: JSON.stringify(pollRes.public) });
     });
 
     // ---- 40분: 손들기 동시 ----

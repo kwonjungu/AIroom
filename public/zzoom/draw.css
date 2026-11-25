@@ -11,22 +11,26 @@
   font-size: 14px;
 }
 
-/* 보기 / 펜 모드 */
-.zd-seg { display: flex; padding: 2px; gap: 2px; background: var(--zz-canvas); border-radius: var(--zz-r-btn); }
-.zd-seg-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--zz-s1);
-  min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s3);
-  border: 0; border-radius: 8px; background: transparent; color: var(--zz-muted);
-  font-size: 15px; font-weight: 500; cursor: pointer;
+/* EASY_UX: 도구 막대는 무대 오른쪽 아래(쪽 막대 바로 위). 위쪽 「지금 상태」 띠와 왼쪽 위 「오늘의 안건 펼치기」를 가리지 않는다.
+   --zd-below 는 draw.js 가 쪽 막대 높이로 맞춘다. */
+#zz-center > #zz-toolbar { top: auto; left: auto; transform: none; right: var(--zz-s3); bottom: calc(var(--zd-below, var(--zz-pagebar-h)) + var(--zz-s3)); }
+.zd-bar[hidden] { display: none; }
+
+/* 펜으로 쓰기 / 펜 끄기 (단추 하나) */
+.zd-pen-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--zz-s2); flex: none;
+  min-height: var(--zz-touch); padding: 0 var(--zz-s4);
+  border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink);
+  font-size: 16px; font-weight: 600; cursor: pointer; white-space: nowrap;
   transition: background var(--zz-dur), color var(--zz-dur);
 }
-.zd-seg-btn .zz-icon { width: 24px; height: 24px; }
-.zd-seg-btn[aria-pressed="true"] { background: var(--zz-surface); color: var(--zz-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
-.zd-bar.is-pen .zd-seg-btn:last-child[aria-pressed="true"] { background: var(--zz-accent); color: #fff; }
-.zd-seg-btn:disabled { opacity: .45; cursor: not-allowed; }
+.zd-pen-toggle .zz-icon { width: 24px; height: 24px; }
+.zd-pen-toggle:hover { background: var(--zz-canvas); }
+.zd-pen-toggle[aria-pressed="true"] { background: var(--zz-accent); border-color: var(--zz-accent); color: #fff; }
+.zd-pen-toggle[aria-pressed="true"] .zz-icon { filter: brightness(0) invert(1); }
 
 /* 형광펜·펜·지우개, 쪽 지우기: 그림 위 글자 아래 */
-.zd-tools, .zd-seg, .zd-colors, .zd-clear, .zd-retry { flex: none; }
+.zd-tools, .zd-colors, .zd-clear, .zd-retry { flex: none; }
 .zd-tools { display: flex; gap: 2px; }
 .zd-tool, .zd-clear {
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
@@ -36,7 +40,7 @@
 }
 .zd-tool:hover, .zd-clear:hover { background: var(--zz-canvas); }
 .zd-tool[aria-pressed="true"] { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
-.zd-tool-label { font-size: 12px; line-height: 14px; white-space: nowrap; }
+.zd-tool-label { font-size: 14px; line-height: 16px; white-space: nowrap; }
 .zd-clear { color: var(--zz-live); }
 .zd-clear-mark {
   width: 22px; height: 22px; margin: 3px 0; border-radius: 6px;
@@ -55,13 +59,13 @@
 .zd-swatch:hover .zd-dot { transform: scale(1.08); }
 
 /* 저장 실패 · 잠금 안내 */
-.zd-retry { display: flex; align-items: center; gap: var(--zz-s2); padding: 0 var(--zz-s1) 0 var(--zz-s3); min-height: 36px; border-radius: var(--zz-r-chip); background: #FFF7E6; color: #7a4b00; font-size: 13px; }
-.zd-retry-btn { min-height: 36px; padding: 0 var(--zz-s3); border: 0; border-radius: var(--zz-r-chip); background: var(--zz-warn); color: var(--zz-ink); font-weight: 600; font-size: 13px; cursor: pointer; }
-.zd-note { font-size: 13px; color: var(--zz-muted); padding: 0 var(--zz-s2); }
+.zd-retry { display: flex; align-items: center; gap: var(--zz-s2); padding: 0 var(--zz-s1) 0 var(--zz-s3); min-height: var(--zz-touch); border-radius: var(--zz-r-chip); background: #FFF7E6; color: #7a4b00; font-size: 15px; }
+.zd-retry-btn { min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 0; border-radius: var(--zz-r-chip); background: var(--zz-warn); color: var(--zz-ink); font-weight: 600; font-size: 15px; cursor: pointer; }
+.zd-note { font-size: 15px; color: var(--zz-ink); padding: 0 var(--zz-s2); }
 
 /* 좁은 화면: 모드 글자를 줄이고 막대를 한 줄로 가로 스크롤 */
 @media (max-width: 767.98px) {
-  .zd-seg-btn { padding: 0 var(--zz-s2); font-size: 14px; }
+  .zd-pen-toggle { padding: 0 var(--zz-s3); }
   .zd-tool, .zd-clear { min-width: 46px; }
 }
 
@@ -79,6 +83,6 @@
 }
 .zd-bg-card[aria-checked="true"] { border-color: var(--zz-accent); background: var(--zz-accent-soft); }
 .zd-bg-thumb { width: 100%; aspect-ratio: 16 / 10; height: auto; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--zz-line); background: var(--zz-surface); }
-.zd-bg-label { font-size: 14px; font-weight: 500; }
-.zd-bg-hint, .zd-modal-text { margin: var(--zz-s4) 0 0; font-size: 14px; color: var(--zz-muted); }
+.zd-bg-label { font-size: 16px; font-weight: 500; }
+.zd-bg-hint, .zd-modal-text { margin: var(--zz-s4) 0 0; font-size: 16px; color: var(--zz-muted); }
 .zd-modal-text { margin: 0; color: var(--zz-ink); font-size: 16px; }

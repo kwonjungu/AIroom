@@ -25,7 +25,14 @@
   --zz-r-card: 14px; --zz-r-btn: 10px; --zz-r-chip: 999px;
   --zz-shadow: 0 4px 16px rgba(0, 0, 0, .08);
   --zz-dur: 160ms;
-  --zz-touch: 44px;
+  --zz-touch: 44px;            /* 단추 최소 높이. 휴대폰(768px 미만)은 48px(아래) */
+  /* EASY_UX(2026-11-26) 글자·대비: 본문 16px 이상, 작은 글자도 15px. 흰 글자가 얹히는 바탕은 WCAG AA(4.5:1) 이상 */
+  --zz-fs-body: 16px;
+  --zz-fs-small: 15px;
+  --zz-primary-bg: #C2410C;     /* 흰 글자 대비 5.2:1 (--zz-accent #FF6B3D 는 2.8:1 이라 글자 바탕으로 쓰지 않는다) */
+  --zz-primary-bg-hover: #9A3412;
+  --zz-danger-ink: #B42318;     /* 흰 바탕 6.5:1 */
+  --zz-ok-bg: #1E7A4C;          /* 흰 글자 5.3:1 */
   --zz-font: Pretendard, "Pretendard Variable", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   /* 자리 크기 */
   --zz-header-h: 56px;
@@ -35,6 +42,7 @@
   --zz-hostbar-h: 64px;
 }
 @media (prefers-reduced-motion: reduce) { :root { --zz-dur: 0ms; } }
+@media (max-width: 767.98px) { :root { --zz-touch: 48px; } }
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -66,7 +74,7 @@ a { color: var(--zz-accent-ink); }
 #zz-notice {
   position: fixed; top: var(--zz-header-h); left: 0; right: 0; z-index: 25;
   padding: var(--zz-s2) var(--zz-s4); background: #FFF7E6; color: #7a4b00;
-  border-bottom: 1px solid #f3dcae; font-size: 14px; text-align: center;
+  border-bottom: 1px solid #f3dcae; font-size: var(--zz-fs-body); text-align: center;
 }
 #zz-notice.error { background: #FDECEC; color: #8a1f22; border-color: #f4c6c7; }
 
@@ -113,11 +121,13 @@ body.side-closed #zz-side { border-left: 0; }
 #zz-side-tabs { display: flex; flex: none; border-bottom: 1px solid var(--zz-line); }
 .zz-side-tab {
   flex: 1; min-height: var(--zz-touch); display: flex; align-items: center; justify-content: center; gap: var(--zz-s1);
-  border: 0; background: none; cursor: pointer; color: var(--zz-muted); font-size: 14px; border-bottom: 2px solid transparent;
+  border: 0; background: none; cursor: pointer; color: var(--zz-muted); font-size: var(--zz-fs-small); border-bottom: 3px solid transparent; padding: 0 var(--zz-s1); white-space: nowrap;
 }
 .zz-side-tab img { width: 20px; height: 20px; }
+/* 탭 넷이 340px 에 글자째 들어가도록 그림은 뺀다(「손 든 사람」「녹음 기록」이 잘리지 않게) */
+#zz-side-tabs .zz-side-tab img { display: none; }
 .zz-side-tab[aria-selected="true"] { color: var(--zz-ink); border-bottom-color: var(--zz-accent); font-weight: 600; }
-.zz-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--zz-r-chip); background: var(--zz-accent); color: #fff; font-size: 11px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.zz-badge { min-width: 22px; height: 22px; padding: 0 6px; border-radius: var(--zz-r-chip); background: var(--zz-primary-bg); color: #fff; font-size: 13px; font-weight: 700; line-height: 22px; text-align: center; font-variant-numeric: tabular-nums; }
 .zz-badge:empty { display: none; }
 .zz-side-panel { flex: 1; min-height: 0; overflow: auto; }
 
@@ -139,12 +149,16 @@ body.is-host.route-meeting #zz-hostbar { display: flex; }
 .zz-modal-back { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .32); display: grid; place-items: center; padding: var(--zz-s4); animation: zz-fade var(--zz-dur) ease-out; }
 .zz-modal { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--zz-surface); border-radius: var(--zz-r-card); box-shadow: var(--zz-shadow); padding: var(--zz-s6); }
 .zz-modal h2 { margin: 0 0 var(--zz-s4); font-size: 20px; font-weight: 600; }
-.zz-modal-actions { display: flex; justify-content: flex-end; gap: var(--zz-s2); margin-top: var(--zz-s6); }
+.zz-modal-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--zz-s2); margin-top: var(--zz-s6); }
+/* 발표자에게 자리를 내준 창: 화면을 막지 않고 머리줄 아래 작은 단추로 접힌다(입력값·올리기는 그대로) */
+.zz-modal-back.is-min { inset: auto; top: calc(var(--zz-header-h) + var(--zz-s2)); left: 50%; transform: translateX(-50%); padding: 0; background: none; display: block; animation: none; pointer-events: none; }
+.zz-modal-back.is-min .zz-modal-chip { pointer-events: auto; min-height: var(--zz-touch); padding: 0 var(--zz-s4); box-shadow: var(--zz-shadow); background: var(--zz-surface); max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 767.98px) { .zz-modal-back.is-min { left: auto; right: var(--zz-s4); transform: none; } .zz-modal-back.is-min .zz-modal-chip { max-width: calc(100vw - 200px); } }   /* 좁은 화면: 왼쪽 「따라가는 중」 띠를 가리지 않게 */
 #zz-toast { position: fixed; left: 50%; bottom: calc(var(--zz-s6) + var(--zz-hostbar-h)); transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: var(--zz-s2); align-items: center; pointer-events: none; }
-.zz-toast-item { background: var(--zz-ink); color: #fff; padding: var(--zz-s2) var(--zz-s4); border-radius: var(--zz-r-btn); box-shadow: var(--zz-shadow); font-size: 14px; max-width: 90vw; animation: zz-fade var(--zz-dur) ease-out; }
-.zz-toast-item.ok { background: var(--zz-ok); }
+.zz-toast-item { background: var(--zz-ink); color: #fff; padding: var(--zz-s3) var(--zz-s4); border-radius: var(--zz-r-btn); box-shadow: var(--zz-shadow); font-size: var(--zz-fs-body); max-width: 90vw; animation: zz-fade var(--zz-dur) ease-out; }
+.zz-toast-item.ok { background: var(--zz-ok-bg); }
 .zz-toast-item.warn { background: #7a4b00; }
-.zz-toast-item.error { background: var(--zz-live); }
+.zz-toast-item.error { background: var(--zz-danger-ink); }
 @keyframes zz-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- 공통 부품 ---------- */
@@ -152,20 +166,21 @@ body.is-host.route-meeting #zz-hostbar { display: flex; }
   display: inline-flex; align-items: center; justify-content: center; gap: var(--zz-s2);
   min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s4);
   border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface);
-  font-size: 15px; font-weight: 500; text-decoration: none; color: var(--zz-ink); cursor: pointer;
+  font-size: var(--zz-fs-body); font-weight: 600; text-decoration: none; color: var(--zz-ink); cursor: pointer;
   transition: background var(--zz-dur), border-color var(--zz-dur);
 }
 .zz-btn:hover { background: var(--zz-canvas); }
 .zz-btn:disabled { opacity: .45; cursor: not-allowed; }
-.zz-btn.primary { background: var(--zz-accent); border-color: var(--zz-accent); color: #fff; }
-.zz-btn.primary:hover, .zz-btn.primary:active { background: var(--zz-accent-ink); border-color: var(--zz-accent-ink); }
+.zz-btn.primary { background: var(--zz-primary-bg); border-color: var(--zz-primary-bg); color: #fff; }
+.zz-btn.primary:hover, .zz-btn.primary:active { background: var(--zz-primary-bg-hover); border-color: var(--zz-primary-bg-hover); }
 .zz-btn.ghost { background: transparent; border-color: transparent; }
 .zz-btn.ghost:hover { background: var(--zz-accent-soft); }
-.zz-btn.danger { color: var(--zz-live); border-color: #f4c6c7; }
+.zz-btn.danger { color: var(--zz-danger-ink); border-color: #e9a5a8; }
 .zz-btn[aria-pressed="true"] { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
 .zz-icon { width: 28px; height: 28px; flex: none; }
-.zz-chip { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: var(--zz-s1); height: 28px; padding: 0 var(--zz-s3); border-radius: var(--zz-r-chip); background: var(--zz-canvas); font-size: 13px; color: var(--zz-muted); }
-.zz-chip.live { background: #FDECEC; color: var(--zz-live); font-weight: 600; }
+.zz-chip { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: var(--zz-s1); height: 32px; padding: 0 var(--zz-s3); border-radius: var(--zz-r-chip); background: var(--zz-canvas); font-size: var(--zz-fs-small); color: #5c5c61; }
+.zz-chip.live { background: #FDECEC; color: var(--zz-danger-ink); font-weight: 600; }
+.zz-chip.me { background: var(--zz-accent-soft); color: var(--zz-accent-ink); font-weight: 600; }
 .zz-chip.ok { color: var(--zz-ok); }
 .zz-chip.warn { color: #7a4b00; background: #FFF7E6; }
 .zz-card { background: var(--zz-surface); border: 1px solid var(--zz-line); border-radius: var(--zz-r-card); }
@@ -174,9 +189,9 @@ body.is-host.route-meeting #zz-hostbar { display: flex; }
 .zz-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--zz-live); display: inline-block; }
 .zz-num { font-variant-numeric: tabular-nums; }
 .zz-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.zz-pending { padding: var(--zz-s3); color: var(--zz-muted); font-size: 13px; }
+.zz-pending { padding: var(--zz-s3); color: var(--zz-muted); font-size: var(--zz-fs-small); }
 #zz-center .zz-pending { color: #b0b0b5; }
-.zz-field { display: flex; flex-direction: column; gap: var(--zz-s1); margin-bottom: var(--zz-s4); font-size: 14px; color: var(--zz-muted); }
+.zz-field { display: flex; flex-direction: column; gap: var(--zz-s1); margin-bottom: var(--zz-s4); font-size: var(--zz-fs-small); color: var(--zz-muted); }
 .zz-field input, .zz-field select, .zz-field textarea { min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink); font-size: 16px; }
 
 /* ---------- 태블릿(1024px 미만): 안건 칸은 왼쪽 덮개, 옆칸은 오른쪽 덮개(처음엔 닫힘), 무대가 폭 전부 ---------- */
@@ -187,10 +202,10 @@ body.is-host.route-meeting #zz-hostbar { display: flex; }
   body.is-host #zz-agenda { bottom: var(--zz-hostbar-h); }
   #zz-agenda[data-open] { transform: none; }
   #zz-side {
-    position: fixed; top: var(--zz-header-h); bottom: 0; right: 0; width: min(var(--zz-side-w), 90vw); z-index: 32;
+    position: fixed; top: var(--zz-header-h); bottom: var(--zz-pagebar-h); right: 0; width: min(var(--zz-side-w), 90vw); z-index: 32;
     box-shadow: var(--zz-shadow); transition: transform var(--zz-dur);
   }
-  body.is-host #zz-side { bottom: var(--zz-hostbar-h); }
+  body.is-host #zz-side { bottom: calc(var(--zz-pagebar-h) + var(--zz-hostbar-h)); }
   body.side-closed #zz-side { transform: translateX(100%); box-shadow: none; visibility: hidden; }
 }
 @media (min-width: 768px) and (max-width: 1023.98px) {
@@ -213,11 +228,12 @@ body.is-host.route-meeting #zz-hostbar { display: flex; }
   body.side-closed #zz-side { transform: translateY(calc(100% - 48px)); box-shadow: var(--zz-shadow); }
   body:not(.side-closed) #zz-side { transform: none; }
   #zz-side-tabs { height: 48px; }
-  #zz-side-toggle span { display: none; }
+  /* 아래 서랍의 탭(글자 있음)이 늘 보이므로 머리줄 「채팅과 투표」 단추는 두지 않는다(그림만 남는 단추 금지, EASY_UX B4) */
+  #zz-side-toggle { display: none; }
   /* 쪽 막대는 두 줄: 윗줄 쪽 넘기기(2팀), 아랫줄 새 쪽·손들기 */
   #zz-pagebar { height: auto; flex-wrap: wrap; row-gap: var(--zz-s1); padding: var(--zz-s1) var(--zz-s2); }
   #zz-pagebar > :first-child:not(#zz-board-actions) { flex-basis: 100%; }
-  /* 머리줄이 모자라면 연결 상태 칩은 빼고 진행·녹음만 남긴다 */
+  /* 머리줄이 모자라면 회의 중·녹음 중 칩만 남긴다(시작 전·내가 발표 중은 무대 띠가 알려 준다) */
   #zz-status .zz-chip:not(.live) { display: none; }
   #zz-status { min-width: 0; }
 }

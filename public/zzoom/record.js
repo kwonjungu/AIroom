@@ -1,5 +1,5 @@
 // 쭘 녹음과 대화 기록 (디자인 5팀). 모두에게 붙는다.
-// 자리: #zz-side-log(모두: 「● 녹음 중」 안내와 대화 기록), #zz-hostbar-record(주관자: ⏺ 녹음 단추)
+// 자리: #zz-side-log(모두: 「● 녹음 중」 안내와 대화 기록), #zz-hostbar-record(회의 담당자: 「녹음 시작하기」 단추)
 // 1분 조각마다 ctx.api.transcribe 로 보내고, 실패하면 대기열에서 순서대로 다시 보낸다(G-1, K6).
 export const css = 'host.css';
 
@@ -13,7 +13,7 @@ export const config = {
   busyDelay: 60000,          // 받아쓰기 한도(429)면 더 오래 쉰다
 };
 
-export const NOTICE = '학생 개인정보는 말하지 마세요. 소리는 글로 바꾸려고 외부 서비스(Groq)로 보냅니다.';
+export const NOTICE = '학생 개인정보는 말하지 마세요. 말소리는 글로 바꾸려고 바깥 음성 인식 서비스로 보내요.';
 
 // ---------- 순수 함수·대기열(단위 시험용) ----------
 /** 다시 보내도 소용없는 오류인지 */
@@ -46,12 +46,12 @@ export function elapsed(ms) {
   return hh ? `${hh}:${pad(m % 60)}:${pad(s % 60)}` : `${pad(m)}:${pad(s % 60)}`;
 }
 
-/** 기록 위치 글자: 「안건2 5쪽」 */
+/** 기록 위치 글자: 「2번 안건 5쪽」 (채팅의 「1번 안건 3쪽 보기」와 같은 말) */
 export function placeText(t, agenda) {
   if (!t || !t.aid) return '';
   const i = (agenda || []).findIndex(a => a.aid === t.aid);
   const a = agenda && agenda[i];
-  const name = i < 0 ? '지운 안건' : a.kind === 'board' ? '화이트보드' : `안건${i + 1}`;
+  const name = i < 0 ? '지운 안건' : a.kind === 'board' ? '칠판' : `${i + 1}번 안건`;
   return t.page ? `${name} ${t.page}쪽` : name;
 }
 
@@ -103,6 +103,13 @@ export class ChunkQueue {
       if (this.closed) return;
       this.changed(); this.pump();
     });
+  }
+  /** 아직 보내지 않은 조각(보내는 중 제외)을 모두 꺼내고 대기열을 닫는다. 나갈 때 한꺼번에 보내려고 쓴다 */
+  takeAll() {
+    const out = this.list.filter(x => x.state !== 'send' && x.blob);
+    this.list = this.list.filter(x => x.state === 'send');
+    this.close();
+    return out.sort((a, b) => a.n - b.n);
   }
   close() { this.closed = true; if (this.wake) this.timer.clearTimeout(this.wake); this.wake = 0; }
 }
@@ -174,12 +181,12 @@ export function mount(ctx) {
       empty.hidden = false;
       empty.textContent = m.allowRecording === false
         ? '이 회의는 녹음을 쓰지 않아요.'
-        : '아직 대화 기록이 없어요. 주관자가 녹음을 시작하면 1분마다 글로 바뀌어 여기에 쌓여요.';
+        : '아직 녹음 기록이 없어요. 회의 담당자가 녹음을 시작하면 1분마다 글로 바뀌어 여기에 쌓여요.';
     } else empty.hidden = true;
     list.replaceChildren(...items.map(t => {
       const place = placeText(t, agenda);
       const go = place && agenda.some(a => a.aid === t.aid)
-        ? h('button', { type: 'button', class: 'zh-log-place', 'aria-label': `${place}로 가기` }, place)
+        ? h('button', { type: 'button', class: 'zh-log-place', 'aria-label': `${place} 보기` }, `${place} 보기`)
         : (place ? h('span', { class: 'zh-log-place is-static', text: place }) : null);
       if (go && go.tagName === 'BUTTON') go.addEventListener('click', () => store.emit('cmd:nav', { aid: t.aid, page: t.page || 1 }));
       return h('li', { class: 'zh-log-item' },
@@ -219,17 +226,15 @@ export function mount(ctx) {
     }));
   }
 
-  // ===== 주관자 ⏺ 단추 =====
-  const recBtn = h('button', { type: 'button', class: 'zz-btn zh-btn zh-rec-btn has-short zh-xs-icon', 'aria-label': '녹음 시작' },
-    h('img', { class: 'zz-icon', src: ctx.assets('icon-record'), alt: '' }), h('span', { class: 'zh-label', text: '녹음 시작' }),
-    h('span', { class: 'zh-short', 'aria-hidden': 'true', text: '녹음' }));
+  // ===== 회의 담당자 「녹음 시작하기」 단추(B11: 어느 너비에서나 글자를 함께) =====
+  const recBtn = h('button', { type: 'button', class: 'zz-btn zh-btn zh-rec-btn', 'aria-label': '녹음 시작하기' },
+    h('img', { class: 'zz-icon', src: ctx.assets('icon-record'), alt: '' }), h('span', { class: 'zh-label', text: '녹음 시작하기' }));
   const recTime = h('span', { class: 'zh-rec-time zz-num', hidden: true });
   const recBox = h('div', { class: 'zh-rec' }, recBtn, recTime);
   recBtn.addEventListener('click', () => (rec || store.get('meeting')?.recording) ? stopRecording(true) : askStart());
 
   function setRecLabel(t) {
     recBtn.querySelector('.zh-label').textContent = t;
-    recBtn.querySelector('.zh-short').textContent = t === '녹음 시작' ? '녹음' : '멈추기';
     recBtn.setAttribute('aria-label', t);
   }
 
@@ -253,11 +258,11 @@ export function mount(ctx) {
     const on = !!rec || !!m.recording;
     recBtn.classList.toggle('is-on', on);
     recBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    setRecLabel(on ? '녹음 멈추기' : '녹음 시작');
+    setRecLabel(on ? '녹음 멈추기' : '녹음 시작하기');
     recBtn.disabled = starting || !on && !live;
     recBtn.title = !live && !on ? '회의를 시작하면 녹음할 수 있어요' : '';
     recTime.hidden = !on;
-    if (on) recTime.textContent = rec ? `● ${elapsed(Date.now() - rec.startedAt)}` : '● 다른 기기';
+    if (on) recTime.textContent = rec ? `● 녹음 중 ${elapsed(Date.now() - rec.startedAt)}` : '● 다른 기기에서 녹음 중';
     recTime.title = on ? (rec ? '이 기기에서 녹음 중' : '다른 기기에서 녹음 중') : '';
   }
 
@@ -309,7 +314,6 @@ export function mount(ctx) {
     startSegment();
     clearInterval(tick);
     tick = setInterval(syncRec, 1000);
-    window.addEventListener('beforeunload', onUnload);
     syncRec();
     ctx.toast('녹음을 시작했어요.', 'ok');
   }
@@ -343,7 +347,7 @@ export function mount(ctx) {
       }
       if (r.continuing && rec === r) startSegment();
     };
-    mr.start();
+    mr.start(1000); // 1초마다 데이터를 받아 둔다(나갈 때 마지막 조각을 기다리지 않고 바로 만들려고)
     clearTimeout(r.timer);
     r.timer = setTimeout(() => { if (mr.state !== 'inactive') mr.stop(); }, config.chunkMs);
   }
@@ -364,9 +368,44 @@ export function mount(ctx) {
     // 마지막 조각이 만들어진 뒤 마이크를 끈다
     setTimeout(() => r.stream.getTracks().forEach(t => t.stop()), 300);
     clearInterval(tick); tick = 0;
-    window.removeEventListener('beforeunload', onUnload);
     syncRec();
   }
+
+  /**
+   * 회의를 나가거나 탭을 닫을 때(U09). 기다리지 않고 지금 바로:
+   * ① 녹음 중인 조각을 지금까지 받은 데이터로 끊어 ② 남은 대기열과 함께 보내기를 시작하고
+   * ③ 이 탭이 녹음하던 중이면 녹음 멈춤을 알린다. 요청은 모두 이 함수 안에서 시작되므로
+   * 바로 뒤에 app 이 api.leave 로 자격을 지워도 이미 나간 요청은 그대로 간다.
+   */
+  function flushNow() {
+    const r = rec;
+    const wasMine = !!r;
+    if (r) {
+      rec = null;
+      r.continuing = false;
+      clearTimeout(r.timer);
+      const seg = r.seg;
+      if (r.mr) {
+        r.mr.ondataavailable = null; r.mr.onstop = null;
+        try { if (r.mr.state !== 'inactive') r.mr.stop(); } catch { /* 이미 멈춤 */ }
+      }
+      r.stream.getTracks().forEach(t => t.stop());
+      clearInterval(tick); tick = 0;
+      if (seg && seg.parts.length && Date.now() - seg.at >= config.minChunkMs) {
+        const blob = new Blob(seg.parts, { type: r.mime.base });
+        if (blob.size && blob.size <= config.maxBytes) queue.list.push({ n: seg.n, at: seg.at, aid: seg.aid, page: seg.page, blob, state: 'wait', tries: 0 });
+      }
+    }
+    const items = queue.takeAll();
+    for (const it of items) {
+      try { Promise.resolve(api.transcribe(mid, it.blob, { n: it.n, at: it.at, aid: it.aid, page: it.page })).catch(() => {}); } catch { /* 자격 없음 */ }
+    }
+    if (wasMine && store.get('role')?.role === 'host') {
+      try { Promise.resolve(api.setState(mid, 'recording', false)).catch(() => {}); } catch { /* 자격 없음 */ }
+    }
+    return { wasMine, sent: items.length };
+  }
+  function onPageHide() { if (rec || queue.pending()) flushNow(); }
 
   async function stopRecording(tellServer) {
     const wasMine = !!rec;
@@ -387,6 +426,8 @@ export function mount(ctx) {
     e.returnValue = '';
   }
 
+  window.addEventListener('beforeunload', onUnload);
+  window.addEventListener('pagehide', onPageHide);
   offs.push(store.on('transcript', renderLog));
   offs.push(store.on('agenda', renderLog));
   offs.push(store.on('side', updateBadge));
@@ -400,10 +441,11 @@ export function mount(ctx) {
     unmount() {
       alive = false;
       offs.forEach(f => f());
-      stopLocal();
+      flushNow();           // 마지막 조각과 남은 대기열을 보내고 녹음 멈춤을 알림(U09)
       queue.close();
       clearInterval(tick);
       window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('pagehide', onPageHide);
       logRoot.replaceChildren();
       recRoot.replaceChildren();
     }

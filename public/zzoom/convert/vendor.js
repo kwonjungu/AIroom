@@ -7,8 +7,11 @@ const JSD = 'https://cdn.jsdelivr.net/npm/';
 const UNP = 'https://unpkg.com/';
 
 // 1순위 jsDelivr(brotli 로 8.4MB, 측정 0.4초), 2순위 unpkg(gzip 10.5MB, 측정 2.6초).
-// 둘 다 안 되면 Firebase Storage zzoom-vendor/ 의 같은 해시 파일 주소를 3순위로 덧붙인다(통합 담당).
+// 해시로 묶을 수 있는 한 파일(rhwp·pdf.js 본체·글꼴)만 CDN 에서 받는다.
 const both = (path) => [JSD + path, UNP + path];
+// 같은 출처 고정 배포본(public/zzoom/vendor/). 파일마다 sha256 이 manifest.json 에 있고 시험이 확인한다(지적11).
+// 여러 파일이 서로를 상대 경로로 부르는 묶음(silurus 조각·pdf.js 보조 자료)은 CDN 해시로 묶을 수 없어서 이쪽으로 옮겼다.
+const LOCAL = (path) => new URL('../vendor/' + path, import.meta.url).href;
 
 export const VENDOR_DEFAULT = {
   rhwp: {
@@ -25,16 +28,17 @@ export const VENDOR_DEFAULT = {
     libSha256: '3a88402882cfa3e7e72c2c9b5149f52f0f88baf1c5b62aa11a41abdbc2072440',
     worker: both('pdfjs-dist@6.5.438/build/pdf.worker.min.mjs'),
     workerSha256: '1e64c8240e54735ec5913b37acd5134747799cb8c6bb3777c70adbc01232d2aa',
-    // 글꼴 없는 PDF 의 한글·표준 글꼴, JBIG2 용. 쓸 때만 받아서 해시 없이 쓴다.
-    base: JSD + 'pdfjs-dist@6.5.438/',
+    // 글꼴 없는 PDF 의 한글 cmap·표준 글꼴·JBIG2/JPX wasm·ICC. 같은 출처 고정본(manifest.json 해시).
+    base: LOCAL('pdfjs-dist-6.5.438/'),
   },
   silurus: {
-    // @silurus/ooxml 0.90.2 (MIT). 진입 파일 pptx.mjs(1197B)가 같은 폴더의 조각 파일 수십 개를 상대 경로로 부르므로
-    // 조각은 해시로 막지 못하고 버전 고정으로만 막는다. 진입 파일과 WASM 은 해시를 확인한다(2026-11-25, 두 CDN 같음).
+    // @silurus/ooxml 0.90.2 (MIT). 진입 파일 pptx.mjs(1197B)가 같은 폴더의 조각 파일 91개를 상대 경로로 부른다.
+    // 조각까지 해시로 묶으려고 npm 원본 dist 중 pptx.mjs 가 닿는 파일 전부를 같은 출처에 둔다(manifest.json, 지적11).
+    // 진입 파일과 WASM 은 받을 때도 해시를 확인한다.
     version: '0.90.2',
-    entry: both('@silurus/ooxml@0.90.2/dist/pptx.mjs'),
+    entry: [LOCAL('silurus-ooxml-0.90.2/pptx.mjs')],
     entrySha256: '1d8255979b80349ae58402b4ab75049bb0bb565ca0d53a3c3f0420aab5122c69',
-    wasm: both('@silurus/ooxml@0.90.2/dist/pptx_parser_bg.wasm'),
+    wasm: [LOCAL('silurus-ooxml-0.90.2/pptx_parser_bg.wasm'), ...both('@silurus/ooxml@0.90.2/dist/pptx_parser_bg.wasm')],
     wasmSha256: '89f8d41a91fb5e574a2a6d2f58163e831367a305346590d1b41da891a8e380d8',
     wasmBytes: 2030801,
   },

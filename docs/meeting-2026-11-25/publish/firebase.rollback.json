@@ -1,0 +1,4 @@
+{
+  "firestore": [{ "database": "kwon", "rules": "../rules-backup/2026-11-26_firestore_kwon_live.rules" }],
+  "storage": { "rules": "../rules-backup/2026-11-26_storage_live.rules" }
+}

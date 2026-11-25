@@ -158,12 +158,15 @@ export function mount(ctx) {
   const pagesOf = a => Math.max(1, (a?.pages | 0) || 1);
   const pageKey = () => (S.aid ? `${S.aid}_${S.page}` : null);
   const imgKey = (a, p) => `${a.aid}:${a.ver ?? 0}:${p}`;
+  // AGENDA_OPEN 5: 참석자도 「발표하기」로 진행자가 된다 → 역할이 아니라 회의 문서의 presenter.cid 로 판단
   const isPresenter = () => {
     const r = S.role;
-    if (!r || r.role !== 'host' || P.lost) return false;
+    if (!r || P.lost) return false;
     const pc = S.meeting?.presenter?.cid;
-    return pc ? pc === r.cid : !!r.presenter;
+    return pc ? pc === r.cid : (r.role === 'host' && !!r.presenter);
   };
+  // 제목만 있는 안건(자료 아직 없음)
+  const noFile = a => !!a && a.kind !== 'board' && !((a.pages | 0) >= 1);
   const meetingLive = () => S.meeting?.status === 'live';
   const geo = () => {
     const sz = pageSize(curA(), S.page) || S.natural || { w: BOARD_W, h: BOARD_H };
@@ -181,11 +184,11 @@ export function mount(ctx) {
   elOverlay.replaceChildren(ovBox);
 
   // 쪽 막대: 다른 팀 칸(#zz-board-actions, #zz-quick-hand)은 그대로 두고 맨 앞에 내 칸만 넣는다.
-  const btnList = h('button', { type: 'button', class: 'zz-btn ghost zv-only-narrow zv-list-btn', 'aria-expanded': 'false', onclick: toggleDrawer }, t('안건'));
-  const btnPrev = h('button', { type: 'button', class: 'zz-btn zv-step', onclick: () => step(-1), 'aria-label': t('이전 쪽') }, t('이전'));
-  const btnNext = h('button', { type: 'button', class: 'zz-btn zv-step', onclick: () => step(1), 'aria-label': t('다음 쪽') }, t('다음'));
+  const btnList = h('button', { type: 'button', class: 'zz-btn zv-only-narrow zv-list-btn', 'aria-expanded': 'false', onclick: toggleDrawer }, t('쪽 목록'));
+  const btnPrev = h('button', { type: 'button', class: 'zz-btn zv-step', onclick: () => step(-1), 'aria-label': t('이전 쪽') }, t('‹ 이전'));
+  const btnNext = h('button', { type: 'button', class: 'zz-btn zv-step', onclick: () => step(1), 'aria-label': t('다음 쪽') }, t('다음 ›'));
   const pageNo = h('span', { class: 'zv-pageno zz-num', 'aria-live': 'polite' });
-  const btnFit = h('button', { type: 'button', class: 'zz-btn ghost zv-fit', onclick: fitPage }, t('쪽 맞춤'));
+  const btnFit = h('button', { type: 'button', class: 'zz-btn ghost zv-fit', onclick: fitPage }, t('쪽 전체 보기'));
   const zoomNo = h('span', { class: 'zv-zoom zz-num', 'aria-hidden': 'true' });
   const pager = h('div', { class: 'zv-pager' }, btnList, btnPrev, pageNo, btnNext, btnFit, zoomNo);
   elPagebar.prepend(pager);
@@ -209,7 +212,7 @@ export function mount(ctx) {
     g2d.setTransform(1, 0, 0, 1, 0, 0);
     g2d.clearRect(0, 0, cvBg.width, cvBg.height);
     const a = curA();
-    if (a) {
+    if (a && !noFile(a)) {
       g2d.setTransform(dpr, 0, 0, dpr, 0, 0);
       const rect = { x: L.ox, y: L.oy, w: g.pageW * L.scale, h: g.pageH * L.scale };
       if (a.kind === 'board') {
@@ -295,7 +298,7 @@ export function mount(ctx) {
     const n = stepPage(S.agenda, S.aid, S.page, 1);
     if (!n) return null;
     const a = findA(n.aid);
-    return a && a.kind !== 'board' ? { a, p: n.page } : null;
+    return a && a.kind !== 'board' && !noFile(a) ? { a, p: n.page } : null;
   }
   function trimCache() {
     const a = curA();
@@ -313,6 +316,7 @@ export function mount(ctx) {
     S.natural = null;
     if (!a) { S.load = 'none'; S.img = null; S.imgFor = null; paintOverlay(); requestRender(); return; }
     if (a.kind === 'board') { S.load = 'ok'; S.img = null; S.imgFor = null; trimCache(); paintOverlay(); requestRender(); return; }
+    if (noFile(a)) { S.load = 'nofile'; S.img = null; S.imgFor = null; trimCache(); paintOverlay(); requestRender(); return; }
     const key = imgKey(a, S.page);
     if (S.imgFor === key && S.img) { S.load = 'ok'; paintOverlay(); requestRender(); return; }
     const c = cache.get(key);
@@ -366,6 +370,7 @@ export function mount(ctx) {
       emitPage(false);
     }
     paintPager();
+    paintBar();
     requestRender();
   }
   /** 사용자가 직접 바꿈: 진행자면 live 로 보내고, 참석자면 자유 보기로. */
@@ -418,9 +423,10 @@ export function mount(ctx) {
     if (S.follow === 'follow') applyLive(live);
     paintBar(); paintOverlay(); markAgenda();
   }
-  function backToPresenter() {
+  function backToPresenter(byUser) {
     setFollow('follow');
     if (S.live) applyLive(S.live);
+    if (byUser === true) ctx.toast?.(t('발표 화면으로 돌아왔어요.'), 'info');
   }
 
   // ---- 진행자: 300ms 묶어 보내기, 409 처리 ----
@@ -445,7 +451,7 @@ export function mount(ctx) {
   }
   function flushLive() {
     if (dead) return;
-    if (!isPresenter() || !meetingLive() || !S.aid) { dropLive(); return; }
+    if (!isPresenter() || !meetingLive() || !S.aid || noFile(curA())) { dropLive(); return; }
     if (P.inflight) { P.dirty = true; return; }
     if (!P.dirty && !P.force) return;
     const force = P.force;
@@ -477,7 +483,7 @@ export function mount(ctx) {
         cancel(P.timer); P.timer = later(() => { P.timer = null; flushLive(); }, 800 * P.fails);
       } else {
         P.fails = 0;
-        ctx.toast?.(t('진행 화면을 보내지 못했어요. 연결을 확인해 주세요.'), 'warn');
+        ctx.toast?.(t('내 화면을 보내지 못했어요. 연결을 확인해 주세요.'), 'warn');
       }
     }).finally(() => {
       P.inflight = false;
@@ -631,28 +637,31 @@ export function mount(ctx) {
     // 지금 안건이 아닌 썸네일은 놓아 준다
     for (const k of [...thumbUrls.keys()]) if (!S.aid || !k.startsWith(S.aid + ':')) thumbUrls.delete(k);
 
+    // 왼쪽 칸은 쪽 넘기기용 「쪽 목록」(가운데 「오늘의 안건」과 이름을 나눈다). 안건 추가는 「오늘의 안건」 창으로 연다.
+    const canAdd = S.meeting?.status !== 'ended';
     const head = h('div', { class: 'zv-agenda-head' },
-      h('h2', null, t('안건')),
-      h('span', { class: 'zv-agenda-count zz-num' }, S.agenda.length ? String(S.agenda.length) : ''),
-      h('button', { type: 'button', class: 'zz-btn ghost zv-only-narrow zv-close', onclick: closeDrawer }, t('닫기')));
+      h('h2', null, t('쪽 목록')),
+      h('span', { class: 'zv-agenda-count zz-num', 'aria-label': S.agenda.length ? t('안건 {n}개', { n: S.agenda.length }) : null }, S.agenda.length ? t('안건 {n}개', { n: S.agenda.length }) : ''),
+      canAdd ? h('button', { type: 'button', class: 'zz-btn zv-add', onclick: () => { maybeCloseDrawer(); store.emit('cmd:agenda-add'); } }, t('+ 안건 추가')) : null,
+      h('button', { type: 'button', class: 'zz-btn zv-only-narrow zv-close', onclick: closeDrawer }, t('닫기')));
     if (!S.agenda.length) {
       agendaBox.replaceChildren(head, h('div', { class: 'zz-empty zv-agenda-empty' },
-        h('img', { src: ctx.assets('empty-agenda'), alt: '' }), h('p', null, t('아직 올린 안건이 없어요'))));
+        h('img', { src: ctx.assets('empty-agenda'), alt: '' }), h('p', null, t('아직 올린 안건이 없어요. 「+ 안건 추가」로 올려 주세요.'))));
       markAgenda();
       return;
     }
     const list = h('ol', { class: 'zv-agenda-list' });
     S.agenda.forEach((a, i) => {
       const cur = a.aid === S.aid;
-      const meta = a.kind === 'board' ? t('화이트보드 {n}쪽', { n: pagesOf(a) }) : t('{n}쪽', { n: pagesOf(a) });
+      const meta = a.kind === 'board' ? t('칠판 {n}쪽', { n: pagesOf(a) }) : noFile(a) ? t('자료 없음') : t('{n}쪽', { n: pagesOf(a) });
       const item = h('button', { type: 'button', class: 'zv-agenda-item', 'data-aid': a.aid, onclick: () => { userGo(a.aid, S.lastPageOf.get(a.aid) || 1); maybeCloseDrawer(); } },
         h('span', { class: 'zv-agenda-no zz-num' }, String(i + 1)),
         h('span', { class: 'zv-agenda-text' },
           h('span', { class: 'zv-agenda-title' }, a.title || t('안건 {n}', { n: i + 1 })),
           h('span', { class: 'zv-agenda-meta' }, meta)),
-        h('span', { class: 'zz-chip live zv-live-chip', hidden: true }, h('span', { class: 'zz-live-dot' }), t('진행')));
+        h('span', { class: 'zz-chip live zv-live-chip', hidden: true }, h('span', { class: 'zz-live-dot' }), t('발표 중')));
       const li = h('li', { class: 'zv-agenda-li' }, item);
-      if (cur) {
+      if (cur && !noFile(a)) {
         li.append(renderThumbs(a));
         if (a.original?.path) li.append(h('button', { type: 'button', class: 'zz-btn ghost zv-orig', onclick: () => downloadOriginal(a) }, t('원본 받기')));
       }
@@ -719,7 +728,7 @@ export function mount(ctx) {
       const blob = await api.originalBlob(a);
       if (!blob) { ctx.toast?.(t('원본 파일이 없어요.'), 'info'); return; }
       const url = URL.createObjectURL(blob);
-      const link = h('a', { href: url, download: a.original?.name || a.title || 'original' });
+      const link = h('a', { href: url, download: api.originalFileName ? api.originalFileName(a) : (a.title || '안건') });
       document.body.append(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
     } catch (e) {
@@ -735,15 +744,110 @@ export function mount(ctx) {
   listen(elStage, 'pointerdown', () => { if (elAgenda.hasAttribute('data-open')) closeDrawer(); });
 
   // ================= 띠·덮개·쪽 막대 =================
+  // ---- 「지금 상태」 띠(EASY_UX B5): 무대 위에 늘 한 줄. 상태마다 글과 단추 하나 ----
+  let barSig = '';
+  let waitShown = 'off';      // agenda.js 가 알려 주는 「오늘의 안건」 모양(off|full|mini)
+  let ending = false;
+  let endModal = null;
+  function bandState() {
+    const st = S.meeting?.status;
+    if (!S.role || !st || S.meeting?.gone) return null;
+    if (st === 'ended' || st === 'deleting') return 'ended';
+    if (st !== 'live') return 'ready';
+    if (isPresenter()) return 'presenting';
+    if (!S.live?.aid || !findA(S.live.aid)) return 'idle';
+    return S.follow === 'free' ? 'free' : 'follow';
+  }
+  const placeText = (aid, page) => t('{n}번 안건 {p}쪽', { n: agendaNo(aid), p: page || 1 });
   function paintBar() {
-    const show = S.follow === 'free' && !!S.live?.aid && !!findA(S.live.aid) && !isPresenter();
-    if (!show) { if (elBar.firstChild) elBar.replaceChildren(); return; }
-    const label = t('진행자 화면으로 돌아가기 (안건{n} {p}쪽)', { n: agendaNo(S.live.aid), p: S.live.page || 1 });
+    const st = bandState();
+    if (!st) { barSig = ''; if (elBar.firstChild) elBar.replaceChildren(); return; }
+    const host = isHostRole();
+    const someone = !!S.meeting?.presenter?.cid;
+    let title, detail = '', btn = null, btn2 = null;
+    if (st === 'ended') {
+      title = t('끝난 회의예요');
+      detail = t('자료와 채팅과 녹음 기록을 다시 볼 수 있어요.');
+    } else if (st === 'ready') {
+      title = t('회의 시작 전이에요');
+      const a = curA();
+      detail = a ? t('{n}번 안건 「{title}」을 보고 있어요. 안건 자료를 미리 볼 수 있어요.', { n: agendaNo(a.aid), title: a.title || t('안건 {n}', { n: agendaNo(a.aid) }) })
+        : t('「오늘의 안건」에서 안건과 자료를 미리 올려 둘 수 있어요.');
+    } else if (st === 'presenting') {
+      title = t('내가 발표 중이에요');
+      detail = S.aid ? t('모두가 내 화면을 봐요. 쪽을 넘기면 모두 같이 넘어가요. 지금 {place}이에요.', { place: placeText(S.aid, S.page) })
+        : t('모두가 내 화면을 봐요. 쪽을 넘기면 모두 같이 넘어가요.');
+      btn = ['end', t('발표 마치기')];
+    } else if (st === 'idle') {
+      title = t('아직 발표하는 분이 없어요');
+      detail = t('안건을 골라 「발표하기」를 누르면 모두가 내 화면을 봐요.');
+      if (waitShown !== 'full') btn = ['agenda', t('오늘의 안건 보기')];
+      if (host && someone) btn2 = ['end', t('발표 마치기')];
+    } else if (st === 'follow') {
+      title = t('모두의 화면을 따라가는 중이에요');
+      detail = t('발표 화면을 함께 보고 있어요. 지금 {place}이에요.', { place: placeText(S.live.aid, S.live.page) });
+      if (host) btn = ['end', t('발표 마치기')];
+    } else {
+      title = t('내 화면으로 보는 중이에요');
+      detail = t('다른 분들은 {place}을 보고 있어요.', { place: placeText(S.live.aid, S.live.page) });
+      btn = ['back', t('발표 화면으로 돌아가기')];
+      if (host) btn2 = ['end', t('발표 마치기')];
+    }
+    const sig = JSON.stringify([st, title, detail, btn, btn2, ending]);
+    if (sig === barSig && barBox.parentNode === elBar) return;
+    barSig = sig;
+    const mk = (b, main) => {
+      if (!b) return null;
+      const [kind, label] = b;
+      if (kind === 'back') return h('button', { type: 'button', class: 'zz-btn primary zv-follow-btn', onclick: () => backToPresenter(true) },
+        h('img', { class: 'zz-icon', src: ctx.assets('icon-follow'), alt: '' }), h('span', null, label));
+      if (kind === 'agenda') return h('button', { type: 'button', class: 'zz-btn zv-band-agenda', onclick: () => store.emit('cmd:agenda-open') }, label);
+      // 발표 마치기: 발표자 본인은 주 단추, 담당자가 남의 발표를 마칠 때는 테두리 단추
+      return h('button', { type: 'button', class: 'zz-btn zv-end-btn ' + (main && st === 'presenting' ? 'is-main' : 'danger'), disabled: ending || null, onclick: askEnd }, label);
+    };
+    barBox.className = 'zv-follow zv-band is-' + st;
+    barBox.setAttribute('data-state', st);
+    barBox.setAttribute('role', 'status');
     barBox.replaceChildren(
-      h('span', { class: 'zv-follow-text' }, t('자유 보기 중이에요')),
-      h('button', { type: 'button', class: 'zz-btn primary zv-follow-btn', onclick: backToPresenter },
-        h('img', { class: 'zz-icon', src: ctx.assets('icon-follow'), alt: '' }), h('span', null, label)));
+      h('div', { class: 'zv-band-text' },
+        st === 'presenting' ? h('span', { class: 'zz-live-dot zv-band-dot', 'aria-hidden': 'true' }) : null,
+        h('strong', { class: 'zv-band-title zv-follow-text' }, title),
+        detail ? h('span', { class: 'zv-band-detail' }, detail) : null),
+      ...((btn || btn2) ? [h('div', { class: 'zv-band-actions' }, mk(btn, true), mk(btn2, false))] : []));  // replaceChildren 은 null 을 글자 「null」로 넣는다
     if (barBox.parentNode !== elBar) elBar.replaceChildren(barBox);
+  }
+  // 발표 마치기(EASY_UX): 발표자 본인은 바로, 담당자가 다른 분의 발표를 마칠 때만 한 번 묻는다.
+  function askEnd() {
+    if (ending) return;
+    if (isPresenter()) { doEnd(); return; }
+    endModal?.close();
+    endModal = ctx.modal?.({
+      title: t('발표 마치기'),
+      body: h('p', { class: 'zv-modal-text' }, t('지금 발표하는 분의 발표를 마칠까요? 모두 「오늘의 안건」 화면으로 돌아가요.')),
+      actions: [{ label: t('취소'), focus: true }, { label: t('발표 마치기'), danger: true, onClick: () => { doEnd(); } }],
+      onClose: () => { endModal = null; },
+    }) || null;
+    if (!endModal) doEnd();
+  }
+  async function doEnd() {
+    if (ending || !api.presenterEnd) return;
+    ending = true; paintBar();
+    dropLive();
+    try {
+      await api.presenterEnd(mid);
+      if (!dead) ctx.toast?.(t('발표를 마쳤어요. 모두 「오늘의 안건」 화면으로 돌아갔어요.'), 'ok');
+    } catch (e) {
+      if (dead) return;
+      const code = e?.code || '';
+      const msg = e?.status === 429 ? t('잠시 뒤 다시 눌러 주세요.')
+        : code === 'not_presenter' ? t('지금은 발표를 마칠 수 없어요. 발표가 이미 넘어갔어요.')
+        : /^state_/.test(code) ? t('회의 중일 때만 발표를 마칠 수 있어요.')
+        : (e?.message || t('발표를 마치지 못했어요. 연결을 확인해 주세요.'));
+      ctx.toast?.(msg, e?.status === 429 ? 'warn' : 'error');
+    } finally {
+      ending = false;
+      if (!dead) paintBar();
+    }
   }
   let flashTimer = null;
   function flashPageNo() {
@@ -759,18 +863,14 @@ export function mount(ctx) {
     if (!S.agenda.length || !a) {
       kids.push(h('div', { class: 'zz-empty zv-ov-empty' },
         h('img', { src: ctx.assets('empty-agenda'), alt: '' }),
-        h('p', null, isHostRole() ? t('안건을 올리면 여기에 보여요') : t('아직 올린 안건이 없어요'))));
+        h('p', null, t('「오늘의 안건」에서 안건을 올리면 여기에 보여요'))));
     } else {
+      if (S.load === 'nofile') kids.push(h('div', { class: 'zz-empty zv-ov-empty' },
+        h('img', { src: ctx.assets('empty-agenda'), alt: '' }), h('p', null, t('아직 자료가 없는 안건이에요'))));
       if (S.load === 'loading') kids.push(h('div', { class: 'zv-ov-loading', role: 'status' }, h('span', { class: 'zv-spin', 'aria-hidden': 'true' }), t('불러오는 중')));
       if (S.load === 'error') kids.push(h('div', { class: 'zv-ov-error', role: 'alert' },
-        h('p', null, t('쪽 그림을 불러오지 못했어요')),
+        h('p', null, t('자료를 불러오지 못했어요')),
         h('button', { type: 'button', class: 'zz-btn', onclick: () => { const c = cache.get(imgKey(a, S.page)); if (c) cache.delete(imgKey(a, S.page)); loadCurrent(); } }, t('다시 불러오기'))));
-      const state = isPresenter() && meetingLive()
-        ? h('span', { class: 'zz-chip zv-ov-state is-presenter' }, h('span', { class: 'zz-live-dot' }), t('내가 진행 중이에요'))
-        : (S.follow === 'follow' && S.live?.aid && meetingLive())
-          ? h('span', { class: 'zz-chip zv-ov-state' }, t('진행자 화면을 따라가는 중'))
-          : null;
-      if (state) kids.push(state);
       kids.push(h('span', { class: 'zz-chip zv-ov-page zz-num', 'aria-hidden': 'true' }, `${S.page} / ${pagesOf(a)}`));
     }
     ovBox.replaceChildren(...kids);
@@ -831,6 +931,7 @@ export function mount(ctx) {
     if (isPresenter()) queueLive(true);
   }));
   offs.push(store.on('cmd:follow', () => backToPresenter()));
+  offs.push(store.on('ui:wait', mode => { waitShown = mode || 'off'; paintBar(); }));
   offs.push(store.on('cmd:redraw', () => { lastVp = null; requestRender(); }));
 
   // ================= 시작 =================
@@ -847,6 +948,7 @@ export function mount(ctx) {
   return {
     unmount() {
       dead = true;
+      try { endModal?.close(); } catch { /* 이미 닫힘 */ }
       for (const off of offs.splice(0)) { try { off(); } catch { /* 계속 */ } }
       for (const id of timers) clearTimeout(id);
       timers.clear();

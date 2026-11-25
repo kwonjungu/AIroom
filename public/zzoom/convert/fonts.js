@@ -1,13 +1,12 @@
 // Noto Sans KR · Noto Serif KR 웹폰트 적재(한 번만). HWP 는 canvas 글꼴로, PPTX 는 SVG 안에 심어 쓴다.
 import { getVendor } from './vendor.js';
-import { fetchVerified, ConvertError } from './core.js';
+import { fetchVerified, ConvertError, sharedLoader } from './core.js';
 
-let loading = null;
 const bytesByFile = []; // {family, weight, bytes}
 
-export function loadFonts(ctx) {
-  if (!loading) {
-    loading = (async () => {
+// 적재는 여러 변환이 나눠 쓰고, 한 변환의 취소에 묶이지 않는다(R1-N11). 실패하면 다음 변환에서 다시 시도.
+export const loadFonts = sharedLoader(async (ctx) => {
+    {
       const v = getVendor();
       try {
         const got = await Promise.all(v.fonts.map(async (f) => ({
@@ -22,11 +21,8 @@ export function loadFonts(ctx) {
       } catch (e) {
         throw e instanceof ConvertError ? (e.code === 'ABORTED' ? e : new ConvertError('FONT_LOAD', e.detail || e.message, e)) : new ConvertError('FONT_LOAD', e && e.message, e);
       }
-    })();
-    loading.catch(() => { loading = null; }); // 실패하면 다음 변환에서 다시 시도
-  }
-  return loading;
-}
+    }
+});
 
 const cssCache = new Map();
 function b64(bytes) {

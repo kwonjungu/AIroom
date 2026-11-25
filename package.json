@@ -13,7 +13,7 @@
     "eval:vibe:mock": "node --test \"tests/vibe/evals/mock/**/*.test.js\"",
     "eval:vibe:live": "node tests/vibe/evals/live.js",
     "test:recruitment": "node --test tests/recruitment/*.test.js",
-    "test:zzoom": "node --test tests/zzoom/api.test.js tests/zzoom/units.test.js tests/zzoom/convert.test.mjs tests/zzoom/vendor.test.mjs tests/zzoom/spa-storage.test.js",
+    "test:zzoom": "node --test tests/zzoom/api.test.js tests/zzoom/units.test.js tests/zzoom/convert.test.mjs tests/zzoom/vendor.test.mjs tests/zzoom/spa-storage.test.js tests/zzoom/astra-locks.test.js",
     "test:zzoom:rules": "node tests/zzoom/run-rules.js"
   },
   "repository": {

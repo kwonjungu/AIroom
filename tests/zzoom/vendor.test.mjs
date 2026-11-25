@@ -17,7 +17,7 @@ test('지적11: PPTX 변환기 코드는 CDN 이 아니라 같은 출처의 고�
 test('지적11: PDF 보조 자료(cmap·표준 글꼴·wasm)도 같은 출처 고정본을 쓴다', async () => {
   const { VENDOR_DEFAULT } = await import('../../public/zzoom/convert/vendor.js');
   assert.ok(!/^https?:/.test(VENDOR_DEFAULT.pdfjs.base), VENDOR_DEFAULT.pdfjs.base);
-  for (const f of ['cmaps/KSC-EUC-H.bcmap', 'standard_fonts/FoxitSans.pfb', 'wasm/openjpeg.wasm', 'wasm/jbig2.wasm', 'wasm/qcms_bg.wasm']) {
+  for (const f of ['cmaps/KSC-EUC-H.bcmap', 'standard_fonts/FoxitSerif.pfb', 'standard_fonts/LiberationSans-Regular.ttf', 'wasm/openjpeg.wasm', 'wasm/jbig2.wasm', 'wasm/qcms_bg.wasm']) {
     assert.ok(fs.existsSync(fileURLToPath(new URL(f, VENDOR_DEFAULT.pdfjs.base))), f);
   }
 });

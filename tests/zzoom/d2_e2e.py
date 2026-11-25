@@ -93,6 +93,14 @@ def run(pw, label, launch_kw, size):
             pg.wait_for_timeout(50)
         raise AssertionError(f'{aid}:{p} 색 {want} 아님, 실제 {pix(pg)}')
 
+    def open_agenda(pg):
+        # 진짜 app.js 처럼: 1024 미만이면 안건 목록은 덮개(처음 닫힘). 768~1023 은 「안건 목록」 단추, 그보다 좁으면 덮개 열기 단추(.zv-list-btn)
+        if size[0] >= 1024: return
+        if pg.locator('#zz-agenda[data-open]').count(): return
+        if size[0] >= 768: pg.locator('#zz-agenda-toggle').click()
+        else: pg.locator('.zv-list-btn').click()
+        pg.wait_for_timeout(300)
+
     def stage_box(pg):
         return pg.locator('#zz-stage').bounding_box()
 
@@ -141,11 +149,13 @@ def run(pw, label, launch_kw, size):
         pg.wait_for_timeout(350)
         assert S(pg, 'page')['view']['z'] > 1.2, S(pg, 'page')
         bar = pg.locator('.zv-follow-btn')
-        assert bar.is_visible() and '안건1 3쪽' in bar.inner_text(), bar.inner_text()
+        band = pg.locator('.zv-band')
+        assert bar.is_visible() and bar.inner_text().strip() == '발표 화면으로 돌아가기', bar.inner_text()
+        assert band.get_attribute('data-state') == 'free' and '1번 안건 3쪽' in band.inner_text(), band.inner_text()
         pg.evaluate("() => window.__d2.store.set('live', {aid:'a1', page:4, view:{cx:.5,cy:.5,z:1}, rev:3, epoch:1, forceSeq:2})")
         pg.wait_for_timeout(200)
         assert pk(pg) == 'a1_3', '자유 보기 중에는 그대로'
-        assert '안건1 4쪽' in bar.inner_text()
+        assert '1번 안건 4쪽' in band.inner_text(), band.inner_text()
     step('휠 확대 → 자유 보기 + 띠, live 와서도 그대로', t_free)
     pg.screenshot(path=os.path.join(SHOT, f'{label}_{size[0]}_2_free.png'))
 
@@ -153,10 +163,11 @@ def run(pw, label, launch_kw, size):
         pg.locator('.zv-follow-btn').click()
         pg.wait_for_function("() => window.__d2.store.get('page')?.pageKey === 'a1_4'")
         assert S(pg, 'follow') == 'follow'
-        assert pg.locator('#zz-follow-bar').inner_html().strip() == ''
+        assert pg.locator('.zv-band').get_attribute('data-state') == 'follow'   # EASY_UX: 띠는 늘 보이고 상태만 바뀐다
+        assert pg.locator('.zv-follow-btn').count() == 0
         assert abs(S(pg, 'viewport')['scale'] - S(pg, 'viewport')['scale']) < 1e-9
         wait_color(pg, 'a1', 4)
-    step('「진행자 화면으로 돌아가기」', t_back)
+    step('「발표 화면으로 돌아가기」', t_back)
 
     def t_force():
         pg.locator('.zv-pager button', has_text='이전').click()
@@ -219,6 +230,7 @@ def run(pw, label, launch_kw, size):
     ctx, pg = page({'delays': {'a2:1': 1500}})
     def t_cancel():
         wait_color(pg, 'a1', 1)
+        open_agenda(pg)
         pg.locator('.zv-agenda-item[data-aid="a2"]').click()      # a2:1 은 1.5초 늦게 옴
         pg.wait_for_function("() => window.__d2.store.get('page')?.pageKey === 'a2_1'")
         assert pg.locator('.zv-ov-loading').is_visible()
@@ -236,8 +248,8 @@ def run(pw, label, launch_kw, size):
     ctx, pg = page(host)
     def t_batch():
         wait_color(pg, 'a1', 1)
-        assert pg.locator('#zz-follow-bar').inner_html().strip() == ''
-        assert pg.locator('.zv-ov-state.is-presenter').is_visible()
+        assert pg.locator('.zv-band.is-presenting').is_visible()   # EASY_UX: 「내가 발표 중이에요」 띠
+        assert pg.locator('.zv-band .zv-end-btn').inner_text().strip() == '발표 마치기'
         bx = stage_box(pg); cx, cy = bx['x'] + bx['width'] / 2, bx['y'] + bx['height'] / 2
         pg.mouse.move(cx, cy); pg.mouse.wheel(0, -500)
         pg.wait_for_timeout(450)

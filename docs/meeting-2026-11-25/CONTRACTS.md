@@ -54,7 +54,7 @@ export function mount(ctx) {
 | 화면 | 언제 | 붙는 모듈 |
 |---|---|---|
 | `/zzoom` 목록 | 로그인 토큰 있음 | `list.js` |
-| `/zzoom#/m/<mid>` 회의 | 화면 틀을 만든 직후 | `join.js` (입장 전 이름 고르기, 입장 뒤 머리줄 내 이름·「주관 코드 넣기」) |
+| `/zzoom#/m/<mid>` 회의 | 화면 틀을 만든 직후 | `join.js` (입장 전 「입장하기」 단추 하나, 입장 뒤 머리줄 「익명 참여」·「주관 코드 넣기」) |
 | 〃 | 입장 성공(`role` 이벤트 첫 값) | `viewer.js`, `draw.js`, `board.js`, `chat.js`, `hands.js`, `poll.js`, `record.js` |
 | 〃 | `role.role === 'host'` 일 때만 | `host.js`, `upload.js` (viewer 로 내려가면 unmount) |
 | 로그인 토큰 없음 | | 모듈 없음. app.js 가 「백암이에서 먼저 로그인해 주세요」 + `/` 링크 |
@@ -85,45 +85,50 @@ class ZzError extends Error { status; code; message; extra }  // 서버 {error, 
 | `updateMeeting(mid, {title?, startsAt?, allowRecording?, hostCode?})` | `PATCH /meetings/:mid` | `{meeting, codeChanged}` |
 | `deleteMeeting(mid)` | `DELETE /meetings/:mid` | `{deleted, queued}` |
 | `unlockHost(mid)` | `POST /meetings/:mid/unlock` | `{ok}` |
-| `staffNames()` | `GET /api/staff` | `['이름', …]` (실패하면 `[]`). 입장 이름 고르기용 |
-| `rememberedName()` / `rememberName(n)` | — | `localStorage.airoom_ws_name` 읽기·쓰기 (동기) |
+| ~~`staffNames()`·`rememberedName()`·`rememberName()`~~ | — | **없앰(ANON 2026-11-25)**. 쭘은 명부와 `localStorage.airoom_ws_name` 을 읽지도 쓰지도 않는다 |
 
 ### 2-2. 입장·자격 (회의 안)
 
 | 함수 | 하는 일 |
 |---|---|
-| `join(mid, name)` | `POST /:mid/join` → 참가 자격 저장(`sessionStorage['zzoom_pt:'+mid]`) → Firebase 앱 `'zzoom'`(inMemory) `signInWithCustomToken` → 토큰 갱신 예약 → heartbeat 시작 → store `role`·`meeting` 설정. 돌려줌 `{cid, name, role, meeting}` |
+| `join(mid)` | `POST /:mid/join`(본문 `{}`, name 이 와도 서버가 버림) → 참가 자격 저장(`sessionStorage['zzoom_pt:'+mid]`) → Firebase 앱 `'zzoom'`(inMemory) `signInWithCustomToken` → 토큰 갱신 예약 → heartbeat 시작 → store `role`·`meeting` 설정. 돌려줌 `{cid, role, meeting}` |
 | `resume(mid)` | 새로고침 때. 저장된 자격으로 `/refresh` → 로그인 → 위와 같이 시작. 자격이 없거나 401·403·404 이면 `null`(그러면 join 화면) |
 | `becomeHost(mid, code)` | `POST /:mid/host` → **새 pt 로 바꿔 저장**, 새 토큰으로 다시 로그인, store `role` 갱신. 틀리면 `ZzError` 403 `wrong_code`(`extra.left`), 429, 423 |
 | `refresh(mid)` | `POST /:mid/refresh` → 새 토큰으로 로그인. **토큰 발급 50분 뒤 자동**(맞춤 토큰 1시간). 코드가 바뀐 host 는 여기서 viewer 로 내려가고 store `role` 이 바뀐다 |
 | `leave(mid)` | 구독·heartbeat·타이머 정리, Firebase 로그아웃. 자격은 남긴다(새로고침 대비) |
-| `session(mid)` | 지금 자격 `{cid, name, role, exp, until}` 또는 `null` (동기) |
+| `session(mid)` | 지금 자격 `{cid, role, exp, until}` 또는 `null` (동기) |
 
 - **heartbeat**(api.js 가 혼자 한다): 60초마다 `POST /:mid/heartbeat`, 탭이 다시 보이면(`visibilitychange`) 바로 한 번, `pagehide` 에 `sendBeacon` 으로 `{pt, leaving:true}`. 응답 `counts` 는 store `meeting.counts` 와 별도로 `store.set('counts', …)`.
-- **탭 복제 감지(K3)**: `join`·`resume` 은 시작 전에 `BroadcastChannel('zzoom')` 로 같은 `cid` 를 쓰는 탭이 살아 있는지 묻는다(300ms). 있으면 저장된 자격을 버리고 새로 `join` 한다(이름은 그대로). 팀은 신경 쓰지 않아도 된다.
+- **탭 복제 감지(K3)**: `join`·`resume` 은 시작 전에 `BroadcastChannel('zzoom')` 로 같은 `cid` 를 쓰는 탭이 살아 있는지 묻는다(300ms). 있으면 저장된 자격을 버리고 새로 `join` 한다. 팀은 신경 쓰지 않아도 된다.
 - 자격 오류(401 `pt_*`, 403 `pt_other_meeting`)가 회의 API 에서 나오면 api.js 가 자격을 지우고 store `role` 을 `null` 로 → app.js 가 다시 입장 화면을 띄운다. 410 `meeting_gone` 은 store `meeting` 을 `{gone:true}` 로.
 
 ### 2-3. 회의 API (모두 `X-Zzoom-Pt` 자동, 첫 인자 `mid`)
 
 | 함수 | 서버 | 쓰는 팀 |
 |---|---|---|
-| `setState(mid, action, value?)` action `'start'|'end'|'penLock'|'recording'` | `POST /:mid/state` | 5(시작·끝·녹음), 3(판서 잠금 단추는 5의 막대에) |
+| `setState(mid, action, value?)` action `'start'|'end'|'penLock'|'recording'` | `POST /:mid/state` (fetch keepalive — 탭을 닫는 순간에도 나감) | 5(시작·끝·녹음), 3(판서 잠금 단추는 5의 막대에) |
 | `takePresenter(mid)` | `POST /:mid/presenter` | 5 |
 | `sendLive(mid, {aid, page, view, force?})` | `POST /:mid/live` | 2(진행자 화면), 5(「모두 내 화면으로」는 `cmd:force` 로 2에 부탁) |
 | `startUpload(mid, {kind, pages, bytes, ext?})` | `POST /:mid/uploads` | (보통은 아래 `uploadAgenda` 하나로 충분) |
 | `commitUpload(mid, uploadId, {title, pages, sizes, originalName?})` | `POST …/commit` | 〃 |
 | `convertFile(file, {onProgress, signal})` | `convert/index.js` 의 `convert()` 를 늦게 불러 부름 | 5 |
-| `uploadAgenda(mid, {file, converted, title, onProgress, signal})` | 허가 → Storage 직접 put(동시 3, 실패 쪽 2번 재시도) → commit | 5 |
+| `uploadAgenda(mid, {file, converted, title, onProgress, signal})` | 허가 → 업로드 전용 출입증(`permit.token`)으로 로그인 → Storage 직접 put(동시 3, 실패 쪽 2번 재시도) → 보통 토큰으로 되돌림 → commit. 여러 번 불러도 한 번에 하나씩 차례로 | 5 |
 | `updateAgenda(mid, aid, {title?, index?})` / `deleteAgenda(mid, aid)` | `PATCH`·`DELETE /:mid/agenda/:aid` | 5 |
+| `createAgenda(mid, title)` | `POST /:mid/agenda` → `{aid, agenda}` 제목만 안건(`kind:'empty'`, `pages:0`). 참석자 누구나 | 안건(agenda.js) |
+| `myAgenda(mid)` | `GET /:mid/agenda/mine` → 내 안건 aid 배열(「내 안건」 표시용) | 안건 |
+| `attachAgendaFile(mid, aid, {file, converted, onProgress, signal})` | 있는 안건에 자료 붙이기·바꾸기(`uploadAgenda` 와 같은 길, 허가·commit 에 `aid`) → `{aid, agenda}` | 안건 |
+| `present(mid, aid?, page?)` | `POST /:mid/presenter` → 내가 발표자, `aid` 를 주면 그 안건 1쪽으로 모두 끌어옴(forceSeq+1) | 안건 |
+| (화면 함수 이름은 UI 담당이 정함) 발표 마치기 | `POST /:mid/presenter/end` 본문 `{}` → `{presenter:{cid:null, epoch}, live:{aid:null, page:1, rev, epoch, forceSeq, …}, changed}`. 지금 발표자 본인이나 주관자만(남이면 403 `not_presenter`), 회의가 `live` 일 때만(그 밖 409 `state_*`), 사람당 2초 1번(429). 발표자가 이미 없으면 그대로 200 `changed:false`. epoch 가 올라 옛 발표자의 `/live`·판서는 409, `live.aid:null` 이라 모두 대기 화면(`#zz-wait`)으로 | 안건·5 |
+| (화면 결정) 업로드 허가 취소 | `DELETE /:mid/uploads/:uploadId` → `{ok:true}`. 본인 허가만(남이면 403 `not_yours`, 없거나 확정됐으면 404 `upload_unknown`). 업로드나 commit 에 실패하면 화면이 불러 허가 자리를 돌려준다(감사 R3 P3) | api.js |
 | `createBoard(mid, bg?)` / `addBoardPage(mid, aid)` | `POST /:mid/boards` | 3 |
 | `saveStrokes(mid, strokes[])` (1~20개) | `POST /:mid/strokes` | 3 |
 | `deleteStroke(mid, sid)` | `DELETE /:mid/strokes/:sid` | 3 |
 | `clearPage(mid, pageKey)` | `POST /:mid/pages/:pageKey/clear` | 3 |
 | `sendChat(mid, text, ref?)` / `deleteChat(mid, id)` | `POST`·`DELETE /:mid/chat` | 4 |
 | `setHand(mid, up)` / `lowerHand(mid, cid)` / `lowerAllHands(mid)` | `POST /:mid/hand` | 4 |
-| `createPoll(mid, {q, options?, anonymous?})` | `POST /:mid/polls` | 4 |
+| `createPoll(mid, {q, options?})` | `POST /:mid/polls` (ANON: 늘 비공개, `anonymous` 는 무시) | 4 |
 | `vote(mid, pid, optionId)` / `myVote(mid, pid)` | `POST …/vote` / `GET …/mine` | 4 |
-| `pollTally(mid, pid)` / `closePoll(mid, pid)` / `revealPoll(mid, pid)` | `GET …/tally` / `POST …/close` / `POST …/reveal` | 4 |
+| `pollTally(mid, pid)` / `closePoll(mid, pid)` / `revealPoll(mid, pid)` | `GET …/tally` / `POST …/close` / `POST …/reveal`. `pollTally` 는 응답 사이 주관자에서 내려왔으면 403 `host_only` | 4 |
 | `transcribe(mid, blob, {n, at, aid, page})` | `POST /:mid/transcribe?n=&at=&aid=&page=` (본문 = 소리 그대로) | 5 |
 | `exportMd(mid)` | `GET /:mid/export.md` → 파일 받기까지 한다 | 5 |
 
@@ -136,6 +141,18 @@ class ZzError extends Error { status; code; message; extra }  // 서버 {error, 
 - `onProgress({phase:'upload'|'commit', done, total})`. `signal` 로 취소하면 commit 하지 않는다(올린 조각은 서버가 24시간 뒤 정리).
 - 돌려줌 `{aid, agenda}`.
 
+### 2-3-1. 누구나 안건 올리기·발표하기 (AGENDA_OPEN)
+
+- 안건 문서 `zzoom_meetings/{mid}/agenda/{aid}`: `{title, kind:'pdf'|'hwp'|'pptx'|'image'|'board'|'empty', pages, sizes, ver, base?, original?, ownerCid, ownerHash, createdAt}`. 이름(`createdBy`)은 싣지 않는다(익명). `kind:'empty'`·`pages:0` 은 자료 없는 안건이라 viewer 는 「아직 자료가 없는 안건이에요」만 보인다.
+- 권한: 추가·자료 올리기는 참석자 누구나(ended·deleting 제외), 이름 바꾸기·지우기·자료 바꾸기는 올린 사람(cid 또는 같은 사람 해시)이나 주관자, 순서 바꾸기는 주관자만. 한도 회의당 30개, 한 사람 10개, 50MB·200쪽.
+- 업로드 출입증 `until` 은 15분(감사 R3 P3), 회의 만료, 참가 자격(pt) 만료, 관리자 host 면 관리자 세션 만료 가운데 가장 이른 값. Storage 규칙은 viewer 출입증도 `up == uploadId` 경로에만 create 를 허용하고, 같은 경로 덮어쓰기는 거절(`resource == null`).
+- 확정 전 업로드 허가는 사람당 3개, 회의당 60개(주관자 허가는 회의 칸 밖), 15분 뒤 저절로 풀린다. 허가 발급은 취소한 것까지 세어 사람당 시간당 12개(주관자 30개), 회의 참석자 전체 시간당 60개다. 넘으면 429 `rate_limited`(감사 R4 Q1·Q2). 실패한 허가는 `DELETE /:mid/uploads/:uploadId` 로 바로 돌려준다.
+- 회의를 만든 사람이 **같은 로그인 세션**으로 입장하면 주관 코드 없이 바로 주관자 pt(`role:'host'`)를 받는다. 그 로그인 세션이 끝나면 주관 동작은 403 `host_revoked`, refresh 는 viewer. 다시 로그인했거나 다른 브라우저면 만든 사람으로 보지 않으므로(기기 id 는 보지 않음, 감사 R3 P4) 주관 코드를 넣는다.
+- 채팅 속도: 사람당 1초 1글, 회의 전체 초당 15글(한꺼번에는 30글까지 모아 둠, 감사 R3 P2). 주관자 채팅은 회의 전체 상한 밖이다(감사 R4 Q4). 회의 전체 상한에 걸리면 429 `rate_limited`.
+- 녹음: 녹음을 끈 사람의 마지막 조각은 끈 뒤 90초 안, 이어지는 순번이면 받는다(덮어쓰기는 409 `transcript_exists`). 받아쓰기 중에 꺼져도 결과는 저장된다(감사 R3 P1). 꼬리 조각은 `at` 이 끈 시각보다 앞이어야 한다. 같은 로그인 세션으로 다시 들어온 녹음자(새 cid)는 이어서 보낸다(감사 R4 Q3·Q6).
+- 발표하기: 회의가 `live` 일 때 참석자 누구나, 주관 코드 없이. 한 사람 10초에 1번. 주관자는 언제나 되찾는다. `presenter` 는 `{cid, epoch}` 뿐(이름 없음). 주관자만 하는 일(시작·끝, 판서 잠금, 순서, 쪽 지우기, 녹음)은 그대로.
+- 화면: `agenda.js`·`agenda.css`(접두어 `.za-`), 자리 `#zz-wait`(`#zz-center` 안, 무대 위를 덮는 대기 화면 「오늘의 안건」). store 이벤트 `cmd:agenda-add` 를 내면 안건 추가 창이 열린다(host.js 안건 창이 씀). 확인 창 본문 「지금부터 화면이 전송됩니다」, 단추 「예」「아니오」, 다른 분이 발표 중이면 위에 「지금 다른 분이 발표 중이에요.」.
+
 ### 2-4. 실시간 구독 (Firestore `kwon`, 컬렉션 `zzoom_meetings/{mid}/…`)
 
 모두 `(…, cb) => unsubscribe` (동기로 해제 함수를 돌려줌). Firebase 로그인 전이면 로그인 뒤 자동으로 붙는다.
@@ -144,7 +161,7 @@ class ZzError extends Error { status; code; message; extra }  // 서버 {error, 
 
 | 함수 | 콜백 값 | 쓰는 팀 |
 |---|---|---|
-| `subscribeStrokes(mid, pageKey, cb)` | `cb([{id, pageKey, aid, page, epoch, tool, color, w, pts, cid, name, at, seq, group?, part?}])` 그 쪽 전체, **seq 오름차순**. epoch 는 걸러 주지 않는다(받는 쪽이 현재 epoch 만 그림) | 3 |
+| `subscribeStrokes(mid, pageKey, cb)` | `cb([{id, pageKey, aid, page, epoch, tool, color, w, pts, cid, at, seq, group?, part?}])` 그 쪽 전체, **seq 오름차순**. epoch 는 걸러 주지 않는다(받는 쪽이 현재 epoch 만 그림) | 3 |
 | `subscribePageEpoch(mid, pageKey, cb)` | `cb(epoch 숫자, 문서 없으면 0)` | 3 |
 
 store 로 오지 않는 낮은 단계 구독(필요할 때만): `subscribeMeeting`, `subscribeAgenda`, `subscribeHands`, `subscribeChat`(최근 200), `subscribePolls`, `subscribeTranscript`, `subscribePeople`.
@@ -154,7 +171,7 @@ store 로 오지 않는 낮은 단계 구독(필요할 때만): `subscribeMeetin
 | 함수 | 설명 |
 |---|---|
 | `pageImageUrl(agenda, page, {thumb?})` | `${agenda.base}/p001.webp`(썸네일 `t001.webp`)를 `getBlob()` → object URL. 같은 것은 캐시. `kind:'board'` 면 `null` |
-| `releaseImages(keep?)` | 캐시 object URL 해제. `keep` = 남길 URL 배열 |
+| `releaseImages(keep?)` | 캐시 object URL 해제. `keep` = 남길 URL 또는 Storage 경로 배열. 아직 받는 중인 그림은 건드리지 않음 |
 | `originalBlob(agenda)` | 「원본 받기」용 Blob(`agenda.original` 없으면 `null`) |
 | `downloadOriginal(agenda)` | 위 Blob 을 원래 파일 이름으로 내려받기까지 함. 돌려줌 `true/false` |
 
@@ -177,16 +194,16 @@ store.emit(name, data)    // 값 없는 명령 이벤트(cmd:*, toast, gesture)
 | `meeting` | 회의 문서(B-1) + `id`, 또는 `{gone:true}` | app(구독) | 전부 |
 | `agenda` | `[{aid, title, kind, pages, sizes:[{w,h}], bg?, base?, original?, ver, boardNo?}]` **agendaOrder 순서** | app(구독) | 2·3·5 |
 | `live` | `meeting.live` 그대로(`{aid,page,view:{cx,cy,z},rev,epoch,forceSeq,at}` 또는 `null`) | app(구독) | 2, 4(쪽 붙이기 기준), 5 |
-| `role` | `{role:'viewer'|'host', cid, name, presenter:boolean}` 또는 `null`(입장 전·자격 잃음) | api·app | 전부 |
+| `role` | `{role:'viewer'|'host', cid, presenter:boolean}` 또는 `null`(입장 전·자격 잃음) | api·app | 전부 |
 | `follow` | `'follow'` \| `'free'` | 2 | 2, 4·5(표시) |
 | `page` | 내가 보는 쪽 `{aid, page, pageKey, view:{cx,cy,z}}` | 2 | 3, 4(쪽 붙이기), 5(녹음 위치) |
 | `viewport` | `{aid, page, pageKey, pageW, pageH, scale, ox, oy, dpr, stageW, stageH}` | 2 | 3 |
 | `tool` | `{mode:'view'|'pen', tool:'pen'|'hl'|'eraser', color, w}` | 3 | 2(펜 모드면 한 손가락 이동 끔) |
-| `hands` | `[{cid, name, at}]` at·cid 순 | app(구독) | 4, 5 |
-| `chat` | `[{id, cid, name, text, ref, at}]` 시간 순, 최근 200 | app(구독) | 4 |
-| `polls` | `[{pid, q, options, anonymous, status, revealed, tally, total, names}]` 만든 순 | app(구독) | 4, 5 |
+| `hands` | `[{cid, at}]` at·cid 순 (화면은 수와 순서 번호만, 내 손만 「나」) | app(구독) | 4, 5 |
+| `chat` | `[{id, cid, text, ref, at}]` 시간 순, 최근 200 (화면은 내 글만 「나」) | app(구독) | 4 |
+| `polls` | `[{pid, q, options, anonymous:true, status, revealed, tally, total, names:null}]` 만든 순 | app(구독) | 4, 5 |
 | `transcript` | `[{id, n, at, text, aid, page}]` n 순 | app(구독) | 5 |
-| `people` | `[{cid, name, role, seenAt, left?}]` (host 만 채워짐) | app(구독) | 5 |
+| `people` | `[{cid, role, seenAt, left?}]` (host 만 채워짐, 화면은 상태별 수만) | app(구독) | 5 |
 | `counts` | `{people, hands, peak, at}` | api(heartbeat) | 5, app |
 | `conn` | `{server:'ok'|'off'|'not_configured', firebase:'off'|'connecting'|'ok'}` | api·app | app(머리줄 표시), 누구나 |
 | `badges` | `{chat?, poll?, hands?, log?}` 숫자 | 4·5(자기 탭 것만) | app(옆칸 탭 숫자) |
@@ -215,7 +232,7 @@ body.zz  (.is-host 주관자, .is-presenter 진행자, .is-pen 펜 모드, .rout
 │  ├ #zz-brand ................ app (logo + 「쭘」, 누르면 목록)
 │  ├ #zz-meeting-title ........ app (회의 제목)
 │  ├ #zz-status ............... app (● 진행 중 / ● 녹음 중 / 연결 상태)
-│  └ #zz-header-actions ....... 1 join.js (내 이름, 「주관 코드 넣기」)
+│  └ #zz-header-actions ....... 1 join.js (「익명 참여」, 「주관 코드 넣기」)
 ├ #zz-notice .................. app (서버 설정 없음·연결 끊김 띠)
 ├ #zz-gate .................... app (로그인 안내)
 ├ main#zz-list ................ 1 list.js (목록 화면 전체)
@@ -243,7 +260,7 @@ body.zz  (.is-host 주관자, .is-presenter 진행자, .is-pen 펜 모드, .rout
 │  ├ #zz-hostbar-upload ....... 5 upload.js (안건 올리기)
 │  ├ #zz-hostbar-board ........ 3 board.js (화이트보드 띄우기)
 │  └ #zz-hostbar-record ....... 5 record.js (⏺ 녹음)
-├ #zz-join .................... 1 join.js (입장 전 이름 고르기, 덮개)
+├ #zz-join .................... 1 join.js (입장 전 「입장하기」, 덮개)
 ├ #zz-modal-root .............. app (ctx.modal 전용)
 └ #zz-toast ................... app (ctx.toast 전용)
 ```
@@ -292,8 +309,8 @@ body.zz  (.is-host 주관자, .is-presenter 진행자, .is-pen 펜 모드, .rout
 
 - `/zzoom` = 목록, `/zzoom#/m/<mid>` = 회의. 다른 해시는 목록으로. 링크는 `<a href="#/m/${id}">`.
 - 로그인 토큰(`localStorage.airoom_auth_token`) 없음 → `#zz-gate`: 「백암이에서 먼저 로그인해 주세요」 + `<a href="/">백암이로 가기</a>`. 서버 401 `login_required` 도 같음.
-- 회의 화면 순서(app.js): ① 틀 보이기 + `join.js` 붙이기 ② `health()` 가 ok 아니면 안내 띠만 두고 끝 ③ `api.resume(mid)` 성공 → 바로 입장 상태 ④ 아니면 `#zz-join` 이 보이고 join.js 가 `api.join(mid, name)` 을 부름 ⑤ store `role` 이 처음 값이 되면 나머지 모듈을 붙임.
-- 이름: join.js 가 `api.staffNames()` 목록 + 직접 입력, 기본값 `api.rememberedName()`. 입장 뒤 `api.rememberName()`.
+- 회의 화면 순서(app.js): ① 틀 보이기 + `join.js` 붙이기 ② `health()` 가 ok 아니면 안내 띠만 두고 끝 ③ `api.resume(mid)` 성공 → 바로 입장 상태 ④ 아니면 `#zz-join` 이 보이고 join.js 가 `api.join(mid)` 을 부름 ⑤ store `role` 이 처음 값이 되면 나머지 모듈을 붙임.
+- **익명(ANON, 2026-11-25 사용자 결정)**: 이름을 묻지 않는다. 문구 「익명으로 참여해요. 이름은 저장되지 않아요.」 서버·Firestore·Redis·md 어디에도 사람 이름이 없다. 사람 구분은 cid 와 사람 열쇠(백암이 세션 토큰 해시, 감사 N1)뿐이고, 같은 세션 재입장 = 같은 사람(투표 1표·채팅 한도 유지).
 - 주관 코드: join.js 의 「주관 코드 넣기」 → `ctx.modal` 로 6자리 → `api.becomeHost`. 성공하면 store `role.role = 'host'` → app 이 host.js·upload.js 를 붙인다.
 
 ---
@@ -308,11 +325,12 @@ body.zz  (.is-host 주관자, .is-presenter 진행자, .is-pen 펜 모드, .rout
 | 3 판서·화이트보드 | `draw.js` `board.js` `draw.css` `vendor/perfect-freehand-1.2.3.mjs` | saveStrokes deleteStroke clearPage subscribeStrokes subscribePageEpoch createBoard addBoardPage | tool | page viewport role meeting(penLock) agenda gesture | `zz-layer-ink` `zz-layer-temp` `zz-toolbar` `zz-board-actions` `zz-hostbar-board` |
 | 4 채팅·손·투표 | `chat.js` `hands.js` `poll.js` `side.css` | sendChat deleteChat setHand lowerHand lowerAllHands createPoll vote myVote pollTally closePoll revealPoll | badges(chat·poll·hands) side | chat hands polls role page live meeting | `zz-side-chat` `zz-side-poll` `zz-side-hands` `zz-quick-hand` |
 | 5 주관자·업로드·녹음·md | `host.js` `upload.js` `record.js` `host.css` | setState takePresenter convertFile uploadAgenda updateAgenda deleteAgenda transcribe exportMd originalBlob | badges(log) | meeting role people counts agenda live page polls hands transcript | `zz-hostbar-main` `zz-hostbar-upload` `zz-hostbar-record` `zz-side-log` |
+| 안건 열기(AGENDA_OPEN) | `agenda.js` `agenda.css` | createAgenda myAgenda attachAgendaFile present convertFile updateAgenda deleteAgenda | cmd:nav | meeting agenda live role cmd:agenda-add | `zz-wait` |
 
 - 판서 잠금 단추는 5팀(host.js) 막대에 두고 `setState(mid,'penLock',v)`. 3팀은 `meeting.penLock && role.role!=='host'` 이면 펜 모드를 막고 안내.
 - 쪽 지우기 단추는 3팀(draw.js 도구 막대, host 에게만 보임).
 - 「원본 받기」는 5팀 안건 관리에서 `originalBlob`. 2팀 안건 목록에 넣고 싶으면 써도 된다(같은 함수).
-- 접속자 수는 누구나 `counts`/`meeting.counts` 로 표시 가능, 이름 목록(`people`)은 5팀만.
+- 접속자 수는 누구나 `counts`/`meeting.counts` 로 표시 가능, `people`(상태별 수 세기용, 이름 없음)은 5팀만.
 
 ---
 
@@ -323,7 +341,7 @@ body.zz  (.is-host 주관자, .is-presenter 진행자, .is-pen 펜 모드, .rout
 - 변환 결과 `kind` 는 hwp·hwpx 를 모두 `'hwp'` 로 줄 수 있다 → 서버 kind 는 `uploadAgenda` 가 확장자로 다시 정한다(팀은 신경 쓸 필요 없음).
 - 판서 색은 서버가 6개만 받는다(형광펜 `#FFE14D #9BE15D #FF8AD8`, 펜 `#E5484D #2F6FEB #1d1d1f`), `w` 는 0.001~0.05, 획 저장은 1초 1회(여러 획은 `saveStrokes` 에 묶어 보냄).
 - 채팅 1초 1글, 500자.
-- 비공개 투표는 reveal 전 `tally:null`. 주관자 실시간 숫자는 `pollTally` 를 몇 초마다 부른다(권장 3초, 투표 칸이 보일 때만).
+- 투표는 모두 비공개(공개 투표 없음, ANON). reveal 전 `tally:null`, reveal 뒤에도 항목별 수만. 주관자 실시간 숫자는 `pollTally` 를 몇 초마다 부른다(권장 3초, 투표 칸이 보일 때만).
 - 화면에 `getDownloadURL` 을 쓰지 않는다.
 
 ## 10. 시험

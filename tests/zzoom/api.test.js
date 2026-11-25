@@ -19,7 +19,8 @@ async function setup(opts = {}) {
     const groqCalls = [];
     const groq = opts.groq || { async transcribe(a) { groqCalls.push({ bytes: a.buffer.length, mime: a.mime, language: a.language }); return { ok: true, text: '첫 안건 이야기' }; } };
     const sessCalls = { n: 0 };
-    const validateSession = async t => { sessCalls.n++; return t === TOKENS.admin ? { role: 'admin' } : t === TOKENS.user ? { role: 'user' } : null; };
+    // 'user-t#라벨' 처럼 # 뒤가 다른 토큰은 서로 다른 백암이 세션(= 다른 사람, ANON 사람 열쇠는 세션 토큰 해시)
+    const validateSession = async t => { sessCalls.n++; const b = String(t || '').split('#')[0]; return b === TOKENS.admin ? { role: 'admin' } : b === TOKENS.user ? { role: 'user' } : null; };
     const app = express();
     app.set('trust proxy', true);
     // server.js 처럼 /api/copy/* → /api/* 재작성 + isCopy 표시
@@ -48,8 +49,9 @@ async function setup(opts = {}) {
         assert.equal(r.status, 201, r.text);
         return r.json.meeting.id;
     }
-    async function join(mid, name = '참석자', auth = 'user') {
-        const r = await call('POST', `/${mid}/join`, { auth, body: { name }, ip: `10.9.${Math.floor(ipSeq / 200)}.${ipSeq++ % 200}` });
+    // 익명(ANON): 서버는 이름을 받지 않는다. who 는 시험용 사람 표시(같은 who = 같은 로그인 세션). 이름이 저장되지 않는지 보려고 body 에 일부러 실어 보낸다.
+    async function join(mid, who = '참석자', auth = 'user') {
+        const r = await call('POST', `/${mid}/join`, { auth: (TOKENS[auth] || auth) + '#' + encodeURIComponent(who), body: { name: who }, ip: `10.9.${Math.floor(ipSeq / 200)}.${ipSeq++ % 200}` });
         assert.equal(r.status, 200, r.text);
         return r.json;
     }
@@ -85,7 +87,17 @@ test('격리: 시연본·비로그인·권한·다른 회의·만료 자격', as
     assert.equal((await h.call('GET', '/meetings')).status, 401);
     assert.equal((await h.call('GET', '/meetings', { auth: 'bogus' })).status, 401);
     const mk = await h.call('POST', '/meetings', { auth: 'user', body: { title: 'x', startsAt: Date.now(), hostCode: '123456' } });
-    assert.equal(mk.status, 403); assert.equal(mk.json.error, 'admin_only');
+    // 사용자 결정(2026-11-25): 로그인한 교직원 누구나 회의(오늘의 안건)를 만든다. 수정·삭제는 만든 사람이나 관리자만.
+    assert.equal(mk.status, 201); assert.equal(mk.json.meeting.mine, true);
+    const umid = mk.json.meeting.id;
+    assert.equal((await h.call('PATCH', `/meetings/${umid}`, { auth: 'user', body: { title: 'y' } })).status, 200, '만든 사람은 수정');
+    const amk = await h.call('POST', '/meetings', { auth: 'admin', body: { title: 'a', startsAt: Date.now(), hostCode: '123456' } });
+    const ap = await h.call('PATCH', `/meetings/${amk.json.meeting.id}`, { auth: 'user', body: { title: 'z' } });
+    assert.equal(ap.status, 403); assert.equal(ap.json.error, 'manager_only', '남이 만든 회의는 수정 못 함');
+    assert.equal((await h.call('DELETE', `/meetings/${amk.json.meeting.id}`, { auth: 'user' })).json.error, 'manager_only', '남이 만든 회의는 삭제 못 함');
+    assert.equal((await h.call('POST', `/meetings/${amk.json.meeting.id}/unlock`, { auth: 'user' })).json.error, 'manager_only');
+    assert.equal((await h.call('DELETE', `/meetings/${umid}`, { auth: 'user' })).status, 200, '만든 사람은 삭제');
+    assert.equal((await h.call('DELETE', `/meetings/${amk.json.meeting.id}`, { auth: 'admin' })).status, 200, '관리자는 삭제');
     assert.equal((await h.call('POST', '/meetings', { auth: 'admin', body: { title: 'x', startsAt: Date.now(), hostCode: '12345' } })).json.error, 'bad_code');
     assert.equal((await h.call('POST', '/meetings', { auth: 'admin', body: { title: '', startsAt: Date.now(), hostCode: '123456' } })).json.error, 'bad_title');
     assert.equal((await h.call('POST', '/meetings', { auth: 'admin', body: [] })).status, 400);
@@ -96,7 +108,8 @@ test('격리: 시연본·비로그인·권한·다른 회의·만료 자격', as
     assert.equal(list.json.meetings.length, 2);
     assert.ok(!/hash|salt|123456/.test(list.text));
     assert.equal((await h.call('POST', `/${mid}/join`, { body: { name: 'a' } })).status, 401, '비로그인 입장');
-    assert.equal((await h.call('POST', `/${mid}/join`, { auth: 'user', body: { name: '' } })).json.error, 'bad_name');
+    const noName = await h.call('POST', `/${mid}/join`, { auth: 'user', body: {} });
+    assert.equal(noName.status, 200, '익명: 이름 없이 입장'); assert.equal(noName.json.name, undefined);
     assert.equal((await h.call('POST', '/mzzzzzzzzzzzz/join', { auth: 'user', body: { name: 'a' } })).status, 404);
     assert.equal((await h.call('POST', '/meetings/join', { auth: 'user', body: { name: 'a' } })).status, 404);
 
@@ -114,10 +127,14 @@ test('격리: 시연본·비로그인·권한·다른 회의·만료 자격', as
     // 자격 없이·엉터리 자격·viewer 의 host 요청·다른 회의 자격
     assert.equal((await h.call('POST', `/${mid}/chat`, { body: { text: 'hi' } })).json.error, 'pt_required');
     assert.equal((await h.call('POST', `/${mid}/chat`, { pt: 'nope', body: { text: 'hi' } })).json.error, 'pt_invalid');
-    for (const [m, u, b] of [['POST', `/${mid}/state`, { action: 'start' }], ['POST', `/${mid}/uploads`, { kind: 'pdf', pages: 1, bytes: 10 }], ['POST', `/${mid}/boards`, {}], ['POST', `/${mid}/polls`, { q: 'q' }], ['GET', `/${mid}/export.md`], ['POST', `/${mid}/presenter`, {}]]) {
+    for (const [m, u, b] of [['POST', `/${mid}/state`, { action: 'start' }], ['POST', `/${mid}/boards`, {}], ['POST', `/${mid}/polls`, { q: 'q' }], ['GET', `/${mid}/export.md`]]) {
         const r = await h.call(m, u, { pt: v.pt, body: b });
         assert.equal(r.status, 403, u); assert.equal(r.json.error, 'host_only', u);
     }
+    // AGENDA_OPEN: 참석자도 업로드 허가를 받는다(출입증 role 은 viewer 그대로). 발표하기는 회의 시작 뒤에만.
+    const vu = await h.call('POST', `/${mid}/uploads`, { pt: v.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    assert.equal(vu.status, 201, vu.text); assert.equal(claimsOf(vu.json.token).role, 'viewer');
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: v.pt, body: {} })).json.error, 'state_ready');
     const other = await h.call('POST', `/${mid2}/chat`, { pt: v.pt, body: { text: 'hi' } });
     assert.equal(other.status, 403); assert.equal(other.json.error, 'pt_other_meeting');
     const otherHost = await h.call('POST', `/${mid2}/state`, { pt: a.pt, body: { action: 'start' } });
@@ -277,7 +294,7 @@ test('진행: 진행자 1명, 넘겨받기, 옛 epoch·옛 rev 거절, forceSeq'
     assert.equal(st.status, 200); assert.equal(st.json.meeting.presenter.cid, A.cid);
     let live = st.json.meeting.live;
     assert.equal((await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } })).status, 409, '두 번 시작');
-    assert.equal((await h.call('POST', `/${mid}/live`, { pt: V.pt, body: { aid, page: 2, baseRev: live.rev, epoch: live.epoch } })).json.error, 'host_only');
+    assert.equal((await h.call('POST', `/${mid}/live`, { pt: V.pt, body: { aid, page: 2, baseRev: live.rev, epoch: live.epoch } })).json.error, 'not_presenter', '진행자가 아닌 참석자');
     const notP = await h.call('POST', `/${mid}/live`, { pt: B.pt, body: { aid, page: 2, baseRev: live.rev, epoch: live.epoch } });
     assert.equal(notP.status, 409); assert.equal(notP.json.error, 'not_presenter');
     let r = await h.call('POST', `/${mid}/live`, { pt: A.pt, body: { aid, page: 2, baseRev: live.rev, epoch: live.epoch, view: { cx: 9, cy: -1, z: 99 } } });
@@ -345,7 +362,7 @@ test('판서: 새 형식 검증·epoch·seq·잠금·상한', async t => {
     assert.equal(ok.status, 201, ok.text);
     const sid = ok.json.strokes[0].id;
     const doc = h.fb.docs.get(`zzoom_meetings/${mid}/strokes/${sid}`);
-    assert.equal(doc.cid, V.cid); assert.equal(doc.name, '참석'); assert.equal(doc.seq, 1); assert.equal(doc.color, '#FFE14D');
+    assert.equal(doc.cid, V.cid); assert.equal(doc.name, undefined, '익명: 선에 이름 없음'); assert.equal(doc.seq, 1); assert.equal(doc.color, '#FFE14D');
     assert.equal(doc.pts.length, 4500); assert.equal(doc.group, 'g1'); assert.equal(doc.part, 0); assert.equal(typeof doc.at, 'number');
     assert.ok(!('outline' in doc));
     const ok2 = await h.call('POST', `/${mid}/strokes`, { pt: W.pt, body: stroke(pk, { pts: [0.12345678, 0.5, 0.333333, 0.2, 0.2, 1] }) });
@@ -398,7 +415,7 @@ test('채팅·손: 길이·본인 지우기·남의 손·끝난 뒤 잠금', asy
     assert.equal((await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '   ' } })).json.error, 'bad_text');
     const c = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '의견', cid: W.cid, name: '사칭' } });
     const cd = h.fb.docs.get(`zzoom_meetings/${mid}/chat/${c.json.id}`);
-    assert.equal(cd.cid, V.cid); assert.equal(cd.name, '참석');
+    assert.equal(cd.cid, V.cid); assert.equal(cd.name, undefined, '익명: 채팅에 이름 없음(사칭 name 도 버림)');
     assert.equal((await h.call('DELETE', `/${mid}/chat/${c.json.id}`, { pt: W.pt })).json.error, 'not_owner');
     assert.equal((await h.call('DELETE', `/${mid}/chat/${c.json.id}`, { pt: A.pt })).status, 200);
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
@@ -422,7 +439,7 @@ test('채팅·손: 길이·본인 지우기·남의 손·끝난 뒤 잠금', asy
 });
 
 // ---------------------------------------------------------------- 투표
-test('투표: 원표 비노출·바꾸기·마감 동시·숨긴 결과·공개 이름', async t => {
+test('투표: 원표 비노출·바꾸기·마감 동시·숨긴 결과·공개 투표 없음(ANON)', async t => {
     const h = await setup(); t.after(h.close);
     const mid = await h.createMeeting();
     const A = await h.join(mid, '관리자', 'admin');
@@ -469,24 +486,25 @@ test('투표: 원표 비노출·바꾸기·마감 동시·숨긴 결과·공개 
     assert.equal(rv.json.poll.names, null); assert.equal(rv.json.poll.revealed, true);
     assert.ok(!JSON.stringify(h.fb.docs.get(`zzoom_meetings/${mid}/polls/${pid}`)).match(/교사\d/), 'Firestore 에 이름 없음');
 
-    // 공개 투표: reveal 때 names
-    const p2 = await h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '공개 투표', options: ['가', '나'], anonymous: false } });
+    // 익명(ANON): 공개 투표를 달라고 해도(anonymous:false) 비공개로 만들고, 결과는 항목별 수만
+    const p2 = await h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '두 번째 투표', options: ['가', '나'], anonymous: false } });
+    assert.equal(p2.json.poll.anonymous, true, '공개 투표 없음');
     const pid2 = p2.json.pid;
     await h.call('POST', `/${mid}/polls/${pid2}/vote`, { pt: vs[0].pt, body: { optionId: 'o1' } });
     await h.call('POST', `/${mid}/polls/${pid2}/vote`, { pt: vs[1].pt, body: { optionId: 'o2' } });
-    assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}/polls/${pid2}`).names, null, 'reveal 전에는 이름 없음');
     const rv2 = await h.call('POST', `/${mid}/polls/${pid2}/reveal`, { pt: A.pt });
-    assert.deepEqual(rv2.json.poll.names, { o1: ['교사0'], o2: ['교사1'] });
+    assert.equal(rv2.json.poll.names, null, 'reveal 해도 이름 없음');
     assert.deepEqual(rv2.json.poll.tally, { o1: 1, o2: 1 });
+    // 원표 장부(Redis)에도 이름이 없다
+    assert.ok(!JSON.stringify(await h.redis.hgetall(`zz:vote:${mid}:${pid2}`)).includes('교사'), 'Redis 원표에 이름 없음');
 
-    // AI용 md: 비공개 투표는 숫자만
+    // AI용 md: 투표는 숫자만
     const md = await h.call('GET', `/${mid}/export.md`, { pt: A.pt });
     assert.equal(md.status, 200); assert.match(md.headers.get('content-type'), /markdown/);
     assert.match(md.headers.get('content-disposition'), /filename\*=UTF-8''/);
-    const anonPart = md.text.split('공개 투표')[0];
-    assert.ok(anonPart.includes('체험학습 장소 정하기 (비공개)'));
-    assert.ok(!/교사[0-3]/.test(anonPart.split('## 투표 결과')[1]), '비공개 투표 줄에 이름 없음');
-    assert.ok(md.text.includes('가: 교사0'));
+    assert.ok(md.text.includes('체험학습 장소 정하기 (비공개)'));
+    assert.ok(md.text.includes('두 번째 투표 (비공개)'));
+    assert.ok(!/교사[0-3]|관리자/.test(md.text), 'md 어디에도 이름 없음');
     // 끝내면 열린 투표도 닫힘
     const p3 = await h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '세 번째' } });
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
@@ -502,6 +520,7 @@ test('녹음: host 만, 소리 형식·크기, 녹음 끈 회의 거절, 소리�
     const audio = Buffer.alloc(2048, 7);
     assert.equal((await h.call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: audio })).json.error, 'state_ready');
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
     assert.equal((await h.call('POST', `/${mid}/transcribe?n=0`, { pt: V.pt, raw: audio })).json.error, 'host_only');
     assert.equal((await h.call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: audio, type: 'text/plain' })).status, 415);
     assert.equal((await h.call('POST', `/${mid}/transcribe`, { pt: A.pt, raw: audio })).json.error, 'bad_n');
@@ -543,7 +562,7 @@ test('업로드: 허가·commit 위조·빠진 파일·형식·크기·재시도
     assert.equal((await commit(body, A2.pt, mid2)).json.error, 'upload_unknown');
     assert.equal((await commit(body, A.pt, mid, 'uxxxxxxxxxxxxx')).json.error, 'upload_unknown');
     const V = await h.join(mid, '참석');
-    assert.equal((await commit(body, V.pt)).json.error, 'host_only');
+    assert.equal((await commit(body, V.pt)).json.error, 'not_your_upload', '남의 허가는 확정 못 함');
     // 허가와 다른 쪽 수·크기
     assert.equal((await commit({ ...body, pages: 3 })).json.error, 'pages_mismatch');
     assert.equal((await commit({ ...body, sizes: [[1414, 2000]] })).json.error, 'bad_sizes');
@@ -590,7 +609,7 @@ test('업로드: 허가·commit 위조·빠진 파일·형식·크기·재시도
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
     const del = await h.call('DELETE', `/${mid}/agenda/${b2}`, { pt: A.pt });
     assert.equal(del.status, 409); assert.equal(del.json.error, 'agenda_live');
-    assert.equal((await h.call('DELETE', `/${mid}/agenda/${aid}`, { pt: V.pt })).json.error, 'host_only');
+    assert.equal((await h.call('DELETE', `/${mid}/agenda/${aid}`, { pt: V.pt })).json.error, 'not_agenda_owner');
     assert.equal((await h.call('DELETE', `/${mid}/agenda/${aid}`, { pt: A.pt })).status, 200);
     assert.equal([...h.fb.objects.keys()].filter(k => k.startsWith(path)).length, 0, '지운 안건 그림도 지움');
 
@@ -759,7 +778,9 @@ test('지적01: 맞춤 토큰 until 은 1시간 안(host·viewer), 업로드는 
     const r = await h.call('POST', `/${mid}/refresh`, { pt: H.pt });
     assert.equal(r.json.role, 'viewer');
     assert.equal(claimsOf(r.json.token).role, 'viewer');
-    assert.ok(['host_only', 'host_revoked'].includes((await h.call('POST', `/${mid}/uploads`, { pt: H.pt, body: { kind: 'pdf', pages: 1, bytes: 1 } })).json.error), '내려간 host 는 업로드 허가를 못 받는다');
+    // AGENDA_OPEN: 내려간 host 도 참석자로서 업로드 허가는 받지만 출입증은 viewer claim 이다
+    const down = await h.call('POST', `/${mid}/uploads`, { pt: H.pt, body: { kind: 'pdf', pages: 1, bytes: 1 } });
+    assert.equal(down.status, 201, down.text); assert.equal(claimsOf(down.json.token).role, 'viewer', '내려간 host 의 업로드 출입증은 viewer');
 });
 
 test('지적01: 회의를 지운 뒤 늦게 올라온 업로드 파일도 장부에 남아 24시간 뒤 지워진다', async t => {
@@ -831,6 +852,7 @@ test('지적04: 받아쓰기 응답을 기다리는 사이 회의를 지우면 �
     const mid = await h.createMeeting();
     const A = await h.join(mid, '관리자', 'admin');
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
     const tr = h.call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: Buffer.from('aud') });
     await inGroq;
     const d = await h.call('DELETE', `/meetings/${mid}`, { auth: 'admin' });
@@ -913,11 +935,13 @@ test('지적09: 변환기가 받는 형식은 서버 업로드 허가도 받는�
     const mid = await h.createMeeting();
     const A = await h.join(mid, '관리자', 'admin');
     for (const [kind, ext] of [['hwpx', 'hwpx'], ['hwp', 'hwp'], ['image', 'gif'], ['image', 'bmp'], ['image', 'avif'], ['image', 'heic'], ['image', 'heif'], ['pptx', 'pptx']]) {
+        h.clock.t += 3600000 + 1;   // 확정 전 허가는 사람당 3개(감사 R2 M2) — 출입증이 끝난 허가는 세지 않는다
         const r = await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind, ext, pages: 1, bytes: 10 } });
         assert.equal(r.status, 201, `${kind}/${ext}: ${r.text}`);
         assert.equal(r.json.files.original, `original.${ext}`);
     }
     assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind: 'image', ext: 'hwpx', pages: 1, bytes: 10 } })).status, 400, '종류와 확장자가 어긋나면 거절');
+    h.clock.t += 3600000 + 1;
     const up = await upload(h, mid, A, { kind: 'hwpx', ext: 'hwpx', pages: 1, bytes: 10 });
     putPages(h, up.path, 1);
     h.fb.put(up.path + 'original.hwpx', 10, 'application/hwp+zip');
@@ -966,7 +990,824 @@ test('추가: Groq 429 는 groq_busy 와 retryAfter(초)를 돌려준다', async
     const mid = await h.createMeeting();
     const A = await h.join(mid, '관리자', 'admin');
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
     const r = await h.call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: Buffer.from('aud') });
     assert.equal(r.status, 429); assert.equal(r.json.error, 'groq_busy'); assert.equal(r.json.retryAfter, 7);
     assert.equal(r.headers.get('retry-after'), '7');
+});
+
+test('D5: 회의를 끝낸 뒤 2분 동안은 끝내기 전에 시작한 녹음 조각을 받는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
+    assert.equal((await h.call('POST', `/${mid}/transcribe?n=6&at=${h.clock.t}`, { pt: A.pt, raw: Buffer.from('aud') })).status, 201);
+    h.clock.t += 10000;
+    const segAt = h.clock.t;                       // 마지막 조각이 시작된 시각
+    h.clock.t += 50000;
+    const e = await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
+    assert.equal(e.status, 200, e.text);
+    const endedAt = h.clock.t;
+    h.clock.t += 5000;                             // 끝낸 직후 마지막 조각이 올라온다
+    const ok = await h.call('POST', `/${mid}/transcribe?n=7&at=${segAt}`, { pt: A.pt, raw: Buffer.from('aud') });
+    assert.equal(ok.status, 201, ok.text);
+    assert.ok(h.fb.docs.has(`zzoom/${mid}/transcript/t00007`) || [...h.fb.docs.keys()].some(k => k.includes(mid) && k.endsWith('t00007')), '기록이 남는다');
+    // 끝낸 뒤에 시작한 조각은 거절
+    const late = await h.call('POST', `/${mid}/transcribe?n=8&at=${endedAt + 1000}`, { pt: A.pt, raw: Buffer.from('aud') });
+    assert.equal(late.status, 409, late.text); assert.equal(late.json.error, 'state_ended');
+    // 시작 시각(at)이 없으면 끝낸 회의에는 받지 않는다
+    const noAt = await h.call('POST', `/${mid}/transcribe?n=9`, { pt: A.pt, raw: Buffer.from('aud') });
+    assert.equal(noAt.status, 409, noAt.text);
+    // 2분이 지나면 끝내기 전 조각도 거절
+    h.clock.t = endedAt + 120001;
+    const A2 = await h.join(mid, '관리자', 'admin');
+    const tooLate = await h.call('POST', `/${mid}/transcribe?n=10&at=${segAt + 1}`, { pt: (A2.pt || A.pt), raw: Buffer.from('aud') });
+    assert.equal(tooLate.status, 409, tooLate.text); assert.equal(tooLate.json.error, 'state_ended');
+    assert.notEqual(tooLate.status, 201);
+});
+
+test('감사 N2: 일반 세션은 회의 만들기 10분 5개까지', async t => {
+    const h = await setup(); t.after(h.close);
+    const mk = () => h.call('POST', '/meetings', { auth: 'user', body: { title: 't', startsAt: Date.now(), hostCode: '123456' } });
+    for (let i = 0; i < 5; i++) assert.equal((await mk()).status, 201);
+    const r = await mk();
+    assert.equal(r.status, 429); assert.equal(r.json.error, 'rate_limited');
+});
+
+test('R1-N4: 끝낸 뒤 유예 조각은 받은 조각 바로 뒤 번호만, 덮어쓰기 없이, 회의당 5개까지', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
+    for (const n of [0, 1, 2]) assert.equal((await h.call('POST', `/${mid}/transcribe?n=${n}&at=${h.clock.t}`, { pt: A.pt, raw: Buffer.from('a') })).status, 201);
+    const at = h.clock.t; h.clock.t += 30000;
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
+    h.clock.t += 1000;
+    const send = n => h.call('POST', `/${mid}/transcribe?n=${n}&at=${at}`, { pt: A.pt, raw: Buffer.from('a') });
+    const over = await send(1);                    // 이미 받은 조각을 끝낸 뒤 덮어쓰기
+    assert.equal(over.status, 409, over.text); assert.equal(over.json.error, 'transcript_exists');
+    const jump = await send(40);                   // 받은 조각과 이어지지 않는 번호
+    assert.equal(jump.status, 409, jump.text); assert.equal(jump.json.error, 'state_ended');
+    for (const n of [3, 4, 5, 6, 7]) assert.equal((await send(n)).status, 201, 'n=' + n);
+    const sixth = await send(8);
+    assert.equal(sixth.status, 429, sixth.text);
+});
+
+test('R1-N3: 판서가 만들거나 다시 만드는 Redis 키에는 모두 만료가 걸린다(삭제와 겹쳐도 영구히 남지 않음)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const aid = await h.board(mid, A);
+    const r = await h.call('POST', `/${mid}/strokes`, { pt: A.pt, body: stroke(`${aid}_1`) });
+    assert.equal(r.status, 201, r.text);
+    await require('../../lib/zzoom/keys').remember(h.redis, mid, 'zz:x:test');   // 정리 목록도 같은 만료
+    for (const k of [`zz:sc:${mid}`, `zz:scp:${mid}`, `zz:seq:${mid}`, `zz:keys:${mid}`]) {
+        const e = h.redis.data.get(k);
+        assert.ok(e, k + ' 있음');
+        assert.ok(e.exp > h.clock.t, k + ' 에 만료가 있다');
+    }
+});
+
+// ---------------------------------------------------------------- AGENDA_OPEN: 누구나 안건·자료, 발표하기
+const agendaDoc = (h, mid, aid) => h.fb.docs.get(`zzoom_meetings/${mid}/agenda/${aid}`);
+let devIp = 0;
+async function joinDev(h, mid, dev, name = '참석') {
+    // 사람 = 백암이 로그인 세션(ANON). dev 가 같으면 같은 사람(다시 들어옴)
+    const r = await h.call('POST', `/${mid}/join`, { auth: 'user-t#' + dev, body: { name }, headers: { 'X-Device-Id': dev }, ip: '10.77.' + Math.floor(devIp / 200) + '.' + (devIp++ % 200) });
+    assert.equal(r.status, 200, r.text);
+    return r.json;
+}
+async function attach(h, mid, who, aid, pages = 2) {
+    const up = await h.call('POST', `/${mid}/uploads`, { pt: who.pt, body: { kind: 'pdf', pages, bytes: 10, aid } });
+    if (up.status !== 201) return up;
+    putPages(h, up.json.path, pages);
+    return h.call('POST', `/${mid}/uploads/${up.json.uploadId}/commit`, { pt: who.pt, body: { ...commitBody(pages), aid } });
+}
+
+test('AGENDA_OPEN: 참석자 제목만 안건, 이름 없음, 주인과 주관자만 고치기, 순서는 주관자만', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const H = await h.join(mid, '관리자', 'admin');
+    const V = await joinDev(h, mid, 'dev-v', '김교사');
+    const W = await joinDev(h, mid, 'dev-w', '이교사');
+    assert.equal((await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '   ' } })).json.error, 'bad_title');
+    const xss = '<img src=x onerror=alert(1)>';
+    const r = await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: xss + 'x'.repeat(200) } });
+    assert.equal(r.status, 201, r.text);
+    const aid = r.json.aid;
+    const doc = agendaDoc(h, mid, aid);
+    assert.equal(doc.kind, 'empty'); assert.equal(doc.pages, 0); assert.equal(doc.title.length, 100, '제목 100자');
+    assert.ok(doc.title.startsWith(xss), '제목은 글자 그대로(화면이 textContent 로 그림)');
+    assert.equal(doc.ownerCid, V.cid);
+    // 익명: 응답·문서 어디에도 이름이 없다
+    for (const s of [JSON.stringify(doc), r.text]) { assert.ok(!s.includes('김교사'), '이름 없음'); assert.ok(!/createdBy|uploadedBy|"name"/.test(s), s); }
+    assert.deepEqual(h.fb.docs.get(`zzoom_meetings/${mid}`).agendaOrder, [aid]);
+    // 남은 못 고치고 못 지운다, 주인은 고친다
+    assert.equal((await h.call('PATCH', `/${mid}/agenda/${aid}`, { pt: W.pt, body: { title: '남이' } })).json.error, 'not_agenda_owner');
+    assert.equal((await h.call('DELETE', `/${mid}/agenda/${aid}`, { pt: W.pt })).json.error, 'not_agenda_owner');
+    assert.equal((await h.call('PATCH', `/${mid}/agenda/${aid}`, { pt: V.pt, body: { title: '내 안건' } })).status, 200);
+    assert.equal(agendaDoc(h, mid, aid).title, '내 안건');
+    // 순서 바꾸기는 주관자만(주인이어도)
+    const r2 = await h.call('POST', `/${mid}/agenda`, { pt: W.pt, body: { title: '두번째' } });
+    assert.equal((await h.call('PATCH', `/${mid}/agenda/${aid}`, { pt: V.pt, body: { index: 1 } })).json.error, 'host_only');
+    assert.deepEqual((await h.call('PATCH', `/${mid}/agenda/${r2.json.aid}`, { pt: H.pt, body: { index: 0 } })).json.agendaOrder, [r2.json.aid, aid]);
+    // 다시 들어온 같은 사람(같은 기기)은 새 cid 여도 주인
+    const V2 = await joinDev(h, mid, 'dev-v', '김교사');
+    assert.notEqual(V2.cid, V.cid);
+    assert.deepEqual((await h.call('GET', `/${mid}/agenda/mine`, { pt: V2.pt })).json.aids, [aid]);
+    assert.deepEqual((await h.call('GET', `/${mid}/agenda/mine`, { pt: W.pt })).json.aids, [r2.json.aid]);
+    assert.equal((await h.call('PATCH', `/${mid}/agenda/${aid}`, { pt: V2.pt, body: { title: '다시 고침' } })).status, 200);
+    // 주관자는 남의 것도 고치고 지운다
+    assert.equal((await h.call('PATCH', `/${mid}/agenda/${aid}`, { pt: H.pt, body: { title: '주관자가 고침' } })).status, 200);
+    assert.equal((await h.call('DELETE', `/${mid}/agenda/${r2.json.aid}`, { pt: H.pt })).status, 200);
+    // 주인은 자기 것을 지운다
+    assert.equal((await h.call('DELETE', `/${mid}/agenda/${aid}`, { pt: V.pt })).status, 200);
+    assert.deepEqual(h.fb.docs.get(`zzoom_meetings/${mid}`).agendaOrder, []);
+});
+
+test('AGENDA_OPEN: 상한(한 사람 10개, 회의 30개), 끝난 회의 거절, 업로드 허가도 같은 상한, 만들기 속도', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const H = await h.join(mid, '관리자', 'admin');
+    const V = await joinDev(h, mid, 'dev-v');
+    for (let i = 0; i < 10; i++) assert.equal((await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '안' + i }, tick: 7000 })).status, 201);
+    assert.equal((await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '열한째' }, tick: 7000 })).json.error, 'agenda_person_full');
+    assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: V.pt, body: { kind: 'pdf', pages: 1, bytes: 10 }, tick: 7000 })).json.error, 'agenda_person_full', '업로드로 새 안건도 같은 상한');
+    // 다시 들어와도(같은 기기) 같은 몫
+    const V2 = await joinDev(h, mid, 'dev-v');
+    assert.equal((await h.call('POST', `/${mid}/agenda`, { pt: V2.pt, body: { title: '우회' }, tick: 7000 })).json.error, 'agenda_person_full');
+    // 회의 30개
+    for (let i = 0; i < 20; i++) assert.equal((await h.call('POST', `/${mid}/agenda`, { pt: H.pt, body: { title: 'h' + i } })).status, 201);
+    const W = await joinDev(h, mid, 'dev-w');
+    assert.equal((await h.call('POST', `/${mid}/agenda`, { pt: W.pt, body: { title: '넘침' } })).json.error, 'agenda_full');
+    assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: W.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } })).json.error, 'agenda_full');
+    // 끝난 회의
+    const mid2 = await h.createMeeting();
+    const H2 = await h.join(mid2, '관리자', 'admin');
+    const X = await joinDev(h, mid2, 'dev-x');
+    const a = (await h.call('POST', `/${mid2}/agenda`, { pt: X.pt, body: { title: '끝나기 전' } })).json.aid;
+    await h.call('POST', `/${mid2}/state`, { pt: H2.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid2}/state`, { pt: H2.pt, body: { action: 'end' } });
+    assert.equal((await h.call('POST', `/${mid2}/agenda`, { pt: X.pt, body: { title: '끝난 뒤' } })).json.error, 'state_ended');
+    assert.equal((await h.call('POST', `/${mid2}/uploads`, { pt: X.pt, body: { kind: 'pdf', pages: 1, bytes: 10, aid: a } })).json.error, 'state_ended');
+    assert.equal((await h.call('PATCH', `/${mid2}/agenda/${a}`, { pt: X.pt, body: { title: 'x' } })).json.error, 'state_ended');
+    // 만들기 속도: 사람당 분당 10번
+    const mid3 = await h.createMeeting();
+    const Y = await joinDev(h, mid3, 'dev-y');
+    h.clock.t = Math.ceil(h.clock.t / 60000) * 60000;   // 분 창 시작에 맞춤
+    const codes = [];
+    for (let i = 0; i < 11; i++) codes.push((await h.call('POST', `/${mid3}/agenda`, { pt: Y.pt, body: { title: 'r' + i }, tick: 150 })).status);
+    assert.ok(codes.slice(0, 10).every(c => c === 201) && codes[10] === 429, codes.join());
+});
+
+test('AGENDA_OPEN: 제목만 안건에 자료 붙이기(주인만), 재시도 같은 결과, 발표 중 바꾸기 거절, 자료 바꾸면 옛 그림 지움', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const H = await h.join(mid, '관리자', 'admin');
+    const V = await joinDev(h, mid, 'dev-v');
+    const W = await joinDev(h, mid, 'dev-w');
+    const aid = (await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '학사 일정' } })).json.aid;
+    assert.equal((await attach(h, mid, W, aid)).json.error, 'not_agenda_owner', '남의 안건에 자료 못 붙임');
+    assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: V.pt, body: { kind: 'pdf', pages: 1, bytes: 10, aid: 'bxxxxxxxxxxxxx' } })).json.error, 'not_found');
+    const up = await h.call('POST', `/${mid}/uploads`, { pt: V.pt, body: { kind: 'pdf', pages: 2, bytes: 10, aid } });
+    assert.equal(up.status, 201); assert.equal(claimsOf(up.json.token).role, 'viewer'); assert.equal(claimsOf(up.json.token).up, up.json.uploadId);
+    putPages(h, up.json.path, 2);
+    // 남이 그 허가로 확정하려 하면 거절
+    assert.equal((await h.call('POST', `/${mid}/uploads/${up.json.uploadId}/commit`, { pt: W.pt, body: { ...commitBody(2), aid } })).json.error, 'not_your_upload');
+    const c = await h.call('POST', `/${mid}/uploads/${up.json.uploadId}/commit`, { pt: V.pt, body: { ...commitBody(2), aid } });
+    assert.equal(c.status, 201, c.text); assert.equal(c.json.aid, aid);
+    let doc = agendaDoc(h, mid, aid);
+    assert.equal(doc.title, '학사 일정', '제목 그대로'); assert.equal(doc.pages, 2); assert.equal(doc.kind, 'pdf'); assert.equal(doc.base, up.json.path.slice(0, -1));
+    assert.ok(!/createdBy|"name"/.test(JSON.stringify(doc)));
+    assert.deepEqual(h.fb.docs.get(`zzoom_meetings/${mid}`).agendaOrder, [aid], '새 안건이 생기지 않음');
+    const again = await h.call('POST', `/${mid}/uploads/${up.json.uploadId}/commit`, { pt: V.pt, body: { ...commitBody(2), aid } });
+    assert.equal(again.json.already, true); assert.equal(again.json.aid, aid);
+    // 참석자 새 안건 업로드(aid 없이) — 주인이 붙는다
+    const up2 = await h.call('POST', `/${mid}/uploads`, { pt: W.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    putPages(h, up2.json.path, 1);
+    const c2 = await h.call('POST', `/${mid}/uploads/${up2.json.uploadId}/commit`, { pt: W.pt, body: commitBody(1) });
+    assert.equal(c2.status, 201); assert.equal(agendaDoc(h, mid, c2.json.aid).ownerCid, W.cid);
+    // 발표 중인 안건의 자료는 바꾸지 못한다
+    await h.call('POST', `/${mid}/state`, { pt: H.pt, body: { action: 'start' } });
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { aid } })).status, 200);
+    assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: V.pt, body: { kind: 'pdf', pages: 1, bytes: 10, aid }, tick: 11000 })).json.error, 'agenda_live');
+    // 진행이 다른 안건으로 가면 바꿀 수 있고, 옛 그림과 그 위 판서는 지워진다
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: H.pt, body: { aid: c2.json.aid } })).status, 200);
+    h.fb.docs.set(`zzoom_meetings/${mid}/strokes/sold1`, { pageKey: aid + '_1', aid, page: 1, epoch: 0 });
+    const c3 = await attach(h, mid, V, aid, 1);
+    assert.equal(c3.status, 201, c3.text);
+    doc = agendaDoc(h, mid, aid);
+    assert.equal(doc.pages, 1); assert.equal(doc.ver, 3, "붙일 때마다 ver 증가");
+    assert.equal([...h.fb.objects.keys()].filter(k => k.startsWith(up.json.path)).length, 0, '옛 그림 지움');
+    assert.equal(h.fb.docs.has(`zzoom_meetings/${mid}/strokes/sold1`), false, '옛 판서 지움');
+    // 화이트보드에는 자료를 못 붙인다
+    const b = await h.board(mid, H);
+    assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: H.pt, body: { kind: 'pdf', pages: 1, bytes: 10, aid: b } })).json.error, 'not_found');
+    assert.ok(!('createdBy' in agendaDoc(h, mid, b)), '화이트보드에도 이름 없음');
+});
+
+test('AGENDA_OPEN 5: 발표하기 — 참석자 누구나, 그 안건 첫 쪽으로 모두 끌어옴, 10초 1번, 주관자는 언제든, 끝난 회의 거절', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const H = await h.join(mid, '관리자', 'admin');
+    const V = await joinDev(h, mid, 'dev-v', '김교사');
+    const W = await joinDev(h, mid, 'dev-w');
+    const empty = (await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '제목만' } })).json.aid;
+    const doc = (await attach(h, mid, V, (await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '자료' } })).json.aid, 3)).json.aid;
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { aid: doc } })).json.error, 'state_ready', '시작 전에는 참석자 발표 안 됨');
+    await h.call('POST', `/${mid}/state`, { pt: H.pt, body: { action: 'start' } });
+    const before = h.fb.docs.get(`zzoom_meetings/${mid}`).live;
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { aid: empty }, tick: 11000 })).json.error, 'agenda_empty');
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { aid: 'bxxxxxxxxxxxxx' }, tick: 11000 })).json.error, 'bad_aid');
+    const tk = await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { aid: doc }, tick: 11000 });
+    assert.equal(tk.status, 200, tk.text);
+    assert.equal(tk.json.presenter.cid, V.cid); assert.ok(!('name' in tk.json.presenter), '발표자 이름 없음');
+    assert.equal(tk.json.live.aid, doc); assert.equal(tk.json.live.page, 1);
+    assert.equal(tk.json.live.forceSeq, (before.forceSeq || 0) + 1, '자유 보기도 끌어옴');
+    assert.equal(tk.json.live.epoch, tk.json.presenter.epoch);
+    assert.ok(!JSON.stringify(h.fb.docs.get(`zzoom_meetings/${mid}`).presenter).includes('김교사'));
+    // 참석자 발표자는 쪽 넘기기·확대를 보낸다
+    let live = tk.json.live;
+    const lv = await h.call('POST', `/${mid}/live`, { pt: V.pt, body: { aid: doc, page: 2, baseRev: live.rev, epoch: live.epoch, view: { cx: 0.3, cy: 0.3, z: 2 } } });
+    assert.equal(lv.status, 200, lv.text); live = lv.json.live;
+    // 다른 참석자는 진행을 못 보낸다(진행자 아님)
+    assert.equal((await h.call('POST', `/${mid}/live`, { pt: W.pt, body: { aid: doc, page: 3, baseRev: live.rev, epoch: live.epoch } })).json.error, 'not_presenter');
+    // 같은 사람 10초 안 두 번째는 429, 다시 들어와도(같은 기기) 같은 몫
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { aid: doc }, tick: 500 })).status, 429);
+    const V2 = await joinDev(h, mid, 'dev-v');
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V2.pt, body: { aid: doc }, tick: 500 })).status, 429, '재입장으로 우회 못 함');
+    // 다른 사람이 넘겨받으면 앞 사람 쓰기는 거절
+    const tw = await h.call('POST', `/${mid}/presenter`, { pt: W.pt, body: { aid: doc, page: 3 } });
+    assert.equal(tw.status, 200); assert.equal(tw.json.live.page, 3);
+    assert.equal((await h.call('POST', `/${mid}/live`, { pt: V.pt, body: { aid: doc, page: 1, baseRev: tw.json.live.rev, epoch: live.epoch } })).json.error, 'not_presenter');
+    // 주관자는 언제든(제한 없이) 다시 가져온다
+    for (let i = 0; i < 3; i++) assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: H.pt, body: {}, tick: 200 })).status, 200);
+    assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}`).presenter.cid, H.cid);
+    // 끝난 회의
+    await h.call('POST', `/${mid}/state`, { pt: H.pt, body: { action: 'end' } });
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: W.pt, body: { aid: doc }, tick: 11000 })).json.error, 'state_ended');
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: H.pt, body: {} })).json.error, 'state_ended');
+});
+
+test('AGENDA_OPEN 레드팀: 발표 가로채기 폭주 — 10명이 1초 간격으로 계속 눌러도 사람당 10초 1번, epoch 는 성공 수만큼만', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const H = await h.join(mid, '관리자', 'admin');
+    const ppl = [];
+    for (let i = 0; i < 10; i++) ppl.push(await joinDev(h, mid, 'flood-' + i));
+    const aid = (await attach(h, mid, H, (await h.call('POST', `/${mid}/agenda`, { pt: H.pt, body: { title: '자료' } })).json.aid, 1)).json.aid;
+    await h.call('POST', `/${mid}/state`, { pt: H.pt, body: { action: 'start' } });
+    const e0 = h.fb.docs.get(`zzoom_meetings/${mid}`).presenter.epoch;
+    let ok = 0, limited = 0;
+    const per = new Map();
+    for (let round = 0; round < 3; round++) for (const [i, p] of ppl.entries()) {   // 30번, 1초 간격 → 사람마다 10초 간격으로 누름
+        for (let k = 0; k < 3; k++) {   // 한 사람이 같은 순간 3번 연타
+            const r = await h.call('POST', `/${mid}/presenter`, { pt: p.pt, body: { aid }, tick: k ? 1 : 1000 });
+            if (r.status === 200) { ok++; per.set(i, (per.get(i) || 0) + 1); } else if (r.status === 429) limited++; else assert.fail(r.text);
+        }
+    }
+    assert.equal(ok + limited, 90);
+    for (const [i, n] of per) assert.ok(n <= 3, `사람 ${i}: ${n}번(30초에 10초 창 3개)`);
+    assert.ok(limited >= 60, `연타는 막힘: ${limited}`);
+    const m = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    assert.equal(m.presenter.epoch, e0 + ok, 'epoch 는 성공한 넘겨받기만큼');
+    assert.equal(m.live.epoch, m.presenter.epoch);
+    // 주관자는 폭주 중에도 바로 되찾는다
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: H.pt, body: {}, tick: 1 })).status, 200);
+});
+
+// ---------------------------------------------------------------- 익명(ANON)
+// 입력한 이름 문자열이 서버 응답 JSON·가짜 Firestore·가짜 Redis 어디에도 없는지 grep 한다.
+test('ANON: 이름을 보내도 응답·Firestore·Redis·md 어디에도 남지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const NAME = '홍길순표식', NAME2 = '김철수표식';
+    const mid = await h.createMeeting();
+    const bodies = [];
+    const call = async (...a) => { const r = await h.call(...a); bodies.push(r.text); return r; };
+    const j1 = await call('POST', `/${mid}/join`, { auth: 'admin-t#a', body: { name: NAME }, ip: '10.66.0.1' });
+    const j2 = await call('POST', `/${mid}/join`, { auth: 'user-t#b', body: { name: NAME2 }, ip: '10.66.0.2' });
+    assert.equal(j1.status, 200); assert.equal(j2.status, 200);
+    assert.equal(j1.json.name, undefined); assert.equal(j2.json.name, undefined);
+    const A = j1.json, V = j2.json;
+    await call('POST', `/${mid}/host`, { pt: V.pt, body: { code: '123456', name: NAME2 }, ip: '10.66.1.1' }).then(r => { V.pt = r.json.pt; });
+    await call('POST', `/${mid}/refresh`, { pt: V.pt, body: {} });
+    const aid = await h.board(mid, A);
+    await call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
+    await call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '의견입니다', name: NAME2 } });
+    await call('POST', `/${mid}/hand`, { pt: V.pt, body: { up: true, name: NAME2 } });
+    await call('POST', `/${mid}/strokes`, { pt: V.pt, body: { ...stroke(aid + '_1'), name: NAME2 } });
+    const p = await call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '질문', anonymous: false } });
+    assert.equal(p.json.poll.anonymous, true);
+    await call('POST', `/${mid}/polls/${p.json.pid}/vote`, { pt: V.pt, body: { optionId: 'o1' } });
+    await call('GET', `/${mid}/polls/${p.json.pid}/tally`, { pt: A.pt });
+    await call('POST', `/${mid}/polls/${p.json.pid}/reveal`, { pt: A.pt });
+    await call('POST', `/${mid}/heartbeat`, { pt: V.pt, body: {}, tick: 31000 });
+    await call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: Buffer.from('소리') });
+    const md = await call('GET', `/${mid}/export.md`, { pt: A.pt });
+    assert.equal(md.status, 200);
+    for (const b of bodies) for (const n of [NAME, NAME2]) assert.ok(!b.includes(n), `응답에 이름: ${b.slice(0, 200)}`);
+    const fsAll = JSON.stringify([...h.fb.docs.entries()]);
+    const rdAll = JSON.stringify([...h.redis.data.entries()].map(([k, e]) => [k, e.v instanceof Map ? [...e.v.entries()] : e.v]));
+    for (const n of [NAME, NAME2]) { assert.ok(!fsAll.includes(n), 'Firestore 에 이름'); assert.ok(!rdAll.includes(n), 'Redis 에 이름'); }
+    assert.ok(!/"name"/.test(fsAll), 'Firestore 문서에 name 칸 없음');
+    // people 문서: role·seenAt 만
+    const ppl = [...h.fb.docs.entries()].filter(([k]) => k.includes('/people/')).map(([, d]) => Object.keys(d).sort().join());
+    assert.ok(ppl.length >= 2 && ppl.every(k => !k.includes('name')), ppl.join(' / '));
+});
+
+test('ANON·감사 R1 N1(RT-4): 사람 = 백암이 세션. 기기 id·이름을 바꿔 다시 들어와도 한 표', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const pid = (await h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '한 표' } })).json.pid;
+    const res = [];
+    for (let i = 0; i < 5; i++) {
+        const j = await h.call('POST', `/${mid}/join`, { auth: 'user-t#same-session', body: { name: '이름' + i }, headers: { 'X-Device-Id': 'dev-' + i }, ip: '10.67.0.' + i });
+        assert.equal(j.status, 200, j.text);
+        res.push((await h.call('POST', `/${mid}/polls/${pid}/vote`, { pt: j.json.pt, body: { optionId: 'o' + (1 + (i % 3)) } })).json);
+    }
+    assert.equal(res[0].ok, true);
+    assert.ok(res.slice(1).every(r => r.error === 'already_voted'), JSON.stringify(res));
+    const tl = (await h.call('GET', `/${mid}/polls/${pid}/tally`, { pt: A.pt })).json;
+    assert.equal(tl.total, 1, '기기 id 를 바꿔 재입장해도 1표');
+    // 다른 세션(다른 사람)은 따로 한 표
+    const other = await h.call('POST', `/${mid}/join`, { auth: 'user-t#other-session', body: {}, headers: { 'X-Device-Id': 'dev-0' }, ip: '10.67.1.1' });
+    assert.equal((await h.call('POST', `/${mid}/polls/${pid}/vote`, { pt: other.json.pt, body: { optionId: 'o2' } })).json.ok, true, '같은 기기 id 여도 다른 세션은 다른 사람');
+});
+
+test('D5: 녹음을 켠 사람이 나가거나 90초 넘게 끊기면 서버가 녹음을 내린다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const V = await h.join(mid, '참석');
+    const mtg = () => h.fb.docs.get(`zzoom_meetings/${mid}`);
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } })).status, 200);
+    assert.equal(mtg().recording, true); assert.equal(mtg().recordingBy, A.cid);
+    // 남이 나가는 것은 상관없다
+    await h.call('POST', `/${mid}/heartbeat`, { body: { pt: V.pt, leaving: true } });
+    assert.equal(mtg().recording, true);
+    // 켠 사람이 나가면(leave) 내려간다
+    await h.call('POST', `/${mid}/heartbeat`, { body: { pt: A.pt, leaving: true } });
+    assert.equal(mtg().recording, false); assert.equal(mtg().recordingBy, null);
+    // 다시 켜고, 켠 사람이 90초 넘게 heartbeat 없음 → 다른 사람의 heartbeat(30초 셈)에서 내려간다
+    const A2 = await h.join(mid, '관리자', 'admin');
+    const V2 = await h.join(mid, '참석2');
+    await h.call('POST', `/${mid}/heartbeat`, { pt: A2.pt, body: {} });
+    await h.call('POST', `/${mid}/state`, { pt: A2.pt, body: { action: 'recording', value: true } });
+    assert.equal(mtg().recordingBy, A2.cid);
+    await h.call('POST', `/${mid}/heartbeat`, { pt: V2.pt, body: {}, tick: 40000 });
+    assert.equal(mtg().recording, true, '40초 끊김은 아직 둔다');
+    await h.call('POST', `/${mid}/heartbeat`, { pt: V2.pt, body: {}, tick: 60000 });
+    assert.equal(mtg().recording, false, '90초 넘게 끊기면 내린다');
+    // 끄기는 recordingBy 도 비운다
+    await h.call('POST', `/${mid}/state`, { pt: A2.pt, body: { action: 'recording', value: true } });
+    await h.call('POST', `/${mid}/state`, { pt: A2.pt, body: { action: 'recording', value: false } });
+    assert.equal(mtg().recordingBy, null);
+});
+
+test('감사 N9: 관리자로 받은 host 는 관리자 세션이 끝나면 내려가고, refresh 때 세션을 다시 본다', async t => {
+    const sess = new Map();   // 토큰 → {role, expiresAt}
+    const validateSession = async tok => { const s = sess.get(tok); return s && s.expiresAt > h.clock.t ? s : null; };
+    const h = await setup({ router: { validateSession } }); t.after(h.close);
+    sess.set('admin-t', { role: 'admin', expiresAt: Infinity });
+    const mid = await h.createMeeting();
+    // 관리자 세션 30분 남음 → host 자격·토큰도 30분을 넘지 않는다
+    sess.set('adm-short', { role: 'admin', expiresAt: h.clock.t + 30 * 60000 });
+    const j = await h.call('POST', `/${mid}/join`, { auth: 'adm-short', body: {}, ip: '10.88.0.1' });
+    assert.equal(j.status, 200, j.text); assert.equal(j.json.role, 'host');
+    assert.ok(j.json.tokenUntil <= h.clock.t + 30 * 60000, '토큰 until ≤ 관리자 세션 만료');
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: j.json.pt, body: { action: 'penLock', value: true } })).status, 200, '세션 안에서는 host');
+    // refresh: 세션이 살아 있으면 host 유지
+    const r1 = await h.call('POST', `/${mid}/refresh`, { pt: j.json.pt, auth: 'adm-short', body: {} });
+    assert.equal(r1.json.role, 'host');
+    // 다른 사람 토큰(관리자여도)으로는 연장 못 함 → viewer
+    // (같은 세션이어야 함) — 먼저 세션 만료 뒤를 본다
+    h.clock.t += 31 * 60000;
+    const w = await h.call('POST', `/${mid}/state`, { pt: j.json.pt, body: { action: 'penLock', value: false } });
+    assert.equal(w.status, 403); assert.equal(w.json.error, 'host_revoked', '세션이 끝나면 host 쓰기 거절');
+    const r2 = await h.call('POST', `/${mid}/refresh`, { pt: j.json.pt, auth: 'adm-short', body: {} });
+    assert.equal(r2.status, 200); assert.equal(r2.json.role, 'viewer', 'refresh 에서 viewer 로 내림');
+    assert.equal(h.fb.calls.tokens.at(-1).claims.role, 'viewer');
+    assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}/people/${j.json.cid}`).role, 'viewer');
+    // 다시 로그인(새 세션)해도 옛 자격이 host 로 되살아나지 않는다(다시 입장하면 새 host 자격)
+    sess.set('adm-new', { role: 'admin', expiresAt: h.clock.t + 3600000 });
+    assert.equal((await h.call('POST', `/${mid}/refresh`, { pt: j.json.pt, auth: 'adm-new', body: {} })).json.role, 'viewer');
+    // 세션은 살아 있어도 refresh 에 다른 세션 토큰을 보내면 내려간다
+    sess.set('adm-a', { role: 'admin', expiresAt: h.clock.t + 3600000 });
+    sess.set('adm-b', { role: 'admin', expiresAt: h.clock.t + 3600000 });
+    const ja = await h.call('POST', `/${mid}/join`, { auth: 'adm-a', body: {}, ip: '10.88.0.2' });
+    assert.equal(ja.json.role, 'host');
+    assert.equal((await h.call('POST', `/${mid}/refresh`, { pt: ja.json.pt, auth: 'adm-b', body: {} })).json.role, 'viewer');
+});
+
+test('AGENDA_OPEN: 업로드 허가 출입증 until 은 참가 자격 만료와 관리자 세션 만료를 넘지 않는다(N9 와 같은 원칙)', async t => {
+    const sess = new Map();
+    const validateSession = async tok => { const s = sess.get(tok); return s && s.expiresAt > h.clock.t ? s : null; };
+    const h = await setup({ router: { validateSession } }); t.after(h.close);
+    sess.set('admin-t', { role: 'admin', expiresAt: Infinity });
+    sess.set('user-v', { role: 'user', expiresAt: Infinity });
+    const mid = await h.createMeeting();
+    // 관리자 세션 20분 남음: host 업로드 허가도 20분을 넘지 않는다
+    sess.set('adm-20', { role: 'admin', expiresAt: h.clock.t + 20 * 60000 });
+    const a = await h.call('POST', `/${mid}/join`, { auth: 'adm-20', body: {}, ip: '10.89.0.1' });
+    assert.equal(a.json.role, 'host', a.text);
+    const ua = await h.call('POST', `/${mid}/uploads`, { pt: a.json.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    assert.equal(ua.status, 201, ua.text);
+    assert.ok(ua.json.tokenUntil <= h.clock.t + 20 * 60000, '업로드 until ≤ 관리자 세션 만료');
+    assert.equal(h.fb.calls.tokens.at(-1).claims.until, ua.json.tokenUntil, 'claim until 도 같은 값');
+    assert.equal(h.fb.calls.tokens.at(-1).claims.up, ua.json.uploadId);
+    // 참석자: 참가 자격(12시간)이 20분 남았을 때 받은 허가는 그 만료를 넘지 않는다
+    const v = await h.call('POST', `/${mid}/join`, { auth: 'user-v', body: {}, ip: '10.89.0.2' });
+    assert.equal(v.status, 200, v.text);
+    h.clock.t = v.json.exp - 20 * 60000;
+    const uv = await h.call('POST', `/${mid}/uploads`, { pt: v.json.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    assert.equal(uv.status, 201, uv.text);
+    assert.ok(uv.json.tokenUntil <= v.json.exp, '업로드 until ≤ 참가 자격 만료');
+    assert.equal(h.fb.calls.tokens.at(-1).claims.until, uv.json.tokenUntil);
+    assert.equal(h.fb.calls.tokens.at(-1).claims.role, 'viewer');
+});
+
+// ================================================================ 감사 R2
+test('R2-M1: 제목만 있는 안건에 자료를 붙인 뒤 장부 정리가 실패해도 cron 은 붙은 파일을 지우지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const V = await h.join(mid, '참석');
+    const a = await h.call('POST', `/${mid}/agenda`, { pt: V.pt, body: { title: '내 안건' } });
+    assert.equal(a.status, 201, a.text);
+    const aid = a.json.aid;
+    const up = await upload(h, mid, V, { kind: 'pdf', pages: 2, bytes: 10, aid });
+    putPages(h, up.path, 2);
+    h.redis.failNext('hdel');
+    const c = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: V.pt, body: commitBody(2) });
+    assert.equal(c.status, 201, c.text);
+    assert.ok(Object.keys((await h.redis.hgetall('zz:uploads')) || {}).some(f => f.endsWith(up.uploadId)), '장부가 남은 상황');
+    h.clock.t += DAY + 3600000;
+    const p = await h.call('GET', '/maintenance/purge', { headers: { Authorization: 'Bearer cron-secret' } });
+    assert.equal(p.status, 200, p.text);
+    assert.equal([...h.fb.objects.keys()].filter(k => k.startsWith(up.path)).length, 4, '붙인 자료 파일 4개가 남는다');
+    assert.ok(!Object.keys((await h.redis.hgetall('zz:uploads')) || {}).length, '장부는 정리');
+});
+
+test('R2-M2: 확정 안 된 업로드 허가는 사람당 3개, 회의당 60개까지(주관자는 회의 칸 밖, R3 P3·R4 Q2)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const ask = (who) => h.call('POST', `/${mid}/uploads`, { pt: who.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    const got = [];
+    for (let i = 0; i < 3; i++) { const r = await ask(A); assert.equal(r.status, 201, r.text); got.push(r.json); }
+    const four = await ask(A);
+    assert.equal(four.status, 429, four.text); assert.equal(four.json.error, 'upload_busy');
+    putPages(h, got[0].path, 1);
+    assert.equal((await h.call('POST', `/${mid}/uploads/${got[0].uploadId}/commit`, { pt: A.pt, body: commitBody(1) })).status, 201);
+    assert.equal((await ask(A)).status, 201, '확정 뒤에는 자리가 난다');
+    let ok = 0, busy = 0;   // 주관자 허가 3개는 회의 칸에 들지 않는다(R3 P3)
+    for (let i = 0; i < 21; i++) {
+        const V = await h.join(mid, '참석' + i);
+        for (let k = 0; k < 3; k++) { h.clock.t += 7000; const r = await ask(V); if (r.status === 201) ok++; else { assert.ok(['upload_busy', 'rate_limited'].includes(r.json.error), r.text); busy++; } }
+    }
+    assert.equal(ok, 60, '회의당 60개(R4 Q2, 시간당 발급 60개와 같다)'); assert.ok(busy > 0);
+    h.clock.t += 15 * 60000 + 1000;
+    const A2 = await h.join(mid, '관리자', 'admin');
+    assert.equal((await ask(A2)).status, 201, '허가 수명(15분, R3 P3)이 지난 허가는 세지 않는다');
+});
+
+test('R2-M2: 허가 하나로 쓸 수 있는 바이트는 원본 50MiB + 쪽 그림 200MiB + 썸네일 20MiB 안이다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const { pageCaps } = require('../../lib/zzoom/contract');
+    for (const pages of [1, 50, 120, 200]) {
+        const r = await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind: 'pdf', pages, bytes: 10 } });
+        assert.equal(r.status, 201, r.text);
+        const c = h.fb.calls.tokens.at(-1).claims;
+        const cap = pageCaps(pages);
+        assert.equal(c.upPageMax, cap.page); assert.equal(c.upThumbMax, cap.thumb);
+        assert.equal(r.json.limits.pageBytes, cap.page); assert.equal(r.json.limits.thumbBytes, cap.thumb);
+        assert.ok(cap.page <= 4 * 1048576 && cap.page * pages <= 200 * 1048576, `쪽 ${pages}: ${cap.page}`);
+        assert.ok(cap.thumb <= 512 * 1024 && cap.thumb * pages <= 20 * 1048576);
+        putPages(h, r.json.path, pages);
+        const cm = await h.call('POST', `/${mid}/uploads/${r.json.uploadId}/commit`, { pt: A.pt, body: commitBody(pages) });
+        assert.equal(cm.status, 201, cm.text);
+    }
+});
+
+test('R2-M3: 녹음이 꺼진 회의(recording=false)에는 받아쓰기를 받지 않고, 켠 사람만 보낸다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const H = await h.asHost(mid, '주관2');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const send = (who, n) => h.call('POST', `/${mid}/transcribe?n=${n}&at=${h.clock.t}`, { pt: who.pt, raw: Buffer.from('a') });
+    const off = await send(A, 0);
+    assert.equal(off.status, 409, off.text); assert.equal(off.json.error, 'recording_not_on');
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } })).status, 200);
+    assert.equal((await send(A, 1)).status, 201);
+    const other = await send(H, 2);
+    assert.equal(other.status, 409, other.text); assert.equal(other.json.error, 'recording_not_on', '켠 사람이 아니면 거절');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: false } });
+    h.clock.t += 91000;   // 끈 뒤 90초 안의 이어지는 조각은 받는다(R3 P1). 그 뒤에는 거절.
+    assert.equal((await send(A, 3)).status, 409);
+});
+
+test('R2-M4: 관리자가 로그아웃(세션 삭제)하면 남은 탭의 주관 동작이 막히고 출입증은 viewer 가 된다', async t => {
+    const dead = new Set();
+    const vs = async tk => { const s = String(tk || ''); if (dead.has(s)) return null; const b = s.split('#')[0]; return b === TOKENS.admin ? { role: 'admin' } : b === TOKENS.user ? { role: 'user' } : null; };
+    const h = await setup({ router: { validateSession: vs } }); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'penLock', value: true } })).status, 200);
+    dead.add(TOKENS.admin + '#' + encodeURIComponent('관리자'));
+    const r = await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'penLock', value: false } });
+    assert.equal(r.status, 403, r.text); assert.equal(r.json.error, 'host_revoked');
+    const up = await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    assert.equal(up.status, 201, up.text);
+    assert.equal(h.fb.calls.tokens.at(-1).claims.role, 'viewer', '출입증은 viewer');
+});
+
+test('R2-M5(감사 R3 P4 로 바뀜): 다시 로그인하면 같은 기기여도 만든 사람이 아니고, 관리자는 회의 100개 상한을 받지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const dev = { 'X-Device-Id': 'devAAAAAAAAAAAAAAAA1' };
+    const mk = await h.call('POST', '/meetings', { auth: 'user-t#login1', headers: dev, body: { title: '내 회의', startsAt: '2026-11-26T06:00:00Z', hostCode: '123456' } });
+    assert.equal(mk.status, 201, mk.text);
+    const mid = mk.json.meeting.id;
+    const again = await h.call('PATCH', `/meetings/${mid}`, { auth: 'user-t#login2', headers: dev, body: { title: '고친 제목' } });
+    assert.equal(again.status, 403, '기기 id 만으로는 만든 사람이 아니다(공용 PC, R3 P4)');
+    const other = await h.call('PATCH', `/meetings/${mid}`, { auth: 'user-t#login3', headers: { 'X-Device-Id': 'devBBBBBBBBBBBBBBBB2' }, body: { title: '남' } });
+    assert.equal(other.status, 403);
+    for (let i = 0; i < 100; i++) h.fb.docs.set(`zzoom_meetings/mfill${String(i).padStart(8, '0')}`, { title: 'x', status: 'ready', expiresAt: h.clock.t + DAY * 5, startsAt: 0, createdAt: 0 });
+    const u = await h.call('POST', '/meetings', { auth: 'user-t#u9', body: { title: 'x', startsAt: '2026-11-26T06:00:00Z', hostCode: '123456' } });
+    assert.equal(u.status, 429, u.text);
+    const a = await h.call('POST', '/meetings', { auth: 'admin', body: { title: 'x', startsAt: '2026-11-26T06:00:00Z', hostCode: '123456' } });
+    assert.equal(a.status, 201, a.text);
+});
+
+test('R2-M6: 안건 주인 해시는 회의마다 달라 두 회의의 안건을 같은 사람으로 잇지 못한다', async t => {
+    const h = await setup(); t.after(h.close);
+    const m1 = await h.createMeeting(), m2 = await h.createMeeting();
+    const V1 = await h.join(m1, '같은이'), V2 = await h.join(m2, '같은이');
+    const a1 = (await h.call('POST', `/${m1}/agenda`, { pt: V1.pt, body: { title: '가' } })).json.aid;
+    const a2 = (await h.call('POST', `/${m2}/agenda`, { pt: V2.pt, body: { title: '나' } })).json.aid;
+    const d1 = h.fb.docs.get(`zzoom_meetings/${m1}/agenda/${a1}`), d2 = h.fb.docs.get(`zzoom_meetings/${m2}/agenda/${a2}`);
+    assert.ok(d1.ownerHash && d2.ownerHash);
+    assert.notEqual(d1.ownerHash, d2.ownerHash);
+    const V1b = await h.join(m1, '같은이');
+    const e = await h.call('PATCH', `/${m1}/agenda/${a1}`, { pt: V1b.pt, body: { title: '가2' } });
+    assert.equal(e.status, 200, e.text);
+});
+
+test('R2-N3: 투표 마감이 다시 만드는 투표 키에도 만료가 걸린다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const p = await h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '점심?', options: ['예', '아니오'] } });
+    assert.equal(p.status, 201, p.text);
+    const vk = [...h.redis.data.keys()].find(k => k.startsWith(`zz:vote:${mid}:`));
+    const pid = vk.split(':').pop();
+    assert.ok(vk, '투표 키 ' + [...h.redis.data.keys()].join(','));
+    h.redis.data.delete(vk);
+    const c = await h.call('POST', `/${mid}/polls/${pid}/close`, { pt: A.pt });
+    assert.ok([200, 201].includes(c.status), c.text);
+    const e = h.redis.data.get(vk);
+    assert.ok(e && e.exp > h.clock.t, '만료가 있다');
+});
+
+// ================================================================ 감사 R3 (R2 회귀)
+test('R3-P1: 녹음을 끈 사람의 마지막 조각은 끈 뒤 90초 안·이어지는 순번이면 받고, 처리 중 꺼져도 저장한다', async t => {
+    let release = null;
+    const groq = { async transcribe() { if (release) await new Promise(r => { const f = release; release = null; f(r); }); return { ok: true, text: '말' }; } };
+    const h = await setup({ groq }); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const H = await h.asHost(mid, '주관2');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
+    let tOff = null;   // 꼬리 조각은 끄기 전에 시작한 것(at < 끈 시각, 감사 R4 Q3)
+    const send = (who, n) => h.call('POST', `/${mid}/transcribe?n=${n}&at=${tOff ?? h.clock.t}`, { pt: who.pt, raw: Buffer.from('a') });
+    assert.equal((await send(A, 0)).status, 201);
+    assert.equal((await send(A, 1)).status, 201);
+    // 화면 순서: 녹음기 멈춤, 녹음 끄기, onstop 에서 마지막 조각 전송
+    tOff = h.clock.t;
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: false } })).status, 200);
+    h.clock.t += 5000;
+    const last = await send(A, 2);
+    assert.equal(last.status, 201, last.text);
+    assert.equal((await send(H, 3)).status, 409, '다른 사람은 거절');
+    assert.equal((await send(A, 40)).status, 409, '이어지지 않는 순번은 거절');
+    const over = await send(A, 1);
+    assert.equal(over.status, 409, '받은 조각 덮어쓰기 거절');
+    h.clock.t += 90000;
+    assert.equal((await send(A, 3)).status, 409, '90초가 지나면 거절');
+    // 받아쓰기 처리 중에 꺼져도 결과를 저장한다
+    tOff = null;
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
+    let unblock; release = r => { unblock = r; };
+    const inflight = send(A, 3);
+    while (!unblock) await new Promise(r => setTimeout(r, 5));
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: false } })).status, 200);
+    unblock();
+    const r = await inflight;
+    assert.equal(r.status, 201, r.text);
+    assert.ok(h.fb.docs.get(`zzoom_meetings/${mid}/transcript/t00003`), '글이 남는다');
+});
+
+test('R3-P2: 입장 직후 30명이 같은 순간 인사해도 모두 올라가고, 사람당 초당 1개는 그대로', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const ppl = [];
+    for (let i = 0; i < 30; i++) ppl.push(await h.join(mid, '사람' + i, 'user', 0));
+    const rs = await Promise.all(ppl.map(p => h.call('POST', `/${mid}/chat`, { pt: p.pt, body: { text: '안녕하세요' }, tick: 0 })));
+    assert.equal(rs.filter(r => r.status === 201).length, 30, rs.map(r => r.status).join(','));
+    const again = await h.call('POST', `/${mid}/chat`, { pt: ppl[0].pt, body: { text: '또' }, tick: 0 });
+    assert.equal(again.status, 429, '같은 사람 같은 초 두 번째');
+});
+
+test('R3-P3: 업로드 허가는 본인만 취소하고, 확정 전 허가는 15분, 주관자는 회의 20칸 상한 밖', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const ask = who => h.call('POST', `/${mid}/uploads`, { pt: who.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    // 실패한 허가 취소: 본인만
+    const V = await h.join(mid, '참석');
+    const W = await h.join(mid, '남');
+    const ups = [];
+    for (let i = 0; i < 3; i++) ups.push((await ask(V)).json);
+    assert.equal((await ask(V)).status, 429);
+    const notMine = await h.call('DELETE', `/${mid}/uploads/${ups[0].uploadId}`, { pt: W.pt });
+    assert.equal(notMine.status, 403, notMine.text);
+    const mine = await h.call('DELETE', `/${mid}/uploads/${ups[0].uploadId}`, { pt: V.pt });
+    assert.equal(mine.status, 200, mine.text);
+    assert.equal((await ask(V)).status, 201, '취소하면 자리가 난다');
+    assert.equal((await h.call('POST', `/${mid}/uploads/${ups[0].uploadId}/commit`, { pt: V.pt, body: commitBody(1) })).status, 404, '취소한 허가는 확정하지 못한다');
+    // 공용 코드 여러 세션으로 회의 칸 채우기
+    let filled = 0;
+    for (let i = 0; i < 21 && filled < 70; i++) { const S = await h.join(mid, '채우기' + i); for (let k = 0; k < 3; k++) { h.clock.t += 7000; if ((await ask(S)).status === 201) filled++; } }
+    const late = await h.join(mid, '늦은이');
+    assert.equal((await ask(late)).status, 429, '회의 칸이 찼다');
+    const hostUp = await ask(A);
+    assert.equal(hostUp.status, 201, '주관자는 회의 칸 상한 밖: ' + hostUp.text);
+    const T = h.fb.calls.tokens.at(-1).claims;
+    assert.ok(T.until - h.clock.t <= 15 * 60000, '출입증 15분');
+    // 칸 60 과 시간당 발급 60 이 같으므로(감사 R4 Q1·Q2) 다른 사람은 다음 한 시간 칸에서 다시 올린다
+    h.clock.t += 3600000;
+    const late2 = await h.join(mid, '늦은이2');
+    assert.equal((await ask(late2)).status, 201, '한 시간 뒤에는 다른 사람도 올린다');
+});
+
+test('R3-P4: 기기 id 만으로는 만든 사람이 아니다(공용 PC). 다시 로그인한 사람은 주관 코드로 주관자가 된다', async t => {
+    const h = await setup(); t.after(h.close);
+    const dev = { 'X-Device-Id': 'devAAAAAAAAAAAAAAAA1' };
+    const mk = await h.call('POST', '/meetings', { auth: 'user-t#login1', headers: dev, body: { title: '내 회의', startsAt: '2026-11-26T06:00:00Z', hostCode: '123456' } });
+    assert.equal(mk.status, 201, mk.text);
+    const mid = mk.json.meeting.id;
+    assert.equal((await h.call('PATCH', `/meetings/${mid}`, { auth: 'user-t#login1', headers: dev, body: { title: '같은 세션' } })).status, 200);
+    const other = await h.call('PATCH', `/meetings/${mid}`, { auth: 'user-t#login2', headers: dev, body: { hostCode: '000000' } });
+    assert.equal(other.status, 403, other.text);
+    assert.equal((await h.call('DELETE', `/meetings/${mid}`, { auth: 'user-t#login2', headers: dev })).status, 403);
+    const V = await h.join(mid, 'login2');
+    const host = await h.call('POST', `/${mid}/host`, { pt: V.pt, body: { code: '123456' }, ip: '10.201.0.1' });
+    assert.equal(host.status, 200, host.text); assert.equal(host.json.role, 'host');
+});
+
+// ================================================================ 화면 결정 반영(발표 마치기·만든 사람 바로 주관)
+test('발표 마치기: 지금 발표자 본인이나 주관자만, presenter 를 비우고 모두 대기 화면(epoch·rev 올림), 끝난 회의 금지, 속도 한도', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const V = await h.join(mid, '발표자'), W = await h.join(mid, '남');
+    const aid = (await h.call('POST', `/${mid}/agenda`, { pt: A.pt, body: { title: '안건' } })).json.aid;
+    const early = await h.call('POST', `/${mid}/presenter/end`, { pt: V.pt, body: {} });
+    assert.equal(early.status, 409, '시작 전');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const tk = await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: {} });
+    assert.equal(tk.status, 200, tk.text);
+    const before = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    const no = await h.call('POST', `/${mid}/presenter/end`, { pt: W.pt, body: {} });
+    assert.equal(no.status, 403, no.text); assert.equal(no.json.error, 'not_presenter');
+    const ok = await h.call('POST', `/${mid}/presenter/end`, { pt: V.pt, body: {} });
+    assert.equal(ok.status, 200, ok.text);
+    const m = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    assert.equal(m.presenter.cid, null, '발표자 비움');
+    assert.ok(m.presenter.epoch > before.presenter.epoch && m.live.epoch === m.presenter.epoch, 'epoch 올림');
+    assert.ok(m.live.rev > before.live.rev, 'rev 올림'); assert.equal(m.live.aid, null, '대기 화면');
+    const again = await h.call('POST', `/${mid}/presenter/end`, { pt: V.pt, body: {}, tick: 0 });
+    assert.equal(again.status, 429, '속도 한도');
+    // 옛 발표자의 진행은 거절
+    const lv = await h.call('POST', `/${mid}/live`, { pt: V.pt, body: { aid, page: 1, epoch: before.presenter.epoch, baseRev: m.live.rev } });
+    assert.equal(lv.status, 409);
+    // 주관자는 남의 발표를 마칠 수 있다
+    await h.call('POST', `/${mid}/presenter`, { pt: W.pt, body: {}, tick: 11000 });
+    assert.equal((await h.call('POST', `/${mid}/presenter/end`, { pt: A.pt, body: {} })).status, 200);
+    assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}`).presenter.cid, null);
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
+    const ended = await h.call('POST', `/${mid}/presenter/end`, { pt: A.pt, body: {}, tick: 5000 });
+    assert.equal(ended.status, 409); assert.equal(ended.json.error, 'state_ended');
+});
+
+test('만든 사람(같은 로그인 세션)은 입장하면 주관 코드 없이 주관자 pt 를 받고, 로그아웃하면 주관 동작이 막힌다', async t => {
+    const dead = new Set();
+    const vs = async tk => { const s = String(tk || ''); if (dead.has(s)) return null; const b = s.split('#')[0]; return b === TOKENS.admin ? { role: 'admin' } : b === TOKENS.user ? { role: 'user' } : null; };
+    const h = await setup({ router: { validateSession: vs } }); t.after(h.close);
+    const mk = await h.call('POST', '/meetings', { auth: 'user-t#maker', body: { title: '내 회의', startsAt: '2026-11-26T06:00:00Z', hostCode: '123456' } });
+    const mid = mk.json.meeting.id;
+    const me = await h.call('POST', `/${mid}/join`, { auth: 'user-t#maker', body: {} });
+    assert.equal(me.status, 200, me.text); assert.equal(me.json.role, 'host');
+    assert.equal(h.fb.calls.tokens.at(-1).claims.role, 'host');
+    assert.equal((await h.call('POST', `/${mid}/state`, { pt: me.json.pt, body: { action: 'start' } })).status, 200);
+    const other = await h.call('POST', `/${mid}/join`, { auth: 'user-t#maker2', headers: { 'X-Device-Id': 'devAAAAAAAAAAAAAAAA1' }, body: {} });
+    assert.equal(other.json.role, 'viewer', '다른 로그인은 viewer');
+    dead.add('user-t#maker');
+    const r = await h.call('POST', `/${mid}/state`, { pt: me.json.pt, body: { action: 'penLock', value: true } });
+    assert.equal(r.status, 403); assert.equal(r.json.error, 'host_revoked');
+    const rf = await h.call('POST', `/${mid}/refresh`, { pt: me.json.pt, auth: 'user-t#maker' });
+    assert.equal(rf.json.role, 'viewer', 'refresh 도 viewer');
+});
+
+// ================================================================ 감사 R4
+test('R4-Q1: 업로드 허가 발급(취소 포함)은 사람당 시간당 12개, 주관자 30개, 회의(참석자) 시간당 60개', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const ask = who => h.call('POST', `/${mid}/uploads`, { pt: who.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    const cycle = async who => { h.clock.t += 7000; const r = await ask(who); if (r.status === 201) await h.call('DELETE', `/${mid}/uploads/${r.json.uploadId}`, { pt: who.pt, tick: 0 }); return r; };
+    const hs = []; for (let i = 0; i < 31; i++) hs.push((await cycle(A)).status);
+    assert.equal(hs.filter(s => s === 201).length, 30, '주관자 시간당 30: ' + hs.join(','));
+    const V = await h.join(mid, '참석');
+    const vs = []; for (let i = 0; i < 13; i++) vs.push((await cycle(V)).status);
+    assert.equal(vs.filter(s => s === 201).length, 12, '참석자 시간당 12: ' + vs.join(','));
+    let ok = 12;
+    for (let k = 0; k < 5; k++) { const S = await h.join(mid, '봇' + k); for (let i = 0; i < 12; i++) if ((await cycle(S)).status === 201) ok++; }
+    assert.equal(ok, 60, '회의 시간당 60');
+    h.clock.t += 3600000;
+    const W = await h.join(mid, '한시간뒤');
+    assert.equal((await ask(W)).status, 201, '한 시간 뒤 다시');
+});
+
+test('R4-Q2: 세션 7개가 3칸씩 채워도 다른 참석자는 올린다(회의 칸 60)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const ask = who => h.call('POST', `/${mid}/uploads`, { pt: who.pt, body: { kind: 'pdf', pages: 1, bytes: 10 } });
+    for (let k = 0; k < 7; k++) { const S = await h.join(mid, '봇' + k); for (let i = 0; i < 3; i++) { h.clock.t += 7000; assert.equal((await ask(S)).status, 201); } }
+    const V = await h.join(mid, '참석');
+    assert.equal((await ask(V)).status, 201);
+});
+
+test('R4-Q3·Q6: 녹음 꼬리는 같은 번호 재시도를 한 번만 세고 끈 뒤 시작한 조각은 거절, 다시 들어온 녹음자는 이어 보낸다', async t => {
+    const seq = [];
+    const groq = { async transcribe() { const r = seq.shift(); return r === 429 ? { ok: false, status: 429, retryAfter: 2 } : { ok: true, text: '말' }; } };
+    const h = await setup({ groq }); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'recording', value: true } });
+    const send = (who, n, at) => h.call('POST', `/${mid}/transcribe?n=${n}&at=${at ?? h.clock.t - 500}`, { pt: who.pt, raw: Buffer.from('a') });
+    assert.equal((await send(A, 0)).status, 201);
+    // Q6: 새로 고침(같은 로그인 세션, 새 cid)해도 녹음을 이어 보낸다
+    const A2 = await h.join(mid, '관리자', 'admin');
+    const cont = await send(A2, 1);
+    assert.equal(cont.status, 201, cont.text);
+    const tOn = h.clock.t;
+    await h.call('POST', `/${mid}/state`, { pt: A2.pt, body: { action: 'recording', value: false } });
+    // Q3: 같은 번호 Groq 429 두 번 뒤 성공 → 꼬리 하나로만 센다
+    seq.push(429, 429);
+    assert.equal((await send(A2, 2, tOn)).status, 429);
+    assert.equal((await send(A2, 2, tOn)).status, 429);
+    assert.equal((await send(A2, 2, tOn)).status, 201);
+    assert.equal((await send(A2, 3, tOn)).status, 201);
+    assert.equal((await send(A2, 4, tOn)).status, 201, '재시도를 세지 않아 꼬리 3개 모두');
+    const late = await send(A2, 5, h.clock.t - 100);
+    assert.equal(late.status, 409, '끈 뒤에 시작한 조각은 거절');
+});
+
+test('R4-Q4: 주관자 채팅(공지)은 회의 물통 밖(주관자 사람당 1초 1글만)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const bots = []; for (let i = 0; i < 35; i++) bots.push(await h.join(mid, '봇' + i));
+    await Promise.all(bots.map(b => h.call('POST', `/${mid}/chat`, { pt: b.pt, body: { text: '도배' }, tick: 0 })));
+    const r = await h.call('POST', `/${mid}/chat`, { pt: A.pt, body: { text: '공지' }, tick: 0 });
+    assert.equal(r.status, 201, r.text);
+});
+
+test('R4-Q5: 만든 사람 주관자 토큰 until 은 그 로그인 세션 만료를 넘지 않고, refresh 도 세션을 본다', async t => {
+    const clockRef = {};
+    const vs = async tk => { const s = String(tk || ''); if (s === 'user-t#maker') return { role: 'user', expiresAt: clockRef.end }; return s.startsWith('user-t') ? { role: 'user' } : s.startsWith('admin-t') ? { role: 'admin' } : null; };
+    const h = await setup({ router: { validateSession: vs } }); t.after(h.close);
+    clockRef.end = h.clock.t + 20 * 60000;
+    const mid = (await h.call('POST', '/meetings', { auth: 'user-t#maker', body: { title: '내 회의', startsAt: '2026-11-26T06:00:00Z', hostCode: '123456' } })).json.meeting.id;
+    const me = await h.call('POST', `/${mid}/join`, { auth: 'user-t#maker', body: {} });
+    assert.equal(me.json.role, 'host');
+    assert.ok(h.fb.calls.tokens.at(-1).claims.until <= clockRef.end, '토큰 until ≤ 세션 만료');
+    h.clock.t = clockRef.end + 1000;
+    const r = await h.call('POST', `/${mid}/state`, { pt: me.json.pt, body: { action: 'penLock', value: true } });
+    assert.equal(r.status, 403, '세션 만료 뒤 주관 동작');
+    const rf = await h.call('POST', `/${mid}/refresh`, { pt: me.json.pt, auth: 'user-t#maker' });
+    assert.equal(rf.json.role, 'viewer');
 });

@@ -1,26 +1,26 @@
-/* 쭘 옆칸 (디자인 4): 접두사 .zs- 만. 색은 --zz-* 변수만. */
+/* 쭘 채팅과 투표 칸 (디자인 4, 쉬운 화면 팀 C): 접두사 .zs- 만. 색은 --zz-* 변수만. 글자는 15px 이상, 본문 16px */
 .zs-chat { display: flex; flex-direction: column; height: 100%; min-height: 0; position: relative; }
 .zs-chat-list { flex: 1; overflow-y: auto; padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s2); min-height: 0; overscroll-behavior: contain; }
 .zs-msg { background: var(--zz-canvas); border-radius: var(--zz-r-card); padding: var(--zz-s2) var(--zz-s3); max-width: 100%; overflow-wrap: anywhere; }
 .zs-msg.mine { background: var(--zz-accent-soft); }
 .zs-msg.pending { opacity: .6; }
 .zs-msg.failed { opacity: 1; outline: 1px solid var(--zz-live); }
-.zs-msg-head { display: flex; gap: var(--zz-s2); align-items: baseline; font-size: 13px; color: var(--zz-muted); }
+.zs-msg-head { display: flex; gap: var(--zz-s2); align-items: baseline; font-size: 15px; color: var(--zz-muted); }
 .zs-name { font-weight: 600; color: var(--zz-ink); }
 .zs-text { font-size: 16px; white-space: pre-wrap; margin-top: var(--zz-s1); }
-.zs-ref { display: inline-flex; align-items: center; gap: var(--zz-s1); margin-top: var(--zz-s2); min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-chip); background: var(--zz-surface); color: var(--zz-accent-ink); font: inherit; font-size: 13px; cursor: pointer; }
+.zs-ref { display: inline-flex; align-items: center; gap: var(--zz-s1); margin-top: var(--zz-s2); min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-chip); background: var(--zz-surface); color: var(--zz-accent-ink); font: inherit; font-size: 15px; cursor: pointer; }
 .zs-ref-ic { width: 20px; height: 20px; }
-.zs-fail { display: flex; flex-wrap: wrap; gap: var(--zz-s2); align-items: center; margin-top: var(--zz-s2); font-size: 13px; color: var(--zz-live); }
-.zs-mini { min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s3); font-size: 13px; }
+.zs-fail { display: flex; flex-wrap: wrap; gap: var(--zz-s2); align-items: center; margin-top: var(--zz-s2); font-size: 15px; color: var(--zz-live); }
+.zs-mini { min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s3); font-size: 15px; }
 .zs-del { opacity: .75; }
 .zs-composer { border-top: 1px solid var(--zz-line); padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s2); background: var(--zz-surface); }
 .zs-input { width: 100%; box-sizing: border-box; resize: none; font: inherit; font-size: 16px; padding: var(--zz-s2) var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink); }
 .zs-input:focus-visible, .zs-field:focus-visible { outline: 2px solid var(--zz-accent); outline-offset: 1px; }
 .zs-foot { display: flex; align-items: center; gap: var(--zz-s2); }
-.zs-hint { flex: 1; font-size: 13px; color: var(--zz-warn); }
-.zs-count { font-size: 13px; color: var(--zz-muted); }
+.zs-hint { flex: 1; font-size: 15px; color: var(--zz-warn); }
+.zs-count { font-size: 15px; color: var(--zz-muted); }
 .zs-send { min-height: var(--zz-touch); min-width: 72px; }
-.zs-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--zz-s3); border-radius: var(--zz-r-chip); background: var(--zz-canvas); color: var(--zz-ink); font-size: 13px; border: 0; font-family: inherit; }
+.zs-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--zz-s3); border-radius: var(--zz-r-chip); background: var(--zz-canvas); color: var(--zz-ink); font-size: 15px; border: 0; font-family: inherit; }
 .zs-chip.live { background: var(--zz-accent-soft); color: var(--zz-accent-ink); }
 .zs-attach { min-height: var(--zz-touch); cursor: pointer; text-align: left; border: 1px solid var(--zz-line); background: var(--zz-surface); max-width: 100%; }
 .zs-attach.on { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
@@ -33,7 +33,7 @@
 .zs-hands { padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s3); }
 .zs-hands-head { display: flex; align-items: center; gap: var(--zz-s2); }
 .zs-hands-head .zs-mini { margin-left: auto; }
-.zs-badge { background: var(--zz-accent); color: #fff; border-radius: var(--zz-r-chip); padding: 0 var(--zz-s2); min-width: 22px; text-align: center; font-size: 13px; }
+.zs-badge { background: var(--zz-accent); color: #fff; border-radius: var(--zz-r-chip); padding: 0 var(--zz-s2); min-width: 22px; text-align: center; font-size: 15px; }
 .zs-hand-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--zz-s2); }
 .zs-hand-row { display: flex; align-items: center; gap: var(--zz-s3); min-height: var(--zz-touch); padding: 0 var(--zz-s3); background: var(--zz-canvas); border-radius: var(--zz-r-btn); }
 .zs-hand-row.mine { background: var(--zz-accent-soft); }
@@ -41,6 +41,8 @@
 .zs-hand-name { flex: 1; overflow-wrap: anywhere; }
 .zs-hand-btn { min-height: var(--zz-touch); min-width: var(--zz-touch); display: inline-flex; align-items: center; gap: var(--zz-s2); }
 .zs-hand-btn.on { background: var(--zz-accent); color: #fff; border-color: var(--zz-accent); }
+.zs-hands-me { display: flex; margin: var(--zz-s2) 0; }
+.zs-hands-me .zs-hands-raise { flex: 1; justify-content: center; }
 
 /* 투표 */
 .zs-poll { padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s3); }
@@ -55,11 +57,11 @@
 .zs-bar { position: absolute; inset: 0 auto 0 0; background: var(--zz-accent-soft); z-index: 0; transition: width var(--zz-dur); }
 .zs-opt > :not(.zs-bar) { position: relative; z-index: 1; }
 .zs-opt-label { flex: 1; overflow-wrap: anywhere; }
-.zs-opt-n { color: var(--zz-muted); font-size: 13px; }
-.zs-mine-tag { font-size: 13px; color: var(--zz-accent-ink); }
-.zs-names { font-size: 13px; color: var(--zz-muted); padding: 0 var(--zz-s3); overflow-wrap: anywhere; }
-.zs-note { margin: 0; font-size: 13px; color: var(--zz-muted); }
-.zs-fine { margin: 0; font-size: 13px; color: var(--zz-muted); }
+.zs-opt-n { color: var(--zz-muted); font-size: 15px; }
+.zs-mine-tag { font-size: 15px; color: var(--zz-accent-ink); }
+.zs-names { font-size: 15px; color: var(--zz-muted); padding: 0 var(--zz-s3); overflow-wrap: anywhere; }
+.zs-note { margin: 0; font-size: 15px; color: var(--zz-muted); }
+.zs-fine { margin: 0; font-size: 15px; color: var(--zz-muted); }
 .zs-note.warn { color: var(--zz-accent-ink); }
 .zs-poll-actions { display: flex; gap: var(--zz-s2); justify-content: flex-end; flex-wrap: wrap; }
 .zs-poll-actions .zz-btn, .zs-newpoll { min-height: var(--zz-touch); }
@@ -69,3 +71,16 @@
 .zs-check input { width: 22px; height: 22px; }
 
 @media (prefers-reduced-motion: reduce) { .zs-bar { transition: none; } }
+
+/* 쉬운 화면 팀 C (B10) */
+.zs-attach-row { font-size: 15px; color: var(--zz-ink); cursor: pointer; }
+.zs-attach-row[hidden] { display: none; }
+.zs-attach-row.on { color: var(--zz-accent-ink); }
+.zs-attach-row input:disabled + span { color: var(--zz-muted); }
+.zs-optrow .zs-field { flex: 1; min-width: 0; }
+.zs-optrow .zs-mini { white-space: nowrap; flex: none; }
+.zs-howto { margin: 0; font-size: 16px; color: var(--zz-ink); }
+.zs-label { margin: var(--zz-s1) 0 0; font-size: 15px; font-weight: 600; color: var(--zz-ink); }
+.zs-hand-btn.is-wait { opacity: .6; }
+.zs-hand-btn[hidden] { display: none; }
+.zs-text { font-size: 16px; }

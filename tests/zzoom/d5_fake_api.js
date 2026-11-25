@@ -183,3 +183,19 @@ export function acceptLive(next) {
   if (JSON.stringify(prev) === JSON.stringify(next)) return false;
   s.set('live', next); return true;
 }
+// 원본 내려받기 이름: 진짜 api.js 와 같게 「안건 제목 + 확장자」(익명화로 원본 파일 이름은 쓰지 않는다)
+export function originalFileName(agenda) {
+  const ext = String(agenda?.original?.name || agenda?.original?.path || '').toLowerCase().split('.').pop();
+  const base = String(agenda?.title || '안건').replace(/[\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || '안건';
+  return ['pdf', 'hwp', 'hwpx', 'pptx', 'png', 'jpg', 'jpeg', 'webp'].includes(ext) ? `${base}.${ext}` : base;
+}
+// 쉬운 화면 팀 C: 발표 마치기(CONTRACTS POST /:mid/presenter/end)
+export async function presenterEnd() {
+  log('presenterEnd');
+  await wait(30);
+  const changed = !!F.meeting.presenter?.cid;
+  F.meeting.presenter = { cid: null, epoch: (F.meeting.presenter?.epoch || 0) + 1 };
+  if (F.meeting.live) F.meeting.live = { ...F.meeting.live, aid: null, page: 1 };
+  F.push('meeting');
+  return { presenter: F.meeting.presenter, live: F.meeting.live, changed };
+}

@@ -116,12 +116,16 @@ async function requireAdmin(req, res, next) {
 }
 
 // Rate limiting (간단 구현)
-const rateLimits = new Map(); // "경로|ip" → { count, resetAt }
-function rateLimit(maxRequests, windowMs) {
+const rateLimits = new Map(); // "limiter ID|ip(또는 세션)" → { count, resetAt }
+// limiterId: 라우트별 고정 이름. req.path 를 키로 쓰면 Express 가 허용하는 대소문자·끝 슬래시 변형
+// (/API/firebase-token, /api/firebase-token/)마다 새 통이 생겨 한도를 우회할 수 있다(AL03).
+function rateLimit(limiterId, maxRequests, windowMs, idFn) {
+    if (typeof limiterId !== 'string' || !limiterId) throw new Error('rateLimit: limiterId 필요');
     return (req, res, next) => {
-        const ip = req.ip || req.connection.remoteAddress;
-        // 경로별 버킷 분리 — /api/mail/login 폭주가 /api/auth/login(본관 로그인)까지 잠그지 않도록
-        const key = req.path + '|' + ip;
+        // idFn: 셈 기준을 IP 대신 세션 토큰 등으로 바꾼다(학교 공인 IP 공유 대비). 없으면 IP.
+        const ip = (idFn && idFn(req)) || req.ip || (req.connection && req.connection.remoteAddress);
+        // limiter 별 통 분리 — /api/mail/login 폭주가 /api/auth/login(본관 로그인)까지 잠그지 않도록
+        const key = limiterId + '|' + ip;
         const now = Date.now();
         let entry = rateLimits.get(key);
         if (!entry || now > entry.resetAt) {
@@ -358,7 +362,7 @@ async function getAuthCodes() {
 }
 
 // 로그인 (인증코드 검증 + 브루트포스 방어)
-app.post('/api/auth/login', rateLimit(10, 60000), loginLockGate, async (req, res) => {
+app.post('/api/auth/login', rateLimit('auth-login', 10, 60000), loginLockGate, async (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: '인증 코드를 입력해주세요.' });
 
@@ -1603,7 +1607,11 @@ app.get('/api/firebase-config', requireAuth, (req, res) => {
 });
 
 // Firebase Storage 출입증: 로그인한 사람만 창고를 쓰게 storage.rules 가 이 토큰을 본다(lib/storage-token.js)
-app.get('/api/firebase-token', rateLimit(30, 60 * 1000), requireAuth,
+// IP 분당 120(학교 공인 IP 공유 대비) + 세션당 분당 10
+app.get('/api/firebase-token', rateLimit('firebase-token:ip', 120, 60 * 1000), requireAuth,
+    (() => { const perSession = rateLimit('firebase-token:session', 10, 60 * 1000, req => 's:' + req.headers['x-auth-token']);
+        // 카피본은 모두 같은 토큰(copy-demo)이고 연수실은 공인 IP 하나를 나눠 쓰므로 세션 한도를 건너뛰고 앞의 IP 120 한도만 쓴다
+        return (req, res, next) => isCopyNs() ? next() : perSession(req, res, next); })(),
     require('./lib/storage-token').makeHandler({ isCopy: () => isCopyNs() }));
 
 // ===== 급식일지 시스템 (/bap) =====
@@ -1804,6 +1812,11 @@ app.post('/api/bap/auth/login', loginLockGate, async (req, res) => {
 app.get('/api/bap/auth/me', bapAuth, (req, res) => {
     res.json({ name: req.bapSession.name, role: req.bapSession.role, school: req.bapSchool });
 });
+
+// 급식일지 Firestore 출입증: 일지 읽기·쓰기, 식단 쓰기는 이 토큰(claim bp=학교, br=m|b)이 있어야 한다(firestore.rules)
+app.get('/api/bap/firebase-token', rateLimit('bap-firebase-token:ip', 120, 60 * 1000), bapAuth,
+    rateLimit('bap-firebase-token:session', 10, 60 * 1000, req => 's:' + req.bapToken),
+    require('./lib/storage-token').makeBapHandler({ sessionLifeMs: BAP_SESSION_TTL * 1000 }));
 
 // 비밀번호 변경
 app.post('/api/bap/auth/change-password', bapAuth, async (req, res) => {
@@ -2493,7 +2506,7 @@ function mailAuth(req, res, next) {
 // 페이지 진입용 비밀번호 확인 — 학급 전체가 학교 NAT(공인 IP 1개) 뒤에서 동시 접속하므로 한도 넉넉히
 app.use('/api/mail/provider', mailAuth, express.json({ type: 'application/merge-patch+json', limit: '16kb' }), require('./lib/mail-proxy'));
 
-app.post('/api/mail/login', rateLimit(60, 60000), loginLockGate, async (req, res) => {
+app.post('/api/mail/login', rateLimit('mail-login', 60, 60000), loginLockGate, async (req, res) => {
     if (((req.body || {}).password || '') !== MAIL_KEY) return loginFailed(req, res, '비밀번호가 올바르지 않습니다.');
     await loginSucceeded(req);
     res.json({ success: true });

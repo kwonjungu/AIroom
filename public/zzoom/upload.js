@@ -145,9 +145,10 @@ export function mount(ctx) {
     if (why) { ctx.toast(why, 'warn'); return; }
     job = { file, ac: new AbortController(), urls: [], phase: 'convert' };
     sync();
-    fileLine.textContent = file.name;
+    // 익명(U19): 원본 파일 이름은 보이지 않는다. 종류만 알린다
+    { const ext = String(file.name || '').toLowerCase().split('.').pop(); fileLine.textContent = `고른 자료: ${ext === 'pdf' ? 'PDF' : ext === 'hwp' || ext === 'hwpx' ? '한/글' : ext === 'pptx' ? 'PPTX' : '그림'}`; }
     showConverting();
-    job.modal = ctx.modal({ title: '안건 올리기', body, onClose: () => cleanup() });
+    job.modal = ctx.modal({ title: '안건 올리기', body, onClose: () => cleanup(), keep: () => !!job });   // 발표가 시작돼도 접기만(작업 유지)
     const my = job;
     try {
       const converted = await api.convertFile(file, { signal: my.ac.signal, onProgress: p => { if (job === my) setProgress(p); } });
@@ -173,7 +174,7 @@ export function mount(ctx) {
     job.phase = 'preview';
     const c = job.converted;
     const n = c.pages.length;
-    const title = h('input', { type: 'text', class: 'zh-title-input', value: titleFromName(job.file.name), maxlength: '100', id: 'zh-up-title' });
+    const title = h('input', { type: 'text', class: 'zh-title-input', value: '', placeholder: '예: 2학기 학사 일정', maxlength: '100', id: 'zh-up-title' });   // 파일 이름으로 미리 채우지 않는다(익명)
     const thumbs = h('ol', { class: 'zh-thumbs' }, c.thumbs.map((t, i) => {
       const u = URL.createObjectURL(t);
       job.urls.push(u);
@@ -187,7 +188,7 @@ export function mount(ctx) {
       h('p', { class: 'zh-muted zz-num', text: `모두 ${n}쪽이에요. 쪽 그림을 확인해 주세요.` }),
       warns, thumbs].filter(Boolean));
     const go = abtn('이대로 올리기', 'primary', () => {
-      const t = title.value.trim() || titleFromName(job.file.name);
+      const t = title.value.trim() || '새 안건';
       doUpload(t);
     });
     act(abtn('취소', 'ghost', () => close()), go);
