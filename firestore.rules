@@ -162,5 +162,34 @@ service cloud.firestore {
                       && request.resource.data.name.size() < 30);
       }
     }
+
+    // ─── 쭘(ZZOOM) 회의 ───
+    // 모든 쓰기는 서버(Admin SDK, 규칙 우회)만 한다. 클라이언트는 맞춤 토큰 claim 으로 읽기만 한다.
+    // claim: zz==1, mid(회의 id), role('host'|'viewer'...), until(만료 ms).
+    // 회의 문서 자체의 list 는 막고(다른 회의 열람 방지), 하위 컬렉션만 list 를 허용한다.
+    match /zzoom_meetings/{mid} {
+      function zzOk() {
+        return request.auth != null
+          && request.auth.token.get('zz', 0) == 1
+          && request.auth.token.get('mid', '') == mid
+          && request.auth.token.get('until', 0) is number
+          && request.time.toMillis() < request.auth.token.get('until', 0);
+      }
+      function zzHost() {
+        return zzOk() && request.auth.token.get('role', '') == 'host';
+      }
+
+      allow get: if zzOk();
+      allow list: if false;
+      allow create, update, delete: if false;
+
+      // 하위 컬렉션 get·list 모두 허용(쿼리는 이 경로 아래에서만 실행됨). people 은 주관자만.
+      match /{sub}/{id} {
+        allow read: if (zzOk()
+            && sub in ['agenda', 'pages', 'strokes', 'hands', 'chat', 'polls', 'transcript'])
+          || (sub == 'people' && zzHost());
+        allow write: if false;
+      }
+    }
   }
 }

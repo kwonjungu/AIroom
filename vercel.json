@@ -4,6 +4,10 @@
     {
       "path": "/api/recruitments/maintenance/purge",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/zzoom/maintenance/purge",
+      "schedule": "0 18 * * *"
     }
   ],
   "rewrites": [

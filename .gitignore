@@ -23,3 +23,6 @@ public/assets/vibe/gen/
 .vercel
 data-copy/
 data-hub/
+
+# 쭘 에셋 원본(코덱스 생성 PNG)
+public/zzoom/assets/_src/

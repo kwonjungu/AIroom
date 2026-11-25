@@ -228,7 +228,8 @@ app.use((req, res, next) => req.isCopy ? nsStore.run('copy', next) : next());
 // 카피본 전용: 인증은 항상 통과, 실서비스에 영향이 가는 기능은 막고, AI는 횟수 제한
 // 급식일지(Firestore 직접 사용)·메일(실제 계정)은 카피본에서 제외. 채용은 구글 연동·드라이브 보관·자동 삭제만 막는다.
 const COPY_BLOCKED = [/^\/api\/admin\//, /^\/api\/mail/, /^\/api\/bap/, /^\/api\/vibe(\/|$)/, /^\/api\/posting/,
-    /^\/api\/recruitments\/(google|maintenance)(\/|$)/, /^\/api\/recruitments\/[^/]+\/archive$/];
+    /^\/api\/recruitments\/(google|maintenance)(\/|$)/, /^\/api\/recruitments\/[^/]+\/archive$/,
+    /^\/api\/zzoom(\/|$)/];
 // 서버 저장소(Redis)를 직접 쓰는 모듈(교구 대여소 사진·잠금 등)에 넘기는 래퍼 — 카피본 요청이면 키에 'copy:'를 붙인다.
 function nsRedis(r) {
     if (!r) return r;
@@ -302,6 +303,14 @@ app.get(['/recruitment', '/recruitment/'], async (req, res) => {
         if (m?.schoolId) return res.redirect(302, `/hub/s/${m.schoolId}/recruitment` + (req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '')); } catch (e) { console.warn('[hub] 이관 확인 실패:', e.message); }
     res.set('Referrer-Policy', 'no-referrer');
     res.sendFile(path.join(__dirname, 'public', 'recruitment', 'index.html'));
+});
+
+// 쭘(ZZOOM) 회의 화면: public/zzoom/ 디렉터리 때문에 static 이 301 로 넘기지 않게 앞에 둔다(파일이 없으면 404).
+app.get(['/zzoom', '/zzoom/'], (req, res) => {
+    const f = path.join(__dirname, 'public', 'zzoom', 'index.html');
+    if (!fs.existsSync(f)) return res.status(404).send('Not Found');
+    res.set('Referrer-Policy', 'no-referrer');
+    res.sendFile(f);
 });
 
 // 시연용 카피본 페이지 — 메인 SPA(public/index.html)를 그대로 쓰고, 화면이 경로를 보고 카피본 모드로 전환
@@ -1587,6 +1596,10 @@ app.get('/api/firebase-config', requireAuth, (req, res) => {
     res.json(cfg);
 });
 
+// Firebase Storage 출입증: 로그인한 사람만 창고를 쓰게 storage.rules 가 이 토큰을 본다(lib/storage-token.js)
+app.get('/api/firebase-token', rateLimit(30, 60 * 1000), requireAuth,
+    require('./lib/storage-token').makeHandler({ isCopy: () => isCopyNs() }));
+
 // ===== 급식일지 시스템 (/bap) =====
 // Firebase 웹 API 키는 공개되어도 되는 값이므로 인증 없이 노출
 // (보안은 Firestore 규칙에서 수행)
@@ -2366,6 +2379,12 @@ app.use('/api/recruitments', async (req, res, next) => {
 const mainRecruitStore = createRecruitStore({ redis, serverless: IS_VERCEL, directory: path.join(__dirname, 'data', 'recruitment') });
 app.use('/api/recruitments', require('./lib/recruitment/routes').createRouter({
     validateSession, redis, serverless: IS_VERCEL, store: mainRecruitStore
+}));
+// ===== 쭘(ZZOOM) 회의 (lib/zzoom) — Firebase 서비스 계정이 없으면 /api/zzoom/* 는 503 =====
+app.use('/api/zzoom', require('./lib/zzoom/routes').createRouter({
+    redis, validateSession,
+    fb: require('./lib/zzoom/fb').createFbFromEnv(),
+    groq: require('./lib/zzoom/whisper').createWhisper({ getKeys: getGroqApiKeys })
 }));
 // ===== 학교 공간 (/hub) — 백암이와 독립된 다학교 서비스 (lib/hub) =====
 // NEIS 학교 + 관리자가 준 학교 코드로 들어오고, 관리자(/hub/admin)는 백암이 관리자 코드로 들어온다.
