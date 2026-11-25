@@ -1,6 +1,6 @@
 # 쭘 엔진 단계 — 모든 팀 공통 지시
 
-- 저장소: `C:\Users\권준구\Desktop\AIroom`, 브랜치 `feat/meeting`. 먼저 `docs/meeting-2026-11-25/DESIGN.md`(v2, 특히 파트 K)와 `DECISIONS.md` 를 읽는다. 레포 `CLAUDE.md` 의 함정(두 SPA, /copy, vercel rewrite 금지)을 지킨다.
+- 저장소: `~\Desktop\AIroom`, 브랜치 `feat/meeting`. 먼저 `docs/meeting-2026-11-25/DESIGN.md`(v2, 특히 파트 K)와 `DECISIONS.md` 를 읽는다. 레포 `CLAUDE.md` 의 함정(두 SPA, /copy, vercel rewrite 금지)을 지킨다.
 - **자기 팀 소유 파일만** 만들고 고친다. 다른 파일이 꼭 바뀌어야 하면 고치지 말고 보고서에 「요청」으로 적는다.
 - 커밋·푸시·배포·Firebase 콘솔 조작·규칙 게시 금지. 실제 Firebase/Redis/Groq 에 쓰지 않는다(시험은 가짜·메모리 구현).
 - 실제 학교 문서는 로컬에서만 읽는다. 저장소에 넣거나 외부로 보내지 않는다. 변환 결과 그림도 저장소 밖(지정된 scratch 폴더)에.

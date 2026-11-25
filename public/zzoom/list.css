@@ -1,0 +1,107 @@
+/* 쭘 목록·입장 (디자인 1). 접두사 .zl- 만 쓴다. 색은 --zz-* 변수만. */
+
+/* ---------- 목록 ---------- */
+.zl-wrap { max-width: 880px; margin: 0 auto; padding: var(--zz-s6) var(--zz-s4) var(--zz-s8); }
+.zl-head { display: flex; align-items: center; gap: var(--zz-s4); flex-wrap: wrap; margin-bottom: var(--zz-s6); }
+.zl-head-logo { width: 56px; height: 56px; object-fit: contain; flex: none; }
+.zl-head-text { flex: 1 1 220px; min-width: 0; }
+.zl-title { margin: 0; font-size: 28px; font-weight: 600; line-height: 1.2; color: var(--zz-ink); }
+.zl-sub { margin: var(--zz-s1) 0 0; font-size: 16px; color: var(--zz-muted); }
+.zl-head-actions { display: flex; gap: var(--zz-s2); flex-wrap: wrap; }
+
+.zl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--zz-s3); }
+.zl-card {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--zz-s4); flex-wrap: wrap;
+  padding: var(--zz-s4) var(--zz-s5, 20px);
+  background: var(--zz-surface); border: 1px solid var(--zz-line); border-radius: var(--zz-r-card);
+}
+.zl-card.is-live { border-color: var(--zz-accent); box-shadow: 0 0 0 1px var(--zz-accent) inset; }
+.zl-card-main { flex: 1 1 280px; min-width: 0; }
+.zl-card-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; color: var(--zz-ink); overflow-wrap: anywhere; }
+.zl-meta { margin: var(--zz-s2) 0 0; display: flex; flex-wrap: wrap; gap: var(--zz-s1) var(--zz-s4); font-size: 13px; color: var(--zz-muted); }
+.zl-chips { margin: var(--zz-s2) 0 0; display: flex; flex-wrap: wrap; gap: var(--zz-s2); }
+.zl-chips .zz-chip, .zl-status { font-size: 13px; }
+.zl-status.ready { background: var(--zz-canvas); color: var(--zz-muted); }
+.zl-status.live { background: var(--zz-accent-soft); color: var(--zz-live); display: inline-flex; align-items: center; gap: var(--zz-s1); }
+.zl-status.ended { background: var(--zz-canvas); color: var(--zz-muted); }
+.zl-left { background: var(--zz-canvas); color: var(--zz-muted); }
+.zl-left.warn, .zl-locked.warn { background: var(--zz-accent-soft); color: var(--zz-accent-ink); }
+.zl-card-actions { display: flex; gap: var(--zz-s2); flex-wrap: wrap; align-items: center; }
+.zl-card-actions .zz-btn, .zl-head-actions .zz-btn { min-height: var(--zz-touch); min-width: var(--zz-touch); }
+.zl-enter { text-decoration: none; }
+
+.zl-state { padding: var(--zz-s8) var(--zz-s4); text-align: center; color: var(--zz-muted); }
+.zl-error {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--zz-s3); flex-wrap: wrap;
+  padding: var(--zz-s4); margin-bottom: var(--zz-s4);
+  background: var(--zz-accent-soft); border-radius: var(--zz-r-card); color: var(--zz-accent-ink);
+}
+.zl-error-text { margin: 0; font-size: 16px; }
+
+.zl-empty { text-align: center; padding: var(--zz-s6) var(--zz-s4); display: flex; flex-direction: column; align-items: center; gap: var(--zz-s2); }
+.zl-empty-img { width: min(360px, 80%); height: auto; }
+.zl-empty-title { margin: var(--zz-s2) 0 0; font-size: 20px; font-weight: 600; color: var(--zz-ink); }
+.zl-empty-text { margin: 0 0 var(--zz-s3); color: var(--zz-muted); }
+
+/* ---------- 폼(모달 안) ---------- */
+.zl-form { display: grid; gap: var(--zz-s4); min-width: 0; }
+.zl-field { display: grid; gap: var(--zz-s1); }
+.zl-label { font-size: 13px; font-weight: 600; color: var(--zz-ink); }
+.zl-input {
+  box-sizing: border-box; width: 100%; min-height: var(--zz-touch); padding: 0 var(--zz-s3);
+  font: inherit; font-size: 16px; color: var(--zz-ink); background: var(--zz-surface);
+  border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn);
+}
+.zl-input:focus-visible { outline: 2px solid var(--zz-accent); outline-offset: 1px; border-color: var(--zz-accent); }
+.zl-code { letter-spacing: .3em; }
+.zl-code::placeholder { letter-spacing: normal; }
+.zl-code-row { display: flex; gap: var(--zz-s2); flex-wrap: wrap; }
+.zl-code-row .zl-code { flex: 1 1 140px; width: auto; }
+.zl-dice { min-height: var(--zz-touch); }
+.zl-hint { margin: 0; font-size: 13px; color: var(--zz-muted); }
+.zl-check-row { display: flex; align-items: center; gap: var(--zz-s2); min-height: var(--zz-touch); cursor: pointer; font-size: 16px; }
+.zl-check { width: 22px; height: 22px; accent-color: var(--zz-accent); }
+.zl-form-error { margin: 0; font-size: 13px; color: var(--zz-live); }
+.zl-form-error[hidden] { display: none; }
+.zl-form-actions { display: flex; justify-content: flex-end; gap: var(--zz-s2); flex-wrap: wrap; }
+.zl-form-actions .zz-btn { min-height: var(--zz-touch); min-width: var(--zz-touch); }
+.zl-confirm { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+
+/* ---------- 입장 덮개 ---------- */
+.zl-join {
+  min-height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+  padding: var(--zz-s5, 20px) var(--zz-s4); background: var(--zz-canvas); overflow: auto;
+}
+.zl-join-card {
+  width: min(460px, 100%); display: flex; flex-direction: column; align-items: center; gap: var(--zz-s3); text-align: center;
+  padding: var(--zz-s6) var(--zz-s5, 20px); background: var(--zz-surface); border-radius: var(--zz-r-card);
+  box-shadow: var(--zz-shadow);
+}
+.zl-join-hero { width: min(260px, 60%); height: auto; }
+.zl-join-logo { width: 64px; height: 64px; object-fit: contain; }
+.zl-join-title { margin: 0; font-size: 28px; font-weight: 600; line-height: 1.25; color: var(--zz-ink); overflow-wrap: anywhere; }
+.zl-join-sub, .zl-join-wait { margin: 0; color: var(--zz-muted); }
+.zl-join-form { align-self: stretch; display: grid; gap: var(--zz-s2); text-align: left; }
+.zl-names { display: flex; flex-wrap: wrap; gap: var(--zz-s2); max-height: 148px; overflow: auto; padding: var(--zz-s1) 0; }
+.zl-names[hidden] { display: none; }
+.zl-name-chip {
+  min-height: var(--zz-touch); padding: 0 var(--zz-s4); font: inherit; font-size: 16px; cursor: pointer;
+  background: var(--zz-canvas); color: var(--zz-ink); border: 1px solid transparent;
+}
+.zl-name-chip.on, .zl-name-chip:hover { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
+.zl-go { margin-top: var(--zz-s2); min-height: var(--zz-touch); }
+
+/* ---------- 머리줄 ---------- */
+#zz-header-actions { display: flex; align-items: center; gap: var(--zz-s2); }
+.zl-me { display: inline-flex; align-items: baseline; gap: var(--zz-s2); font-size: 13px; color: var(--zz-muted); min-width: 0; }
+.zl-me-name { font-size: 16px; font-weight: 600; color: var(--zz-ink); max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zl-host-chip { background: var(--zz-accent-soft); color: var(--zz-accent-ink); }
+.zl-host-btn { min-height: var(--zz-touch); }
+
+@media (max-width: 767px) {
+  .zl-wrap { padding: var(--zz-s4) var(--zz-s4) var(--zz-s6); }
+  .zl-title { font-size: 24px; }
+  .zl-card-actions { width: 100%; }
+  .zl-card-actions .zl-enter { flex: 1 1 auto; text-align: center; }
+  .zl-me-label { display: none; }
+}

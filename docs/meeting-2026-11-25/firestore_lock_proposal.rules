@@ -1,0 +1,125 @@
+// ─── Firestore 잠그기 제안(2026-11-25) — 급식일지(bap*)·함께 만드는 문서(codocs_*) ───
+// firestore.rules 의 「담당자 계정」부터 「쭘(ZZOOM) 회의」 바로 앞까지를 이 블록으로 통째로 바꾼다.
+// (쭘 블록·파일 머리말·rules_version 은 그대로)
+//
+// 출입증(맞춤 토큰 claim) — lib/storage-token.js
+//   ba==1          백암이 로그인(GET /api/firebase-token). 카피본은 cp==1 이라 codocs 가 안 열린다.
+//   bp, br         급식일지 로그인(GET /api/bap/firebase-token). bp=학교(bap|bap2|bap3), br=m(담당자)|b(결재자)
+//   zz/mid/role    쭘 회의(여기서는 아무것도 못 한다)
+//
+// 공개로 남기는 것: bap*_menus 읽기(식단 조회 화면은 로그인 없이 본다. 식단은 학교가 가정에 알리는 정보).
+
+    // ─── 공통 함수 ───
+    function isBa() {
+      return request.auth != null && request.auth.token.get('ba', 0) == 1;
+    }
+    function bapOk(school) {
+      return request.auth != null && request.auth.token.get('bp', '') == school
+        && request.auth.token.get('br', '') in ['m', 'b'];
+    }
+    function bapBoss(school) {
+      return bapOk(school) && request.auth.token.get('br', '') == 'b';
+    }
+    function isDate(id) {
+      return id.matches('\\d{4}-\\d{2}-\\d{2}');
+    }
+
+    // ─── 급식일지 옛 계정 저장소 ───
+    // 계정·PIN 은 서버(Redis, /api/bap/auth/*)로 옮겨 화면이 더 쓰지 않는다. 비밀번호 해시가 남아 있을 수 있어 완전히 닫는다.
+    match /bap_users/{name} {
+      allow read, write: if false;
+    }
+    match /bap_config/{id} {
+      allow read, write: if false;
+    }
+
+    // ─── 식단표지 메뉴 ───
+    // 세 학교 분리: bap_menus(백암) / bap2_menus(백봉) / bap3_menus(장평)
+    // 읽기는 공개(의도된 공개). 쓰기·지우기는 그 학교 급식일지 로그인(담당자·결재자)만.
+    match /{coll}/{date} {
+      allow read: if coll in ['bap_menus', 'bap2_menus', 'bap3_menus'];
+      allow create, update: if coll in ['bap_menus', 'bap2_menus', 'bap3_menus']
+                 && bapOk(coll.split('_')[0]) && isDate(date)
+                 && request.resource.data.lunch is string
+                 && request.resource.data.lunch.size() < 2000;
+      allow delete: if coll in ['bap_menus', 'bap2_menus', 'bap3_menus']
+                 && bapOk(coll.split('_')[0]) && isDate(date);
+    }
+
+    // ─── 급식일지 ───
+    // 세 학교 분리: bap_journals / bap2_journals / bap3_journals
+    // 읽기·쓰기 모두 그 학교 급식일지 출입증이 있어야 한다(서명·이름이 들어 있다).
+    // approved 일지는 누구도 수정 불가, 결재(→approved)와 삭제는 결재자(br=b)만.
+    match /{jcoll}/{date} {
+      function school() { return jcoll.split('_')[0]; }
+      function isJ() { return jcoll in ['bap_journals', 'bap2_journals', 'bap3_journals']; }
+
+      allow read: if isJ() && bapOk(school());
+
+      allow create: if isJ() && bapOk(school()) && isDate(date)
+                 && request.resource.data.status == 'submitted'
+                 && request.resource.data.managerName is string
+                 && request.resource.data.managerName.size() > 0;
+
+      allow update: if isJ() && bapOk(school())
+        && resource.data.status != 'approved' && (
+          // 담당자 재제출: submitted → submitted (managerName 동일 유지)
+          (request.resource.data.status == 'submitted'
+           && request.resource.data.managerName == resource.data.managerName)
+          ||
+          // 결재 승인: submitted → approved (결재자만)
+          (bapBoss(school())
+           && resource.data.status == 'submitted'
+           && request.resource.data.status == 'approved'
+           && request.resource.data.managerName == resource.data.managerName
+           && request.resource.data.bossName is string)
+        );
+
+      // 서버 관리자 화면(결재자)에서 일지 삭제
+      allow delete: if isJ() && bapBoss(school());
+    }
+
+    // ─── 함께 만드는 문서 — 학교 사용자 명부 ───
+    // 이름·직위·소속의 기준. 백암이 로그인(ba)만.
+    match /codocs_members/{memberId} {
+      allow read: if isBa();
+      allow create, update: if isBa()
+                 && request.resource.data.name is string
+                 && request.resource.data.name.size() > 0
+                 && request.resource.data.name.size() < 30
+                 && request.resource.data.scope is string
+                 && request.resource.data.scope.size() < 30;
+      allow delete: if isBa();
+    }
+
+    // ─── 함께 만드는 문서 (codocs) ───
+    // 실시간 공동 편집 시트(교내 PC IP 대장 등). 백암이 로그인(ba)만. 카피본(cp)·쭘(zz)·비로그인은 못 연다.
+    match /codocs_sheets/{sheetId} {
+      allow read: if isBa();
+      allow create, update: if isBa()
+                 && request.resource.data.title is string
+                 && request.resource.data.title.size() > 0
+                 && request.resource.data.title.size() < 100
+                 && request.resource.data.columns is list
+                 && request.resource.data.columns.size() > 0
+                 && request.resource.data.columns.size() <= 40;
+      allow delete: if isBa();
+
+      // 행 1개 = 문서 1개. 셀 단위(cells.<key>) 병합 저장이라 동시 편집이 서로를 덮어쓰지 않는다.
+      match /rows/{rowId} {
+        allow read: if isBa();
+        allow create, update: if isBa()
+                   && request.resource.data.cells is map
+                   && request.resource.data.cells.size() <= 40;
+        allow delete: if isBa();
+      }
+
+      // 접속 표시(누가 어느 셀을 편집 중인지). 20초 하트비트, 창 닫으면 삭제.
+      match /presence/{clientId} {
+        allow read: if isBa();
+        allow write: if isBa() && (request.resource == null
+                  || (request.resource.data.name is string
+                      && request.resource.data.name.size() < 30));
+      }
+    }
+

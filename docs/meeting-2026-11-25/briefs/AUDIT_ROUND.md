@@ -12,7 +12,7 @@
 1. **지적 01~15 를 하나씩 재검증**: 수정 보고를 믿지 말고 해당 코드를 줄 단위로 읽어 실제로 막혔는지 확인한다. 막혔다고 주장하는 시험이 정말 그 실패 경우를 재현하는지(시험을 수정 전 코드에 돌리면 실패했을지)도 본다.
 2. **새 문제 찾기**: 이번 수정이 만든 회귀, 수정이 닿지 않은 비슷한 경로(같은 패턴의 다른 라우트), 동시 요청·중간 실패·재시도·만료 경계.
 3. **직접 실행**: `npm run test:zzoom`, `npm test` 를 돌려 숫자를 그대로 적는다. 의심 가는 경로는 node 로 작은 재현 스크립트를 짜서(가짜 fb·Redis 사용, `tests/zzoom/fakes/`) 실제로 실패시키고, 명령과 출력 요지를 적는다. 재현 스크립트는 저장소 밖 임시 폴더에.
-4. **규칙**: `firestore.rules`·`storage.rules` 를 서버가 실제로 쓰는 경로·claim 과 한 줄씩 맞춘다.
+4. **규칙**: `firestore.rules`·`storage.rules` 를 서버가 실제로 쓰는 경로·claim 과 한 줄씩 맞춘다. 에뮬레이터(Java)는 없지만 **Firebase Rules 시험 API**(`POST https://firebaserules.googleapis.com/v1/projects/airoom-ebce3:test`, 규칙을 게시하지 않고 실제 엔진으로 판정만 함)로 직접 시험한다. 예시 스크립트: `~\AppData\Local\Temp\claude\40f4efd3ccefd627\d4fabf86-90b2-4507-9d7e-f1f14b7b99e2\scratchpad\rules-api-test-example.js`(인자: `$(npm root -g)/firebase-tools`, 규칙 파일). Firestore 는 `request.path` 를 `/databases/kwon/documents/...` 로, 서버 문서 읽기(`get()`·`exists()`)는 `functionMocks` 로 흉내 낸다. 이 API 외의 Firebase 호출(게시·콘솔 조작)은 금지.
 5. **두 SPA**: `ensureStorageAuth` 와 업로드·삭제 경로가 두 파일에서 같은지 diff 로 확인.
 6. 추측은 「확인 필요」로 표시하고 근거를 적는다. 줄 번호 필수.
 

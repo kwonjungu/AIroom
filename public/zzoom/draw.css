@@ -1,0 +1,84 @@
+/* 쭘 판서·화이트보드 (디자인 3팀). 접두사 .zd- 만, 색은 --zz-* 변수만. */
+
+/* ---------- 도구 막대(무대 위에 떠 있음) ---------- */
+.zd-bar {
+  display: flex; align-items: center; gap: var(--zz-s2); flex-wrap: nowrap; justify-content: flex-start;
+  width: max-content; max-width: var(--zd-bar-max, calc(100vw - 2 * var(--zz-s4)));
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin;
+  padding: var(--zz-s1) var(--zz-s2);
+  background: var(--zz-surface); border: 1px solid var(--zz-line);
+  border-radius: var(--zz-r-card); box-shadow: var(--zz-shadow);
+  font-size: 14px;
+}
+
+/* 보기 / 펜 모드 */
+.zd-seg { display: flex; padding: 2px; gap: 2px; background: var(--zz-canvas); border-radius: var(--zz-r-btn); }
+.zd-seg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--zz-s1);
+  min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s3);
+  border: 0; border-radius: 8px; background: transparent; color: var(--zz-muted);
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  transition: background var(--zz-dur), color var(--zz-dur);
+}
+.zd-seg-btn .zz-icon { width: 24px; height: 24px; }
+.zd-seg-btn[aria-pressed="true"] { background: var(--zz-surface); color: var(--zz-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.zd-bar.is-pen .zd-seg-btn:last-child[aria-pressed="true"] { background: var(--zz-accent); color: #fff; }
+.zd-seg-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 형광펜·펜·지우개, 쪽 지우기: 그림 위 글자 아래 */
+.zd-tools, .zd-seg, .zd-colors, .zd-clear, .zd-retry { flex: none; }
+.zd-tools { display: flex; gap: 2px; }
+.zd-tool, .zd-clear {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  min-width: 52px; min-height: var(--zz-touch); padding: 2px var(--zz-s1);
+  border: 1px solid transparent; border-radius: var(--zz-r-btn); background: transparent;
+  color: var(--zz-ink); cursor: pointer; transition: background var(--zz-dur), border-color var(--zz-dur);
+}
+.zd-tool:hover, .zd-clear:hover { background: var(--zz-canvas); }
+.zd-tool[aria-pressed="true"] { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
+.zd-tool-label { font-size: 12px; line-height: 14px; white-space: nowrap; }
+.zd-clear { color: var(--zz-live); }
+.zd-clear-mark {
+  width: 22px; height: 22px; margin: 3px 0; border-radius: 6px;
+  border: 2px solid currentColor; position: relative;
+}
+.zd-clear-mark::after { content: ""; position: absolute; left: 3px; right: 3px; top: 50%; height: 2px; margin-top: -1px; background: currentColor; transform: rotate(-35deg); }
+
+/* 색 */
+.zd-colors { display: flex; gap: 0; padding-left: var(--zz-s1); border-left: 1px solid var(--zz-line); }
+.zd-swatch {
+  width: var(--zz-touch); height: var(--zz-touch); display: grid; place-items: center;
+  border: 0; border-radius: 50%; background: transparent; cursor: pointer;
+}
+.zd-dot { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); transition: transform var(--zz-dur); }
+.zd-swatch[aria-pressed="true"] .zd-dot { transform: scale(1.12); box-shadow: 0 0 0 2px var(--zz-surface), 0 0 0 4px var(--zz-ink); }
+.zd-swatch:hover .zd-dot { transform: scale(1.08); }
+
+/* 저장 실패 · 잠금 안내 */
+.zd-retry { display: flex; align-items: center; gap: var(--zz-s2); padding: 0 var(--zz-s1) 0 var(--zz-s3); min-height: 36px; border-radius: var(--zz-r-chip); background: #FFF7E6; color: #7a4b00; font-size: 13px; }
+.zd-retry-btn { min-height: 36px; padding: 0 var(--zz-s3); border: 0; border-radius: var(--zz-r-chip); background: var(--zz-warn); color: var(--zz-ink); font-weight: 600; font-size: 13px; cursor: pointer; }
+.zd-note { font-size: 13px; color: var(--zz-muted); padding: 0 var(--zz-s2); }
+
+/* 좁은 화면: 모드 글자를 줄이고 막대를 한 줄로 가로 스크롤 */
+@media (max-width: 767.98px) {
+  .zd-seg-btn { padding: 0 var(--zz-s2); font-size: 14px; }
+  .zd-tool, .zd-clear { min-width: 46px; }
+}
+
+/* ---------- 화이트보드 ---------- */
+.zd-board-open { white-space: nowrap; }
+.zd-board-add { white-space: nowrap; color: var(--zz-ink); }
+.zd-plus { font-size: 22px; line-height: 1; font-weight: 400; }
+
+.zd-bg-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--zz-s3); }
+.zd-bg-card {
+  display: flex; flex-direction: column; align-items: center; gap: var(--zz-s2);
+  padding: var(--zz-s2); min-height: var(--zz-touch);
+  border: 2px solid var(--zz-line); border-radius: var(--zz-r-card); background: var(--zz-canvas);
+  cursor: pointer; transition: border-color var(--zz-dur), background var(--zz-dur);
+}
+.zd-bg-card[aria-checked="true"] { border-color: var(--zz-accent); background: var(--zz-accent-soft); }
+.zd-bg-thumb { width: 100%; aspect-ratio: 16 / 10; height: auto; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--zz-line); background: var(--zz-surface); }
+.zd-bg-label { font-size: 14px; font-weight: 500; }
+.zd-bg-hint, .zd-modal-text { margin: var(--zz-s4) 0 0; font-size: 14px; color: var(--zz-muted); }
+.zd-modal-text { margin: 0; color: var(--zz-ink); font-size: 16px; }

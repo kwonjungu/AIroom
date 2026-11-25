@@ -120,50 +120,97 @@ T('규칙에 없는 컬렉션은 기본 거절', () => no(db(env.unauthenticated
 
 // ── Storage ──
 const up = (ctx, p, n, type) => ctx.storage().ref(p).put(bytes(n), { contentType: type });
-const UP = 'zzoom/m1/up/u1/file.pdf';
-T('storage: viewer 업로드 거절', () => no(up(as(), UP, 10, 'application/pdf')));
-T('storage: claim 없음 업로드 거절', () => no(up(env.authenticatedContext('u1'), UP, 10, 'application/pdf')));
-T('storage: 다른 mid host 업로드 거절', () => no(up(as({ role: 'host', mid: 'm2' }), UP, 10, 'application/pdf')));
-T('storage: until 지난 host 업로드 거절', () => no(up(as({ role: 'host', until: Date.now() - 1000 }), UP, 10, 'application/pdf')));
-T('storage: host PDF 업로드 허용', () => ok(up(as({ role: 'host' }), UP, 1024, 'application/pdf')));
-T('storage: host PNG·WEBP·hwpx·pptx 형식 허용', async () => {
-  const h = as({ role: 'host' });
-  await ok(up(h, 'zzoom/m1/up/u2/a.png', 100, 'image/png'));
-  await ok(up(h, 'zzoom/m1/up/u3/a.webp', 100, 'image/webp'));
-  await ok(up(h, 'zzoom/m1/up/u4/a.hwpx', 100, 'application/haansofthwpx'));
-  await ok(up(h, 'zzoom/m1/up/u5/a.pptx', 100, 'application/vnd.openxmlformats-officedocument.presentationml.presentation'));
+// 업로드 전용 출입증(서버 POST /:mid/uploads 가 주는 것과 같은 모양)
+const upTok = (o = {}) => as(Object.assign({ role: 'host', up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024 }, o));
+const UPD = 'zzoom/m1/up/u1/';
+const webp = 'image/webp';
+T('storage: viewer 업로드 거절', () => no(up(as({ up: 'u1', upPages: 2, upExt: 'pdf', upBytes: 1024 }), UPD + 'p001.webp', 10, webp)));
+T('storage: claim 없음 업로드 거절', () => no(up(env.authenticatedContext('u1'), UPD + 'p001.webp', 10, webp)));
+T('storage: 업로드 출입증 없는 host(회의 출입증) 거절(지적01)', () => no(up(as({ role: 'host' }), UPD + 'p001.webp', 10, webp)));
+T('storage: 다른 uploadId 의 출입증 거절', () => no(up(upTok({ up: 'u9' }), UPD + 'p001.webp', 10, webp)));
+T('storage: 다른 mid host 업로드 거절', () => no(up(upTok({ mid: 'm2' }), UPD + 'p001.webp', 10, webp)));
+T('storage: until 지난 업로드 출입증 거절', () => no(up(upTok({ until: Date.now() - 1000 }), UPD + 'p001.webp', 10, webp)));
+T('storage: 허가 쪽 그림·작은 그림·원본 허용', async () => {
+  const h = upTok();
+  await ok(up(h, UPD + 'p001.webp', 1000, webp));
+  await ok(up(h, UPD + 't002.webp', 1000, webp));
+  await ok(up(h, UPD + 'original.pdf', 1024, 'application/pdf'));
 });
-T('storage: host 50MB 이상 거절', () => no(up(as({ role: 'host' }), UP, 52428800, 'application/pdf')));
-T('storage: host 형식 위반(text/html) 거절', () => no(up(as({ role: 'host' }), 'zzoom/m1/up/u6/a.html', 100, 'text/html')));
-T('storage: host 가 up 밖 경로에 쓰기 거절', () => no(up(as({ role: 'host' }), 'zzoom/m1/pages/a.pdf', 100, 'application/pdf')));
+T('storage: 허가 쪽 수를 넘는 쪽·이름 틀림·형식 틀림 거절(지적02)', async () => {
+  const h = upTok();
+  await no(up(h, UPD + 'p003.webp', 1000, webp));
+  await no(up(h, UPD + 'p000.webp', 1000, webp));
+  await no(up(h, UPD + 'evil.html', 10, 'text/html'));
+  await no(up(h, UPD + 'p001.webp', 1000, 'image/png'));
+  await no(up(h, UPD + 'a.webp', 1000, webp));
+});
+T('storage: 쪽 그림 4MiB·작은 그림 512KiB 넘으면 거절', async () => {
+  const h = upTok();
+  await no(up(h, UPD + 'p001.webp', 4 * 1024 * 1024 + 1, webp));
+  await no(up(h, UPD + 't001.webp', 512 * 1024 + 1, webp));
+});
+T('storage: 원본은 허가 확장자·바이트·형식만(지적02·09)', async () => {
+  await no(up(upTok(), UPD + 'original.pdf', 1023, 'application/pdf'));
+  await no(up(upTok(), UPD + 'original.hwp', 1024, 'application/x-hwp'));
+  await no(up(upTok({ upExt: 'hwpx' }), UPD + 'original.hwpx', 1024, 'text/html'));
+  await ok(up(upTok({ upExt: 'hwpx' }), 'zzoom/m1/up/u1/original.hwpx', 1024, 'application/hwp+zip'));
+  await ok(up(upTok({ up: 'u2', upExt: 'pptx' }), 'zzoom/m1/up/u2/original.pptx', 1024, 'application/vnd.openxmlformats-officedocument.presentationml.presentation'));
+  await no(up(upTok({ up: 'u3', upExt: 'pptx' }), 'zzoom/m1/up/u3/original.pptx', 1024, 'application/vnd.ms-excel'));
+});
+T('storage: 덮어쓰기 거절', async () => {
+  const h = upTok();
+  await ok(up(h, UPD + 'p002.webp', 1000, webp));
+  await no(up(h, UPD + 'p002.webp', 1000, webp));
+});
+T('storage: host 가 up 밖 경로에 쓰기 거절', () => no(up(upTok(), 'zzoom/m1/pages/p001.webp', 100, webp)));
 T('storage: zzoom-vendor 는 읽기·쓰기 모두 거절', async () => {
   const h = as({ role: 'host' });
   await no(up(h, 'zzoom-vendor/a.js', 10, 'application/octet-stream'));
   await no(h.storage().ref('zzoom-vendor/a.js').getMetadata());
   await no(up(env.unauthenticatedContext(), 'zzoom-vendor/a.js', 10, 'application/octet-stream'));
 });
-T('storage: 회의 파일 읽기는 같은 mid claim 만', async () => {
+T('storage: 회의 파일 읽기(get)는 같은 mid claim 만, 목록(list)은 거절', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
-    await ctx.storage().ref('zzoom/m1/pages/p1.webp').put(bytes(10), { contentType: 'image/webp' });
+    await ctx.storage().ref('zzoom/m1/up/u7/p001.webp').put(bytes(10), { contentType: webp });
   });
-  await ok(as().storage().ref('zzoom/m1/pages/p1.webp').getMetadata());
-  await no(as({ mid: 'm2' }).storage().ref('zzoom/m1/pages/p1.webp').getMetadata());
-  await no(env.unauthenticatedContext().storage().ref('zzoom/m1/pages/p1.webp').getMetadata());
+  await ok(as().storage().ref('zzoom/m1/up/u7/p001.webp').getMetadata());
+  await no(as().storage().ref('zzoom/m1/up/u7').listAll());
+  await no(as({ mid: 'm2' }).storage().ref('zzoom/m1/up/u7/p001.webp').getMetadata());
+  await no(env.unauthenticatedContext().storage().ref('zzoom/m1/up/u7/p001.webp').getMetadata());
 });
 
-// 기존 앱 Storage 경로가 그대로 열려 있는지(운영 2026-03-13 규칙과 같은 동작)
-T('storage: 기존 경로(training-tracker 등) 읽기·쓰기 그대로', async () => {
-  const anon = env.unauthenticatedContext();
-  await ok(up(anon, 'training-tracker/s1/a.pdf', 10, 'application/pdf'));
-  await ok(anon.storage().ref('training-tracker/s1/a.pdf').getMetadata());
-  await ok(up(anon, 'copy/x/y.png', 10, 'image/png'));
-  await ok(up(anon, 'root-file.png', 10, 'image/png'));
-  await ok(anon.storage().ref('root-file.png').getMetadata());
-  await no(up(anon, 'training-tracker/big.bin', 11 * 1024 * 1024, 'application/octet-stream'));
+// 기존 앱 Storage 경로: 2026-11-25 잠금 — 로그인 출입증(ba)·카피본(cp, copy/ 아래) + until(지적12)
+const ba = (o = {}) => env.authenticatedContext('baekam-user', Object.assign({ ba: 1, until: Date.now() + HOUR }, o));
+const cp = (o = {}) => env.authenticatedContext('baekam-copy', Object.assign({ cp: 1, until: Date.now() + HOUR }, o));
+T('storage: 기존 경로는 ba 출입증(until 안)만 읽기·쓰기', async () => {
+  await ok(up(ba(), 'training-tracker/s1/a.pdf', 10, 'application/pdf'));
+  await ok(ba().storage().ref('training-tracker/s1/a.pdf').getMetadata());
+  await ok(up(ba(), 'root-file.png', 10, 'image/png'));
+  await no(up(ba(), 'training-tracker/big.bin', 11 * 1024 * 1024, 'application/octet-stream'));
 });
-T('storage: 비로그인은 zzoom 경로를 넓은 규칙으로도 못 읽고 못 쓴다', async () => {
-  const anon = env.unauthenticatedContext();
-  await no(up(anon, 'zzoom/m1/pages/p9.webp', 10, 'image/webp'));
-  await no(up(anon, 'zzoom/m1/up/u1/p1.webp', 10, 'image/webp'));
-  await no(anon.storage().ref('zzoom/m1/pages/p1.webp').getMetadata());
+T('storage: until 이 지났거나 없는 ba·cp 출입증은 거절(지적12)', async () => {
+  await no(up(ba({ until: Date.now() - 1000 }), 'training-tracker/s1/b.pdf', 10, 'application/pdf'));
+  await no(up(ba({ until: undefined }), 'training-tracker/s1/b.pdf', 10, 'application/pdf'));
+  await no(up(cp({ until: Date.now() - 1000 }), 'copy/x/y.png', 10, 'image/png'));
 });
+T('storage: 카피본 출입증은 copy/ 아래만', async () => {
+  await ok(up(cp(), 'copy/x/y.png', 10, 'image/png'));
+  await no(up(cp(), 'training-tracker/s1/c.pdf', 10, 'application/pdf'));
+});
+T('storage: 비로그인은 기존 경로도 못 쓴다(2026-11-25 잠금)', async () => {
+  const anon = env.unauthenticatedContext();
+  await no(up(anon, 'training-tracker/s1/a.pdf', 10, 'application/pdf'));
+  await no(up(anon, 'root-file.png', 10, 'image/png'));
+});
+T('storage: 비로그인·ba 출입증은 zzoom 경로를 넓은 규칙으로도 못 읽고 못 쓴다', async () => {
+  for (const c of [env.unauthenticatedContext(), ba()]) {
+    await no(up(c, 'zzoom/m1/pages/p9.webp', 10, webp));
+    await no(up(c, 'zzoom/m1/up/u1/p001.webp', 10, webp));
+    await no(c.storage().ref('zzoom/m1/up/u7/p001.webp').getMetadata());
+  }
+});
+
+// 시험이 하나도 안 돌았는데 통과로 보이지 않게: ZZOOM_REQUIRE_RULES=1 이면 skip 대신 실패(지적15)
+if (SKIP && process.env.ZZOOM_REQUIRE_RULES === '1') {
+  test('규칙 시험은 반드시 돌아야 한다(ZZOOM_REQUIRE_RULES=1)', () => { throw new Error('규칙 시험을 돌리지 못했습니다: ' + SKIP); });
+}

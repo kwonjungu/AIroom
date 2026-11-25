@@ -1,0 +1,223 @@
+/* 쭘 공통 — 변수·자리 배치·공통 부품. 값은 docs/meeting-2026-11-25/DESIGN_BRIEF.md 그대로.
+   팀 CSS 는 자기 접두사(.zl- .zv- .zd- .zs- .zh-)만, 자리(#zz-…) 크기·위치는 여기서만 정한다. */
+:root {
+  --zz-accent: #FF6B3D;
+  --zz-accent-ink: #C2410C;
+  --zz-accent-soft: #FFF1EB;
+  --zz-ink: #1d1d1f;
+  --zz-muted: #6e6e73;
+  --zz-line: #e0e0e0;
+  --zz-canvas: #f5f5f7;
+  --zz-surface: #ffffff;
+  --zz-stage: #2a2a2c;
+  --zz-live: #E5484D;
+  --zz-ok: #30A46C;
+  --zz-warn: #F5A524;
+  /* 판서 색: 형광펜(불투명도 0.35로 그림) · 펜 */
+  --zz-hl-yellow: #FFE14D;
+  --zz-hl-green: #9BE15D;
+  --zz-hl-pink: #FF8AD8;
+  --zz-pen-red: #E5484D;
+  --zz-pen-blue: #2F6FEB;
+  --zz-pen-black: #1d1d1f;
+  /* 간격(4의 배수) */
+  --zz-s1: 4px; --zz-s2: 8px; --zz-s3: 12px; --zz-s4: 16px; --zz-s6: 24px; --zz-s8: 32px;
+  --zz-r-card: 14px; --zz-r-btn: 10px; --zz-r-chip: 999px;
+  --zz-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+  --zz-dur: 160ms;
+  --zz-touch: 44px;
+  --zz-font: Pretendard, "Pretendard Variable", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* 자리 크기 */
+  --zz-header-h: 56px;
+  --zz-agenda-w: 240px;
+  --zz-side-w: 340px;
+  --zz-pagebar-h: 56px;
+  --zz-hostbar-h: 64px;
+}
+@media (prefers-reduced-motion: reduce) { :root { --zz-dur: 0ms; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body.zz {
+  font: 400 16px/1.5 var(--zz-font);
+  color: var(--zz-ink); background: var(--zz-canvas);
+  -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+  overflow: hidden;
+}
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--zz-accent-ink); }
+:focus-visible { outline: 3px solid var(--zz-accent); outline-offset: 2px; }
+
+/* ---------- 머리줄 ---------- */
+#zz-header {
+  position: fixed; inset: 0 0 auto 0; height: var(--zz-header-h); z-index: 30;
+  display: flex; align-items: center; gap: var(--zz-s3); padding: 0 var(--zz-s4);
+  background: rgba(255, 255, 255, .92); backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--zz-line);
+}
+#zz-brand { display: flex; align-items: center; gap: var(--zz-s2); min-height: var(--zz-touch); text-decoration: none; color: var(--zz-ink); font-weight: 700; font-size: 20px; }
+#zz-brand img { width: 32px; height: 32px; }
+#zz-meeting-title { flex: 1; min-width: 0; margin: 0; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#zz-status { display: flex; gap: var(--zz-s2); align-items: center; }
+#zz-header-actions { display: flex; gap: var(--zz-s2); align-items: center; }
+
+#zz-notice {
+  position: fixed; top: var(--zz-header-h); left: 0; right: 0; z-index: 25;
+  padding: var(--zz-s2) var(--zz-s4); background: #FFF7E6; color: #7a4b00;
+  border-bottom: 1px solid #f3dcae; font-size: 14px; text-align: center;
+}
+#zz-notice.error { background: #FDECEC; color: #8a1f22; border-color: #f4c6c7; }
+
+/* ---------- 로그인 안내 ---------- */
+#zz-gate { position: fixed; inset: var(--zz-header-h) 0 0 0; display: grid; place-items: center; padding: var(--zz-s6); overflow: auto; }
+.zz-gate-card { max-width: 440px; text-align: center; padding: var(--zz-s8); }
+.zz-gate-card img { width: 200px; height: auto; }
+.zz-gate-card h2 { font-size: 22px; font-weight: 600; margin: var(--zz-s4) 0 var(--zz-s2); }
+.zz-gate-card p { color: var(--zz-muted); margin: 0 0 var(--zz-s6); }
+
+/* ---------- 목록 화면 ---------- */
+#zz-list { position: fixed; inset: var(--zz-header-h) 0 0 0; overflow: auto; }
+body:not(.route-list) #zz-list { display: none; }
+
+/* ---------- 회의 화면 ---------- */
+#zz-meeting {
+  position: fixed; inset: var(--zz-header-h) 0 0 0;
+  display: grid; grid-template-columns: var(--zz-agenda-w) minmax(0, 1fr) var(--zz-side-w);
+}
+body.is-host #zz-meeting { bottom: var(--zz-hostbar-h); }
+body.side-closed #zz-meeting { grid-template-columns: var(--zz-agenda-w) minmax(0, 1fr) 0; }
+#zz-agenda { background: var(--zz-surface); border-right: 1px solid var(--zz-line); overflow: auto; }
+#zz-center { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--zz-stage); }
+#zz-follow-bar:empty { display: none; }
+#zz-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+#zz-stage > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#zz-layer-temp { pointer-events: none; }
+body.is-pen #zz-layer-temp { pointer-events: auto; cursor: crosshair; }
+#zz-stage-overlay { position: absolute; inset: 0; pointer-events: none; }
+#zz-stage-overlay > * { pointer-events: auto; }
+#zz-toolbar { position: absolute; top: calc(var(--zz-follow-h, 0px) + var(--zz-s3)); left: 50%; transform: translateX(-50%); z-index: 5; }
+#zz-toolbar:empty { display: none; }
+#zz-pagebar {
+  height: var(--zz-pagebar-h); flex: none; display: flex; align-items: center; gap: var(--zz-s2);
+  padding: 0 var(--zz-s3); background: var(--zz-surface); border-top: 1px solid var(--zz-line);
+}
+#zz-board-actions, #zz-quick-hand { flex: none; }
+#zz-board-actions, #zz-quick-hand { display: flex; align-items: center; gap: var(--zz-s2); }
+#zz-quick-hand { margin-left: auto; }
+
+/* 옆칸 */
+#zz-side { display: flex; flex-direction: column; min-height: 0; background: var(--zz-surface); border-left: 1px solid var(--zz-line); overflow: hidden; }
+body.side-closed #zz-side { border-left: 0; }
+#zz-side-tabs { display: flex; flex: none; border-bottom: 1px solid var(--zz-line); }
+.zz-side-tab {
+  flex: 1; min-height: var(--zz-touch); display: flex; align-items: center; justify-content: center; gap: var(--zz-s1);
+  border: 0; background: none; cursor: pointer; color: var(--zz-muted); font-size: 14px; border-bottom: 2px solid transparent;
+}
+.zz-side-tab img { width: 20px; height: 20px; }
+.zz-side-tab[aria-selected="true"] { color: var(--zz-ink); border-bottom-color: var(--zz-accent); font-weight: 600; }
+.zz-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--zz-r-chip); background: var(--zz-accent); color: #fff; font-size: 11px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.zz-badge:empty { display: none; }
+.zz-side-panel { flex: 1; min-height: 0; overflow: auto; }
+
+/* 주관자 막대 */
+#zz-hostbar {
+  position: fixed; left: 0; right: 0; bottom: 0; height: var(--zz-hostbar-h); z-index: 20;
+  display: none; align-items: center; gap: var(--zz-s3); padding: 0 var(--zz-s4);
+  background: var(--zz-surface); border-top: 1px solid var(--zz-line); box-shadow: var(--zz-shadow); overflow-x: auto;
+}
+body.is-host.route-meeting #zz-hostbar { display: flex; }
+#zz-hostbar > div { display: flex; align-items: center; gap: var(--zz-s2); flex: none; }
+#zz-hostbar-main { flex: 1 1 auto; }
+
+/* 입장 덮개 */
+#zz-join { position: fixed; inset: var(--zz-header-h) 0 0 0; z-index: 40; background: rgba(245, 245, 247, .96); overflow: auto; }
+
+/* 모달·토스트 */
+#zz-modal-root:empty { display: none; }
+.zz-modal-back { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .32); display: grid; place-items: center; padding: var(--zz-s4); animation: zz-fade var(--zz-dur) ease-out; }
+.zz-modal { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--zz-surface); border-radius: var(--zz-r-card); box-shadow: var(--zz-shadow); padding: var(--zz-s6); }
+.zz-modal h2 { margin: 0 0 var(--zz-s4); font-size: 20px; font-weight: 600; }
+.zz-modal-actions { display: flex; justify-content: flex-end; gap: var(--zz-s2); margin-top: var(--zz-s6); }
+#zz-toast { position: fixed; left: 50%; bottom: calc(var(--zz-s6) + var(--zz-hostbar-h)); transform: translateX(-50%); z-index: 70; display: flex; flex-direction: column; gap: var(--zz-s2); align-items: center; pointer-events: none; }
+.zz-toast-item { background: var(--zz-ink); color: #fff; padding: var(--zz-s2) var(--zz-s4); border-radius: var(--zz-r-btn); box-shadow: var(--zz-shadow); font-size: 14px; max-width: 90vw; animation: zz-fade var(--zz-dur) ease-out; }
+.zz-toast-item.ok { background: var(--zz-ok); }
+.zz-toast-item.warn { background: #7a4b00; }
+.zz-toast-item.error { background: var(--zz-live); }
+@keyframes zz-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- 공통 부품 ---------- */
+.zz-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--zz-s2);
+  min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s4);
+  border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface);
+  font-size: 15px; font-weight: 500; text-decoration: none; color: var(--zz-ink); cursor: pointer;
+  transition: background var(--zz-dur), border-color var(--zz-dur);
+}
+.zz-btn:hover { background: var(--zz-canvas); }
+.zz-btn:disabled { opacity: .45; cursor: not-allowed; }
+.zz-btn.primary { background: var(--zz-accent); border-color: var(--zz-accent); color: #fff; }
+.zz-btn.primary:hover, .zz-btn.primary:active { background: var(--zz-accent-ink); border-color: var(--zz-accent-ink); }
+.zz-btn.ghost { background: transparent; border-color: transparent; }
+.zz-btn.ghost:hover { background: var(--zz-accent-soft); }
+.zz-btn.danger { color: var(--zz-live); border-color: #f4c6c7; }
+.zz-btn[aria-pressed="true"] { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
+.zz-icon { width: 28px; height: 28px; flex: none; }
+.zz-chip { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: var(--zz-s1); height: 28px; padding: 0 var(--zz-s3); border-radius: var(--zz-r-chip); background: var(--zz-canvas); font-size: 13px; color: var(--zz-muted); }
+.zz-chip.live { background: #FDECEC; color: var(--zz-live); font-weight: 600; }
+.zz-chip.ok { color: var(--zz-ok); }
+.zz-chip.warn { color: #7a4b00; background: #FFF7E6; }
+.zz-card { background: var(--zz-surface); border: 1px solid var(--zz-line); border-radius: var(--zz-r-card); }
+.zz-empty { display: flex; flex-direction: column; align-items: center; gap: var(--zz-s3); padding: var(--zz-s8) var(--zz-s4); color: var(--zz-muted); text-align: center; }
+.zz-empty img { width: min(320px, 70%); height: auto; }
+.zz-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--zz-live); display: inline-block; }
+.zz-num { font-variant-numeric: tabular-nums; }
+.zz-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.zz-pending { padding: var(--zz-s3); color: var(--zz-muted); font-size: 13px; }
+#zz-center .zz-pending { color: #b0b0b5; }
+.zz-field { display: flex; flex-direction: column; gap: var(--zz-s1); margin-bottom: var(--zz-s4); font-size: 14px; color: var(--zz-muted); }
+.zz-field input, .zz-field select, .zz-field textarea { min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink); font-size: 16px; }
+
+/* ---------- 태블릿(1024px 미만): 안건 칸은 왼쪽 덮개, 옆칸은 오른쪽 덮개(처음엔 닫힘), 무대가 폭 전부 ---------- */
+#zz-agenda-toggle { display: none; }
+@media (max-width: 1023.98px) {
+  #zz-meeting, body.side-closed #zz-meeting { grid-template-columns: minmax(0, 1fr); }
+  #zz-agenda { position: fixed; top: var(--zz-header-h); bottom: 0; left: 0; width: min(320px, 86vw); z-index: 35; transform: translateX(-100%); transition: transform var(--zz-dur); box-shadow: var(--zz-shadow); }
+  body.is-host #zz-agenda { bottom: var(--zz-hostbar-h); }
+  #zz-agenda[data-open] { transform: none; }
+  #zz-side {
+    position: fixed; top: var(--zz-header-h); bottom: 0; right: 0; width: min(var(--zz-side-w), 90vw); z-index: 32;
+    box-shadow: var(--zz-shadow); transition: transform var(--zz-dur);
+  }
+  body.is-host #zz-side { bottom: var(--zz-hostbar-h); }
+  body.side-closed #zz-side { transform: translateX(100%); box-shadow: none; visibility: hidden; }
+}
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  body.route-meeting #zz-agenda-toggle { display: inline-flex; }
+}
+
+/* ---------- 좁은 화면(768px 미만): 안건 목록은 덮개, 옆칸은 아래 서랍 ---------- */
+@media (max-width: 767.98px) {
+  #zz-header { gap: var(--zz-s2); padding: 0 var(--zz-s3); }
+  #zz-brand span { display: none; }
+  #zz-meeting, body.side-closed #zz-meeting { grid-template-columns: minmax(0, 1fr); bottom: 48px; }
+  body.is-host #zz-meeting { bottom: calc(48px + var(--zz-hostbar-h)); }
+  /* 안건 칸은 위 1024px 규칙 그대로(왼쪽 덮개). 옆칸은 아래 서랍 */
+  #zz-side, body.side-closed #zz-side {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 55vh; z-index: 32; border-left: 0; visibility: visible;
+    border-top: 1px solid var(--zz-line); border-radius: var(--zz-r-card) var(--zz-r-card) 0 0; box-shadow: var(--zz-shadow);
+    transform: translateY(calc(100% - 48px)); transition: transform var(--zz-dur);
+  }
+  body.is-host #zz-side { bottom: var(--zz-hostbar-h); }
+  body.side-closed #zz-side { transform: translateY(calc(100% - 48px)); box-shadow: var(--zz-shadow); }
+  body:not(.side-closed) #zz-side { transform: none; }
+  #zz-side-tabs { height: 48px; }
+  #zz-side-toggle span { display: none; }
+  /* 쪽 막대는 두 줄: 윗줄 쪽 넘기기(2팀), 아랫줄 새 쪽·손들기 */
+  #zz-pagebar { height: auto; flex-wrap: wrap; row-gap: var(--zz-s1); padding: var(--zz-s1) var(--zz-s2); }
+  #zz-pagebar > :first-child:not(#zz-board-actions) { flex-basis: 100%; }
+  /* 머리줄이 모자라면 연결 상태 칩은 빼고 진행·녹음만 남긴다 */
+  #zz-status .zz-chip:not(.live) { display: none; }
+  #zz-status { min-width: 0; }
+}

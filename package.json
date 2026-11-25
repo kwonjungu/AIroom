@@ -13,7 +13,8 @@
     "eval:vibe:mock": "node --test \"tests/vibe/evals/mock/**/*.test.js\"",
     "eval:vibe:live": "node tests/vibe/evals/live.js",
     "test:recruitment": "node --test tests/recruitment/*.test.js",
-    "test:zzoom": "node --test tests/zzoom/api.test.js"
+    "test:zzoom": "node --test tests/zzoom/api.test.js tests/zzoom/units.test.js tests/zzoom/convert.test.mjs tests/zzoom/vendor.test.mjs tests/zzoom/spa-storage.test.js",
+    "test:zzoom:rules": "node tests/zzoom/run-rules.js"
   },
   "repository": {
     "type": "git",
@@ -32,5 +33,8 @@
     "pdfjs-dist": "^5.6.205",
     "pptxgenjs": "^4.0.1",
     "unpdf": "^1.6.0"
+  },
+  "devDependencies": {
+    "fengari": "^0.1.5"
   }
 }

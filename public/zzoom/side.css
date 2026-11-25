@@ -1,0 +1,71 @@
+/* 쭘 옆칸 (디자인 4): 접두사 .zs- 만. 색은 --zz-* 변수만. */
+.zs-chat { display: flex; flex-direction: column; height: 100%; min-height: 0; position: relative; }
+.zs-chat-list { flex: 1; overflow-y: auto; padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s2); min-height: 0; overscroll-behavior: contain; }
+.zs-msg { background: var(--zz-canvas); border-radius: var(--zz-r-card); padding: var(--zz-s2) var(--zz-s3); max-width: 100%; overflow-wrap: anywhere; }
+.zs-msg.mine { background: var(--zz-accent-soft); }
+.zs-msg.pending { opacity: .6; }
+.zs-msg.failed { opacity: 1; outline: 1px solid var(--zz-live); }
+.zs-msg-head { display: flex; gap: var(--zz-s2); align-items: baseline; font-size: 13px; color: var(--zz-muted); }
+.zs-name { font-weight: 600; color: var(--zz-ink); }
+.zs-text { font-size: 16px; white-space: pre-wrap; margin-top: var(--zz-s1); }
+.zs-ref { display: inline-flex; align-items: center; gap: var(--zz-s1); margin-top: var(--zz-s2); min-height: var(--zz-touch); padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-chip); background: var(--zz-surface); color: var(--zz-accent-ink); font: inherit; font-size: 13px; cursor: pointer; }
+.zs-ref-ic { width: 20px; height: 20px; }
+.zs-fail { display: flex; flex-wrap: wrap; gap: var(--zz-s2); align-items: center; margin-top: var(--zz-s2); font-size: 13px; color: var(--zz-live); }
+.zs-mini { min-height: var(--zz-touch); min-width: var(--zz-touch); padding: 0 var(--zz-s3); font-size: 13px; }
+.zs-del { opacity: .75; }
+.zs-composer { border-top: 1px solid var(--zz-line); padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s2); background: var(--zz-surface); }
+.zs-input { width: 100%; box-sizing: border-box; resize: none; font: inherit; font-size: 16px; padding: var(--zz-s2) var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink); }
+.zs-input:focus-visible, .zs-field:focus-visible { outline: 2px solid var(--zz-accent); outline-offset: 1px; }
+.zs-foot { display: flex; align-items: center; gap: var(--zz-s2); }
+.zs-hint { flex: 1; font-size: 13px; color: var(--zz-warn); }
+.zs-count { font-size: 13px; color: var(--zz-muted); }
+.zs-send { min-height: var(--zz-touch); min-width: 72px; }
+.zs-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--zz-s3); border-radius: var(--zz-r-chip); background: var(--zz-canvas); color: var(--zz-ink); font-size: 13px; border: 0; font-family: inherit; }
+.zs-chip.live { background: var(--zz-accent-soft); color: var(--zz-accent-ink); }
+.zs-attach { min-height: var(--zz-touch); cursor: pointer; text-align: left; border: 1px solid var(--zz-line); background: var(--zz-surface); max-width: 100%; }
+.zs-attach.on { background: var(--zz-accent-soft); border-color: var(--zz-accent); color: var(--zz-accent-ink); }
+.zs-attach:disabled { opacity: .5; cursor: default; }
+.zs-newbtn { position: absolute; left: 50%; transform: translateX(-50%); bottom: 150px; box-shadow: var(--zz-shadow); }
+.zs-empty { display: flex; flex-direction: column; align-items: center; gap: var(--zz-s2); color: var(--zz-muted); padding: var(--zz-s6); text-align: center; }
+.zs-empty .zz-icon { width: 48px; height: 48px; opacity: .8; }
+
+/* 손 */
+.zs-hands { padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s3); }
+.zs-hands-head { display: flex; align-items: center; gap: var(--zz-s2); }
+.zs-hands-head .zs-mini { margin-left: auto; }
+.zs-badge { background: var(--zz-accent); color: #fff; border-radius: var(--zz-r-chip); padding: 0 var(--zz-s2); min-width: 22px; text-align: center; font-size: 13px; }
+.zs-hand-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--zz-s2); }
+.zs-hand-row { display: flex; align-items: center; gap: var(--zz-s3); min-height: var(--zz-touch); padding: 0 var(--zz-s3); background: var(--zz-canvas); border-radius: var(--zz-r-btn); }
+.zs-hand-row.mine { background: var(--zz-accent-soft); }
+.zs-order { color: var(--zz-muted); width: 20px; }
+.zs-hand-name { flex: 1; overflow-wrap: anywhere; }
+.zs-hand-btn { min-height: var(--zz-touch); min-width: var(--zz-touch); display: inline-flex; align-items: center; gap: var(--zz-s2); }
+.zs-hand-btn.on { background: var(--zz-accent); color: #fff; border-color: var(--zz-accent); }
+
+/* 투표 */
+.zs-poll { padding: var(--zz-s3); display: flex; flex-direction: column; gap: var(--zz-s3); }
+.zs-pollcard { display: flex; flex-direction: column; gap: var(--zz-s2); padding: var(--zz-s4); }
+.zs-poll-head { display: flex; gap: var(--zz-s2); }
+.zs-q { margin: 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.zs-opt-wrap { display: flex; flex-direction: column; gap: var(--zz-s1); }
+.zs-opt { position: relative; overflow: hidden; display: flex; align-items: center; gap: var(--zz-s2); min-height: var(--zz-touch); width: 100%; box-sizing: border-box; padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink); font: inherit; text-align: left; }
+.zs-opt.votable { cursor: pointer; }
+.zs-opt.votable:hover { background: var(--zz-canvas); }
+.zs-opt.picked { border-color: var(--zz-accent); background: var(--zz-accent-soft); }
+.zs-bar { position: absolute; inset: 0 auto 0 0; background: var(--zz-accent-soft); z-index: 0; transition: width var(--zz-dur); }
+.zs-opt > :not(.zs-bar) { position: relative; z-index: 1; }
+.zs-opt-label { flex: 1; overflow-wrap: anywhere; }
+.zs-opt-n { color: var(--zz-muted); font-size: 13px; }
+.zs-mine-tag { font-size: 13px; color: var(--zz-accent-ink); }
+.zs-names { font-size: 13px; color: var(--zz-muted); padding: 0 var(--zz-s3); overflow-wrap: anywhere; }
+.zs-note { margin: 0; font-size: 13px; color: var(--zz-muted); }
+.zs-fine { margin: 0; font-size: 13px; color: var(--zz-muted); }
+.zs-note.warn { color: var(--zz-accent-ink); }
+.zs-poll-actions { display: flex; gap: var(--zz-s2); justify-content: flex-end; flex-wrap: wrap; }
+.zs-poll-actions .zz-btn, .zs-newpoll { min-height: var(--zz-touch); }
+.zs-field { width: 100%; box-sizing: border-box; min-height: var(--zz-touch); font: inherit; font-size: 16px; padding: 0 var(--zz-s3); border: 1px solid var(--zz-line); border-radius: var(--zz-r-btn); background: var(--zz-surface); color: var(--zz-ink); }
+.zs-optrow { display: flex; gap: var(--zz-s2); align-items: center; }
+.zs-check { display: flex; align-items: center; gap: var(--zz-s2); min-height: var(--zz-touch); }
+.zs-check input { width: 22px; height: 22px; }
+
+@media (prefers-reduced-motion: reduce) { .zs-bar { transition: none; } }

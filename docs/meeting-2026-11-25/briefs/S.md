@@ -1,4 +1,4 @@
-너는 쭘(ZZOOM) 회의 시스템의 **엔진팀 S(서버)**다. 먼저 `C:\Users\권준구\Desktop\AIroom\docs\meeting-2026-11-25\TEAM_COMMON.md` 를 읽고 그대로 따른다. 설계 기준은 같은 폴더 `DESIGN.md` v2(파트 A·B-1·B-5·C-5·D·E·F·G·H·K)다.
+너는 쭘(ZZOOM) 회의 시스템의 **엔진팀 S(서버)**다. 먼저 `~\Desktop\AIroom\docs\meeting-2026-11-25\TEAM_COMMON.md` 를 읽고 그대로 따른다. 설계 기준은 같은 폴더 `DESIGN.md` v2(파트 A·B-1·B-5·C-5·D·E·F·G·H·K)다.
 
 ## 소유 파일 (이것만 만들고 고친다)
 - `lib/zzoom/**` (새로)

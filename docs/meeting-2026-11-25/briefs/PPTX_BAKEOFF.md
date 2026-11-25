@@ -4,7 +4,7 @@
 
 ## 지킬 것
 - `docs/meeting-2026-11-25/TEAM_COMMON.md` 공통 지시를 따른다. 저장소 파일은 고치지 않는다(이 비교는 저장소 밖에서만).
-- 작업 폴더: `C:\Users\권준구\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\bake\` (새로). 패키지는 여기에 `npm i`. 시험 문서는 같은 상위 폴더 `docs\` 의 PPTX 2개(웜봇 29장, 바이브코딩 80장 — 80장짜리는 앞 20장만). 실제 학교 문서라 밖으로 보내거나 저장소에 넣지 않는다. 결과 그림도 bake 폴더에만.
+- 작업 폴더: `~\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\bake\` (새로). 패키지는 여기에 `npm i`. 시험 문서는 같은 상위 폴더 `docs\` 의 PPTX 2개(웜봇 29장, 바이브코딩 80장 — 80장짜리는 앞 20장만). 실제 학교 문서라 밖으로 보내거나 저장소에 넣지 않는다. 결과 그림도 bake 폴더에만.
 - 기준 그림(정답): 이 PC 의 PowerPoint 가 있으면 COM 으로 열어 `Slide.Export(path,'PNG',2000,1125)` 로 뽑는다. **PowerPoint 가 이미 떠 있었으면 `Quit()` 절대 금지**, 연 프레젠테이션만 `Close()`. 처음부터 안 떠 있었을 때만 끝에 Quit. 읽기 전용·창 없이(`WithWindow=0`). PowerPoint 가 없으면 기준 없이 진행하고 그렇다고 적는다.
 
 ## 후보 (각각 정확한 버전·라이선스·번들 크기 기록)

@@ -1,0 +1,49 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/zzoom/zzoom.css"><link rel="stylesheet" href="/zzoom/side.css"></head>
+<body class="zz route-meeting"><main id="zz-meeting"><aside id="zz-agenda"></aside><section id="zz-center"><div id="zz-stage"></div>
+<nav id="zz-pagebar"><div id="zz-board-actions"></div><div id="zz-quick-hand"></div></nav></section>
+<aside id="zz-side"><div id="zz-side-tabs"></div>
+<div id="zz-side-chat" class="zz-side-panel"></div><div id="zz-side-poll" class="zz-side-panel" hidden></div>
+<div id="zz-side-hands" class="zz-side-panel" hidden></div><div id="zz-side-log" class="zz-side-panel" hidden></div></aside></main>
+<div id="zz-toast"></div>
+<script type="module">
+// 가짜 store·api. 서버·Firebase 없이 D4 모듈만 조립한다.
+const vals = {}, subs = {};
+const store = {
+  get: k => vals[k], set(k, v) { const p = vals[k]; vals[k] = v; (subs[k] || []).slice().forEach(f => f(v, p)); },
+  patch(k, o) { this.set(k, { ...(vals[k] || {}), ...o }); },
+  on(k, f) { (subs[k] ||= []).push(f); return () => { subs[k] = subs[k].filter(x => x !== f); }; },
+  emit(n, d) { (window.__events ||= []).push([n, d]); },
+};
+const calls = [];
+window.__calls = calls; window.__store = store;
+const fail = {};
+window.__fail = fail;
+const rec = (name, fn) => async (...a) => { calls.push([name, ...a.slice(1)]); if (fail[name]) { const e = new Error(fail[name]); e.status = 409; throw e; } return fn ? fn(...a) : {}; };
+const api = {
+  sendChat: rec('sendChat', () => ({ id: 'srv' + calls.length })),
+  deleteChat: rec('deleteChat'), setHand: rec('setHand'), lowerHand: rec('lowerHand'), lowerAllHands: rec('lowerAllHands'),
+  createPoll: rec('createPoll'), vote: rec('vote'), myVote: rec('myVote', () => ({ optionId: window.__mine || null })),
+  pollTally: rec('pollTally', () => ({ status: 'open', tally: window.__tally || { o1: 1, o2: 0, o3: 0 }, total: 1 })),
+  closePoll: rec('closePoll'), revealPoll: rec('revealPoll'),
+};
+const params = new URLSearchParams(location.search);
+const ctx = {
+  api, store, mid: 'm1', t: (s) => s, assets: n => `/zzoom/assets/${n}.webp`,
+  el: id => document.getElementById(id), toast: (text, kind) => { (window.__toasts ||= []).push([text, kind]); },
+  modal: () => ({ close() {} }),
+};
+store.set('role', { role: params.get('role') || 'viewer', cid: 'me', name: '나', presenter: false });
+store.set('meeting', { status: params.get('status') || 'live' });
+store.set('agenda', [{ aid: 'a1', title: 'A', pages: 5 }, { aid: 'a2', title: 'B', pages: 9 }]);
+store.set('page', { aid: 'a2', page: 3 });
+store.set('chat', []); store.set('hands', []); store.set('polls', []); store.set('badges', {});
+store.set('side', { open: true, tab: 'chat' });
+const mods = {};
+const only = (params.get('mods') || 'chat,hands,poll').split(',');
+for (const n of only) mods[n] = (await import(`/zzoom/${n}.js`)).mount(ctx);
+window.__mods = mods;
+const panels = { chat: 'zz-side-chat', poll: 'zz-side-poll', hands: 'zz-side-hands' };
+store.on('side', s => { for (const [t, id] of Object.entries(panels)) document.getElementById(id).hidden = s.tab !== t; });
+window.__ready = true;
+</script></body></html>

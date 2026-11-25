@@ -4,7 +4,7 @@
 
 ## 시험 환경
 
-- 작업 폴더: `C:\Users\권준구\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\bake\`
+- 작업 폴더: `~\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\bake\`
 - 방법: 로컬 정적 서버(파이썬, 포트 18463)와 Python Playwright 크로미움 145. 후보마다 같은 슬라이드를 긴 변 2000px PNG로 뽑았다. 시간은 슬라이드 한 장을 그리는 데 걸린 시간(문서 읽기 제외)이다.
 - 기준 그림: 이 PC의 PowerPoint를 COM으로 열어 `Slide.Export(PNG, 2000, 1125)`로 49장 뽑았다. 시작할 때 PowerPoint가 떠 있지 않았음을 확인했고(`wasRunning=False`), 읽기 전용에 창 없이 열어 프레젠테이션만 Close한 뒤 우리가 띄운 인스턴스만 Quit했다. 한/글은 건드리지 않았다.
 - 점수: 기준과 후보를 500px로 줄여 RGB 평균 절대 차이를 0에서 1 사이로 잰 값이다. 낮을수록 가깝다. 흰 배경이 많아 값이 전체적으로 낮게 나오므로 후보끼리 순서를 보는 참고용이다.
@@ -27,7 +27,7 @@
 
 ## 비교 시트
 
-위치: `C:\Users\권준구\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\bake\sheets\`
+위치: `~\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\bake\sheets\`
 
 한 줄에 기준, 1번, 2번, 3번, 4번, 5번, 5p번 순으로 놓았고 칸 아래에 점수가 적혀 있다. 한 장에 5줄이다.
 

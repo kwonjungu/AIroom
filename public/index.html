@@ -2349,7 +2349,8 @@ const DEFAULT_TABS=[
     {id:'codocs',title:'함께 만드는 문서',icon:'📝',type:'builtin',order:16},
     // 링크 탭: 페이지를 그리지 않고 /rental 로 바로 이동 (GitHub Pages 미러에서도 열리게 절대 URL)
     {id:'rental',title:'교구 대여소',icon:'📦',type:'link',order:17,href:'https://a-iroom.vercel.app/rental'},
-    {id:'recruitment',title:'채용 관리 시스템',icon:'📑',type:'link',order:18,href:'/recruitment'}
+    {id:'recruitment',title:'채용 관리 시스템',icon:'📑',type:'link',order:18,href:'/recruitment'},
+    {id:'zzoom',title:'회의진행 앱',icon:'🗣️',type:'link',order:19,href:'/zzoom'}
 ];
 let activeTabId='schedule';
 let isAdmin=false,activeCategory='all',selectedIcon='📎',trainingFilter='all';
@@ -2396,26 +2397,46 @@ async function initFirebase(){
 }
 // 백암이 로그인 → 서버가 주는 맞춤 토큰으로 Firebase 로그인(storage.rules 가 이 출입증만 통과시킴)
 let storageAuthPromise=null;
+// 출입증 claim 이 지금 화면(실서비스 ba / 카피본 cp)에 맞고 until(ms)이 1분 넘게 남았는지(지적12)
+function storageClaimsOk(c){
+    if(!c)return false;
+    const kindOk=window.IS_COPY?c.cp===1:c.ba===1;
+    return kindOk&&typeof c.until==='number'&&c.until-Date.now()>60000;
+}
+// 결과: 'ok' 출입증 있음 / 'legacy' 서버 키가 아직 없음(예전처럼 비로그인) / 'none' Firebase·로그인 없음.
+// 출입증을 받아야 하는데 못 받으면 오류를 던진다 — 규칙에 막힐 업로드를 조용히 시도하지 않게(지적13)
 function ensureStorageAuth(){
-    if(!firebaseStorage||!firebase.auth)return Promise.resolve(false);
-    if(firebase.auth().currentUser)return Promise.resolve(true);
-    if(!authToken)return Promise.resolve(false);
+    if(!firebaseStorage||!firebase.auth)return Promise.resolve('none');
+    if(!authToken)return Promise.resolve('none');
     if(!storageAuthPromise){
         storageAuthPromise=(async()=>{
+            const u=firebase.auth().currentUser;
+            if(u){
+                let c=null;try{c=(await u.getIdTokenResult()).claims;}catch(e){}
+                if(storageClaimsOk(c))return 'ok';
+            }
             const r=await fetch('/api/firebase-token',{headers:{'X-Auth-Token':authToken}});
-            if(!r.ok)return false; // 서버에 키가 아직 없으면 예전처럼 비로그인
-            const {token}=await r.json();
-            await firebase.auth().signInWithCustomToken(token);
-            return true;
-        })().catch(e=>{console.warn('창고 출입증 실패',e&&e.message);return false;}).finally(()=>{storageAuthPromise=null;});
+            let j={};try{j=await r.json();}catch(e){}
+            if(!r.ok){
+                if(r.status===503&&j&&j.error==='storage-token-unconfigured')return 'legacy';
+                throw new Error('창고 출입증을 받지 못했습니다('+r.status+')');
+            }
+            if(u){try{await firebase.auth().signOut();}catch(e){}}
+            await firebase.auth().signInWithCustomToken(j.token);
+            return 'ok';
+        })().finally(()=>{storageAuthPromise=null;});
     }
     return storageAuthPromise;
+}
+// 실제 저장 경로: 카피본이면 copy/ 아래(한 번만). 경로를 저장하는 호출자는 이 값을 저장한다(지적16)
+function storagePathFor(path){
+    const p=String(path||'');
+    return window.IS_COPY&&!p.startsWith('copy/')?'copy/'+p:p;
 }
 async function uploadToFirebase(file,path){
     if(!firebaseStorage)throw new Error('Firebase 미연결');
     await ensureStorageAuth();
-    if(window.IS_COPY)path='copy/'+path; // 시연용 카피본 파일은 copy/ 아래에만
-    const ref=firebaseStorage.ref().child(path);
+    const ref=firebaseStorage.ref().child(storagePathFor(path));
     await ref.put(file);
     return await ref.getDownloadURL();
 }
@@ -2459,7 +2480,7 @@ async function handleBannerUpload(e){
     if(firebaseStorage){
         try{
             showToast('배너 업로드 중...','info');
-            const storagePath=`banner/${Date.now()}_${file.name}`;
+            const storagePath=storagePathFor(`banner/${Date.now()}_${file.name}`);
             const url=await uploadToFirebase(file,storagePath);
             // 기존 배너 삭제
             if(bannerData&&bannerData.path)await deleteFromFirebase(bannerData.path);
@@ -2625,6 +2646,7 @@ function logout(){
     if(!confirm('로그아웃 하시겠습니까?'))return;
     fetch('/api/auth/logout',{method:'POST',headers:{'X-Auth-Token':authToken}}).catch(()=>{});
     authToken=null;authRole=null;
+    try{if(window.firebase&&firebase.auth)firebase.auth().signOut();}catch(e){} // 창고 출입증도 같이 끝낸다(지적12)
     localStorage.removeItem('airoom_auth_token');
     localStorage.removeItem('airoom_auth_role');
     location.reload();
@@ -3298,7 +3320,7 @@ async function submitScheduleAdd(){
     // 파일 처리
     if(schAddPendingFile&&firebaseStorage){
         const tempId='sch_'+Date.now();
-        const storagePath='schedules/'+tempId+'/'+Date.now()+'_'+schAddPendingFile.name;
+        const storagePath=storagePathFor('schedules/'+tempId+'/'+Date.now()+'_'+schAddPendingFile.name);
         const url=await uploadToFirebase(schAddPendingFile,storagePath);
         opts.fileUrl=url;opts.fileName=schAddPendingFile.name;opts.filePath=storagePath;
     } else if(schAddPendingFile&&!firebaseStorage){
@@ -3374,7 +3396,7 @@ async function submitScheduleEdit(){
         item.fileUrl='';item.fileName='';item.filePath='';
     } else if(schEditPendingFile&&firebaseStorage){
         if(item.filePath)await deleteFromFirebase(item.filePath);
-        const storagePath='schedules/'+id+'/'+Date.now()+'_'+schEditPendingFile.name;
+        const storagePath=storagePathFor('schedules/'+id+'/'+Date.now()+'_'+schEditPendingFile.name);
         const url=await uploadToFirebase(schEditPendingFile,storagePath);
         item.fileUrl=url;item.fileName=schEditPendingFile.name;item.filePath=storagePath;
     } else if(schEditPendingFile&&!firebaseStorage){
@@ -5012,7 +5034,7 @@ async function saveItem(){
             try{
                 showToast('파일 업로드 중...','info');
                 const iid=itemId||'item_'+Date.now();
-                const storagePath=`sections/${secId}/${iid}/${pendingFile.name}`;
+                const storagePath=storagePathFor(`sections/${secId}/${iid}/${pendingFile.name}`);
                 const url=await uploadToFirebase(pendingFile.rawFile,storagePath);
                 data.fileName=pendingFile.name;data.fileSize=pendingFile.size;
                 data.fileUrl=url;data.filePath=storagePath;data.fileType=pendingFile.type;
@@ -5694,10 +5716,16 @@ async function ttSubmitUpload(){
     ttUp.busy=true;ttUp.busyMsg='이수증 파일 보관 중…';ttRenderUpload();
     try{
         if(typeof firebaseStorage!=='undefined'&&firebaseStorage){
-            filePath=`training-tracker/${s.id}/${Date.now()}_${ttNorm(label)}${ext}`;
+            filePath=storagePathFor(`training-tracker/${s.id}/${Date.now()}_${ttNorm(label)}${ext}`);
             fileUrl=await uploadToFirebase(ttUp.file,filePath);
         }
-    }catch(e){console.warn('이수증 파일 보관 실패',e);filePath='';}
+    }catch(e){
+        // 파일 보관이 실패하면 기록을 확정하지 않는다(지적13) — 파일 없는 '이수' 칸이 남지 않게
+        console.warn('이수증 파일 보관 실패',e);
+        ttUp.busy=false;ttRenderUpload();
+        showToast('이수증 파일을 보관하지 못해 등록하지 않았습니다. 잠시 뒤 다시 올려 주세요.','error');
+        return;
+    }
     const base={certNo:ttUp.certNo.trim(),date:ttUp.date.trim(),fileUrl,filePath,fileName,src:'pdf',at:new Date().toISOString(),by:ttMyName()||''};
     const cells={};cols.forEach(c=>{cells[c.id]={...base,mark:integrated?'V':''};});
     try{
@@ -6105,7 +6133,7 @@ async function uploadCertFile(tid,sid,input){
     if(!firebaseStorage){showToast('Firebase 미연결! 관리자에게 문의하세요.','error');return;}
     try{
         showToast('업로드 중...','info');
-        const storagePath=`certs/${tid}/${sid}/${file.name}`;
+        const storagePath=storagePathFor(`certs/${tid}/${sid}/${file.name}`);
         const url=await uploadToFirebase(file,storagePath);
         if(!trainingRecords[tid])trainingRecords[tid]={};
         if(!trainingRecords[tid][sid])trainingRecords[tid][sid]={};
@@ -6822,7 +6850,7 @@ function renderTabs(){
     const container=document.getElementById('mainTabs');
     // 시연용 카피본: 링크 탭(교구 대여소·채용 관리)은 실서비스 대신 카피본 주소로 연결
     const copyHref=h=>String(h||'').includes('/rental')?'/copy/rental':String(h||'').includes('/recruitment')?'/copy/recruitment':h;
-    const sorted=[...tabsConfig].map(t=>window.IS_COPY&&t.type==='link'?{...t,href:copyHref(t.href)}:t).sort((a,b)=>a.order-b.order);
+    const sorted=[...tabsConfig].filter(t=>!(window.IS_COPY&&t.id==='zzoom')).map(t=>window.IS_COPY&&t.type==='link'?{...t,href:copyHref(t.href)}:t).sort((a,b)=>a.order-b.order);
     let html='';
     sorted.forEach((tab,idx)=>{
         const isActive=tab.id===activeTabId;
@@ -7627,7 +7655,7 @@ async function submitCollectionUpload(){
     showToast('파일 업로드 중...','info');
     for(const file of pendingColFiles){
         try{
-            const storagePath='collections/'+colId+'/'+Date.now()+'_'+file.name;
+            const storagePath=storagePathFor('collections/'+colId+'/'+Date.now()+'_'+file.name);
             const url=await uploadToFirebase(file,storagePath);
             col.submissions.push({
                 submitter:name,

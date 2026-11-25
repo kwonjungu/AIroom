@@ -222,7 +222,10 @@ app.use((req, res, next) => {
     }
     next();
 });
-app.use(express.json({ limit: '10mb' }));
+// 전역 JSON 파서(10MB). 쭘(/api/zzoom, /api/copy/zzoom 재작성 뒤 포함)은 자기 라우터의 1MB 파서만 쓴다(감사 사소).
+const jsonBody = express.json({ limit: '10mb' });
+const jsonExceptZzoom = (req, res, next) => /^\/api\/zzoom(\/|$)/.test(req.path) ? next() : jsonBody(req, res, next);
+app.use(jsonExceptZzoom);
 // body 파싱이 끝난 뒤 나머지 처리를 'copy' 공간 안에서 실행 (AsyncLocalStorage 전파)
 app.use((req, res, next) => req.isCopy ? nsStore.run('copy', next) : next());
 // 카피본 전용: 인증은 항상 통과, 실서비스에 영향이 가는 기능은 막고, AI는 횟수 제한
@@ -307,6 +310,9 @@ app.get(['/recruitment', '/recruitment/'], async (req, res) => {
 
 // 쭘(ZZOOM) 회의 화면: public/zzoom/ 디렉터리 때문에 static 이 301 로 넘기지 않게 앞에 둔다(파일이 없으면 404).
 app.get(['/zzoom', '/zzoom/'], (req, res) => {
+    // 비상 스위치(ZZOOM_ENABLED=0): API 와 같은 안내를 간단한 화면으로
+    const zz = require('./lib/zzoom/routes');
+    if (!zz.zzoomEnabled()) return res.status(503).set('Cache-Control', 'no-store').type('html').send(zz.DISABLED_HTML);
     const f = path.join(__dirname, 'public', 'zzoom', 'index.html');
     if (!fs.existsSync(f)) return res.status(404).send('Not Found');
     res.set('Referrer-Policy', 'no-referrer');

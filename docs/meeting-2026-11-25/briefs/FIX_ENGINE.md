@@ -3,7 +3,7 @@
 `docs/meeting-2026-11-25/AUDIT_ENGINE_REPORT.md` 의 지적 01~15(와 그 밖 사소 항목)를 **전부** 고친다. 설계 기준은 같은 폴더 `DESIGN.md`·`DECISIONS.md`, 저장소 규칙은 루트 `CLAUDE.md`(두 SPA 둘 다 고치기, vercel.json rewrite 금지, /copy 격리).
 
 ## 지킬 것
-- 이 저장소 `C:\Users\권준구\Desktop\AIroom` 안에서만 고친다. 커밋·푸시·배포 금지. Firebase 규칙 게시, Vercel·Firebase 콘솔 조작, 실제 서비스에 쓰기 금지.
+- 이 저장소 `~\Desktop\AIroom` 안에서만 고친다. 커밋·푸시·배포 금지. Firebase 규칙 게시, Vercel·Firebase 콘솔 조작, 실제 서비스에 쓰기 금지.
 - 한/글·PowerPoint 프로그램 자동화 금지(종료 절대 금지).
 - 두 SPA(`index.html`, `public/index.html`)를 고칠 때는 둘 다 같은 내용으로.
 - 고치기 어렵거나 설계 결정이 필요한 항목은 가장 안전한 쪽으로 정하고 보고서에 이유를 적는다. 묻지 않는다.

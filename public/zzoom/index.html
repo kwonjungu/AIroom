@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>쭘</title>
+<link rel="icon" type="image/webp" href="/zzoom/assets/logo.webp">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/zzoom/zzoom.css">
+<script type="module" src="/zzoom/app.js"></script>
+</head>
+<!-- 자리 id 표는 docs/meeting-2026-11-25/CONTRACTS.md 4절. 팀은 자기 자리 안쪽만 바꾼다. -->
+<body class="zz route-list">
+<header id="zz-header">
+  <a id="zz-brand" href="#/" aria-label="쭘 회의 목록">
+    <img src="/zzoom/assets/logo.webp" alt="" width="32" height="32">
+    <span>쭘</span>
+  </a>
+  <h1 id="zz-meeting-title"></h1>
+  <div id="zz-status" aria-live="polite"></div>
+  <div id="zz-header-actions"></div>
+  <button id="zz-agenda-toggle" class="zz-btn ghost" type="button" aria-controls="zz-agenda" aria-expanded="false">
+    <span>안건 목록</span>
+  </button>
+  <button id="zz-side-toggle" class="zz-btn ghost" type="button" hidden>
+    <img class="zz-icon" src="/zzoom/assets/icon-chat.webp" alt=""><span>옆칸</span>
+  </button>
+</header>
+
+<div id="zz-notice" role="status" hidden></div>
+
+<section id="zz-gate" hidden>
+  <div class="zz-card zz-gate-card">
+    <img src="/zzoom/assets/hero-join.webp" alt="" width="320" height="320">
+    <h2>백암이에서 먼저 로그인해 주세요</h2>
+    <p>쭘은 백암이에 로그인한 교직원만 쓸 수 있습니다.</p>
+    <a class="zz-btn primary" href="/">백암이로 가기</a>
+  </div>
+</section>
+
+<main id="zz-list"></main>
+
+<main id="zz-meeting" hidden>
+  <aside id="zz-agenda" aria-label="안건 목록"></aside>
+  <section id="zz-center">
+    <div id="zz-follow-bar"></div>
+    <div id="zz-stage">
+      <canvas id="zz-layer-bg"></canvas>
+      <canvas id="zz-layer-ink"></canvas>
+      <canvas id="zz-layer-temp"></canvas>
+      <div id="zz-stage-overlay"></div>
+    </div>
+    <div id="zz-toolbar"></div>
+    <nav id="zz-pagebar" aria-label="쪽 넘기기">
+      <div id="zz-board-actions"></div>
+      <div id="zz-quick-hand"></div>
+    </nav>
+  </section>
+  <aside id="zz-side" aria-label="채팅과 투표">
+    <div id="zz-side-tabs" role="tablist"></div>
+    <div id="zz-side-chat" class="zz-side-panel" role="tabpanel"></div>
+    <div id="zz-side-poll" class="zz-side-panel" role="tabpanel" hidden></div>
+    <div id="zz-side-hands" class="zz-side-panel" role="tabpanel" hidden></div>
+    <div id="zz-side-log" class="zz-side-panel" role="tabpanel" hidden></div>
+  </aside>
+</main>
+
+<footer id="zz-hostbar" aria-label="주관자 막대">
+  <div id="zz-hostbar-main"></div>
+  <div id="zz-hostbar-upload"></div>
+  <div id="zz-hostbar-board"></div>
+  <div id="zz-hostbar-record"></div>
+</footer>
+
+<div id="zz-join" hidden></div>
+<div id="zz-modal-root"></div>
+<div id="zz-toast" aria-live="polite"></div>
+</body>
+</html>

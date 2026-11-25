@@ -1,0 +1,145 @@
+/* 쭘 보기·따라가기 (디자인 2팀). 접두사 .zv- 만. 자리(#zz-…) 크기·위치는 zzoom.css 몫. */
+
+/* ---------- 무대 ---------- */
+.zv-stage { cursor: grab; }
+.zv-stage:active { cursor: grabbing; }
+.zv-stage.zv-pen, .zv-stage.zv-pen:active { cursor: default; }
+
+/* 덮개(불러오는 중·쪽 번호·빈 안건) — 덮개 자체는 손짓을 막지 않는다 */
+.zv-overlay { position: absolute; inset: 0; pointer-events: none; }
+.zv-overlay > * { pointer-events: auto; }
+.zv-ov-state {
+  position: absolute; top: var(--zz-s3); left: var(--zz-s3);
+  background: rgba(29, 29, 31, .72); color: #fff; pointer-events: none;
+}
+.zv-ov-state.is-presenter { background: var(--zz-accent); color: #fff; font-weight: 600; }
+.zv-ov-state.is-presenter .zz-live-dot { background: #fff; }
+.zv-ov-page {
+  position: absolute; right: var(--zz-s3); bottom: var(--zz-s3);
+  background: rgba(29, 29, 31, .72); color: #fff; pointer-events: none;
+  opacity: 0; transition: opacity var(--zz-dur);
+}
+.zv-ov-page.is-on { opacity: 1; }
+.zv-ov-loading {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: var(--zz-s2);
+  padding: var(--zz-s2) var(--zz-s4); border-radius: var(--zz-r-chip);
+  background: rgba(29, 29, 31, .78); color: #fff; font-size: 14px; pointer-events: none;
+}
+.zv-spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .35); border-top-color: #fff;
+  animation: zv-spin 800ms linear infinite;
+}
+@keyframes zv-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .zv-spin { animation: none; } }
+.zv-ov-error {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: var(--zz-s3);
+  padding: var(--zz-s6); border-radius: var(--zz-r-card); background: var(--zz-surface);
+  box-shadow: var(--zz-shadow); text-align: center;
+}
+.zv-ov-error p { margin: 0; color: var(--zz-ink); font-weight: 600; }
+.zv-ov-empty { position: absolute; inset: 0; justify-content: center; color: #c7c7cc; pointer-events: none; }
+.zv-ov-empty img { width: min(280px, 50%); opacity: .9; }
+.zv-ov-empty p { margin: 0; font-size: 16px; }
+
+/* ---------- 따라가기 띠 ---------- */
+.zv-follow {
+  display: flex; align-items: center; justify-content: center; gap: var(--zz-s3); flex-wrap: wrap;
+  padding: var(--zz-s2) var(--zz-s3); background: var(--zz-accent-soft); border-bottom: 1px solid #ffd9c9;
+}
+.zv-follow-text { color: var(--zz-accent-ink); font-size: 14px; font-weight: 500; }
+.zv-follow-btn { font-weight: 600; }
+.zv-follow-btn .zz-icon { width: 24px; height: 24px; }
+
+/* ---------- 쪽 막대 ---------- */
+.zv-pager {
+  display: flex; align-items: center; gap: var(--zz-s2); flex: 1 1 auto; min-width: 0; container-type: inline-size;
+  overflow-x: auto; scrollbar-width: none; /* 너무 좁으면 겹치지 않고 옆으로 밀린다 */
+}
+.zv-pager::-webkit-scrollbar { display: none; }
+.zv-pager > * { flex: none; white-space: nowrap; }
+.zv-step { padding: 0 var(--zz-s3); }
+.zv-pageno { min-width: 64px; text-align: center; font-size: 15px; font-weight: 600; color: var(--zz-ink); }
+.zv-fit { padding: 0 var(--zz-s3); }
+.zv-fit[aria-pressed="true"] { background: transparent; border-color: transparent; color: var(--zz-muted); }
+.zv-zoom { font-size: 13px; color: var(--zz-muted); min-width: 40px; }
+.zv-zoom:empty { display: none; }
+.zv-only-narrow { display: none; }
+
+/* 쪽 막대가 좁으면(옆칸이 열린 태블릿 세로 등) 덜 중요한 것부터 숨긴다 */
+@container (max-width: 320px) {
+  .zv-zoom, .zv-fit { display: none; }
+  .zv-step { padding: 0 var(--zz-s2); }
+  .zv-pageno { min-width: 48px; font-size: 14px; }
+}
+
+/* ---------- 안건 목록 ---------- */
+.zv-agenda { display: flex; flex-direction: column; min-height: 100%; }
+.zv-agenda-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: var(--zz-s2);
+  padding: var(--zz-s4) var(--zz-s4) var(--zz-s2); background: var(--zz-surface);
+}
+.zv-agenda-head h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.zv-agenda-count { color: var(--zz-muted); font-size: 13px; }
+.zv-close { margin-left: auto; }
+.zv-agenda-empty { padding-top: var(--zz-s6); }
+.zv-agenda-empty img { width: 160px; }
+.zv-agenda-empty p { margin: 0; font-size: 14px; }
+.zv-agenda-list { list-style: none; margin: 0; padding: 0 var(--zz-s2) var(--zz-s6); }
+.zv-agenda-li { margin: 0 0 var(--zz-s1); }
+.zv-agenda-item {
+  display: flex; align-items: center; gap: var(--zz-s3); width: 100%; min-height: 56px;
+  padding: var(--zz-s2) var(--zz-s3); border: 0; border-radius: var(--zz-r-btn);
+  background: transparent; text-align: left; cursor: pointer; color: var(--zz-ink);
+  transition: background var(--zz-dur);
+}
+.zv-agenda-item:hover { background: var(--zz-canvas); }
+.zv-agenda-item.is-current { background: var(--zz-accent-soft); }
+.zv-agenda-no {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--zz-canvas); color: var(--zz-muted); font-size: 13px; font-weight: 600;
+}
+.zv-agenda-item.is-current .zv-agenda-no { background: var(--zz-accent); color: #fff; }
+.zv-agenda-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.zv-agenda-title { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.zv-agenda-meta { font-size: 13px; color: var(--zz-muted); }
+.zv-live-chip { flex: none; height: 24px; padding: 0 var(--zz-s2); font-size: 12px; }
+
+.zv-thumbs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--zz-s2); padding: var(--zz-s2) var(--zz-s2) var(--zz-s3) 44px; }
+.zv-thumb {
+  position: relative; display: block; min-height: var(--zz-touch); padding: 0; border: 2px solid transparent;
+  border-radius: 8px; background: none; cursor: pointer;
+}
+.zv-thumb-fig {
+  display: block; width: 100%; max-height: 160px; overflow: hidden; border-radius: 6px;
+  background: var(--zz-canvas); border: 1px solid var(--zz-line);
+}
+.zv-thumbs.is-board .zv-thumb-fig { aspect-ratio: 16 / 10; background: #fff; }
+.zv-thumb-fig img { display: block; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.zv-thumb-no {
+  position: absolute; left: 4px; bottom: 4px; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: var(--zz-r-chip); background: rgba(29, 29, 31, .72); color: #fff; font-size: 11px; line-height: 20px; text-align: center;
+}
+.zv-thumb:hover .zv-thumb-fig { border-color: #c7c7cc; }
+.zv-thumb.is-current { border-color: var(--zz-accent); }
+.zv-thumb.is-current .zv-thumb-no { background: var(--zz-accent); }
+.zv-thumb.is-live::after {
+  content: ""; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--zz-live); box-shadow: 0 0 0 2px #fff;
+}
+.zv-orig { margin: 0 0 var(--zz-s2) 44px; font-size: 14px; color: var(--zz-accent-ink); }
+
+/* ---------- 좁은 화면 ---------- */
+@media (max-width: 767.98px) {
+  .zv-only-narrow { display: inline-flex; }
+  .zv-zoom { display: none; }
+  .zv-pageno { min-width: 52px; font-size: 14px; }
+  .zv-follow-text { display: none; }
+  .zv-thumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-left: var(--zz-s2); }
+  .zv-orig { margin-left: var(--zz-s2); }
+}
+@media (max-width: 479.98px) {
+  .zv-fit { display: none; }
+}

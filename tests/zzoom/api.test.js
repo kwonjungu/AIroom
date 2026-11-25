@@ -17,7 +17,7 @@ async function setup(opts = {}) {
     const redis = createFakeRedis({ now });
     const fb = opts.noFb ? null : createFakeFb({ now });
     const groqCalls = [];
-    const groq = { async transcribe(a) { groqCalls.push({ bytes: a.buffer.length, mime: a.mime, language: a.language }); return { ok: true, text: '첫 안건 이야기' }; } };
+    const groq = opts.groq || { async transcribe(a) { groqCalls.push({ bytes: a.buffer.length, mime: a.mime, language: a.language }); return { ok: true, text: '첫 안건 이야기' }; } };
     const sessCalls = { n: 0 };
     const validateSession = async t => { sessCalls.n++; return t === TOKENS.admin ? { role: 'admin' } : t === TOKENS.user ? { role: 'user' } : null; };
     const app = express();
@@ -104,7 +104,8 @@ test('격리: 시연본·비로그인·권한·다른 회의·만료 자격', as
     assert.equal(v.role, 'viewer');
     assert.ok(v.pt && v.cid && v.token);
     const tok = h.fb.calls.tokens.at(-1);
-    assert.deepEqual(tok.claims, { zz: 1, mid, role: 'viewer', until: v.until });
+    assert.deepEqual(tok.claims, { zz: 1, mid, role: 'viewer', until: v.tokenUntil });
+    assert.ok(v.tokenUntil <= v.until && v.tokenUntil <= h.clock.t + 3600000, '맞춤 토큰 until 은 1시간 안(레드팀 RT-1)');
     assert.equal(tok.uid, 'zz_' + v.cid);
     // 관리자는 코드 없이 host
     const a = await h.join(mid, '관리자', 'admin');
@@ -196,7 +197,7 @@ test('주관 코드: 틀림·탭 5회 잠금·IP 20회 원자 증가·IP 잠금 
     // 다른 IP 에서는 됨, 성공한 시도는 장부에서 빠진다
     const okOther = await h.call('POST', `/${mid2}/host`, { pt: fresh.pt, body: { code: '123456' }, ip: '10.3.3.3' });
     assert.equal(okOther.status, 200);
-    assert.equal(Number(await h.redis.get(`zz:try:${mid2}:all`)), 25, '실패 25회만 남는다(성공 1회는 되돌림)');
+    assert.equal(Number(await h.redis.get(`zz:try:${mid2}:all`)), 20, '코드까지 확인한 실패 20회만 남는다(한도에 걸린 5회·성공 1회는 되돌림, 감사 사소)');
 
     // Redis 장애면 host 발급 거절
     const mid3 = await h.createMeeting();
@@ -215,15 +216,33 @@ test('주관 코드: 회의 전체 50회 잠금 → 관리자 풀기', async t =
         const v = await h.join(mid, '시도' + i);
         for (let j = 0; j < 5; j++) assert.equal((await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '000000' }, ip: `10.5.${i}.1` })).json.error, 'wrong_code');
     }
-    const v = await h.join(mid, '정상');
-    const lock = await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '123456' }, ip: '10.6.0.1' });
+    // 15분 임시 잠금: 틀린 적 있는 사람·IP 는 423(맞는 코드여도)
+    const bad = await h.join(mid, '시도0');
+    const lock = await h.call('POST', `/${mid}/host`, { pt: bad.pt, body: { code: '123456' }, ip: '10.5.0.1' });
     assert.equal(lock.status, 423); assert.equal(lock.json.error, 'host_locked');
     const list = await h.call('GET', '/meetings', { auth: 'admin' });
     assert.equal(list.json.meetings.find(m => m.id === mid).hostLocked, true);
+    // 잠금 DoS 막기(레드팀 RT-2): 이 창에서 처음 시도하는 사람·IP 의 맞는 코드는 들어간다
+    const v = await h.join(mid, '정상');
+    const ok0 = await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '123456' }, ip: '10.6.0.1' });
+    assert.equal(ok0.status, 200, ok0.text);
+    // 15분이 지나면 저절로 풀린다(틀린 사람도 다시 시도 가능)
+    h.clock.t += 15 * 60000 + 1000;
+    const again = await h.join(mid, '시도1');
+    assert.equal((await h.call('POST', `/${mid}/host`, { pt: again.pt, body: { code: '123456' }, ip: '10.5.1.1' })).status, 200);
     assert.equal((await h.call('POST', `/meetings/${mid}/unlock`, { auth: 'user' })).status, 403);
     assert.equal((await h.call('POST', `/meetings/${mid}/unlock`, { auth: 'admin' })).status, 200);
-    const ok = await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '123456' }, ip: '10.6.0.1' });
-    assert.equal(ok.status, 200, ok.text);
+});
+
+test('주관 코드: 회의 평생 200번 틀리면 관리자가 풀 때까지 잠금(대입 상한)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    await h.redis.set(`zz:try:${mid}:life`, '200');
+    const v = await h.join(mid, '정상');
+    const r = await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '123456' }, ip: '10.6.0.9' });
+    assert.equal(r.status, 423);
+    assert.equal((await h.call('POST', `/meetings/${mid}/unlock`, { auth: 'admin' })).status, 200);
+    assert.equal((await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '123456' }, ip: '10.6.0.9' })).status, 200);
 });
 
 test('주관 코드 바꾸면 옛 host 는 다음 쓰기부터 거절, 재발급은 viewer', async t => {
@@ -363,8 +382,9 @@ test('판서: 새 형식 검증·epoch·seq·잠금·상한', async t => {
     assert.equal((await h.call('POST', `/${mid}/strokes`, { pt: V.pt, body: stroke(`${aid}_2`) })).json.error, 'stroke_limit');
     // 속도 제한: 같은 탭 1초 2번
     await h.redis.hset(`zz:sc:${mid}`, { all: 0 });
-    const fast = await Promise.all([0, 1].map(() => h.call('POST', `/${mid}/strokes`, { pt: W.pt, body: stroke(`${aid}_2`), tick: 0 })));
-    assert.deepEqual(fast.map(x => x.status).sort(), [201, 429]);
+    // 판서 속도 제한: 같은 탭 1초에 3번까지(묶음 하나 = 1번), 4번째는 429
+    const fast = await Promise.all([0, 1, 2, 3].map(() => h.call('POST', `/${mid}/strokes`, { pt: W.pt, body: stroke(`${aid}_2`), tick: 0 })));
+    assert.deepEqual(fast.map(x => x.status).sort(), [201, 201, 201, 429]);
 });
 
 // ---------------------------------------------------------------- 채팅·손
@@ -628,7 +648,7 @@ test('삭제: 즉시 정리·중복 실행·중간 실패 뒤 이어서·cron �
     h.fb.storage.remove = async () => { throw new Error('storage 503'); };
     const fail = await h.call('DELETE', `/meetings/${midC}`, { auth: 'admin' });
     h.fb.storage.remove = realRemove;
-    assert.equal(fail.status, 500);
+    assert.equal(fail.status, 502, '저장소 오류는 502(지적14)');
     assert.equal(h.fb.docs.get(`zzoom_meetings/${midC}`).status, 'deleting');
     const blocked = await h.call('POST', `/${midC}/chat`, { pt: c.V.pt, body: { text: 'x' } });
     assert.equal(blocked.status, 410, '정리 전이라도 쓰기는 바로 막힘');
@@ -685,4 +705,268 @@ test('업로드 쪽 수 한도: 200쪽 허용, 201쪽 거절', async t => {
     const up = n => h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind: 'pdf', pages: n, bytes: 10 } });
     assert.equal((await up(200)).status, 201);
     assert.equal((await up(201)).json.error, 'bad_pages');
+});
+
+// ================================================================ 감사(AUDIT_ENGINE_REPORT) 지적별 시험
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const claimsOf = tok => JSON.parse(Buffer.from(String(tok).split('.')[1], 'base64url').toString()).claims;
+const strokeDocs = (h, mid) => [...h.fb.docs.entries()].filter(([k]) => k.startsWith(`zzoom_meetings/${mid}/strokes/`)).map(([, v]) => v);
+// 쓰기 하나를 한 번만 멈추게 하는 훅. entered 는 멈춘 순간 풀린다.
+function pauseOnce(h, match, ms = 250) {
+    let fired = false, enter;
+    const entered = new Promise(r => { enter = r; });
+    h.fb.hooks.beforeWrite = async (op, paths) => {
+        if (fired || !paths.some(match)) return;
+        fired = true; enter(); await sleep(ms);
+    };
+    return entered;
+}
+async function upload(h, mid, A, body = { kind: 'pdf', pages: 1, bytes: 10 }) {
+    const up = await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body });
+    assert.equal(up.status, 201, up.text);
+    return up.json;
+}
+function putPages(h, path, n) {
+    for (let i = 1; i <= n; i++) {
+        const p = String(i).padStart(3, '0');
+        h.fb.put(path + `p${p}.webp`, 1000, 'image/webp');
+        h.fb.put(path + `t${p}.webp`, 100, 'image/webp');
+    }
+}
+const commitBody = n => ({ title: '안', pages: n, sizes: Array.from({ length: n }, () => [1414, 2000]) });
+
+test('지적01: 맞춤 토큰 until 은 1시간 안(host·viewer), 업로드는 허가 하나에만 쓰는 짧은 출입증', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const V = await h.join(mid, '참석');
+    const cv = claimsOf(V.token);
+    assert.ok(cv.until <= h.clock.t + 3600000 && cv.until > h.clock.t, 'viewer 도 1시간');
+    const H = await h.asHost(mid);
+    const c = claimsOf(H.token);
+    assert.equal(c.role, 'host');
+    assert.ok(Number.isInteger(c.until) && c.until <= h.clock.t + 3600000 && c.until > h.clock.t - 5000, 'host 권한은 1시간 안에 끝난다');
+    const up = await upload(h, mid, H, { kind: 'pdf', pages: 3, bytes: 4000 });
+    assert.ok(up.token, '업로드 전용 출입증');
+    const u = claimsOf(up.token);
+    assert.equal(u.up, up.uploadId); assert.equal(u.upPages, 3); assert.equal(u.upExt, 'pdf'); assert.equal(u.upBytes, 4000);
+    assert.ok(u.until <= h.clock.t + 3600000 && u.until > h.clock.t - 5000);
+    // 한 시간 뒤 refresh 는 다시 1시간을 준다
+    h.clock.t += 50 * 60000;
+    const r0 = await h.call('POST', `/${mid}/refresh`, { pt: H.pt });
+    assert.equal(r0.status, 200); assert.ok(claimsOf(r0.json.token).until > c.until, 'refresh 가 늘린다');
+    // 코드를 바꾸면 refresh 는 viewer 출입증만 준다
+    await h.call('PATCH', `/meetings/${mid}`, { auth: 'admin', body: { hostCode: '654321' } });
+    const r = await h.call('POST', `/${mid}/refresh`, { pt: H.pt });
+    assert.equal(r.json.role, 'viewer');
+    assert.equal(claimsOf(r.json.token).role, 'viewer');
+    assert.ok(['host_only', 'host_revoked'].includes((await h.call('POST', `/${mid}/uploads`, { pt: H.pt, body: { kind: 'pdf', pages: 1, bytes: 1 } })).json.error), '내려간 host 는 업로드 허가를 못 받는다');
+});
+
+test('지적01: 회의를 지운 뒤 늦게 올라온 업로드 파일도 장부에 남아 24시간 뒤 지워진다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const up = await upload(h, mid, A);
+    assert.equal((await h.call('DELETE', `/meetings/${mid}`, { auth: 'admin' })).json.deleted, true);
+    h.fb.put(up.path + 'p001.webp', 10, 'image/webp');   // 삭제 단계가 지나간 뒤 올라옴
+    h.clock.t += DAY + 1000;
+    await h.call('GET', '/maintenance/purge', { headers: { Authorization: 'Bearer cron-secret' } });
+    assert.equal([...h.fb.objects.keys()].filter(k => k.includes(mid)).length, 0, '고아 파일 없음');
+});
+
+test('지적02: commit 은 실제 WebP 바이트와 쪽 크기를 확인한다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const up = await upload(h, mid, A);
+    putPages(h, up.path, 1);
+    h.fb.put(up.path + 'p001.webp', 1000, 'image/webp', Buffer.from('<html>not a webp at all.......</html>'));
+    let r = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A.pt, body: commitBody(1) });
+    assert.equal(r.status, 422, r.text); assert.match(r.json.message, /WebP/);
+    const { webpHead } = require('./fakes/fake-fb');
+    h.fb.put(up.path + 'p001.webp', 1000, 'image/webp', webpHead(1000, 1000));
+    r = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A.pt, body: commitBody(1) });
+    assert.equal(r.status, 422, r.text); assert.match(r.json.message, /크기/);
+    h.fb.put(up.path + 'p001.webp', 1000, 'image/webp');
+    assert.equal((await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A.pt, body: commitBody(1) })).status, 201);
+});
+
+test('지적03: commit 뒤 장부 정리가 실패해도 재시도가 장부를 고치고, cron 은 확정된 안건 파일을 지우지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const up = await upload(h, mid, A);
+    putPages(h, up.path, 1);
+    h.redis.failNext('hdel');
+    const first = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A.pt, body: commitBody(1) });
+    assert.ok([201, 503].includes(first.status), first.text);
+    const again = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A.pt, body: commitBody(1) });
+    assert.ok([200, 201].includes(again.status), again.text);
+    assert.ok(!Object.keys((await h.redis.hgetall('zz:uploads')) || {}).some(f => f.endsWith(up.uploadId)), '재시도가 장부를 비운다');
+    // 장부에 남은 경우(다른 경로로 실패)도 cron 이 안건을 확인하고 지우지 않는다
+    await h.redis.hset('zz:uploads', { [`${mid}/${up.uploadId}`]: h.clock.t - DAY });
+    h.clock.t += DAY + 1000;
+    await h.call('GET', '/maintenance/purge', { headers: { Authorization: 'Bearer cron-secret' } });
+    assert.equal([...h.fb.objects.keys()].filter(k => k.startsWith(up.path)).length, 2, '안건 그림이 남는다');
+    assert.ok(h.fb.docs.get(`zzoom_meetings/${mid}/agenda/a${up.uploadId.slice(1)}`));
+    assert.ok(!Object.keys((await h.redis.hgetall('zz:uploads')) || {}).length, '장부는 정리');
+});
+
+test('지적03: 허가 23시간이 지나면 commit 을 받지 않는다(cron 24시간 정리와 겹치지 않게)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const up = await upload(h, mid, A);
+    putPages(h, up.path, 1);
+    h.clock.t += 23 * 3600000 + 1000;
+    const A2 = await h.join(mid, '관리자', 'admin');
+    const r = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A2.pt, body: commitBody(1) });
+    assert.equal(r.status, 410, r.text); assert.equal(r.json.error, 'upload_expired');
+});
+
+test('지적04: 받아쓰기 응답을 기다리는 사이 회의를 지우면 기록을 다시 만들지 않는다', async t => {
+    let release; const gate = new Promise(r => { release = r; });
+    let entered; const inGroq = new Promise(r => { entered = r; });
+    const h = await setup({ groq: { async transcribe() { entered(); await gate; return { ok: true, text: '늦은 기록' }; } } }); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const tr = h.call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: Buffer.from('aud') });
+    await inGroq;
+    const d = await h.call('DELETE', `/meetings/${mid}`, { auth: 'admin' });
+    assert.equal(d.json.deleted, true);
+    release();
+    const r = await tr;
+    assert.ok([404, 410].includes(r.status), r.status + ' ' + r.text);
+    assert.equal([...h.fb.docs.keys()].filter(k => k.includes(mid)).length, 0, '부모 없는 자식 문서 없음');
+});
+
+test('지적05: 판서 저장이 쪽 지우기와 겹쳐도 옛 epoch 선이 남지 않고 개수 장부가 실제와 같다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const aid = await h.board(mid, A);
+    const pk = `${aid}_1`;
+    const entered = pauseOnce(h, p => p.includes('/strokes/'));
+    const st = h.call('POST', `/${mid}/strokes`, { pt: A.pt, body: stroke(pk) });
+    await entered;
+    const cl = await h.call('POST', `/${mid}/pages/${pk}/clear`, { pt: A.pt, tick: 2000 });
+    assert.equal(cl.status, 200, cl.text);
+    const s = await st;
+    assert.ok([201, 409].includes(s.status), s.text);
+    const ep = h.fb.docs.get(`zzoom_meetings/${mid}/pages/${pk}`).epoch;
+    const queued = Object.keys((await h.redis.hgetall('zz:purge:pages')) || {}).length;
+    assert.equal(strokeDocs(h, mid).filter(d => d.epoch < ep).length === 0 || queued > 0, true, '옛 epoch 선이 남으면 정리 예약이 있어야 한다');
+    const all = Number((await h.redis.hget(`zz:sc:${mid}`, 'all')) || 0);
+    assert.equal(all, strokeDocs(h, mid).filter(d => d.epoch >= ep).length, '개수 장부 = 현재 선 수');
+});
+
+test('지적05: 같은 선을 동시에 두 번 지워도 개수가 음수가 되지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const aid = await h.board(mid, A);
+    const r = await h.call('POST', `/${mid}/strokes`, { pt: A.pt, body: stroke(`${aid}_1`) });
+    const sid = r.json.strokes[0].id;
+    pauseOnce(h, p => p.endsWith('/strokes/' + sid));
+    const two = await Promise.all([0, 1].map(() => h.call('DELETE', `/${mid}/strokes/${sid}`, { pt: A.pt, tick: 1 })));
+    assert.ok(two.some(x => x.status === 200), two.map(x => x.status).join());
+    assert.equal(Number((await h.redis.hget(`zz:sc:${mid}`, 'all')) || 0), 0);
+    assert.equal(strokeDocs(h, mid).length, 0);
+});
+
+test('지적06: 투표 동시 생성은 하나만 열리고, 끝내기 뒤 Redis 실패는 재시도로 고쳐진다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    pauseOnce(h, p => p.includes('/polls/'));
+    const two = await Promise.all([0, 1].map(i => h.call('POST', `/${mid}/polls`, { pt: A.pt, body: { q: '질문' + i }, tick: 1 })));
+    assert.deepEqual(two.map(x => x.status).sort(), [201, 409], two.map(x => x.text).join(' / '));
+    const open = [...h.fb.docs.entries()].filter(([k, v]) => k.includes(`${mid}/polls/`) && v.status === 'open');
+    assert.equal(open.length, 1);
+    const pid = open[0][0].split('/').pop();
+    h.redis.failNext('hset');
+    const end = await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
+    assert.notEqual(end.status, 200);
+    const retry = await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
+    assert.equal(retry.status, 200, retry.text);
+    assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}/polls/${pid}`).status, 'closed');
+    assert.equal(await h.redis.hget(`zz:vote:${mid}:${pid}`, '#status'), 'closed');
+});
+
+test('지적07: cron 은 예산을 넘기지 않는다(만료 회의 200건, 건당 1초)', async () => {
+    const { runPurge } = require('../../lib/zzoom/purge');
+    const clock = { t: Date.parse('2026-11-25T00:00:00Z') };
+    const now = () => clock.t;
+    const fb = createFakeFb({ now }), redis = createFakeRedis({ now });
+    for (let i = 0; i < 200; i++) fb.docs.set(`zzoom_meetings/m${String(i).padStart(12, '0')}`, { status: 'ready', expiresAt: clock.t - 1000 });
+    fb.hooks.beforeWrite = async () => { clock.t += 1000; };
+    const start = clock.t;
+    const out = await runPurge({ fb, redis, now }, { budgetMs: 50000 });
+    assert.ok(clock.t - start <= 52000, `가상 경과 ${clock.t - start}ms`);
+    assert.equal(out.timedOut, true);
+});
+
+test('지적09: 변환기가 받는 형식은 서버 업로드 허가도 받는다(hwpx·gif·bmp·avif·heic)', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    for (const [kind, ext] of [['hwpx', 'hwpx'], ['hwp', 'hwp'], ['image', 'gif'], ['image', 'bmp'], ['image', 'avif'], ['image', 'heic'], ['image', 'heif'], ['pptx', 'pptx']]) {
+        const r = await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind, ext, pages: 1, bytes: 10 } });
+        assert.equal(r.status, 201, `${kind}/${ext}: ${r.text}`);
+        assert.equal(r.json.files.original, `original.${ext}`);
+    }
+    assert.equal((await h.call('POST', `/${mid}/uploads`, { pt: A.pt, body: { kind: 'image', ext: 'hwpx', pages: 1, bytes: 10 } })).status, 400, '종류와 확장자가 어긋나면 거절');
+    const up = await upload(h, mid, A, { kind: 'hwpx', ext: 'hwpx', pages: 1, bytes: 10 });
+    putPages(h, up.path, 1);
+    h.fb.put(up.path + 'original.hwpx', 10, 'application/hwp+zip');
+    const r = await h.call('POST', `/${mid}/uploads/${up.uploadId}/commit`, { pt: A.pt, body: commitBody(1) });
+    assert.equal(r.status, 201, r.text);
+});
+
+test('지적14: Redis 장애는 어디서 나든 503 redis_down', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const V = await h.join(mid, '참석');
+    h.redis.setDown(true);
+    const r = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: 'x' } });
+    h.redis.setDown(false);
+    assert.equal(r.status, 503); assert.equal(r.json.error, 'redis_down');
+});
+
+test('사소: 시도 한도(탭·IP)에 걸린 요청은 회의 전체 시도 수에 남지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const v = await h.join(mid, '김');
+    for (let i = 0; i < 7; i++) await h.call('POST', `/${mid}/host`, { pt: v.pt, body: { code: '000000' }, ip: '10.1.1.1' });
+    assert.equal(Number(await h.redis.get(`zz:try:${mid}:all`)), 5);
+});
+
+test('사소: server.js 의 10MB JSON 파서는 /api/zzoom 을 건너뛴다(쭘 1MB 상한)', () => {
+    const src = require('node:fs').readFileSync(require.resolve('../../server.js'), 'utf8');
+    assert.match(src, /jsonExceptZzoom/);
+    assert.doesNotMatch(src, /^app\.use\(express\.json\(\{ limit: '10mb' \}\)\);/m);
+});
+
+test('추가: ZZOOM_ENABLED=0 이면 쭘 API 는 503 zzoom_disabled, health·cron 은 동작', async t => {
+    const h = await setup({ router: { env: { CRON_SECRET: 'cron-secret', ZZOOM_ENABLED: '0' } } }); t.after(h.close);
+    const r = await h.call('GET', '/meetings', { auth: 'admin' });
+    assert.equal(r.status, 503); assert.equal(r.json.error, 'zzoom_disabled'); assert.equal(r.json.message, '쭘을 잠시 쉬고 있습니다.');
+    assert.equal((await h.call('GET', '/health')).status, 200);
+    assert.equal((await h.call('GET', '/maintenance/purge', { headers: { Authorization: 'Bearer cron-secret' } })).status, 200);
+    const { zzoomEnabled } = require('../../lib/zzoom/routes');
+    assert.equal(zzoomEnabled({}), true); assert.equal(zzoomEnabled({ ZZOOM_ENABLED: '1' }), true); assert.equal(zzoomEnabled({ ZZOOM_ENABLED: '0' }), false);
+    const src = require('node:fs').readFileSync(require.resolve('../../server.js'), 'utf8');
+    assert.match(src, /zzoomEnabled\(\)/, '/zzoom 화면 라우트도 같은 스위치');
+});
+
+test('추가: Groq 429 는 groq_busy 와 retryAfter(초)를 돌려준다', async t => {
+    const h = await setup({ groq: { async transcribe() { return { ok: false, status: 429, retryAfter: 7, error: 'busy' }; } } }); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const r = await h.call('POST', `/${mid}/transcribe?n=0`, { pt: A.pt, raw: Buffer.from('aud') });
+    assert.equal(r.status, 429); assert.equal(r.json.error, 'groq_busy'); assert.equal(r.json.retryAfter, 7);
+    assert.equal(r.headers.get('retry-after'), '7');
 });

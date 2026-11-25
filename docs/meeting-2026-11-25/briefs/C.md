@@ -1,9 +1,9 @@
-너는 쭘(ZZOOM) 회의 시스템의 **엔진팀 C(파일 변환)**다. 먼저 `C:\Users\권준구\Desktop\AIroom\docs\meeting-2026-11-25\TEAM_COMMON.md` 를 읽고 그대로 따른다. 설계 기준은 같은 폴더 `DESIGN.md` v2 파트 C(C-1~C-4)와 K.
+너는 쭘(ZZOOM) 회의 시스템의 **엔진팀 C(파일 변환)**다. 먼저 `~\Desktop\AIroom\docs\meeting-2026-11-25\TEAM_COMMON.md` 를 읽고 그대로 따른다. 설계 기준은 같은 폴더 `DESIGN.md` v2 파트 C(C-1~C-4)와 K.
 
 ## 소유 파일
 - `public/zzoom/convert/` 아래 전부(새): `index.js`(공통 `convert(file,{onProgress,signal})`), `pdf.js`, `image.js`, `hwp.js`, `pptx.js`, `worker.js`(쓰는 경우), `vendor.js`(CDN 주소·고정 버전·해시를 한 곳에)
 - `docs/meeting-2026-11-25/convert-check.md` (새)
-- 실험용 하네스·결과 그림은 저장소 밖 `C:\Users\권준구\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\` 에만(시험 문서는 그 안 `docs\` 에 이미 복사돼 있다: HWP 2, HWPX 3, PPTX 2). npm 패키지를 받아 볼 때도 이 폴더에(`npm pack` 또는 별도 폴더 `npm i`), 저장소 node_modules 에 넣지 않는다.
+- 실험용 하네스·결과 그림은 저장소 밖 `~\AppData\Local\Temp\claude\4cda1ab0ca69f9b9\1f3148c4-5cb1-4211-ae9f-b90113f4c458\scratchpad\zzoom-convert\` 에만(시험 문서는 그 안 `docs\` 에 이미 복사돼 있다: HWP 2, HWPX 3, PPTX 2). npm 패키지를 받아 볼 때도 이 폴더에(`npm pack` 또는 별도 폴더 `npm i`), 저장소 node_modules 에 넣지 않는다.
 
 ## 할 일
 1. **0단계 실험 먼저**(DESIGN C-3): `@rhwp/core@0.9.1` 로 세 경로(① Worker+OffscreenCanvas measureText+renderPageSvg→메인 래스터 ② 메인 renderPageToCanvas 한 쪽씩 양보 ③ 메인 renderPageSvg→Image→canvas)를 로컬 정적 서버 + Python Playwright(크로미움, 이 PC에 있음)로 돌려 쪽 수·시간·결과 그림을 비교한다. README 의 `globalThis.measureTextWidth` 필수. 글꼴은 라이선스를 확인해 함초롬체 재배포가 확실하지 않으면 Noto Serif KR·Noto Sans KR(OFL) 웹폰트로.
