@@ -75,6 +75,7 @@ async function request(method, path, { body, pt, raw, contentType, auth = true, 
   // 응답이 끝내 안 오면 단추가 영영 잠기므로 시간 제한(기본 20초)에 끊는다.
   // 끊기면 다시 보낸다: GET 은 4번, 보내기는 3번. 보내기는 「같은 요청」 표가 있어 서버가 두 번 반영하지 않는다.
   const tries = method === 'GET' ? 4 : 3;
+  let waits = 0;
   for (let a = 0; ; a++) {
     const ac = typeof AbortController === 'function' ? new AbortController() : null;
     let timedOut = false;
@@ -82,9 +83,10 @@ async function request(method, path, { body, pt, raw, contentType, auth = true, 
     try {
       const r = await fetch(url, { method, headers, body: payload, credentials: 'same-origin', keepalive, signal: ac ? ac.signal : undefined });
       // 앞서 보낸 같은 요청을 서버가 아직 처리 중이면 조금 뒤 다시 물어 처음 응답을 받는다
-      if (r.status === 409 && headers['X-Zzoom-Idem'] && a < tries + 3) {
+      // 서버가 12초(받아쓰기 70초)가 지나도 안 끝난 앞 요청은 버리고 새로 처리하므로, 그동안 조용히 기다린다(최대 약 75초).
+      if (r.status === 409 && headers['X-Zzoom-Idem'] && waits < 50) {
         const d = await r.clone().json().catch(() => null);
-        if (d?.error === 'in_progress') { await sleep(1500); continue; }
+        if (d?.error === 'in_progress') { waits++; a--; await sleep(1500); continue; }
       }
       return r;
     }

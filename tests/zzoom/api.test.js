@@ -1840,3 +1840,22 @@ test('감사 R7: 큰 epoch 를 보내도 판서 상한 장부가 비워지지 �
     assert.equal(Number(await h.redis.hget(`zz:sc:${mid}`, pk)), before);
     assert.equal(Number((await h.redis.hget(`zz:sc:${mid}`, pk + '@e')) || 0), 0);
 });
+
+test('감사 R7: 같은 요청 표 — 처리 중 표시만 남은 요청은 12초 뒤 새로 처리, 결과는 응답 전에 적힌다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const V = await h.join(mid, '참석');
+    const idem = 'stuckstuck123456';
+    // 앞 요청이 죽어 '처리 중'만 남은 상태를 흉내: 같은 키 계산 대신 첫 요청 뒤 값을 처리 중으로 되돌린다
+    const r1 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem } });
+    assert.ok(r1.status < 300, r1.text);
+    const U = require('../../lib/zzoom/util');
+    const keys = ['zz:idem:' + U.sha256(idem + '|POST|' + `/api/zzoom/${mid}/chat` + '|' + V.pt).slice(0, 32)];
+    const stored = await h.redis.get(keys[0]);
+    assert.ok(String(stored).startsWith('{'), '응답 전에 결과가 적혀 있어야 함');
+    await h.redis.set(keys[0], 'p' + h.clock.t, { ex: 120 });
+    const r2 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem }, tick: 1000 });
+    assert.equal(r2.status, 409); assert.equal(r2.json.error, 'in_progress');
+    const r3 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem }, tick: 13000 });
+    assert.ok(r3.status < 300, r3.text);
+});
