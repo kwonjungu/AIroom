@@ -170,3 +170,12 @@ test('R2-M2: 쪽이 많으면 변환기도 서버 허가와 같은 파일당 상
   assert.ok(out.pages[0].blob.size <= 1048576 && seen.length > 1, '1MiB 안으로 다시 저장');
   sizeFor = null;
 });
+
+// 화면 배율(125%·150%) 노트북에서 PPTX 쪽이 2000px 을 넘던 문제(2026-11-26 사용자 신고, 감사 R15)
+test('PPTX 는 화면 배율과 상관없이 dpr 1 로 그리고, emitPage 는 긴 변 한도 안전망을 가진다', () => {
+  const pptx = fs.readFileSync(new URL('../../public/zzoom/convert/pptx.js', import.meta.url), 'utf8');
+  assert.match(pptx, /renderSlide\([^)]*dpr:\s*1\b/, 'renderSlide 에 dpr: 1');
+  const core = fs.readFileSync(new URL('../../public/zzoom/convert/core.js', import.meta.url), 'utf8');
+  const body = core.slice(core.indexOf('export async function emitPage'), core.indexOf('export function checkPageCount'));
+  assert.ok(body.includes('LIMITS.longSide') && body.includes('if (src) freeCanvas(src)'), 'emitPage 안전망과 해제');
+});
