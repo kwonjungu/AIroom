@@ -27,7 +27,7 @@ export const COLORS = {
 export const MAX_PTS = 1500;          // 한 문서 최대 점 수(넘으면 group·part 로 나눔)
 export const MAX_PARTS = 21;          // 서버 part 0~20
 export const ERASE_R = 12;            // 지우개 반경(CSS px)
-const SEND_GAP = 1050;                // 획 저장 1초 1회
+const SEND_GAP = 350;                 // 획 저장 0.35초 1회(서버 초당 3회 한도 안, 2026-11-26 지연 줄이기 A)
 const DEL_GAP = 260;                  // 지우기 요청 간격(서버 초당 5회 한도 아래)
 const FAIL_ALPHA = 0.3;               // 저장 실패 선 흐리게
 // 쪽 구독은 지금 쪽 하나만. 최근 3쪽 유지(LRU)와 캐시는 api.js 가 한 곳에서 맡는다(briefs/COST.md 3).

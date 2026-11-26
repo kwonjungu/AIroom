@@ -217,7 +217,7 @@ def run(pw, browser_name, size, old=False):
         page.wait_for_function("window.__zz.db.strokes.length >= 3", timeout=5000)
         saves = page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save')")
         gaps = [saves[i][2] - saves[i-1][2] for i in range(1, len(saves))]
-        check(f'{tag} 저장 간격 1초 이상', all(g >= 1000 for g in gaps), str(gaps))
+        check(f'{tag} 저장 간격 0.33초 이상(서버 초당 3회)', all(g >= 330 for g in gaps), str(gaps))
         check(f'{tag} 펜 빨강 저장', page.evaluate("window.__zz.db.strokes.slice(-1)[0].color") == '#E5484D')
         # 4. 필압 펜(포인터 이벤트 직접)
         page.evaluate("""() => { const t = document.getElementById('zz-layer-temp'); const r = t.getBoundingClientRect(); const v = window.__zz.store.get('viewport');

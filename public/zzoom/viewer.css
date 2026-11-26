@@ -163,7 +163,7 @@
 
 /* ---------- 큰 「이 자료 발표하기」(누구나 바로 발표, 2026-11-26) ---------- */
 .zv-big-present {
-  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 6;
+  position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 6;
   min-height: 56px; padding: 0 32px; font-size: 19px; font-weight: 700; border-radius: 999px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, .28);
 }
@@ -173,3 +173,14 @@
 /* ---------- 전체 화면 단추 ---------- */
 .zv-full-btn { font-weight: 600; }
 .zv-full-btn[aria-pressed="true"] { background: var(--zz-ink, #1d1d1f); color: #fff; }
+
+/* ---------- 스크롤 막대(확대했을 때, 2026-11-26) ---------- */
+.zv-sb { position: absolute; z-index: 5; background: rgba(0, 0, 0, .10); border-radius: 999px; touch-action: none; }
+.zv-sb[hidden] { display: none; }
+.zv-sb-v { top: 8px; bottom: 22px; right: 4px; width: 14px; }
+.zv-sb-h { left: 8px; right: 22px; bottom: 4px; height: 14px; }
+.zv-sb-thumb { position: absolute; left: 0; top: 0; background: rgba(29, 29, 31, .55); border-radius: 999px; cursor: grab; }
+.zv-sb-v .zv-sb-thumb { width: 100%; }
+.zv-sb-h .zv-sb-thumb { height: 100%; }
+.zv-sb-thumb:active { cursor: grabbing; background: rgba(29, 29, 31, .75); }
+@media (pointer: coarse) { .zv-sb-v { width: 22px; } .zv-sb-h { height: 22px; } }

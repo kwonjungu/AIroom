@@ -4,7 +4,7 @@ export const css = 'viewer.css';
 
 export const BOARD_W = 1600, BOARD_H = 1000;
 export const Z_MIN = 1, Z_MAX = 6;
-const LIVE_BATCH_MS = 300;   // 진행자 live 묶음 간격
+const LIVE_BATCH_MS = 120;   // 진행자 live 묶음 간격(서버 /live 초당 10회 한도 안, 2026-11-26 지연 줄이기 B)
 const PAGE_EMIT_MS = 250;    // 확대·이동이 멈춘 뒤 store page 를 낼 때까지
 const TAP_MS = 300, SWIPE_PX = 60;
 
@@ -232,6 +232,57 @@ export function mount(ctx) {
     }
     emitViewport(g, L);
     paintPager();
+    paintScroll(g);
+  }
+
+  // ================= 스크롤 막대(사용자 요청 2026-11-26: 키운 상태에서 위아래·좌우로 움직이기) =================
+  // 쪽이 무대보다 크면(확대) 오른쪽·아래에 막대. 손잡이를 끌거나 막대 빈 곳을 누르면 그만큼 움직인다(내 화면만, 발표자면 모두).
+  function mkBar(axis) {
+    const thumb = h('div', { class: 'zv-sb-thumb' });
+    const bar = h('div', { class: `zv-sb zv-sb-${axis}`, hidden: true, role: 'scrollbar', 'aria-orientation': axis === 'v' ? 'vertical' : 'horizontal', 'aria-label': axis === 'v' ? t('위아래로 움직이기') : t('좌우로 움직이기') }, thumb);
+    const B = { bar, thumb, axis, half: 0.5, track: 1, len: 1, drag: null };
+    const key = axis === 'v' ? 'cy' : 'cx';
+    const posOf = e => { const r = bar.getBoundingClientRect(); return axis === 'v' ? e.clientY - r.top : e.clientX - r.left; };
+    const toC = px => B.half + clamp(px / Math.max(1, B.track - B.len), 0, 1) * (1 - 2 * B.half);
+    bar.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const p = posOf(e);
+      const top = (S.view[key] - B.half) / Math.max(1e-6, 1 - 2 * B.half) * (B.track - B.len);
+      if (e.target === thumb) B.drag = { id: e.pointerId, off: p - top };
+      else {   // 빈 곳: 한 화면만큼 그쪽으로
+        const dir = p < top ? -1 : 1;
+        setView({ ...S.view, [key]: S.view[key] + dir * 2 * B.half * 0.9 });
+        return;
+      }
+      try { bar.setPointerCapture(e.pointerId); } catch { /* 없어도 됨 */ }
+    });
+    bar.addEventListener('pointermove', e => {
+      if (!B.drag || B.drag.id !== e.pointerId) return;
+      e.preventDefault();
+      setView({ ...S.view, [key]: toC(posOf(e) - B.drag.off) });
+    });
+    const end = e => { if (B.drag && B.drag.id === e.pointerId) B.drag = null; };
+    bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+    return B;
+  }
+  const SB = { v: mkBar('v'), h: mkBar('h') };
+  function paintScroll(g) {
+    const a = curA();
+    const s = fitScale(g) * S.view.z;
+    const dims = { v: [g.pageH * s, g.stageH, 'cy'], h: [g.pageW * s, g.stageW, 'cx'] };
+    for (const ax of ['v', 'h']) {
+      const B = SB[ax], [disp, stage, key] = dims[ax];
+      if (!B.bar.isConnected) elOverlay.append(B.bar);
+      const show = !!a && !noFile(a) && disp > stage + 1;
+      B.bar.hidden = !show;
+      if (!show) continue;
+      B.half = stage / (2 * disp);
+      B.track = ax === 'v' ? B.bar.clientHeight : B.bar.clientWidth;
+      B.len = Math.max(36, B.track * (stage / disp));
+      const pos = (S.view[key] - B.half) / Math.max(1e-6, 1 - 2 * B.half) * (B.track - B.len);
+      B.thumb.style[ax === 'v' ? 'height' : 'width'] = B.len + 'px';
+      B.thumb.style.transform = ax === 'v' ? `translateY(${pos}px)` : `translateX(${pos}px)`;
+    }
   }
   function paintBoard(rect, bg) {
     if (typeof S.boardPaint === 'function') {
@@ -454,9 +505,30 @@ export function mount(ctx) {
     store.set('follow', mode);
     paintBar(); paintOverlay(); applyFull();
   }
+  // 따라가는 쪽: 같은 쪽에서 확대·이동만 바뀌면 순간이동 대신 0.14초 동안 부드럽게(지연 줄이기 B, 2026-11-26)
+  let tweenId = 0;
+  const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
+  function glideTo(to) {
+    if (tweenId) cancelAnimationFrame(tweenId);
+    const from = { ...S.view }, t0 = performance.now(), D = 140;
+    const tick = tnow => {
+      if (dead) return;
+      const k = Math.min(1, (tnow - t0) / D), e = 1 - (1 - k) * (1 - k);
+      S.view = { cx: from.cx + (to.cx - from.cx) * e, cy: from.cy + (to.cy - from.cy) * e, z: from.z + (to.z - from.z) * e };
+      requestRender();
+      if (k < 1) tweenId = requestAnimationFrame(tick); else { tweenId = 0; S.view = { ...to }; requestRender(); emitPage(false); }
+    };
+    tweenId = requestAnimationFrame(tick);
+  }
   function applyLive(live) {
     if (!live?.aid || !findA(live.aid)) return;
-    setTarget(live.aid, live.page || 1, live.view || { cx: 0.5, cy: 0.5, z: 1 });
+    const v = live.view || { cx: 0.5, cy: 0.5, z: 1 };
+    if (!reduceMotion && live.aid === S.aid && (live.page || 1) === S.page && !document.hidden) {
+      glideTo({ cx: num(v.cx, 0.5), cy: num(v.cy, 0.5), z: num(v.z, 1) });
+      return;
+    }
+    if (tweenId) { cancelAnimationFrame(tweenId); tweenId = 0; }
+    setTarget(live.aid, live.page || 1, v);
   }
   function onLive(live) {
     S.live = live || null;
@@ -1003,9 +1075,11 @@ export function mount(ctx) {
       for (const id of timers) clearTimeout(id);
       timers.clear();
       if (rafId) cancelAnimationFrame(rafId);
+      if (tweenId) cancelAnimationFrame(tweenId);
       thumbIO?.disconnect();
       pager.remove();
       bigPresent.remove();
+      SB.v.bar.remove(); SB.h.bar.remove();
       document.body.classList.remove('zz-full');
       if (document.fullscreenElement && FS.real) document.exitFullscreen?.().catch(() => {});
       agendaBox.remove();
