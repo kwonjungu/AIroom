@@ -560,7 +560,7 @@ async function uploadOne(mid, { file, converted, title, onProgress, signal } = {
           if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
           if (Date.now() > tokenUntil - 30000) throw new ZzError(0, 'upload_expired', '올리는 시간이 너무 길어 끊겼어요. 다시 올려 주세요.');
           try { await putBlob(f, permit.path + j.name, j.blob, j.type, signal); return; }
-          catch (e) { if (e?.code === 'aborted') throw e; if (a >= 2) throw new ZzError(0, 'upload_failed', `${j.label}을 올리지 못했어요. 다시 올려 주세요.`, { detail: String(e?.code || e), file: j.name }); }
+          catch (e) { if (e?.code === 'aborted') throw e; if (a >= 1 && e?.code === 'storage/unauthorized') return; /* 덮어쓰기 금지: 앞 시도가 이미 저장됨(마무리 단계가 파일을 다시 확인, 감사 R13 L3) */ if (a >= 2) throw new ZzError(0, 'upload_failed', `${j.label}을 올리지 못했어요. 다시 올려 주세요.`, { detail: String(e?.code || e), file: j.name }); }
         }
       };
       let next = 0;
@@ -717,7 +717,7 @@ async function uploadToAgenda(mid, aid, { file, converted, onProgress, signal } 
           if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
           if (Date.now() > tokenUntil - 30000) throw new ZzError(0, 'upload_expired', '올리는 시간이 너무 길어 끊겼어요. 다시 올려 주세요.');
           try { await putBlob(f, permit.path + j.name, j.blob, j.type, signal); return; }
-          catch (e) { if (e?.code === 'aborted') throw e; if (a >= 2) throw new ZzError(0, 'upload_failed', '쪽 그림을 올리지 못했어요. 다시 올려 주세요.', { detail: String(e?.code || e) }); }
+          catch (e) { if (e?.code === 'aborted') throw e; if (a >= 1 && e?.code === 'storage/unauthorized') return; /* 덮어쓰기 금지: 앞 시도가 이미 저장됨(마무리 단계가 파일을 다시 확인, 감사 R13 L3) */ if (a >= 2) throw new ZzError(0, 'upload_failed', '쪽 그림을 올리지 못했어요. 다시 올려 주세요.', { detail: String(e?.code || e) }); }
         }
       };
       let next = 0;

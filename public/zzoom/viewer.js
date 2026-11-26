@@ -446,6 +446,7 @@ export function mount(ctx) {
     userChanged();
   }
   function step(dir) {
+    if (dir > 0 && todayMine() && S.aid && !noFile(curA())) { userGo(S.aid, S.page); return; }   // 0번 → 지금 깔린 쪽부터(감사 R13 V2 L1)
     const n = stepPage(S.agenda, S.aid, S.page, dir);
     if (n) userGo(n.aid, n.page);
   }
@@ -550,7 +551,7 @@ export function mount(ctx) {
     if (live && S.lastForce === null) S.lastForce = live.forceSeq || 0;
     applyFull();
     if (!live) { paintBar(); paintOverlay(); markAgenda(); return; }
-    if (isPresenter()) { presenterIncoming(live); markAgenda(); return; }
+    if (isPresenter()) { presenterIncoming(live); paintBar(); markAgenda(); return; }   // 0번→자료 띠 갱신(감사 R13 V2 M1)
     const fs = live.forceSeq || 0;
     if (fs > S.lastForce) { S.lastForce = fs; if (S.follow !== 'follow') setFollow('follow'); }
     if (S.follow === 'follow') applyLive(live);
@@ -587,12 +588,13 @@ export function mount(ctx) {
     if (!isPresenter() || !meetingLive() || !S.aid || noFile(curA())) { dropLive(); return; }
     if (P.inflight) { P.dirty = true; return; }
     if (!P.dirty && !P.force) return;
-    const force = P.force;
+    const force = P.force || (!!S.live && !S.live.aid);   // 0번(live.aid 없음)에서 나갈 때는 모두 맞춤(감사 R13 V2 M2)
     P.force = false; P.dirty = false; P.inflight = true;
     const body = { aid: S.aid, page: S.page, view: roundView(S.view) };
     if (force) body.force = true;
     if (P.fullWant !== undefined) { body.full = P.fullWant; P.fullWant = undefined; }
     P.lastSent = body;
+    const sentEp = S.meeting?.presenter?.epoch;
     Promise.resolve().then(() => api.sendLive(mid, body)).then(res => {
       P.fails = 0;
       const l = res?.live;
@@ -607,6 +609,8 @@ export function mount(ctx) {
         // 서버 최신이 내가 보낸 것과 같으면(메아리 순서 꼬임) 내 화면을 다시 보내고, 아니면 최신으로 맞춘다.
         if (l && liveMatchesSent(l)) { P.dirty = true; keepAsk(); }
         else { dropLive(); if (l) applyLive(l); }
+      } else if (e?.status === 409 && code === 'not_presenter' && S.meeting?.presenter?.epoch !== sentEp && isPresenter()) {
+        dropLive();   // 보내는 사이 내가 새로 발표(0번 등): 옛 epoch 거절일 뿐, 발표자 자격은 그대로(감사 R13 V1 M1)
       } else if (e?.status === 409 && code === 'not_presenter') {
         dropLive();
         P.lost = true; // 역할·회의 문서가 바뀌면 다시 판단
@@ -1075,9 +1079,10 @@ export function mount(ctx) {
   offs.push(store.on('role', r => { S.role = r || null; P.lost = false; rolesChanged(); }));
   offs.push(store.on('meeting', m => {
     if (!m || m.gone) return;
-    const prevPc = S.meeting?.presenter?.cid, prevSt = S.meeting?.status;
+    const prevPc = S.meeting?.presenter?.cid, prevSt = S.meeting?.status, prevEp = S.meeting?.presenter?.epoch;
     S.meeting = m;
     if (m.presenter?.cid !== prevPc) P.lost = false;
+    else if (prevEp !== undefined && m.presenter?.epoch !== prevEp) { P.lost = false; dropLive(); }   // 같은 사람이 새로 발표(0번 등): 옛 409 판정·밀린 /live 버림(감사 R13 V1 M1·L2)
     if (prevSt !== m.status && m.status !== 'live') dropLive();
     rolesChanged(); markAgenda(); applyFull();
   }));
