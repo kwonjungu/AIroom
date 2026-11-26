@@ -150,6 +150,8 @@ function firebase() {
     const st = S.getStorage(app);
     // SDK 기본은 실패해도 2분 동안 속으로 다시 해 화면이 「불러오는 중」에 멈춘다. 15초로 줄이고 나머지는 retryNet 이 맡는다.
     try { st.maxOperationRetryTime = 15000; } catch { /* 옛 SDK */ }
+    // 올리기도 기본 10분 동안 속으로 다시 해 진행 표시가 끝없이 돈다(학교 와이파이 끊김, 2026-11-26 사용자 신고). 20초로 줄이고 putBlob 이 다시 한다.
+    try { st.maxUploadRetryTime = 20000; } catch { /* 옛 SDK */ }
     return { A, Au, F, S, app, auth, db, st };
   })();
   fbp.catch(() => { fbp = null; });
@@ -507,6 +509,20 @@ export function originalFileName(agenda) {
   return ORIGINAL_TYPE[ext] ? `${base}.${ext}` : base;
 }
 let uploadChain = Promise.resolve();
+// 그림 한 장 올리기. 진행이 PUT_STALL_MS 동안 멈추면 끊고(다시 시도는 부르는 쪽), 취소 단추(signal)도 바로 듣는다.
+const PUT_STALL_MS = 25000;
+function putBlob(f, path, blob, type, signal) {
+  return new Promise((resolve, reject) => {
+    const task = f.S.uploadBytesResumable(f.S.ref(f.st, path), blob, { contentType: type });
+    let last = Date.now(), done = false;
+    const end = (fn, v) => { if (done) return; done = true; clearInterval(watch); signal?.removeEventListener?.('abort', onAbort); fn(v); };
+    const onAbort = () => { try { task.cancel(); } catch { /* 이미 끝남 */ } end(reject, new ZzError(0, 'aborted', '올리기를 취소했어요.')); };
+    const watch = setInterval(() => { if (Date.now() - last > PUT_STALL_MS) { try { task.cancel(); } catch { /* 무시 */ } end(reject, new Error('stalled')); } }, 1000);
+    if (signal?.aborted) return onAbort();
+    signal?.addEventListener?.('abort', onAbort);
+    task.on('state_changed', () => { last = Date.now(); }, e => end(reject, e), () => end(resolve));
+  });
+}
 // 업로드는 한 번에 하나씩(업로드 전용 출입증 로그인이 앱 하나를 같이 쓰므로)
 export function uploadAgenda(mid, opts = {}) {
   const run = uploadChain.then(() => uploadOne(mid, opts));
@@ -543,8 +559,8 @@ async function uploadOne(mid, { file, converted, title, onProgress, signal } = {
         for (let a = 0; ; a++) {
           if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
           if (Date.now() > tokenUntil - 30000) throw new ZzError(0, 'upload_expired', '올리는 시간이 너무 길어 끊겼어요. 다시 올려 주세요.');
-          try { await f.S.uploadBytes(f.S.ref(f.st, permit.path + j.name), j.blob, { contentType: j.type }); return; }
-          catch (e) { if (a >= 2) throw new ZzError(0, 'upload_failed', `${j.label}을 올리지 못했어요. 다시 올려 주세요.`, { detail: String(e?.code || e), file: j.name }); }
+          try { await putBlob(f, permit.path + j.name, j.blob, j.type, signal); return; }
+          catch (e) { if (e?.code === 'aborted') throw e; if (a >= 2) throw new ZzError(0, 'upload_failed', `${j.label}을 올리지 못했어요. 다시 올려 주세요.`, { detail: String(e?.code || e), file: j.name }); }
         }
       };
       let next = 0;
@@ -698,8 +714,8 @@ async function uploadToAgenda(mid, aid, { file, converted, onProgress, signal } 
         for (let a = 0; ; a++) {
           if (signal?.aborted) throw new ZzError(0, 'aborted', '올리기를 취소했어요.');
           if (Date.now() > tokenUntil - 30000) throw new ZzError(0, 'upload_expired', '올리는 시간이 너무 길어 끊겼어요. 다시 올려 주세요.');
-          try { await f.S.uploadBytes(f.S.ref(f.st, permit.path + j.name), j.blob, { contentType: j.type }); return; }
-          catch (e) { if (a >= 2) throw new ZzError(0, 'upload_failed', '쪽 그림을 올리지 못했어요. 다시 올려 주세요.', { detail: String(e?.code || e) }); }
+          try { await putBlob(f, permit.path + j.name, j.blob, j.type, signal); return; }
+          catch (e) { if (e?.code === 'aborted') throw e; if (a >= 2) throw new ZzError(0, 'upload_failed', '쪽 그림을 올리지 못했어요. 다시 올려 주세요.', { detail: String(e?.code || e) }); }
         }
       };
       let next = 0;
