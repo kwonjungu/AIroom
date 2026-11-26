@@ -261,13 +261,13 @@ def run(pw, label, launch_kw, size):
         pg.mouse.up()
         pg.wait_for_timeout(700)
         calls = pg.evaluate('window.__d2.log.live')
-        assert 1 <= len(calls) <= 5, f'묶음 보내기 횟수 {len(calls)}'
+        assert 1 <= len(calls) <= 12, f'묶음 보내기 횟수 {len(calls)}'   # 120ms 묶음(2026-11-26), 30번 움직임이 낱개로 가지 않음
         gaps = [calls[i + 1]['t'] - calls[i]['t'] for i in range(len(calls) - 1)]
-        assert all(g >= 250 for g in gaps), f'간격 {gaps}'
+        assert all(g >= 100 for g in gaps), f'간격 {gaps}'   # 서버 /live 초당 10회 한도 안
         last = calls[-1]; v = S(pg, 'page')['view']
         assert abs(last['view']['cx'] - v['cx']) < 2e-3 and abs(last['view']['z'] - v['z']) < 2e-3, (last, v)
         assert 'baseRev' not in last, 'baseRev 는 api.js 가 채움'
-    step('진행자 이동을 300ms 로 묶어 live 보내기', t_batch)
+    step('진행자 이동을 120ms 로 묶어 live 보내기', t_batch)
     pg.screenshot(path=os.path.join(SHOT, f'{label}_{size[0]}_4_presenter.png'))
 
     def t_echo():
