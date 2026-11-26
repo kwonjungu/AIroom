@@ -1,3 +1,4 @@
+window.__zzBoot = 1;   // index.html 이 첫 화면을 못 띄웠을 때 다시 읽기를 판단하는 표시
 // 쭘 조립·라우팅 — 팀 모듈을 자리에 붙이고 떼며, Firestore 구독을 store 에 넣는다.
 // 약속: docs/meeting-2026-11-25/CONTRACTS.md. 팀 모듈 파일이 아직 없으면 그 자리에 「준비 중」만 둔다.
 import * as api from './api.js';
@@ -68,15 +69,28 @@ MEETING_ALL.push('onboard');
   c.appendChild(w);
 })();
 
+// 학교망에서는 파일 받기가 가끔 연결 단계에서 끊긴다. 실패한 모듈 주소는 브라우저가 기억하므로 ?r=n 을 붙여 다시 받는다.
+async function importRetry(url, tries = 3) {
+  for (let a = 0; ; a++) {
+    try { return await import(a ? `${url}?r=${a}` : url); }
+    catch (e) { if (a >= tries - 1) throw e; await new Promise(r => setTimeout(r, [500, 1500][a] || 1500)); }
+  }
+}
+async function headRetry(href, tries = 3) {
+  for (let a = 0; ; a++) {
+    try { return await fetch(href, { method: 'HEAD' }); }
+    catch (e) { if (a >= tries - 1) throw e; await new Promise(r => setTimeout(r, 800)); }
+  }
+}
 function loadModule(name) {
   if (!loaded.has(name)) {
-    loaded.set(name, import(`/zzoom/${MODULES[name].file}`).then(mod => {
+    loaded.set(name, importRetry(`/zzoom/${MODULES[name].file}`).then(mod => {
       if (typeof mod.mount !== 'function') { console.warn(`[zzoom] ${MODULES[name].file} 에 mount 가 없습니다.`); return null; }
       if (mod.css && !cssDone.has(mod.css)) {
         cssDone.add(mod.css);
         const href = `/zzoom/${String(mod.css).replace(/^\/?(zzoom\/)?/, '')}`;
         // 아직 없는 css 를 붙이면 콘솔 오류가 나므로 형식을 먼저 확인한다
-        fetch(href, { method: 'HEAD' }).then(r => {
+        headRetry(href).then(r => {
           if (!r.ok || !/text\/css/.test(r.headers.get('Content-Type') || '')) { console.info(`[zzoom] ${href} 아직 없음`); cssDone.delete(mod.css); return; }
           const l = document.createElement('link');
           l.rel = 'stylesheet'; l.href = href;

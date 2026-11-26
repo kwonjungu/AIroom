@@ -10,6 +10,20 @@
   <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"></noscript>
 <link rel="stylesheet" href="/zzoom/zzoom.css">
 <script type="module" src="/zzoom/app.js"></script>
+<script>
+  // 학교망에서 첫 파일 받기가 끊기면 빈 화면이 된다. 10초 안에 app.js 가 시작하지 않으면 두 번까지 다시 읽는다.
+  setTimeout(function () {
+    if (window.__zzBoot) return;
+    var n = +(sessionStorage.getItem('zz_boot_retry') || 0);
+    if (n < 2) { sessionStorage.setItem('zz_boot_retry', String(n + 1)); location.reload(); return; }
+    var d = document.createElement('div');
+    d.setAttribute('role', 'alert');
+    d.style.cssText = 'position:fixed;inset:auto 16px 16px 16px;padding:16px;background:#fff;border:2px solid #c2410c;border-radius:12px;font-size:17px;z-index:9999';
+    d.textContent = '인터넷 연결이 불안정해 화면을 다 불러오지 못했어요. 잠시 뒤 새로 고침(F5)을 눌러 주세요.';
+    document.body.appendChild(d);
+  }, 10000);
+  window.addEventListener('load', function () { setTimeout(function () { if (window.__zzBoot) sessionStorage.removeItem('zz_boot_retry'); }, 3000); });
+</script>
 </head>
 <!-- 자리 id 표는 docs/meeting-2026-11-25/CONTRACTS.md 4절. 팀은 자기 자리 안쪽만 바꾼다. -->
 <body class="zz route-list">

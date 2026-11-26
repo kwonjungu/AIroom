@@ -65,13 +65,18 @@ async function request(method, path, { body, pt, raw, contentType, auth = true, 
   else if (body !== undefined) { payload = JSON.stringify(body); headers['Content-Type'] = 'application/json'; }
   const url = path.startsWith('/') ? path : BASE + '/' + path;
   // 응답이 끝내 안 오면 단추가 영영 잠기므로 20초에 끊는다. GET 은 두 번 더 해 본다(POST 는 두 번 반영될 수 있어 한 번만).
-  const tries = method === 'GET' ? 3 : 1;
+  // 보내기(POST 등)도 연결 자체가 안 된 경우(곧바로 실패 — 학교망에서 실측 ERR_ADDRESS_UNREACHABLE·핸드셰이크 끊김)에는 다시 보낸다.
+  // 서버까지 갔을 수 있는 늦은 실패·20초 시간 초과는 두 번 반영될 수 있어 다시 보내지 않는다.
+  const tries = method === 'GET' ? 4 : 3;
   for (let a = 0; ; a++) {
     const ac = typeof AbortController === 'function' ? new AbortController() : null;
-    const timer = ac ? setTimeout(() => ac.abort(), REQ_TIMEOUT_MS) : null;
+    let timedOut = false;
+    const timer = ac ? setTimeout(() => { timedOut = true; ac.abort(); }, REQ_TIMEOUT_MS) : null;
+    const t0 = Date.now();
     try { return await fetch(url, { method, headers, body: payload, credentials: 'same-origin', keepalive, signal: ac ? ac.signal : undefined }); }
     catch {
-      if (a < tries - 1) { await sleep(a ? 1500 : 500); continue; }
+      const early = !timedOut && Date.now() - t0 < 3000;
+      if (a < tries - 1 && (method === 'GET' || early)) { await sleep([300, 1000, 2500][a] || 2500); continue; }
       throw new ZzError(0, 'network', '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.');
     } finally { if (timer) clearTimeout(timer); }
   }

@@ -54,11 +54,19 @@ def make_pdf(path, pages=2):
 def login(device):
     req = urllib.request.Request(BASE + '/api/auth/login', data=json.dumps({'code': CODE}).encode(),
                                  headers={'Content-Type': 'application/json', 'X-Device-Id': device})
-    return json.loads(urllib.request.urlopen(req, timeout=15).read())['token']
+    last = None
+    for _ in range(5):   # 이 PC 는 연결 일부가 끊겨 재시도
+        try:
+            return json.loads(urllib.request.urlopen(req, timeout=15).read())['token']
+        except Exception as e:
+            last = e
+            time.sleep(1.5)
+    raise last
 
 
 class Run:
     def __init__(self, label, width, browser, pdf):
+        self.title = f'{TITLE} {label}'   # 너비마다 다른 제목(같은 제목이면 다른 실행의 회의를 집는다)
         self.label, self.width, self.b, self.pdf = label, width, browser, pdf
         self.rows = []          # (단계, 결과, 메모)
         self.n = 0
@@ -133,11 +141,11 @@ class Run:
         def s_create():
             pg = self.pg
             pg.locator('.zl-new').click()
-            pg.fill('#zl-f-title', TITLE)
+            pg.fill('#zl-f-title', self.title)
             pg.fill('#zl-f-code', self.host_code)
             pg.locator('.zl-form button[type=submit]').click()
             pg.locator('.zl-done-back').click()   # EASY_UX: 만든 뒤 안내 창
-            card = pg.locator('.zl-card', has_text=TITLE)
+            card = pg.locator('.zl-card', has_text=self.title)
             expect(card).to_be_visible()
             self.mid = card.get_attribute('data-mid')
             assert self.mid, '회의 id 를 못 읽음'
@@ -170,7 +178,7 @@ class Run:
                 pg.locator('.zl-host-btn').click()
                 pg.fill('#zl-hostcode', self.host_code)
                 pg.locator('.zl-form button[type=submit]').click()
-            expect(pg.locator('.zl-host-chip')).to_be_visible()
+            expect(pg.locator('.zl-host-chip')).to_be_attached()   # 폰 폭에서는 CSS 로 숨김(list.css:111)
             pg.locator('.zh-bar').wait_for(timeout=T)
             start = pg.locator('.zh-start')
             if not start.is_visible():
@@ -271,7 +279,7 @@ class Run:
             pg.reload()
             expect(pg.locator('#zz-list .zl-new')).to_be_visible()
             # 회의 id 를 못 얻은 경우에도 제목이 정확히 같은 시험 회의만 찾는다
-            card = pg.locator(f'.zl-card[data-mid="{self.mid}"]') if self.mid else pg.locator('.zl-card', has=pg.locator('.zl-card-title', has_text=TITLE))
+            card = pg.locator(f'.zl-card[data-mid="{self.mid}"]') if self.mid else pg.locator('.zl-card', has=pg.locator('.zl-card-title', has_text=self.title))
             try: card.first.wait_for(timeout=15000)
             except Exception: pass
             if card.count() == 0:
@@ -283,8 +291,10 @@ class Run:
             pg.locator('.zz-modal-actions button, .zl-form-actions button', has_text='회의 지우기').click()
             deadline = time.time() + 45
             while time.time() < deadline:
-                pg.get_by_role('button', name='새로 고침').click()
-                pg.wait_for_timeout(1500)
+                pg.wait_for_timeout(2500)
+                pg.reload()
+                try: expect(pg.locator('#zz-list .zl-new')).to_be_visible(timeout=15000)
+                except Exception: continue
                 if pg.locator(f'.zl-card[data-mid="{mid}"]').count() == 0:
                     return '목록에서 사라짐'
             raise AssertionError('45초 안에 목록에서 사라지지 않음')
