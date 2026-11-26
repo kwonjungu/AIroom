@@ -368,6 +368,7 @@ export function mount(ctx) {
     const a = curA();
     const seq = ++S.loadSeq;
     S.natural = null;
+    S.wantFor = null;
     if (!a) { S.load = 'none'; S.img = null; S.imgFor = null; paintOverlay(); requestRender(); return; }
     if (a.kind === 'board') { S.load = 'ok'; S.img = null; S.imgFor = null; trimCache(); paintOverlay(); requestRender(); return; }
     if (noFile(a)) { S.load = 'nofile'; S.img = null; S.imgFor = null; trimCache(); paintOverlay(); requestRender(); return; }
@@ -375,7 +376,7 @@ export function mount(ctx) {
     if (S.imgFor === key && S.img) { S.load = 'ok'; paintOverlay(); requestRender(); return; }
     const c = cache.get(key);
     if (c?.img) { setImg(c.img, key); trimCache(); prefetchNext(); return; }
-    S.load = 'loading'; S.img = null; S.imgFor = null;
+    S.load = 'loading'; S.img = null; S.imgFor = null; S.wantFor = key;   // 받는 중·실패한 쪽도 자료가 바뀌면 다시 받게(감사 R10 T3-T1)
     paintOverlay(); requestRender();
     fetchImage(a, S.page).then(im => {
       if (dead || seq !== S.loadSeq) return; // 늦은 결과 버림
@@ -1037,7 +1038,8 @@ export function mount(ctx) {
     } else if (S.page > pagesOf(a)) setTarget(a.aid, pagesOf(a), S.view);
     else {
       // 같은 쪽인데 ver 가 바뀌었으면 다시 받기
-      if (a.kind !== 'board' && S.imgFor && S.imgFor !== imgKey(a, S.page)) loadCurrent();
+      const want = S.imgFor || S.wantFor;
+      if (a.kind !== 'board' && want && want !== imgKey(a, S.page)) loadCurrent();
       // 자료 없던 안건에 자료가 들어오면 다시 받기(서울 이전 뒤 「발표하기」가 자료 저장보다 먼저 도착 — 「아직 자료가 없는 안건이에요」가 남던 버그)
       else if (a.kind !== 'board' && S.load === 'nofile' && !noFile(a)) loadCurrent();
       if (S.follow === 'follow' && S.live?.aid && !isPresenter() && (S.live.aid !== S.aid || S.live.page !== S.page) && findA(S.live.aid)) applyLive(S.live);

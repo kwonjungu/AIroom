@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 const root = fileURLToPath(new URL('../../public/zzoom/', import.meta.url));
 const files = [];
@@ -17,6 +17,11 @@ for (const f of files) {
   if (r.status !== 0) { bad++; console.error('문법 오류:', f, (r.stderr || '').split('\n').find(l => /Error/.test(l))); }
 }
 rmSync(tmp, { recursive: true, force: true });
+// 실제로 불러와 본다 — 없는 이름을 import 하는 오류도 모듈이 통째로 안 뜨게 만든다(감사 R10 T3-T2). app.js 는 불러오면 바로 시작해서 뺀다
+for (const f of files) {
+  if (f.endsWith('app.js') && !f.includes('convert')) continue;
+  try { await import(pathToFileURL(f).href); } catch (e) { bad++; console.error('불러오기 실패:', f, e.message); }
+}
 // 서울 DB 규칙(firestore.zzoom.rules)의 쭘 블록이 firestore.rules(규칙 시험이 읽는 쪽)와 같은지(감사 R10 T1-3)
 const block = f => { const t = readFileSync(fileURLToPath(new URL('../../' + f, import.meta.url)), 'utf8').split(String.fromCharCode(13)).join(''); const i = t.indexOf('match /zzoom_meetings/{mid}'); let d = 0, j = t.indexOf('{', i + 'match /zzoom_meetings/{mid}'.length); for (; j < t.length; j++) { if (t[j] === '{') d++; else if (t[j] === '}' && --d === 0) break; } return t.slice(i, j + 1); };
 if (block('firestore.rules') !== block('firestore.zzoom.rules')) { bad++; console.error('firestore.zzoom.rules 의 쭘 블록이 firestore.rules 와 다릅니다'); }

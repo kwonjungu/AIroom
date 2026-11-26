@@ -23,8 +23,10 @@ STAMP = datetime.now().strftime('%H%M%S')
 CREATED = []   # (mid, token)
 
 
+FAILS = []   # !! 줄과 25초 안에 안 사라짐을 실패로 센다 — 끝 코드에 반영(감사 R10 T3-T4)
 def note(line):
     print(line, flush=True)
+    if '!!' in line or '사라짐: None' in line or '나타남 None' in line: FAILS.append(line.strip())
     try:
         os.makedirs(os.path.dirname(NOTES), exist_ok=True)
         with open(NOTES, 'a', encoding='utf-8') as f: f.write(line + '\n')
@@ -506,7 +508,8 @@ def main():
         b.close()
     delete_all()
     print('스크린샷:', SHOTS)
-    return 0
+    print(f'결과: 실패 {len(FAILS)}건')
+    return 1 if FAILS else 0
 
 
 if __name__ == '__main__':
