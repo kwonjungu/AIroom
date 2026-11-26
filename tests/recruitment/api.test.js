@@ -129,6 +129,11 @@ test('the scheduled purge endpoint refuses without the shared secret', async t =
     assert.equal((await call({ Authorization: 'Bearer wrong-secret-x' })).status, 401);
     // 길이가 다른 값도 timingSafeEqual 에서 던지지 않고 401 로 떨어져야 한다.
     assert.equal((await call({ Authorization: 'Bearer short' })).status, 401);
+    // 글자 수는 같고 바이트 수가 다른 값도 500 이 아니라 401(감사 R10 T1-1)
+    assert.equal((await call({ Authorization: 'Bearer test-cron-secré' })).status, 401);
+    // Vercel Cron 은 GET 으로 부른다(감사 R9 S1-2)
+    assert.equal((await fetch(url)).status, 401, 'GET 도 비밀키 없으면 401');
+    assert.equal((await fetch(url, { headers: { Authorization: 'Bearer test-cron-secret' } })).status, 200, 'GET 으로도 돈다');
     const ok = await call({ Authorization: 'Bearer test-cron-secret' });
     assert.equal(ok.status, 200);
     assert.match((await ok.json()).skipped, /연결되지 않았습니다/, 'Google 미연결이면 건너뛴다');

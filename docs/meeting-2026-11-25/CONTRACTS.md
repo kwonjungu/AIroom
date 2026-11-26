@@ -10,7 +10,7 @@
 ## 0. 한눈에
 
 ```
-index.html ─ app.js(통합) ─┬─ api.js   서버(/api/zzoom)·Firebase(앱 'zzoom', DB kwon)·업로드·heartbeat
+index.html ─ app.js(통합) ─┬─ api.js   서버(/api/zzoom)·Firebase(앱 'zzoom', DB zzoom — 서울, 2026-11-26 전에는 kwon)·업로드·heartbeat
                            ├─ store    상태 하나 + 이벤트 (app.js 안)
                            └─ 팀 모듈 mount(ctx) ─ list·join(1) viewer(2) draw·board(3) chat·hands·poll(4) host·upload·record(5)
 ```
@@ -153,7 +153,7 @@ class ZzError extends Error { status; code; message; extra }  // 서버 {error, 
 - 발표하기: 회의가 `live` 일 때 참석자 누구나, 주관 코드 없이. 한 사람 10초에 1번. 주관자는 언제나 되찾는다. `presenter` 는 `{cid, epoch}` 뿐(이름 없음). 주관자만 하는 일(시작·끝, 판서 잠금, 순서, 쪽 지우기, 녹음)은 그대로.
 - 화면: `agenda.js`·`agenda.css`(접두어 `.za-`), 자리 `#zz-wait`(`#zz-center` 안, 무대 위를 덮는 대기 화면 「오늘의 안건」). store 이벤트 `cmd:agenda-add` 를 내면 안건 추가 창이 열린다(host.js 안건 창이 씀). 확인 창 본문 「지금부터 화면이 전송됩니다」, 단추 「예」「아니오」, 다른 분이 발표 중이면 위에 「지금 다른 분이 발표 중이에요.」.
 
-### 2-4. 실시간 구독 (Firestore `kwon`, 컬렉션 `zzoom_meetings/{mid}/…`)
+### 2-4. 실시간 구독 (Firestore `zzoom`(서울, 2026-11-26 전에는 `kwon`), 컬렉션 `zzoom_meetings/{mid}/…`)
 
 모두 `(…, cb) => unsubscribe` (동기로 해제 함수를 돌려줌). Firebase 로그인 전이면 로그인 뒤 자동으로 붙는다.
 **app.js 가 이미 store 에 넣어 주는 것**(팀은 store 를 들으면 됨): meeting, agenda, hands, chat, polls, transcript, people(host 만).

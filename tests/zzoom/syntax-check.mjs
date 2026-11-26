@@ -17,5 +17,8 @@ for (const f of files) {
   if (r.status !== 0) { bad++; console.error('문법 오류:', f, (r.stderr || '').split('\n').find(l => /Error/.test(l))); }
 }
 rmSync(tmp, { recursive: true, force: true });
+// 서울 DB 규칙(firestore.zzoom.rules)의 쭘 블록이 firestore.rules(규칙 시험이 읽는 쪽)와 같은지(감사 R10 T1-3)
+const block = f => { const t = readFileSync(fileURLToPath(new URL('../../' + f, import.meta.url)), 'utf8').split(String.fromCharCode(13)).join(''); const i = t.indexOf('match /zzoom_meetings/{mid}'); let d = 0, j = t.indexOf('{', i + 'match /zzoom_meetings/{mid}'.length); for (; j < t.length; j++) { if (t[j] === '{') d++; else if (t[j] === '}' && --d === 0) break; } return t.slice(i, j + 1); };
+if (block('firestore.rules') !== block('firestore.zzoom.rules')) { bad++; console.error('firestore.zzoom.rules 의 쭘 블록이 firestore.rules 와 다릅니다'); }
 console.log(`문법 확인 ${files.length}개, 오류 ${bad}`);
 process.exit(bad ? 1 : 0);

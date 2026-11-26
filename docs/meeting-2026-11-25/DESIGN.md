@@ -107,7 +107,7 @@
 
 ## 파트 B. 데이터와 보안 규칙 (엔진팀 R — 규칙)
 
-### B-1. Firestore (DB `kwon`, 컬렉션 접두 `zzoom_`)
+### B-1. Firestore (DB `zzoom` — 서울 asia-northeast3, 2026-11-26 이전. 처음엔 `kwon`, 컬렉션 접두 `zzoom_`)
 
 | 경로 | 내용 | 누가 씀 |
 |---|---|---|

@@ -1,5 +1,5 @@
 // 쭘(ZZOOM) 전용 Firestore DB 'zzoom'(서울 asia-northeast3, 2026-11-26) 보안 규칙. 쭘 말고는 아무것도 열지 않는다.
-// 게시: firebase deploy --only firestore:zzoom (firebase.json 의 database 'zzoom')
+// 게시: 이 파일만 담은 firebase.json({"firestore":[{"database":"zzoom","rules":"firestore.zzoom.rules"}]})을 임시 폴더에 두고 firebase deploy --only firestore --project airoom-ebce3. 쭘 블록은 firestore.rules 의 것과 같게 유지
 
 rules_version = '2';
 
