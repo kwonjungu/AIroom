@@ -24,6 +24,7 @@ AGENDA = '[시험] 점검 안건'
 CHAT = '[시험] 채팅 한 줄'
 os.makedirs(SHOTS, exist_ok=True)
 T = 20000  # 기본 기다림(ms)
+expect.set_options(timeout=T)   # expect 기본은 5초라 학교망 입장(약 6초)을 실패로 봤다
 
 
 def make_pdf(path, pages=2):
