@@ -24,6 +24,11 @@ for (const f of files) {
 }
 // 서울 DB 규칙(firestore.zzoom.rules)의 쭘 블록이 firestore.rules(규칙 시험이 읽는 쪽)와 같은지(감사 R10 T1-3)
 const block = f => { const t = readFileSync(fileURLToPath(new URL('../../' + f, import.meta.url)), 'utf8').split(String.fromCharCode(13)).join(''); const i = t.indexOf('match /zzoom_meetings/{mid}'); let d = 0, j = t.indexOf('{', i + 'match /zzoom_meetings/{mid}'.length); for (; j < t.length; j++) { if (t[j] === '{') d++; else if (t[j] === '}' && --d === 0) break; } return t.slice(i, j + 1); };
+// 서울 규칙 파일은 쭘 블록 말고 아무것도 열지 않아야 한다 — 블록을 못 찾거나 블록 밖에 allow 가 있으면 실패(감사 R11 U1-2)
+{ const z = readFileSync(fileURLToPath(new URL('../../firestore.zzoom.rules', import.meta.url)), 'utf8').split(String.fromCharCode(13)).join('');
+  const blk = block('firestore.zzoom.rules');
+  if (!blk.includes('allow')) { bad++; console.error('firestore.zzoom.rules 에서 쭘 블록을 못 찾음'); }
+  else if (z.replace(blk, '').split(String.fromCharCode(10)).some(x => !x.trim().startsWith('//') && x.includes('allow '))) { bad++; console.error('firestore.zzoom.rules 의 쭘 블록 밖에 allow 가 있습니다'); } }
 if (block('firestore.rules') !== block('firestore.zzoom.rules')) { bad++; console.error('firestore.zzoom.rules 의 쭘 블록이 firestore.rules 와 다릅니다'); }
 console.log(`문법 확인 ${files.length}개, 오류 ${bad}`);
 process.exit(bad ? 1 : 0);
