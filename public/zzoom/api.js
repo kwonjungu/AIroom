@@ -529,18 +529,32 @@ async function uploadOne(mid, { file, converted, title, onProgress, signal } = {
 // ================= 2-4. 실시간 구독 =================
 // 로그인 전이면 로그인 뒤 붙인다. 동기로 해제 함수를 돌려준다.
 function live(make, cb, label) {
-  let unsub = null, stopped = false;
-  signedIn.promise.then(f => {
+  // 구독이 오류로 끝나면(토큰 만료·연결 문제 등) Firestore 는 다시 붙지 않는다. 학교망에서 실제로 끊기므로 쉬었다가 다시 구독한다.
+  let unsub = null, stopped = false, fails = 0, timer = 0, warned = false;
+  const start = () => {
+    timer = 0;
     if (stopped) return;
-    try {
-      unsub = make(f, snap => cb(snap), err => {
-        console.warn('[zzoom] 구독 오류', label, err?.code || err);
-        spatch('conn', { firebase: 'off' });
-        if (err?.code === 'permission-denied') toast('실시간 자료를 읽을 권한이 없어요. 다시 입장해 주세요.', 'warn');
-      });
-    } catch (e) { console.warn('[zzoom] 구독 실패', label, e); }
-  });
-  return () => { stopped = true; if (unsub) unsub(); };
+    signedIn.promise.then(f => {
+      if (stopped) return;
+      try {
+        unsub = make(f, snap => { fails = 0; spatch('conn', { firebase: 'ok' }); cb(snap); }, err => {
+          console.warn('[zzoom] 구독 오류', label, err?.code || err);
+          spatch('conn', { firebase: 'off' });
+          if (err?.code === 'permission-denied' && !warned) { warned = true; toast('실시간 연결을 다시 잇는 중이에요. 계속 안 되면 다시 입장해 주세요.', 'warn'); }
+          try { unsub && unsub(); } catch { /* 무시 */ }
+          unsub = null;
+          fails++;
+          if (!stopped && !timer) timer = setTimeout(start, Math.min(30000, 1000 * 2 ** Math.min(fails - 1, 5)));
+        });
+      } catch (e) {
+        console.warn('[zzoom] 구독 실패', label, e);
+        fails++;
+        if (!stopped && !timer) timer = setTimeout(start, Math.min(30000, 1000 * 2 ** Math.min(fails - 1, 5)));
+      }
+    });
+  };
+  start();
+  return () => { stopped = true; if (timer) clearTimeout(timer); if (unsub) unsub(); };
 }
 const mref = (f, mid, ...p) => f.F.doc(f.db, COLL, mid, ...p);
 const cref = (f, mid, name) => f.F.collection(f.db, COLL, mid, name);

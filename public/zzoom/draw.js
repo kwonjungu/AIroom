@@ -374,6 +374,13 @@ export function mount(ctx) {
     pending.push(p);
     schedule();
     flushSoon();
+    // 쪽 epoch 구독이 늦으면(학교망에서 실시간 연결이 멈춤) 선이 영영 안 간다. 4초 뒤에도 모르면 0 으로 짐작해 보내고,
+    // 서버가 stale_epoch 로 진짜 값을 알려 주면 그 값으로 다시 보낸다(flush 의 guessed 처리).
+    if (p.epoch === null) setTimeout(() => {
+      if (dead || p.epoch !== null || !pending.includes(p)) return;
+      p.epoch = 0; p.guessed = true; for (const x of p.parts) x.body.epoch = 0;
+      flushSoon();
+    }, 4000);
   }
   // epoch 를 모를 때 그린 선(epoch null)에 그 쪽 epoch 를 정한다(그 epoch 가 지금 값이므로 버리지 않는다)
   function resolveEpoch(en) {
@@ -418,12 +425,15 @@ export function mount(ctx) {
       if (code === 'stale_epoch') {
         // 지워진 쪽에 그린 선은 버리고 나머지는 다시 보냄
         const k = e.extra?.pageKey, ep = Number(e.extra?.epoch);
+        let dropped = 0;
         for (const p of ps) {
-          if (p.pageKey === k && !(p.epoch === ep)) remove(p);
+          if (p.pageKey === k && p.guessed && Number.isFinite(ep)) {   // 짐작한 epoch 였으면 진짜 값으로 다시
+            p.epoch = ep; p.guessed = false; for (const x of p.parts) x.body.epoch = ep; p.status = 'queued';
+          } else if (p.pageKey === k && !(p.epoch === ep)) { remove(p); dropped++; }
           else p.status = 'queued';
         }
         const en = pages.get(k); if (en && Number.isFinite(ep)) { en.epoch = ep; en.epochKnown = true; }
-        ctx.toast(t('쪽이 지워져서 그 선은 저장하지 않았어요'), 'warn');
+        if (dropped) ctx.toast(t('쪽이 지워져서 그 선은 저장하지 않았어요'), 'warn');
       } else if (code === 'pen_locked') {
         ps.forEach(remove);
         ctx.toast(t('지금은 회의 담당자만 쓸 수 있어요'), 'warn');

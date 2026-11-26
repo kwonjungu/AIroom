@@ -177,6 +177,7 @@ def run(pw, browser_name, size, old=False):
     errors = []
     try:
         cx = br.new_context(viewport={'width': size[0], 'height': size[1]}, device_scale_factor=2 if size[0] < 1000 else 1, has_touch=size[0] < 1000)
+        cx.add_init_script('window.__zzBoot = 1')   # app.js 를 가짜로 바꾸므로 첫 화면 감시(index.html)가 다시 읽지 않게
         cx.route(f'{BASE}/**', route)
         cx.route('https://cdn.jsdelivr.net/**', lambda r: r.fulfill(status=200, content_type='text/css', body=''))
         page = cx.new_page()
@@ -238,7 +239,7 @@ def run(pw, browser_name, size, old=False):
         page.evaluate("Object.assign(window.__zz.D.RETRY, { tries: 3, base: 150, max: 400 }); window.__zz.db.fail = 'network'")
         page.get_by_role('button', name='파랑').click()
         drag(page, [(b['x'] + b['w']*0.2, b['y'] + b['h']*0.5), (b['x'] + b['w']*0.8, b['y'] + b['h']*0.55)])
-        page.wait_for_selector('.zd-retry:not([hidden])', timeout=5000)
+        page.wait_for_selector('.zd-retry:not([hidden])', timeout=30000)
         check(f'{tag} 실패 안내 문구', '선 1개를 보내지 못했어요' in page.inner_text('.zd-retry'))
         page.screenshot(path=str(SHOTS / f'{tag}-3-failed.png'))
         before = page.evaluate("window.__zz.db.strokes.length")
@@ -249,7 +250,7 @@ def run(pw, browser_name, size, old=False):
         page.evaluate("window.__zz.store.set('conn', { server: 'off', firebase: 'ok' }); window.__zz.store.set('conn', { server: 'ok', firebase: 'ok' })")
         page.wait_for_timeout(400)
         check(f'{tag} 연결 off 에서 ok 로 돌아오면 한 번 다시 보냄', page.evaluate("window.__zz.db.calls.filter(c => c[0]==='save').length") > c0)
-        page.wait_for_selector('.zd-retry:not([hidden])', timeout=5000)
+        page.wait_for_selector('.zd-retry:not([hidden])', timeout=30000)
         page.evaluate("window.__zz.db.fail = null")
         page.get_by_role('button', name='다시 보내기').click()
         page.wait_for_function(f"window.__zz.db.strokes.length > {before}", timeout=5000)
@@ -421,6 +422,7 @@ def run_narrow(pw, browser_name):
     errors = []
     try:
         cx = br.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, has_touch=True)
+        cx.add_init_script('window.__zzBoot = 1')   # app.js 를 가짜로 바꾸므로 첫 화면 감시(index.html)가 다시 읽지 않게
         cx.route(f'{BASE}/**', route)
         cx.route('https://cdn.jsdelivr.net/**', lambda r: r.fulfill(status=200, content_type='text/css', body=''))
         page = cx.new_page()
