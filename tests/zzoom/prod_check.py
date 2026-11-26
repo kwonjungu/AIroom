@@ -116,7 +116,7 @@ class Run:
             import time as _t
             t0 = _t.time()
             pg.on('request', lambda q: print(f'    [req {(_t.time()-t0):6.1f}] {q.method} {q.url[:110]}', flush=True) if not q.url.startswith('data:') else None)
-            pg.on('requestfinished', lambda q: print(f'    [fin {(_t.time()-t0):6.1f}] {q.method} {q.url[:110]}', flush=True) if '/api/' in q.url else None)
+            pg.on('requestfinished', lambda q: print(f'    [fin {(_t.time()-t0):6.1f}] {q.method} {q.url[:110]}', flush=True) if not q.url.startswith('data:') else None)
         pg.on('requestfailed', lambda q: print(f'    [net] 실패 {q.method} {q.url.split("/api/")[-1][:70]} {q.failure}', flush=True) if '/api/' in q.url else None)
         pg.on('console', lambda m: print(f'    [console] {m.text[:600]}', flush=True) if m.type == 'error' else None)
         return ctx, pg

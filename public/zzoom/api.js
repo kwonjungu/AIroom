@@ -157,7 +157,7 @@ async function fbSignInNow(token) {
   spatch('conn', { firebase: 'connecting' });
   try {
     const f = await firebase();
-    await retryNet(() => f.Au.signInWithCustomToken(f.auth, token), 3);
+    await retryNet(() => f.Au.signInWithCustomToken(f.auth, token), 4, 8000);   // 로그인 뒤 accounts:lookup 이 멈추는 일이 실측됨
     spatch('conn', { firebase: 'ok' });
     if (!signedIn.done) { signedIn.done = true; signedIn.resolve(f); }
     return f;
