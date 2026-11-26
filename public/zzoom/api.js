@@ -669,8 +669,10 @@ export const createAgenda = (mid, title) => mcall(mid, 'POST', '/agenda', { body
 // 내가 올린 안건 aid 목록(다시 들어와 cid 가 바뀌어도 같은 사람이면 나온다)
 export const myAgenda = mid => mcall(mid, 'GET', '/agenda/mine').then(d => (Array.isArray(d?.aids) ? d.aids : []));
 // 발표하기: 진행자가 되고, aid 를 주면 그 안건 page(기본 1)로 모두를 끌어온다(서버가 forceSeq 를 올림)
+// aid === TODAY 이면 0번 「오늘의 안건」: 발표자는 나, 모두를 안건 정리 화면(live.aid null)으로 데려온다
+export const TODAY = '_today';
 export async function present(mid, aid, page) {
-  const body = aid ? (page ? { aid, page } : { aid }) : {};
+  const body = aid === TODAY ? { today: true } : aid ? (page ? { aid, page } : { aid }) : {};
   const d = await mcall(mid, 'POST', '/presenter', { body });
   // 회의 문서 스냅숏이 오기 전에 쪽을 넘겨도 epoch 가 맞도록 store 를 먼저 맞춘다(스냅숏이 곧 같은 값으로 덮는다)
   const m = store?.get('meeting');

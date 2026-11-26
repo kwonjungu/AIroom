@@ -9,6 +9,7 @@ export const MAX_MINE = 10;
 export const MAX_BYTES = 50 * 1024 * 1024;
 export const CONFIRM_TEXT = '지금부터 화면이 전송됩니다';
 export const BUSY_TEXT = '지금 다른 분이 발표 중이에요.';
+export const TODAY = '_today';   // 0번 「오늘의 안건」(api.TODAY 와 같은 값)
 
 // ---------- 순수 함수(단위 시험용) ----------
 export const hasFile = a => !!a && (a.kind === 'board' || (a.pages | 0) >= 1);
@@ -37,6 +38,11 @@ export function metaText(a) {
   if (!a) return '';
   if (a.kind === 'board') return `칠판 ${Math.max(1, a.pages | 0)}쪽`;
   return hasFile(a) ? `${a.pages}쪽` : '자료 없음';
+}
+
+/** 내가 0번 「오늘의 안건」을 발표하는 중인지 */
+export function presentingToday({ meeting, live, myCid } = {}) {
+  return meeting?.status === 'live' && !!myCid && meeting?.presenter?.cid === myCid && !live?.aid;
 }
 
 /** 발표 확인 창에 넣을 줄들(다른 분이 발표 중이면 한 줄을 위에 더한다) */
@@ -94,7 +100,7 @@ export function mount(ctx) {
   const root = ctx.el('zz-wait');
   const stage = ctx.el('zz-stage');
   let alive = true;
-  const S = { open: false, dismissed: false, mine: new Set(), armed: null, armTimer: 0, job: null, lastStatus: null, lastLiveAid: null, menu: null, mode: null };
+  const S = { open: false, dismissed: false, mine: new Set(), armed: null, armTimer: 0, job: null, lastStatus: null, lastLiveAid: null, lastForce: null, menu: null, mode: null };
   const offs = [];
   // 이 모듈이 연 창: 떼어질 때(화면 이동, 자격 잃음) 함께 닫는다(감사 U17)
   const modals = new Set();
@@ -145,7 +151,10 @@ export function mount(ctx) {
     const l = live();
     // 상태가 바뀌거나 진행 화면이 비면 다시 자동으로 펼친다
     if (m && (m.status !== S.lastStatus || (S.lastLiveAid && !l?.aid))) { S.dismissed = false; }
-    S.lastStatus = m?.status; S.lastLiveAid = l?.aid || null;
+    // 누가 0번 「오늘의 안건」을 발표하면(forceSeq 증가, aid 없음) 「자료 화면 보기」로 닫아 둔 사람도 다시 펼친다
+    const fs = Number(l?.forceSeq) || 0;
+    if (S.lastForce !== null && fs > S.lastForce && !l?.aid) { S.dismissed = false; S.open = false; }
+    S.lastStatus = m?.status; S.lastLiveAid = l?.aid || null; if (m) S.lastForce = fs;
     const mode = waitMode({ meeting: m, live: l, open: S.open, dismissed: S.dismissed });
     root.hidden = mode === 'off';
     root.className = 'za-wait is-' + mode;
@@ -185,9 +194,24 @@ export function mount(ctx) {
         h('p', { text: '아직 안건이 없어요. 제목만 먼저 올려도 돼요.' }),
         h('button', { type: 'button', class: 'zz-btn primary za-first', onclick: openAdd }, '첫 안건 올리기'));
     } else {
-      body = h('ol', { class: 'za-list' }, list.map((a, i) => row(a, i, liveOn, l)));
+      body = h('ol', { class: 'za-list' }, rowToday(liveOn, l), list.map((a, i) => row(a, i, liveOn, l)));
     }
     return h('div', { class: 'za-panel zz-card', role: 'region', 'aria-label': '오늘의 안건' }, head, body);
+  }
+
+  // 0번 줄: 늘 맨 위. 이 정리 화면을 모두에게 보여 줄 수 있다. 지우기와 고치기는 없다.
+  function rowToday(liveOn, l) {
+    const mine = presentingToday({ meeting: meeting(), live: l, myCid: role()?.cid });
+    const nowLive = liveOn && !!meeting()?.presenter?.cid && !l?.aid;
+    const main = h('div', { class: 'za-main za-main-today' },
+      h('span', { class: 'za-no zz-num', text: '0' }),
+      h('span', { class: 'za-text' },
+        h('span', { class: 'za-name', text: '오늘의 안건' }),
+        h('span', { class: 'za-meta' },
+          h('span', { text: '안건 목록을 모두에게 보여 줘요' }),
+          nowLive ? h('span', { class: 'zz-chip live za-chip-live' }, h('span', { class: 'zz-live-dot' }), '발표 중') : null)));
+    const btn = liveOn && !mine ? h('button', { type: 'button', class: 'zz-btn primary za-present', onclick: () => askPresent(TODAY), 'aria-label': '0번 오늘의 안건 발표하기' }, '발표하기') : null;
+    return h('li', { class: 'za-today' + (nowLive ? ' is-live' : ''), 'data-aid': TODAY }, h('div', { class: 'za-line' }, main, btn));
   }
 
   function row(a, i, liveOn, l) {
@@ -206,7 +230,8 @@ export function mount(ctx) {
     const pc = meeting()?.presenter?.cid;
     const presentingThis = nowLive && !!pc && pc === role()?.cid;
     const acts = [];
-    if (file && liveOn && !presentingThis) acts.push(h('button', { type: 'button', class: 'zz-btn primary za-present', onclick: () => askPresent(a) }, '발표하기'));
+    // 「안건이름 (발표하기)」: 발표하기는 이름 바로 옆에 둔다(이름 단추는 나만 보기, 발표하기는 따로)
+    const present = file && liveOn && !presentingThis ? h('button', { type: 'button', class: 'zz-btn primary za-present', onclick: () => askPresent(a), 'aria-label': `${i + 1}번 안건 발표하기` }, '발표하기') : null;
     if (!file && edit && a.kind !== 'board') acts.push(h('button', { type: 'button', class: 'zz-btn za-upload', onclick: () => pickFile(a) }, '자료 올리기'));
     const open = edit && S.menu === a.aid;
     if (edit) acts.push(h('button', { type: 'button', class: 'zz-btn ghost za-edit', 'aria-expanded': String(open), onclick: () => { S.menu = open ? null : a.aid; render(); } }, open ? '고치기 닫기' : '고치기'));
@@ -222,7 +247,7 @@ export function mount(ctx) {
         nowLive ? h('p', { class: 'za-muted', text: '발표 중인 안건은 지울 수 없어요.' }) : null);
     }
     return h('li', { class: 'za-item' + (nowLive ? ' is-live' : '') + (file ? '' : ' is-nofile'), 'data-aid': a.aid },
-      main, acts.length ? h('div', { class: 'za-actions' }, acts) : null, menu);
+      h('div', { class: 'za-line' }, main, present), acts.length ? h('div', { class: 'za-actions' }, acts) : null, menu);
   }
 
   function close() { S.open = false; S.dismissed = true; render(); }
@@ -239,6 +264,7 @@ export function mount(ctx) {
 
   // 추가 결정 5: 발표하기. 확인 창 하나(「지금부터 화면이 전송됩니다」, 예·아니오). 다른 분이 발표 중이면 한 줄을 위에 더한다.
   function askPresent(a) {
+    const today = a === TODAY;
     if (status() !== 'live') { ctx.toast('회의가 시작되면 발표할 수 있어요.', 'info'); return; }
     const lines = confirmLines({ meeting: meeting(), myCid: role()?.cid });
     const body = h('div', { class: 'za-confirm' }, lines.map((t, k) => h('p', { class: k === lines.length - 1 ? 'za-confirm-main' : 'za-confirm-busy', text: t })));
@@ -248,8 +274,9 @@ export function mount(ctx) {
       actions: [
         { label: '예', primary: true, onClick: async () => {
           try {
-            await api.present(mid, a.aid);
+            await api.present(mid, today ? (api.TODAY || TODAY) : a.aid);
             if (!alive) return;
+            if (today) { S.open = false; S.dismissed = false; render(); ctx.toast('모두가 오늘의 안건을 봐요.', 'ok'); return; }   // 발표자도 0번 화면을 본다
             S.open = false; S.dismissed = true; render();
             ctx.toast('발표를 시작했어요. 모두가 내 화면을 봐요.', 'ok');
           } catch (e) { ctx.toast(errorText(e), e?.status === 429 ? 'warn' : 'error'); }
@@ -414,10 +441,15 @@ export function mount(ctx) {
   for (const k of ['meeting', 'live', 'role']) offs.push(store.on(k, () => render()));
   offs.push(store.on('agenda', () => { refreshMine(false); render(); }));
   offs.push(store.on('cmd:agenda-add', () => openAdd()));
-  offs.push(store.on('cmd:present', aid => { const a = agenda().find(x => x.aid === aid); if (a) askPresent(a); }));   // 무대 아래 큰 「이 자료 발표하기」(2팀)
+  offs.push(store.on('cmd:present', aid => { if (aid === TODAY) { askPresent(TODAY); return; } const a = agenda().find(x => x.aid === aid); if (a) askPresent(a); }));   // 무대 아래 큰 「이 자료 발표하기」(2팀)
   offs.push(store.on('cmd:agenda-open', () => { S.open = true; S.dismissed = false; render(); }));   // 2팀 띠 「오늘의 안건 보기」
   // 「화면은 무조건 발표자가 가져간다」(U16): 손으로 연 패널도 닫는다. 창은 app.js 가 닫거나 접는다
-  offs.push(store.on('cmd:yield', () => { if (S.open || !root.hidden) { S.open = false; S.dismissed = true; render(); } }));
+  // 다만 0번 「오늘의 안건」 발표(aid 없음)면 이 정리 화면이 곧 발표 화면이라 접지 않고 펼친다
+  offs.push(store.on('cmd:yield', () => {
+    const ml = meeting()?.live;
+    if (ml && !ml.aid) { S.open = false; S.dismissed = false; render(); return; }
+    if (S.open || !root.hidden) { S.open = false; S.dismissed = true; render(); }
+  }));
   offs.push(store.on('role', r => { if (r) refreshMine(true); }));
   render();
   refreshMine(true);

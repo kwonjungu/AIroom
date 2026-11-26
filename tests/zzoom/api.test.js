@@ -1711,6 +1711,56 @@ test('발표 마치기: 지금 발표자 본인이나 주관자만, presenter �
     assert.equal(ended.status, 409); assert.equal(ended.json.error, 'state_ended');
 });
 
+// ================================================================ 0번 「오늘의 안건」 발표(today:true)
+test('0번 오늘의 안건 발표: live 일 때만, 발표자는 부른 사람으로 두고 live.aid 를 비우며 forceSeq·rev 를 올린다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const V = await h.join(mid, '발표자'), W = await h.join(mid, '남');
+    const aid = (await h.call('POST', `/${mid}/agenda`, { pt: A.pt, body: { title: '안건' } })).json.aid;
+    // 시작 전에는 참석자도 주관자도 안 된다
+    const early = await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { today: true } });
+    assert.equal(early.status, 409, early.text); assert.equal(early.json.error, 'state_ready');
+    const earlyA = await h.call('POST', `/${mid}/presenter`, { pt: A.pt, body: { today: true } });
+    assert.equal(earlyA.status, 409, earlyA.text); assert.equal(earlyA.json.error, 'state_ready');
+    assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}`).presenter, null, '시작 전 실패는 아무것도 바꾸지 않음');
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    const before = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    assert.equal(before.live.aid, aid, '시작하면 첫 안건');
+    // aid 를 같이 보내도 무시하고 0번으로
+    const ok = await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { today: true, aid } });
+    assert.equal(ok.status, 200, ok.text);
+    // 사람당 10초 1번(같은 시간 칸 안에서 바로 다시)
+    assert.equal((await h.call('POST', `/${mid}/presenter`, { pt: V.pt, body: { today: true }, tick: 1 })).status, 429);
+    const m = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    assert.equal(m.presenter.cid, V.cid, '발표자는 부른 사람'); assert.ok(!('name' in m.presenter), '이름 없음');
+    assert.equal(m.live.aid, null, '오늘의 안건 화면'); assert.equal(m.live.page, 1);
+    assert.deepEqual(m.live.view, { cx: 0.5, cy: 0.5, z: 1 });
+    assert.equal(m.live.forceSeq, (before.live.forceSeq || 0) + 1, 'forceSeq 올림');
+    assert.equal(m.live.rev, before.live.rev + 1, 'rev 올림');
+    assert.ok(m.presenter.epoch > before.presenter.epoch && m.live.epoch === m.presenter.epoch, 'epoch 올림');
+    assert.deepEqual(ok.json.presenter, m.presenter); assert.equal(ok.json.live.aid, null);
+    // 0번 발표자는 그대로 남는다(발표 마치기와 다름). 옛 발표자의 /live 는 막힌다
+    const lv = await h.call('POST', `/${mid}/live`, { pt: A.pt, body: { aid, page: 1, epoch: before.presenter.epoch, baseRev: m.live.rev } });
+    assert.equal(lv.status, 409);
+    // 다른 참석자가 넘겨받아도 0번 그대로, forceSeq 가 또 오른다
+    const w = await h.call('POST', `/${mid}/presenter`, { pt: W.pt, body: { today: true }, tick: 11000 });
+    assert.equal(w.status, 200, w.text);
+    const m2 = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    assert.equal(m2.presenter.cid, W.cid); assert.equal(m2.live.aid, null); assert.equal(m2.live.forceSeq, m.live.forceSeq + 1);
+    // 「발표 가져오기」(본문 없음)는 0번 상태를 그대로 둔다
+    const take = await h.call('POST', `/${mid}/presenter`, { pt: A.pt, body: {} });
+    assert.equal(take.status, 200, take.text);
+    const m3 = h.fb.docs.get(`zzoom_meetings/${mid}`);
+    assert.equal(m3.presenter.cid, A.cid); assert.equal(m3.live.aid, null); assert.equal(m3.live.forceSeq, m2.live.forceSeq, '가져오기는 화면을 옮기지 않음');
+    // today 가 참(true)이 아니면 평소 길
+    const notToday = await h.call('POST', `/${mid}/presenter`, { pt: A.pt, body: { today: 'yes' } });
+    assert.equal(notToday.status, 200); assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}`).live.forceSeq, m2.live.forceSeq);
+    await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'end' } });
+    const ended = await h.call('POST', `/${mid}/presenter`, { pt: A.pt, body: { today: true } });
+    assert.equal(ended.status, 409); assert.equal(ended.json.error, 'state_ended');
+});
+
 test('만든 사람(같은 로그인 세션)은 입장하면 주관 코드 없이 주관자 pt 를 받고, 로그아웃하면 주관 동작이 막힌다', async t => {
     const dead = new Set();
     const vs = async tk => { const s = String(tk || ''); if (dead.has(s)) return null; const b = s.split('#')[0]; return b === TOKENS.admin ? { role: 'admin' } : b === TOKENS.user ? { role: 'user' } : null; };

@@ -118,6 +118,7 @@ class ZzError extends Error { status; code; message; extra }  // 서버 {error, 
 | `myAgenda(mid)` | `GET /:mid/agenda/mine` → 내 안건 aid 배열(「내 안건」 표시용) | 안건 |
 | `attachAgendaFile(mid, aid, {file, converted, onProgress, signal})` | 있는 안건에 자료 붙이기·바꾸기(`uploadAgenda` 와 같은 길, 허가·commit 에 `aid`) → `{aid, agenda}` | 안건 |
 | `present(mid, aid?, page?)` | `POST /:mid/presenter` → 내가 발표자, `aid` 를 주면 그 안건 1쪽으로 모두 끌어옴(forceSeq+1) | 안건 |
+| `present(mid, TODAY)` (`TODAY = '_today'`) 0번 「오늘의 안건」 발표 | `POST /:mid/presenter` 본문 `{today:true}` → `{presenter:{cid:나, epoch}, live:{aid:null, page:1, view:{cx:.5,cy:.5,z:1}, rev+1, epoch, forceSeq+1, at}}`. 회의가 `live` 일 때만(주관자도, 그 밖은 409 `state_*`), 참석자는 사람당 10초 1번(429). `aid` 는 무시한다. 발표자는 그대로 나로 남고 모두의 화면이 안건 정리 화면으로 온다. 0번 발표자는 `/live` 를 보내지 않는다 | 안건 |
 | (화면 함수 이름은 UI 담당이 정함) 발표 마치기 | `POST /:mid/presenter/end` 본문 `{}` → `{presenter:{cid:null, epoch}, live:{aid:null, page:1, rev, epoch, forceSeq, …}, changed}`. 지금 발표자 본인이나 주관자만(남이면 403 `not_presenter`), 회의가 `live` 일 때만(그 밖 409 `state_*`), 사람당 2초 1번(429). 발표자가 이미 없으면 그대로 200 `changed:false`. epoch 가 올라 옛 발표자의 `/live`·판서는 409, `live.aid:null` 이라 모두 대기 화면(`#zz-wait`)으로 | 안건·5 |
 | (화면 결정) 업로드 허가 취소 | `DELETE /:mid/uploads/:uploadId` → `{ok:true}`. 본인 허가만(남이면 403 `not_yours`, 없거나 확정됐으면 404 `upload_unknown`). 업로드나 commit 에 실패하면 화면이 불러 허가 자리를 돌려준다(감사 R3 P3) | api.js |
 | `createBoard(mid, bg?)` / `addBoardPage(mid, aid)` | `POST /:mid/boards` | 3 |

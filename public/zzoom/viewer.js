@@ -168,6 +168,9 @@ export function mount(ctx) {
   // 제목만 있는 안건(자료 아직 없음)
   const noFile = a => !!a && a.kind !== 'board' && !((a.pages | 0) >= 1);
   const meetingLive = () => S.meeting?.status === 'live';
+  // 0번 「오늘의 안건」 발표 중: 발표자는 있는데 진행 화면(aid)이 없다
+  const todayOn = () => meetingLive() && !!S.meeting?.presenter?.cid && !S.live?.aid;
+  const todayMine = () => todayOn() && !!S.role?.cid && S.meeting.presenter.cid === S.role.cid && isPresenter();
   const geo = () => {
     const sz = pageSize(curA(), S.page) || S.natural || { w: BOARD_W, h: BOARD_H };
     return { stageW: S.stageW || 1, stageH: S.stageH || 1, pageW: sz.w, pageH: sz.h, pad: S.stageW < 600 ? 8 : 16 };
@@ -480,7 +483,7 @@ export function mount(ctx) {
     if (!on && document.fullscreenElement && FS.real) { FS.real = false; document.exitFullscreen?.().catch(() => {}); }
     const a = curA();
     const othersOn = !!S.live?.aid && !isPresenter() && S.follow !== 'free';   // 남의 발표를 따라가는 중(감사 R7 P3-4)
-    bigPresent.hidden = !(meetingLive() && a && !noFile(a) && !penMode() && !on && !othersOn && !(isPresenter() && S.live?.aid === a.aid));
+    bigPresent.hidden = !(meetingLive() && a && !noFile(a) && !penMode() && !on && !othersOn && !todayOn() && !(isPresenter() && S.live?.aid === a.aid));
     if (!bigPresent.isConnected) elOverlay.append(bigPresent);
     // agenda.js 가 먼저 떠서 ui:wait 를 놓칠 수 있으므로 화면을 직접 본다(감사 R8 N3)
     bigPresent.classList.toggle('is-below-mini', !!document.querySelector('.za-mini'));
@@ -788,6 +791,14 @@ export function mount(ctx) {
       return;
     }
     const list = h('ol', { class: 'zv-agenda-list' });
+    // 0번 「오늘의 안건」: 누르면 가운데 안건 정리 화면을 연다
+    list.append(h('li', { class: 'zv-agenda-li' },
+      h('button', { type: 'button', class: 'zv-agenda-today', onclick: () => { maybeCloseDrawer(); store.emit('cmd:agenda-open'); } },
+        h('span', { class: 'zv-agenda-no zz-num' }, '0'),
+        h('span', { class: 'zv-agenda-text' },
+          h('span', { class: 'zv-agenda-title' }, t('오늘의 안건')),
+          h('span', { class: 'zv-agenda-meta' }, t('안건 목록'))),
+        h('span', { class: 'zz-chip live zv-live-chip', hidden: true }, h('span', { class: 'zz-live-dot' }), t('발표 중')))));
     S.agenda.forEach((a, i) => {
       const cur = a.aid === S.aid;
       const meta = a.kind === 'board' ? t('칠판 {n}쪽', { n: pagesOf(a) }) : noFile(a) ? t('자료 없음') : t('{n}쪽', { n: pagesOf(a) });
@@ -847,6 +858,8 @@ export function mount(ctx) {
       const chip = b.querySelector('.zv-live-chip');
       if (chip) chip.hidden = !(S.live?.aid === b.dataset.aid && meetingLive());
     }
+    const todayChip = agendaBox.querySelector('.zv-agenda-today .zv-live-chip');
+    if (todayChip) todayChip.hidden = !todayOn();
     for (const b of agendaBox.querySelectorAll('.zv-thumb')) {
       const p = +b.dataset.page;
       const cur = p === S.page;
@@ -891,7 +904,9 @@ export function mount(ctx) {
     if (!S.role || !st || S.meeting?.gone) return null;
     if (st === 'ended' || st === 'deleting') return 'ended';
     if (st !== 'live') return 'ready';
+    if (todayMine()) return 'today';
     if (isPresenter()) return 'presenting';
+    if (todayOn()) return 'today-watch';
     if (!S.live?.aid || !findA(S.live.aid)) return 'idle';
     return S.follow === 'free' ? 'free' : 'follow';
   }
@@ -915,6 +930,16 @@ export function mount(ctx) {
       detail = S.aid ? t('모두가 내 화면을 봐요. 쪽을 넘기면 모두 같이 넘어가요. 지금 {place}이에요.', { place: placeText(S.aid, S.page) })
         : t('모두가 내 화면을 봐요. 쪽을 넘기면 모두 같이 넘어가요.');
       btn = ['end', t('발표 마치기')];
+    } else if (st === 'today') {
+      title = t('내가 오늘의 안건을 보여 주는 중이에요');
+      detail = t('모두가 오늘의 안건 화면을 봐요. 안건의 「발표하기」를 누르면 그 자료로 넘어가요.');
+      btn = ['end', t('발표 마치기')];
+      if (waitShown !== 'full') btn2 = ['agenda', t('오늘의 안건 보기')];
+    } else if (st === 'today-watch') {
+      title = t('모두 오늘의 안건을 보고 있어요');
+      detail = t('발표하는 분이 오늘의 안건 화면을 보여 주고 있어요.');
+      if (waitShown !== 'full') btn = ['agenda', t('오늘의 안건 보기')];
+      if (host) btn2 = ['end', t('발표 마치기')];
     } else if (st === 'idle') {
       title = t('아직 발표하는 분이 없어요');
       detail = t('안건을 골라 「발표하기」를 누르면 모두가 내 화면을 봐요.');
@@ -940,14 +965,14 @@ export function mount(ctx) {
         h('img', { class: 'zz-icon', src: ctx.assets('icon-follow'), alt: '' }), h('span', null, label));
       if (kind === 'agenda') return h('button', { type: 'button', class: 'zz-btn zv-band-agenda', onclick: () => store.emit('cmd:agenda-open') }, label);
       // 발표 마치기: 발표자 본인은 주 단추, 담당자가 남의 발표를 마칠 때는 테두리 단추
-      return h('button', { type: 'button', class: 'zz-btn zv-end-btn ' + (main && st === 'presenting' ? 'is-main' : 'danger'), disabled: ending || null, onclick: askEnd }, label);
+      return h('button', { type: 'button', class: 'zz-btn zv-end-btn ' + (main && (st === 'presenting' || st === 'today') ? 'is-main' : 'danger'), disabled: ending || null, onclick: askEnd }, label);
     };
-    barBox.className = 'zv-follow zv-band is-' + st;
+    barBox.className = 'zv-follow zv-band is-' + st + (st === 'today' ? ' is-presenting' : '');   // 0번 발표도 「내가 발표 중」 빨간 띠
     barBox.setAttribute('data-state', st);
     barBox.setAttribute('role', 'status');
     barBox.replaceChildren(
       h('div', { class: 'zv-band-text' },
-        st === 'presenting' ? h('span', { class: 'zz-live-dot zv-band-dot', 'aria-hidden': 'true' }) : null,
+        st === 'presenting' || st === 'today' ? h('span', { class: 'zz-live-dot zv-band-dot', 'aria-hidden': 'true' }) : null,
         h('strong', { class: 'zv-band-title zv-follow-text' }, title),
         detail ? h('span', { class: 'zv-band-detail' }, detail) : null),
       ...((btn || btn2) ? [h('div', { class: 'zv-band-actions' }, mk(btn, true), mk(btn2, false))] : []));  // replaceChildren 은 null 을 글자 「null」로 넣는다

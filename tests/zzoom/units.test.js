@@ -159,3 +159,21 @@ test('지적15: 가짜 Redis 는 태그가 아니라 Lua 본문을 실행한다'
     assert.equal(await r.eval(LUA.scRelease, K2, ['p1', 'a_1', '0', '1']), 1);
     assert.equal(await r.hget('sc', 'all'), '0', '지운 쪽의 늦은 되돌리기는 무시');
 });
+
+// 화면 순수 함수: 0번 「오늘의 안건」(agenda.js). 브라우저 없이 불러 본다.
+test('agenda.js 0번 오늘의 안건: 발표 중이면 대기 화면이 펼쳐지고, 내가 0번 발표자인지 가린다', async () => {
+    const { pathToFileURL } = require('node:url');
+    const path = require('node:path');
+    const A = await import(pathToFileURL(path.join(__dirname, '../../public/zzoom/agenda.js')).href);
+    const live = { status: 'live', presenter: { cid: 'c1', epoch: 2 } };
+    assert.equal(A.TODAY, '_today');
+    assert.equal(A.waitMode({ meeting: live, live: { aid: null, forceSeq: 3 } }), 'full', '0번 발표 중이면 펼침');
+    assert.equal(A.waitMode({ meeting: live, live: { aid: null }, dismissed: true }), 'mini', '닫아 둔 사람은 render 가 forceSeq 로 다시 펼친다');
+    assert.equal(A.waitMode({ meeting: live, live: { aid: 'a1' } }), 'mini');
+    assert.equal(A.presentingToday({ meeting: live, live: { aid: null }, myCid: 'c1' }), true);
+    assert.equal(A.presentingToday({ meeting: live, live: { aid: 'a1' }, myCid: 'c1' }), false, '안건 발표 중');
+    assert.equal(A.presentingToday({ meeting: live, live: null, myCid: 'c2' }), false, '남이 발표자');
+    assert.equal(A.presentingToday({ meeting: { ...live, status: 'ready' }, live: null, myCid: 'c1' }), false, '시작 전');
+    assert.deepEqual(A.confirmLines({ meeting: live, myCid: 'c2' }), [A.BUSY_TEXT, A.CONFIRM_TEXT], '남이 0번 발표 중이어도 같은 확인 글');
+    assert.deepEqual(A.confirmLines({ meeting: live, myCid: 'c1' }), [A.CONFIRM_TEXT]);
+});

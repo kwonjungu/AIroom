@@ -75,6 +75,7 @@ export async function createAgenda(mid, title) {
   return { aid, agenda: F.agenda[F.agenda.length - 1] };
 }
 export async function myAgenda() { log('myAgenda'); return F.agenda.filter(a => a.ownerCid === ME).map(a => a.aid); }
+export const TODAY = '_today';
 export async function present(mid, aid) {
   log('present', aid || null);
   await wait(40);
@@ -82,7 +83,8 @@ export async function present(mid, aid) {
   const epoch = Math.max(F.meeting.presenter?.epoch || 0, F.meeting.live?.epoch || 0) + 1;
   F.meeting.presenter = { cid: ME, epoch };
   const l = F.meeting.live || { rev: 0, forceSeq: 0 };
-  if (aid) F.meeting.live = { aid, page: 1, view: { cx: 0.5, cy: 0.5, z: 1 }, rev: (l.rev || 0) + 1, epoch, forceSeq: (l.forceSeq || 0) + 1, at: Date.now() };
+  if (aid === TODAY) F.meeting.live = { aid: null, page: 1, view: { cx: 0.5, cy: 0.5, z: 1 }, rev: (l.rev || 0) + 1, epoch, forceSeq: (l.forceSeq || 0) + 1, at: Date.now() };   // 0번 오늘의 안건
+  else if (aid) F.meeting.live = { aid, page: 1, view: { cx: 0.5, cy: 0.5, z: 1 }, rev: (l.rev || 0) + 1, epoch, forceSeq: (l.forceSeq || 0) + 1, at: Date.now() };
   F.push('meeting');
   return { presenter: F.meeting.presenter, live: F.meeting.live };
 }

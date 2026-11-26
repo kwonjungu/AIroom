@@ -382,7 +382,7 @@ function wireMeeting(mid) {
     // 「화면은 무조건 발표자가 가져간다」: 다른 분이 새로 발표하거나(forceSeq 증가) 발표자가 바뀌면 내 화면을 비운다
     const l = m.live || null, pc = m.presenter?.cid || null, fs = Number(l?.forceSeq) || 0;
     const me = store.get('role')?.cid || null;
-    if (seen && m.status === 'live' && l?.aid && pc && pc !== me && (fs > lastForce || pc !== lastPc)) yieldToPresenter();
+    if (seen && m.status === 'live' && l && pc && pc !== me && (fs > lastForce || pc !== lastPc)) yieldToPresenter();
     seen = true; lastForce = fs; lastPc = pc;
     const o = m.agendaOrder || [];
     if (o.join() !== order.join()) { order = o; orderAgenda(); }
