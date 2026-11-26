@@ -46,6 +46,16 @@ export function deviceId() {
     return v;
   } catch { return ''; }
 }
+// 학교망은 구글(Firebase) 연결이 가끔 끊긴다(실측 10% 안팎). 권한·없음 오류가 아니면 잠깐 쉬고 다시 해 본다.
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const FATAL = /unauthorized|unauthenticated|permission|object-not-found|not-found|invalid-custom-token|custom-token-mismatch|canceled|aborted|quota/i;
+async function retryNet(fn, tries = 4) {
+  for (let a = 0; ; a++) {
+    try { return await fn(); }
+    catch (e) { if (a >= tries - 1 || FATAL.test(String(e?.code || e?.message || e))) throw e; await sleep([400, 1200, 2500, 4000][a] || 4000); }
+  }
+}
+const REQ_TIMEOUT_MS = 20000;
 async function request(method, path, { body, pt, raw, contentType, auth = true, keepalive = false } = {}) {
   const headers = {};
   if (auth) { const t = authToken(); if (t) headers['X-Auth-Token'] = t; const d = deviceId(); if (d) headers['X-Device-Id'] = d; }
@@ -53,10 +63,18 @@ async function request(method, path, { body, pt, raw, contentType, auth = true, 
   let payload;
   if (raw !== undefined) { payload = raw; if (contentType) headers['Content-Type'] = contentType; }
   else if (body !== undefined) { payload = JSON.stringify(body); headers['Content-Type'] = 'application/json'; }
-  let r;
-  try { r = await fetch(path.startsWith('/') ? path : BASE + '/' + path, { method, headers, body: payload, credentials: 'same-origin', keepalive }); }
-  catch { throw new ZzError(0, 'network', '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.'); }
-  return r;
+  const url = path.startsWith('/') ? path : BASE + '/' + path;
+  // 응답이 끝내 안 오면 단추가 영영 잠기므로 20초에 끊는다. GET 은 두 번 더 해 본다(POST 는 두 번 반영될 수 있어 한 번만).
+  const tries = method === 'GET' ? 3 : 1;
+  for (let a = 0; ; a++) {
+    const ac = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = ac ? setTimeout(() => ac.abort(), REQ_TIMEOUT_MS) : null;
+    try { return await fetch(url, { method, headers, body: payload, credentials: 'same-origin', keepalive, signal: ac ? ac.signal : undefined }); }
+    catch {
+      if (a < tries - 1) { await sleep(a ? 1500 : 500); continue; }
+      throw new ZzError(0, 'network', '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.');
+    } finally { if (timer) clearTimeout(timer); }
+  }
 }
 async function asJson(r) {
   let data = null;
@@ -100,7 +118,7 @@ function firebase() {
   fbp = (async () => {
     const cfg = await asJson(await request('GET', '/api/firebase-config')).catch(() => null);
     if (!cfg || !cfg.apiKey) throw new ZzError(503, 'no_firebase_config', '실시간 연결 설정을 가져오지 못했어요.');
-    const [A, Au, F, S] = await Promise.all([import(FB('app')), import(FB('auth')), import(FB('firestore')), import(FB('storage'))]);
+    const [A, Au, F, S] = await retryNet(() => Promise.all([import(FB('app')), import(FB('auth')), import(FB('firestore')), import(FB('storage'))]), 3);
     const app = A.getApps().find(a => a.name === 'zzoom') || A.initializeApp(cfg, 'zzoom');
     let auth;
     try { auth = Au.initializeAuth(app, { persistence: Au.inMemoryPersistence }); } catch { auth = Au.getAuth(app); }
@@ -127,7 +145,7 @@ async function fbSignInNow(token) {
   spatch('conn', { firebase: 'connecting' });
   try {
     const f = await firebase();
-    await f.Au.signInWithCustomToken(f.auth, token);
+    await retryNet(() => f.Au.signInWithCustomToken(f.auth, token), 3);
     spatch('conn', { firebase: 'ok' });
     if (!signedIn.done) { signedIn.done = true; signedIn.resolve(f); }
     return f;
@@ -534,7 +552,7 @@ export function pageImageUrl(agenda, page, { thumb = false } = {}) {
   const path = `${agenda.base}/${thumb ? 't' : 'p'}${String(page).padStart(3, '0')}.webp`;
   if (!imgCache.has(path)) {
     const ent = { p: null, url: null };
-    ent.p = signedIn.promise.then(f => f.S.getBlob(f.S.ref(f.st, path))).then(b => (ent.url = URL.createObjectURL(b)));
+    ent.p = signedIn.promise.then(f => retryNet(() => f.S.getBlob(f.S.ref(f.st, path)))).then(b => (ent.url = URL.createObjectURL(b)));
     ent.p.catch(() => { if (imgCache.get(path) === ent) imgCache.delete(path); });
     imgCache.set(path, ent);
   }
@@ -552,7 +570,7 @@ export function releaseImages(keep = []) {
 export async function originalBlob(agenda) {
   if (!agenda?.original?.path) return null;
   const f = await signedIn.promise;
-  return f.S.getBlob(f.S.ref(f.st, agenda.original.path));
+  return retryNet(() => f.S.getBlob(f.S.ref(f.st, agenda.original.path)));
 }
 export function downloadOriginal(agenda) {
   return originalBlob(agenda).then(b => { if (b) saveBlob(b, originalFileName(agenda)); return !!b; });

@@ -100,6 +100,17 @@ class Run:
         pg = ctx.new_page()
         pg.set_default_timeout(T)
         pg.on('pageerror', lambda e: self.errors.append(f'pageerror: {str(e)[:120]}'))
+        def _resp(r):
+            if '/api/' in r.url and (r.status >= 400 or os.environ.get('ZZ_NETLOG')):
+                print(f'    [net] {r.status} {r.request.method} {r.url.split("/api/")[-1][:70]}', flush=True)
+        pg.on('response', _resp)
+        if os.environ.get('ZZ_REQLOG'):
+            import time as _t
+            t0 = _t.time()
+            pg.on('request', lambda q: print(f'    [req {(_t.time()-t0):6.1f}] {q.method} {q.url[:110]}', flush=True) if not q.url.startswith('data:') else None)
+            pg.on('requestfinished', lambda q: print(f'    [fin {(_t.time()-t0):6.1f}] {q.method} {q.url[:110]}', flush=True) if '/api/' in q.url else None)
+        pg.on('requestfailed', lambda q: print(f'    [net] 실패 {q.method} {q.url.split("/api/")[-1][:70]} {q.failure}', flush=True) if '/api/' in q.url else None)
+        pg.on('console', lambda m: print(f'    [console] {m.text[:600]}', flush=True) if m.type == 'error' else None)
         return ctx, pg
 
     # ---- 흐름 ----
@@ -115,7 +126,7 @@ class Run:
         def s_login():
             tok['a'] = login('zz-prod-check-a')
             self.ctx, self.pg = self.new_ctx(tok['a'])
-            self.pg.goto(BASE + '/zzoom')
+            self.pg.goto(BASE + '/zzoom', wait_until='domcontentloaded')
             expect(self.pg.locator('#zz-list .zl-new')).to_be_visible()
         self.step('백암이 로그인 후 /zzoom 목록', s_login)
 
@@ -160,12 +171,14 @@ class Run:
                 pg.fill('#zl-hostcode', self.host_code)
                 pg.locator('.zl-form button[type=submit]').click()
             expect(pg.locator('.zl-host-chip')).to_be_visible()
-            start = pg.get_by_role('button', name='회의 시작')
+            pg.locator('.zh-bar').wait_for(timeout=T)
+            start = pg.locator('.zh-start')
             if not start.is_visible():
                 pg.get_by_role('button', name='더 보기').click()
                 start = pg.locator('.zh-more-item', has_text='회의 시작')
             start.click()
-            expect(pg.locator('.za-sub')).to_contain_text('발표하기', timeout=T)
+            expect(pg.locator('.zh-start')).to_be_hidden(timeout=T)   # 시작되면 주 단추가 사라진다
+            expect(pg.locator('.zh-status-text')).not_to_contain_text('시작 전', timeout=T)
             if pg.locator('.zz-modal-back').count():
                 pg.keyboard.press('Escape')
         self.step('주관자 확인과 회의 시작(발표하기 준비)', s_host)
@@ -211,7 +224,7 @@ class Run:
             tok['b'] = login('zz-prod-check-b')
             self.ctx2, self.pg2 = self.new_ctx(tok['b'])
             p2 = self.pg2
-            p2.goto(f'{BASE}/zzoom#/m/{self.mid}')
+            p2.goto(f'{BASE}/zzoom#/m/{self.mid}', wait_until='domcontentloaded')
             p2.locator('#zz-join .zl-go').click()
             expect(p2.locator('#zz-join')).to_be_hidden()
             expect(p2.locator('.zv-pageno')).to_have_text('1 / 2', timeout=T)
@@ -254,18 +267,20 @@ class Run:
                 raise RuntimeError('화면이 없어 지우지 못함')
             if self.pg2 and not self.pg2.is_closed():
                 self.ctx2.close()
-            pg.goto(f'{BASE}/zzoom#/')
+            pg.goto(f'{BASE}/zzoom#/', wait_until='domcontentloaded')
             pg.reload()
             expect(pg.locator('#zz-list .zl-new')).to_be_visible()
             # 회의 id 를 못 얻은 경우에도 제목이 정확히 같은 시험 회의만 찾는다
             card = pg.locator(f'.zl-card[data-mid="{self.mid}"]') if self.mid else pg.locator('.zl-card', has=pg.locator('.zl-card-title', has_text=TITLE))
+            try: card.first.wait_for(timeout=15000)
+            except Exception: pass
             if card.count() == 0:
                 if self.mid is None:
                     return '만든 회의가 없어 지울 것 없음'
                 raise AssertionError('만든 회의가 목록에 없음')
             mid = self.mid or card.get_attribute('data-mid')
             card.locator('.zl-del').click()
-            pg.locator('.zz-modal-actions button, .zl-form-actions button', has_text='삭제하기').click()
+            pg.locator('.zz-modal-actions button, .zl-form-actions button', has_text='회의 지우기').click()
             deadline = time.time() + 45
             while time.time() < deadline:
                 pg.get_by_role('button', name='새로 고침').click()
@@ -292,7 +307,7 @@ def main():
     with sync_playwright() as pw:
         b = pw.chromium.launch(channel='msedge', headless=True)
         print(f'기준 주소 {BASE}, 브라우저 {b.version}, 시험 제목 {TITLE}', flush=True)
-        for label, width in (('pc1280', 1280), ('m390', 390)):
+        for label, width in [x for x in (('pc1280', 1280), ('m390', 390)) if x[0] in os.environ.get('ZZ_ONLY', 'pc1280,m390')]:
             r = Run(label, width, b, pdf)
             print(f'[{label}] 시작', flush=True)
             r.go()
