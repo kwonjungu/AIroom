@@ -1038,6 +1038,8 @@ export function mount(ctx) {
     else {
       // 같은 쪽인데 ver 가 바뀌었으면 다시 받기
       if (a.kind !== 'board' && S.imgFor && S.imgFor !== imgKey(a, S.page)) loadCurrent();
+      // 자료 없던 안건에 자료가 들어오면 다시 받기(서울 이전 뒤 「발표하기」가 자료 저장보다 먼저 도착 — 「아직 자료가 없는 안건이에요」가 남던 버그)
+      else if (a.kind !== 'board' && S.load === 'nofile' && !noFile(a)) loadCurrent();
       if (S.follow === 'follow' && S.live?.aid && !isPresenter() && (S.live.aid !== S.aid || S.live.page !== S.page) && findA(S.live.aid)) applyLive(S.live);
     }
     renderAgenda(); paintBar(); paintOverlay(); requestRender();
