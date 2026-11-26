@@ -288,7 +288,7 @@ class Run:
         self.shot('after_reload', pg)
         self.pen_on(pg)
         # 5. 형광펜/펜/지우개
-        self.choose(pg, 'hl', 0); pts_h = self.path(pg, band=0.7)
+        self.choose(pg, 'hl', 0); pts_h = self.path(pg, band=0.6)   # 펜 선(0.8)과 안 겹치게(감사 R7 P4: 판정 오염)
         self.stroke(pg, pts_h, kinds[0]); pg.wait_for_timeout(300)
         rh = self.ink(pg, pts=pts_h, r=6)
         self.choose(pg, 'pen', 1); pts_p = self.path(pg, band=0.8)
@@ -308,12 +308,13 @@ class Run:
         t_er = time.time(); self.stroke(pg, er_path, kinds[0])
         pg.wait_for_timeout(400)
         bandp1 = [min(p[1] for p in pts_p) - 6, max(p[1] for p in pts_p) + 6]
-        r_after = self.ink(pg, band=bandp1)
-        note(f'   지우개 후 내 화면 밴드 잉크 {r_after["band"]} (0 이면 지워짐)')
+        r_after = self.ink(pg, pts=pts_p, r=3)
+        note(f'   지우개 후 내 화면 펜 경로 일치율 {r_after["cover"]:.2f} (0.2 미만이면 지워짐)')
         # 둘째 기기
         t0 = time.time(); gone = None
         while time.time() - t0 < 25:
-            if self.ink(p2, band=bandp2)['band'] == 0: gone = round(time.time() - t_er, 1); break
+            # 지우개 동그라미·형광펜이 섞이지 않게 펜 경로 위 픽셀만 본다(감사 R7 P4)
+            if self.ink(p2, pts=conv(pts_p), r=3)['cover'] < 0.2: gone = round(time.time() - t_er, 1); break
             p2.wait_for_timeout(300)
         note(f'   둘째 기기에서 사라짐: {gone}s (None=25초 안에 안 사라짐)')
         self.shot('erased_host', pg); self.shot('erased_part', p2)

@@ -11,17 +11,25 @@
 <link rel="stylesheet" href="/zzoom/zzoom.css">
 <script type="module" src="/zzoom/app.js"></script>
 <script>
-  // 학교망에서 첫 파일 받기가 끊기면 빈 화면이 된다. 10초 안에 app.js 가 시작하지 않으면 두 번까지 다시 읽는다.
+  // 학교망에서 첫 파일 받기가 끊기면 빈 화면이 된다. 15초 안에 app.js 가 시작하지 않으면 한 번 다시 읽는다(감사 R7 P5-M4).
+  // 그래도 늦으면 닫을 수 있는 안내만 띄우고, 화면이 뜨면 안내를 스스로 지운다.
   setTimeout(function () {
     if (window.__zzBoot) return;
     var n = +(sessionStorage.getItem('zz_boot_retry') || 0);
-    if (n < 2) { sessionStorage.setItem('zz_boot_retry', String(n + 1)); location.reload(); return; }
+    if (n < 1) { sessionStorage.setItem('zz_boot_retry', String(n + 1)); location.reload(); return; }
     var d = document.createElement('div');
+    d.id = 'zz-boot-note';
     d.setAttribute('role', 'alert');
-    d.style.cssText = 'position:fixed;inset:auto 16px 16px 16px;padding:16px;background:#fff;border:2px solid #c2410c;border-radius:12px;font-size:17px;z-index:9999';
-    d.textContent = '인터넷 연결이 불안정해 화면을 다 불러오지 못했어요. 잠시 뒤 새로 고침(F5)을 눌러 주세요.';
+    d.style.cssText = 'position:fixed;left:16px;right:16px;top:16px;padding:14px 48px 14px 16px;background:#fff;border:2px solid #c2410c;border-radius:12px;font-size:17px;z-index:9999';
+    d.textContent = '인터넷이 느려 화면을 불러오는 중이에요. 계속 비어 있으면 새로 고침(F5)을 눌러 주세요.';
+    var x = document.createElement('button');
+    x.type = 'button'; x.textContent = '닫기'; x.setAttribute('aria-label', '안내 닫기');
+    x.style.cssText = 'position:absolute;right:8px;top:8px;min-height:36px;padding:0 10px;font-size:15px';
+    x.onclick = function () { d.remove(); };
+    d.appendChild(x);
     document.body.appendChild(d);
-  }, 10000);
+    var t = setInterval(function () { if (window.__zzBoot) { clearInterval(t); d.remove(); } }, 500);
+  }, 15000);
   window.addEventListener('load', function () { setTimeout(function () { if (window.__zzBoot) sessionStorage.removeItem('zz_boot_retry'); }, 3000); });
 </script>
 </head>

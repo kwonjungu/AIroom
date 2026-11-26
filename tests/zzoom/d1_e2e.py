@@ -114,7 +114,8 @@ def run(pw, label, kw):
         # 새 규칙(2026-11-25): 누구나 회의 만들기, 수정·삭제는 내가 만든 회의(mine)나 관리자만
         ok(pg.locator('.zl-new').count() == 1, f'{tag} 일반 사용자도 회의 만들기')
         mine = pg.locator('.zl-card[data-mid="a1"]')
-        ok(pg.locator('.zl-edit').count() == 1 and pg.locator('.zl-del').count() == 1 and mine.locator('.zl-edit').count() == 1, f'{tag} 남의 회의는 관리 단추 없음, 내 회의만 있음')
+        # 2026-11-26 사용자 결정: 지우기는 누구나(모든 카드), 고치기는 내 회의만
+        ok(pg.locator('.zl-edit').count() == 1 and mine.locator('.zl-edit').count() == 1 and pg.locator('.zl-del').count() == pg.locator('.zl-card').count(), f'{tag} 고치기는 내 회의만, 지우기는 모든 회의')
         ok(pg.locator('.zl-enter').count() == 3, f'{tag} 입장 링크')
         ok(pg.locator('.zl-enter').first.get_attribute('href') == '#/m/a2', f'{tag} 링크 해시')
         # 만든 뒤 지금 회의 열기: 회의로 가며 바로 들어가기 표시만 남긴다(번호는 저장 안 함)

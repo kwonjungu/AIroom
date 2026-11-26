@@ -99,3 +99,65 @@ toast 기록: []
 3. 터치 폭(820/390)에서 발표자 본인 무대에 「아직 자료가 없는 안건이에요」 안내가 새로고침 전까지 남음(참여자 화면은 정상). 원인 미확정.
 4. 지우개: DELETE 200 확인, 단 밴드 겹침 때문에 사라짐 판정은 불확실. 크기 변경 후 정렬은 실제 마우스가 막혀 측정 못 함(캔버스 배율은 1.00으로 일치).
 5. 펜 단추: 보임, 「펜으로 쓰기」 라벨, 139x44(390 폭 131x48), 켜면 형광펜/펜/지우개+색 3개. 발견성은 양호.
+
+# 실행 2026-11-26 10:31:13  https://a-iroom.vercel.app
+
+## 너비 1280 (마우스)  10:31:15
+1. 펜 단추 보임=True 라벨='펜으로 쓰기' 크기=(139, 44) 위치=(780, 619) (뷰포트 1280)
+   펜 켠 뒤: 도구 ['형광펜', '펜', '지우개'] 색 3개 body.is-pen=True
+2a. 실제 마우스(page.mouse) 끌기: 맨 위 요소=CANVAS#zz-layer-temp., temp pointer-events=auto, .zv-overlay pointer-events=none, temp 캔버스가 받은 포인터 이벤트 32개, 잉크 0->467, 일치율 1.00
+2. [mouse] 내 화면 즉시: 잉크픽셀 467->1500, 경로 일치율 1.00, 잉크 bbox [388, 304, 789, 424], 경로 bbox [389, 305, 789, 345]
+3. [mouse] 둘째 기기 나타남 0.59s (손 뗀 시각 기준 약 1.2s 경과 측정), 경로 일치율 0.00
+2. [pen] 내 화면 즉시: 잉크픽셀 1500->3112, 경로 일치율 1.00, 잉크 bbox [387, 304, 790, 446], 경로 bbox [389, 405, 789, 445]
+3. [pen] 둘째 기기 나타남 0.3s (손 뗀 시각 기준 약 0.9s 경과 측정), 경로 일치율 0.00
+4. 새로고침 후 호스트 화면 잉크픽셀 2845 (이전 467→그린 뒤 위 값)
+5. 형광펜 일치율 1.00, 펜(색2) 일치율 1.00
+   펜(밴드 0.8) 둘째 기기 나타남 0.87s
+   지우개 후 내 화면 밴드 잉크 637 (0 이면 지워짐)
+   둘째 기기에서 사라짐: Nones (None=25초 안에 안 사라짐)
+7. 보기 모드 끌기: stage touch-action=none, temp pointer-events=none, 문서 scrollY 0->0, 쪽 이동 [256, 150, 666, 500]->[256, 150, 666, 500], 잉크 변화 8545->8545(그려지면 안 됨)
+   ctrl+휠 뒤 쪽 크기 666->144 (확대 단추/요소 1개)
+   (줌 뒤) 펜 경로 일치율 1.00
+8. 참여자 펜 단추 보임=True 라벨='펜으로 쓰기'
+   참여자가 그림: 자기 화면 일치율 1.00; 호스트 화면에 나타남 0.03s; toast []
+6. 빠른 10획 소요 6.4s; 직후 내 화면 밴드별 잉크: [True, True, True, True, True, True, True, True, True, True]
+   12초 뒤 둘째 기기에서 보이는 획: 10/10 [True, True, True, True, True, True, True, True, True, True]
+   그 사이 POST /strokes 6번, 상태 [201, 201, 201, 201, 201, 201], 묶음 크기 [1, 1, 2, 3, 3, 1]; toast []
+   새로고침 뒤 호스트 화면 획: 10/10 [True, True, True, True, True, True, True, True, True, True]
+   크기변경 900x650: 캔버스 900x421(css 900x421, dpr 1, 배율 x 1.00 y 1.00); 손 떼기 전 일치율 1.00, 뗀 뒤 1.00
+   크기변경 1280x800: 캔버스 1040x571(css 1040x571, dpr 1, 배율 x 1.00 y 1.00); 손 떼기 전 일치율 1.00, 뗀 뒤 1.00
+toast 기록: []
+>=400 응답: []
+콘솔/페이지 오류 3건: ['host reqfailed POST zzoom/mafaofsvjyp2j/strokes net::ERR_ABORTED', 'host reqfailed POST zzoom/mafaofsvjyp2j/heartbeat net::ERR_ABORTED', 'host reqfailed POST zzoom/mafaofsvjyp2j/heartbeat net::ERR_ABORTED']
+획 저장·삭제 요청 13건(초,누가,메서드,상태,묶음크기): [(0.0, 'host', 'POST', 201, 1), (1.6, 'host', 'POST', 201, 1), (14.3, 'host', 'POST', 201, 1), (16.2, 'host', 'POST', 201, 1), (17.5, 'host', 'DELETE', 200, None), (45.1, 'host', 'POST', 201, 1), (46.6, 'part', 'POST', 201, 1), (47.6, 'host', 'POST', 201, 1), (49.4, 'host', 'POST', 201, 2), (51.3, 'host', 'POST', 201, 3), (53.1, 'host', 'POST', 201, 3), (54.7, 'host', 'POST', 201, 1), (78.8, 'host', 'POST', 201, 1)]
+
+## 너비 390 (터치)  10:33:19
+1. 펜 단추 보임=True 라벨='펜으로 쓰기' 크기=(131, 48) 위치=(238, 558) (뷰포트 390)
+   펜 켠 뒤: 도구 ['형광펜', '펜', '지우개'] 색 3개 body.is-pen=True
+2a. 실제 마우스(page.mouse) 끌기: 맨 위 요소=CANVAS#zz-layer-temp., temp pointer-events=auto, .zv-overlay pointer-events=none, temp 캔버스가 받은 포인터 이벤트 32개, 잉크 0->335, 일치율 1.00
+2b. 실제 터치(CDP) 끌기: temp 가 받은 이벤트 31개, 일치율 1.00, scrollY 0
+2. [touch] 내 화면 즉시: 잉크픽셀 799->1194, 경로 일치율 1.00, 잉크 bbox [82, 356, 305, 494], 경로 bbox [82, 357, 306, 379]
+3. [touch] 둘째 기기 나타남 0.56s (손 뗀 시각 기준 약 1.1s 경과 측정), 경로 일치율 0.00
+2. [pen] 내 화면 즉시: 잉크픽셀 1194->1733, 경로 일치율 1.00, 잉크 bbox [81, 356, 306, 494], 경로 bbox [82, 413, 306, 435]
+3. [pen] 둘째 기기 나타남 0.28s (손 뗀 시각 기준 약 0.9s 경과 측정), 경로 일치율 0.42
+4. 새로고침 후 호스트 화면 잉크픽셀 1519 (이전 799→그린 뒤 위 값)
+5. 형광펜 일치율 1.00, 펜(색2) 일치율 1.00
+   펜(밴드 0.8) 둘째 기기 나타남 0.01s
+   지우개 후 내 화면 밴드 잉크 203 (0 이면 지워짐)
+   둘째 기기에서 사라짐: Nones (None=25초 안에 안 사라짐)
+7. 보기 모드 끌기: stage touch-action=none, temp pointer-events=none, 문서 scrollY 0->0, 쪽 이동 [8, 270, 372, 280]->[8, 270, 372, 280], 잉크 변화 3131->3131(그려지면 안 됨)
+   ctrl+휠 뒤 쪽 크기 372->80 (확대 단추/요소 1개)
+   (줌 뒤) 펜 경로 일치율 1.00
+8. 참여자 펜 단추 보임=True 라벨='펜으로 쓰기'
+   참여자가 그림: 자기 화면 일치율 1.00; 호스트 화면에 나타남 0.01s; toast []
+6. 빠른 10획 소요 6.4s; 직후 내 화면 밴드별 잉크: [True, True, True, True, True, True, True, True, True, True]
+   12초 뒤 둘째 기기에서 보이는 획: 10/10 [True, True, True, True, True, True, True, True, True, True]
+   그 사이 POST /strokes 6번, 상태 [201, 201, 201, 201, 201, 201], 묶음 크기 [1, 1, 2, 2, 3, 2]; toast []
+   새로고침 뒤 호스트 화면 획: 10/10 [True, True, True, True, True, True, True, True, True, True]
+   크기변경 844x390: 캔버스 844x161(css 844x161, dpr 1, 배율 x 1.00 y 1.00); 손 떼기 전 일치율 1.00, 뗀 뒤 1.00
+toast 기록: []
+>=400 응답: []
+콘솔/페이지 오류 3건: ['host reqfailed POST zzoom/maxgtd0whpxz5/heartbeat net::ERR_ABORTED', 'host reqfailed POST zzoom/maxgtd0whpxz5/strokes net::ERR_ABORTED', 'host reqfailed POST zzoom/maxgtd0whpxz5/heartbeat net::ERR_ABORTED']
+획 저장·삭제 요청 12건(초,누가,메서드,상태,묶음크기): [(0.0, 'host', 'POST', 201, 1), (1.5, 'host', 'POST', 201, 1), (3.0, 'host', 'POST', 201, 1), (15.4, 'host', 'POST', 201, 1), (15.9, 'host', 'DELETE', 200, None), (45.8, 'host', 'POST', 201, 1), (47.6, 'part', 'POST', 201, 1), (48.3, 'host', 'POST', 201, 1), (49.9, 'host', 'POST', 201, 2), (51.4, 'host', 'POST', 201, 2), (53.1, 'host', 'POST', 201, 3), (55.0, 'host', 'POST', 201, 2)]
+정리: 회의 mafaofsvjyp2j 삭제 -> 200
+정리: 회의 maxgtd0whpxz5 삭제 -> 200

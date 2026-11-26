@@ -4,7 +4,7 @@
 #zz-wait.is-full { display: flex; align-items: stretch; justify-content: center; padding: var(--zz-s4); background: var(--zz-stage); overflow: hidden; }
 /* 작은 단추만: 덮개가 무대 손짓을 막지 않게 */
 #zz-wait.is-mini { pointer-events: none; background: none; }
-.za-mini { position: absolute; left: var(--zz-s3); top: var(--zz-s3); min-height: 48px; font-size: 16px; font-weight: 600; pointer-events: auto; box-shadow: var(--zz-shadow); gap: var(--zz-s2); }
+.za-mini { position: absolute; left: var(--zz-s3); top: var(--zz-s3); min-height: 48px; min-width: 196px; justify-content: center; font-size: 16px; font-weight: 600; pointer-events: auto; box-shadow: var(--zz-shadow); gap: var(--zz-s2); }
 .za-mini-n { min-width: 22px; height: 22px; padding: 0 6px; border-radius: var(--zz-r-chip); background: var(--zz-accent-soft); color: var(--zz-accent-ink); font-size: 15px; display: inline-flex; align-items: center; justify-content: center; }
 
 .za-panel { width: min(760px, 100%); display: flex; flex-direction: column; min-height: 0; padding: var(--zz-s6); box-shadow: var(--zz-shadow); }

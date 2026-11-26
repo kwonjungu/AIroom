@@ -61,27 +61,35 @@ async function retryNet(fn, tries = 4, ms = 15000) {
   }
 }
 const REQ_TIMEOUT_MS = 20000;
-async function request(method, path, { body, pt, raw, contentType, auth = true, keepalive = false } = {}) {
+const idemKey = () => { try { return crypto.randomUUID().replace(/-/g, ''); } catch { return Date.now().toString(36) + Math.random().toString(36).slice(2, 12); } };
+async function request(method, path, { body, pt, raw, contentType, auth = true, keepalive = false, timeout = REQ_TIMEOUT_MS } = {}) {
   const headers = {};
+  // 보내기마다 「같은 요청」 표(감사 R7 P5-M1). 다시 보내도 서버가 한 번만 반영하고 처음 응답을 돌려준다.
+  if (method !== 'GET') headers['X-Zzoom-Idem'] = idemKey();
   if (auth) { const t = authToken(); if (t) headers['X-Auth-Token'] = t; const d = deviceId(); if (d) headers['X-Device-Id'] = d; }
   if (pt) headers['X-Zzoom-Pt'] = pt;
   let payload;
   if (raw !== undefined) { payload = raw; if (contentType) headers['Content-Type'] = contentType; }
   else if (body !== undefined) { payload = JSON.stringify(body); headers['Content-Type'] = 'application/json'; }
   const url = path.startsWith('/') ? path : BASE + '/' + path;
-  // 응답이 끝내 안 오면 단추가 영영 잠기므로 20초에 끊는다. GET 은 두 번 더 해 본다(POST 는 두 번 반영될 수 있어 한 번만).
-  // 보내기(POST 등)도 연결 자체가 안 된 경우(곧바로 실패 — 학교망에서 실측 ERR_ADDRESS_UNREACHABLE·핸드셰이크 끊김)에는 다시 보낸다.
-  // 서버까지 갔을 수 있는 늦은 실패·20초 시간 초과는 두 번 반영될 수 있어 다시 보내지 않는다.
+  // 응답이 끝내 안 오면 단추가 영영 잠기므로 시간 제한(기본 20초)에 끊는다.
+  // 끊기면 다시 보낸다: GET 은 4번, 보내기는 3번. 보내기는 「같은 요청」 표가 있어 서버가 두 번 반영하지 않는다.
   const tries = method === 'GET' ? 4 : 3;
   for (let a = 0; ; a++) {
     const ac = typeof AbortController === 'function' ? new AbortController() : null;
     let timedOut = false;
-    const timer = ac ? setTimeout(() => { timedOut = true; ac.abort(); }, REQ_TIMEOUT_MS) : null;
-    const t0 = Date.now();
-    try { return await fetch(url, { method, headers, body: payload, credentials: 'same-origin', keepalive, signal: ac ? ac.signal : undefined }); }
+    const timer = ac ? setTimeout(() => { timedOut = true; ac.abort(); }, timeout) : null;
+    try {
+      const r = await fetch(url, { method, headers, body: payload, credentials: 'same-origin', keepalive, signal: ac ? ac.signal : undefined });
+      // 앞서 보낸 같은 요청을 서버가 아직 처리 중이면 조금 뒤 다시 물어 처음 응답을 받는다
+      if (r.status === 409 && headers['X-Zzoom-Idem'] && a < tries + 3) {
+        const d = await r.clone().json().catch(() => null);
+        if (d?.error === 'in_progress') { await sleep(1500); continue; }
+      }
+      return r;
+    }
     catch {
-      const early = !timedOut && Date.now() - t0 < 3000;
-      if (a < tries - 1 && (method === 'GET' || early)) { await sleep([300, 1000, 2500][a] || 2500); continue; }
+      if (a < tries - 1 && !keepalive) { await sleep([300, 1000, 2500][a] || 2500); continue; }
       throw new ZzError(0, 'network', '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.');
     } finally { if (timer) clearTimeout(timer); }
   }
@@ -113,7 +121,7 @@ export async function health() {
 export const listMeetings = () => call('GET', '/meetings');
 export const createMeeting = b => call('POST', '/meetings', { body: b });
 export const updateMeeting = (mid, b) => call('PATCH', `/meetings/${enc(mid)}`, { body: b });
-export const deleteMeeting = mid => call('DELETE', `/meetings/${enc(mid)}`);
+export const deleteMeeting = mid => call('DELETE', `/meetings/${enc(mid)}`, { timeout: 45000 });   // 서버 정리 최대 20초+
 export const unlockHost = mid => call('POST', `/meetings/${enc(mid)}/unlock`, { body: {} });
 // 익명(ANON): 교직원 명부·airoom_ws_name 을 읽지도 쓰지도 않는다(staffNames·rememberedName·rememberName 없앰).
 const enc = encodeURIComponent;
@@ -236,11 +244,18 @@ async function begin(mid, g, token, myGen) {
 function quietLeave(mid, pt) {
   try { if (pt && navigator.sendBeacon) navigator.sendBeacon(`${BASE}/${enc(mid)}/heartbeat`, new Blob([JSON.stringify({ pt, leaving: true })], { type: 'application/json' })); } catch { /* 최선 노력 */ }
 }
-function scheduleRefresh() {
+function scheduleRefresh(delay = REFRESH_MS) {
   if (!S) return;
   clearTimeout(S.timers.refresh);
   const mid = S.mid;
-  S.timers.refresh = setTimeout(() => { refresh(mid).catch(e => console.warn('[zzoom] 토큰 갱신 실패', e)); }, REFRESH_MS);
+  S.timers.refresh = setTimeout(() => {
+    refresh(mid).catch(e => {
+      console.warn('[zzoom] 토큰 갱신 실패', e);
+      // 한 번 실패로 끝내면 60분에 실시간 구독이 모두 끊긴다(감사 R7 P5-H1). 자격이 살아 있는 동안 20초마다 다시.
+      if (e?.code === 'aborted' || [401, 403, 404, 410].includes(e?.status)) return;
+      if (S && S.mid === mid) scheduleRefresh(20000);
+    });
+  }, delay);
 }
 
 export async function join(mid) {   // 익명(ANON): 이름을 받지 않는다(옛 호출의 두 번째 인자는 무시)
@@ -281,7 +296,18 @@ export async function becomeHost(mid, code) {
   const myGen = gen;
   const d = await mcall(mid, 'POST', '/host', { body: { code: String(code || '') } });
   // 새 pt 로 바꿔 저장(옛 pt 는 서버가 폐기)
-  await begin(mid, d, d.token, myGen);
+  try { await begin(mid, d, d.token, myGen); }
+  catch (e) {
+    if (e?.code === 'aborted') throw e;
+    // 실시간 로그인만 실패: 옛 자격은 이미 서버가 버렸으므로 새 자격을 살려 두고 곧 다시 로그인한다(감사 R7 P5-M2).
+    // 그러지 않으면 화면은 입장한 채인데 채팅·손들기·발표하기가 모두 「참가 자격이 없어요」로 막혔다.
+    console.warn('[zzoom] 주관자 전환 뒤 실시간 로그인 실패, 3초 뒤 다시', e);
+    S = { mid, pt: d.pt, cid: d.cid, role: d.role, exp: d.exp, until: d.until, timers: {} };
+    saveGrant(mid, S);
+    scheduleRefresh(3000);
+    startHeartbeat();
+    sset('role', { role: S.role, cid: S.cid, presenter: false });
+  }
   return { cid: d.cid, role: d.role };
 }
 export async function refresh(mid) {
@@ -370,7 +396,7 @@ export async function sendLive(mid, { aid, page, view, force = false, full }) {
   if (force) body.force = true;
   if (full !== undefined) body.full = !!full;   // 발표자 「전체 화면」(보내지 않으면 서버가 지금 값을 유지)
   try {
-    const d = await mcall(mid, 'POST', '/live', { body });
+    const d = await mcall(mid, 'POST', '/live', { body, timeout: 6000 });   // 멈춘 요청 하나가 발표 화면을 20초 막지 않게(감사 R7 P3-5)
     if (d?.live) acceptLive(d.live);
     return d;
   } catch (e) {
@@ -418,7 +444,7 @@ export function transcribe(mid, blob, { n, at, aid, page } = {}) {
   if (at != null) q.set('at', String(Math.round(at)));
   if (aid) q.set('aid', aid);
   if (page != null) q.set('page', String(page));
-  return mcall(mid, 'POST', `/transcribe?${q}`, { raw: blob, contentType: blob.type || 'audio/webm' });
+  return mcall(mid, 'POST', `/transcribe?${q}`, { raw: blob, contentType: blob.type || 'audio/webm', timeout: 60000 });   // 서버가 최대 45초 기다림
 }
 export async function exportMd(mid) {
   if (!S || S.mid !== mid) throw new ZzError(401, 'pt_required', '참가 자격이 없어요. 다시 입장해 주세요.');
@@ -541,6 +567,8 @@ function live(make, cb, label) {
         unsub = make(f, snap => { fails = 0; spatch('conn', { firebase: 'ok' }); cb(snap); }, err => {
           console.warn('[zzoom] 구독 오류', label, err?.code || err);
           spatch('conn', { firebase: 'off' });
+          // 권한 거절은 대개 실시간 출입증 만료 — 30초에 한 번 바로 새로 받는다(감사 R7 P5-H1)
+          if (err?.code === 'permission-denied' && S && Date.now() - (S.permRefreshAt || 0) > 30000) { S.permRefreshAt = Date.now(); scheduleRefresh(0); }
           if (err?.code === 'permission-denied' && !warned) { warned = true; toast('실시간 연결을 다시 잇는 중이에요. 계속 안 되면 다시 입장해 주세요.', 'warn'); }
           try { unsub && unsub(); } catch { /* 무시 */ }
           unsub = null;

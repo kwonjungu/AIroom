@@ -56,7 +56,8 @@ export function simulatesPressure(pts) {
 export function strokeOptions(stroke, pageW, last = true) {
   const pr = PRESETS[stroke.tool] || PRESETS.pen;
   return {
-    size: Math.max(0.5, (stroke.w || pr.w) * pageW),
+    // 휴대폰(쪽 너비 약 370px)에서 펜이 1.5px 로 너무 가늘어 최소 2.2px(감사 R7 P4). 저장값(w)은 그대로.
+    size: Math.max(stroke.tool === 'hl' ? 0.5 : 2.2, (stroke.w || pr.w) * pageW),
     thinning: pr.thinning, smoothing: pr.smoothing, streamline: pr.streamline,
     simulatePressure: simulatesPressure(stroke.pts), last,
   };
@@ -355,6 +356,8 @@ export function mount(ctx) {
     if (!en.epochKnown) return;
     for (let i = pending.length - 1; i >= 0; i--) {
       const p = pending[i];
+      // 짐작한 epoch(0)로 기다리는 선은 버리지 않는다 — 서버 값을 받아 다시 보낸다(감사 R7 P4)
+      if (p.pageKey === en.key && p.guessed && p.status !== 'sending') { p.epoch = en.epoch; p.guessed = false; for (const x of p.parts) x.body.epoch = en.epoch; continue; }
       if (p.pageKey === en.key && p.epoch !== null && p.epoch < en.epoch && p.status !== 'sending') pending.splice(i, 1);
     }
     renderBar();

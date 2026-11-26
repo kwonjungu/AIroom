@@ -408,6 +408,7 @@ export function mount(ctx) {
   }
   /** 쪽과 view 를 정한다. 쪽이 바뀌면 그림을 새로 받는다. */
   function setTarget(aid, page, view) {
+    cancelGlide();   // 사용자가 쪽을 넘기면 진행 중인 부드럽게 따라가기가 덮어쓰지 않게(감사 R7 P3-3)
     const a = findA(aid) || S.agenda[0] || null;
     const p = a ? clamp(page | 0 || 1, 1, pagesOf(a)) : 1;
     const changed = (a?.aid || null) !== S.aid || p !== S.page;
@@ -450,6 +451,7 @@ export function mount(ctx) {
     requestRender(); emitPage(false); userChanged();
   }
   function setView(v) {
+    cancelGlide();
     const before = S.view;
     S.view = clampView(v, geo());
     if (sameView(before, S.view, 1e-5)) return false;
@@ -475,7 +477,8 @@ export function mount(ctx) {
     btnFull.textContent = on ? t('전체 화면 끝내기') : (isPresenter() && meetingLive() ? t('모두 전체 화면') : t('전체 화면'));
     if (!on && document.fullscreenElement && FS.real) { FS.real = false; document.exitFullscreen?.().catch(() => {}); }
     const a = curA();
-    bigPresent.hidden = !(meetingLive() && a && !noFile(a) && !penMode() && !(isPresenter() && S.live?.aid === a.aid));
+    const othersOn = !!S.live?.aid && !isPresenter() && S.follow !== 'free';   // 남의 발표를 따라가는 중(감사 R7 P3-4)
+    bigPresent.hidden = !(meetingLive() && a && !noFile(a) && !penMode() && !on && !othersOn && !(isPresenter() && S.live?.aid === a.aid));
     if (!bigPresent.isConnected) elOverlay.append(bigPresent);
   }
   function toggleFull() {
@@ -508,6 +511,7 @@ export function mount(ctx) {
   // 따라가는 쪽: 같은 쪽에서 확대·이동만 바뀌면 순간이동 대신 0.14초 동안 부드럽게(지연 줄이기 B, 2026-11-26)
   let tweenId = 0;
   const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
+  function cancelGlide() { if (tweenId) { cancelAnimationFrame(tweenId); tweenId = 0; } }
   function glideTo(to) {
     if (tweenId) cancelAnimationFrame(tweenId);
     const from = { ...S.view }, t0 = performance.now(), D = 140;
@@ -585,10 +589,12 @@ export function mount(ctx) {
     }, e => {
       if (dead) return;
       const code = e?.code;
+      // 다시 보낼 때 「모두 전체 화면」과 강제 맞춤을 잃지 않게(감사 R7 P3-2)
+      const keepAsk = () => { if (body.full !== undefined && P.fullWant === undefined) P.fullWant = body.full; if (body.force) P.force = true; };
       if (e?.status === 409 && code === 'stale_rev') {
         const l = e.extra?.live;
         // 서버 최신이 내가 보낸 것과 같으면(메아리 순서 꼬임) 내 화면을 다시 보내고, 아니면 최신으로 맞춘다.
-        if (l && liveMatchesSent(l)) { P.dirty = true; }
+        if (l && liveMatchesSent(l)) { P.dirty = true; keepAsk(); }
         else { dropLive(); if (l) applyLive(l); }
       } else if (e?.status === 409 && code === 'not_presenter') {
         dropLive();
@@ -598,7 +604,7 @@ export function mount(ctx) {
       } else if (e?.status === 409 || e?.status === 403 || e?.status === 410) {
         dropLive(); // 회의 상태가 바뀜(끝남 등). 화면은 store 로 따라온다
       } else if (++P.fails <= 3) {
-        P.dirty = true; // 연결 문제: 조금 뒤 다시
+        P.dirty = true; keepAsk(); // 연결 문제: 조금 뒤 다시
         cancel(P.timer); P.timer = later(() => { P.timer = null; flushLive(); }, 800 * P.fails);
       } else {
         P.fails = 0;
@@ -641,6 +647,9 @@ export function mount(ctx) {
   }
   function onDown(e) {
     if (!curA()) return;
+    // 무대 위 단추(큰 발표하기·다시 불러오기)와 스크롤 막대는 무대가 잡지 않는다(감사 R7 P3-1: 마우스 클릭이 무대로 감)
+    if (e.target?.closest?.('button, a, input, .zv-sb')) return;
+    cancelGlide();
     const pos = local(e);
     if (penMode()) {
       // 펜 모드: 한 손가락은 3팀 몫. 손가락 두 개 이상(또는 마우스 가운데 단추)만 내가 받는다.
@@ -1052,7 +1061,7 @@ export function mount(ctx) {
     if (isPresenter()) queueLive(true);
   }));
   offs.push(store.on('cmd:follow', () => backToPresenter()));
-  offs.push(store.on('ui:wait', mode => { waitShown = mode || 'off'; paintBar(); }));
+  offs.push(store.on('ui:wait', mode => { waitShown = mode || 'off'; paintBar(); bigPresent.classList.toggle('is-below-mini', waitShown === 'mini'); }));
   offs.push(store.on('cmd:redraw', () => { lastVp = null; requestRender(); }));
 
   // ================= 시작 =================

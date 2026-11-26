@@ -1811,3 +1811,32 @@ test('R4-Q5: 만든 사람 주관자 토큰 until 은 그 로그인 세션 만�
     const rf = await h.call('POST', `/${mid}/refresh`, { pt: me.json.pt, auth: 'user-t#maker' });
     assert.equal(rf.json.role, 'viewer');
 });
+
+test('감사 R7: 같은 요청 표(X-Zzoom-Idem)로 다시 보내면 한 번만 반영하고 처음 응답을 준다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const V = await h.join(mid, '참석');
+    const idem = 'abcdefgh12345678';
+    const r1 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '안녕하세요' }, headers: { 'X-Zzoom-Idem': idem } });
+    const r2 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '안녕하세요' }, headers: { 'X-Zzoom-Idem': idem } });
+    assert.ok(r1.status < 300, r1.text);
+    assert.equal(r2.status, r1.status);
+    assert.deepEqual(r2.json, r1.json);
+    const r3 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '안녕하세요' }, headers: { 'X-Zzoom-Idem': 'zzzzzzzz87654321' } });
+    assert.ok(r3.status < 300, r3.text);
+    assert.notDeepEqual(r3.json, r1.json);   // 다른 표는 새 요청
+});
+
+test('감사 R7: 큰 epoch 를 보내도 판서 상한 장부가 비워지지 않는다', async t => {
+    const h = await setup(); t.after(h.close);
+    const mid = await h.createMeeting();
+    const A = await h.join(mid, '관리자', 'admin');
+    const aid = await h.board(mid, A, 1);
+    const pk = `${aid}_1`;
+    await h.call('POST', `/${mid}/strokes`, { pt: A.pt, body: stroke(pk) });
+    const before = Number(await h.redis.hget(`zz:sc:${mid}`, pk));
+    const r = await h.call('POST', `/${mid}/strokes`, { pt: A.pt, body: stroke(pk, { epoch: 999999 }) });
+    assert.equal(r.status, 409, r.text);   // stale_epoch
+    assert.equal(Number(await h.redis.hget(`zz:sc:${mid}`, pk)), before);
+    assert.equal(Number((await h.redis.hget(`zz:sc:${mid}`, pk + '@e')) || 0), 0);
+});

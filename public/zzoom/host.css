@@ -120,3 +120,8 @@
   .zh-status.is-live::before { width: 8px; height: 8px; }
 }
 .zh-agenda-sub { display: inline-flex; align-items: center; gap: var(--zz-s2); }
+/* 360px 휴대폰에서 「회의 끝내기」가 잘리지 않게 상태 글을 줄인다(감사 R7 P5-L1) */
+@media (max-width: 400px) {
+  .zh-status { white-space: normal; font-size: 15px; flex: 1 1 0; min-width: 0; line-height: 1.25; }
+  .zh-status-people { font-size: 15px; }
+}

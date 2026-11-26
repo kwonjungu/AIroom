@@ -21,7 +21,7 @@
 - `npm run test:zzoom` 129 통과, 실패 0.
 - `d1_e2e.py`(엣지와 크로미움, 1280과 820) 196 통과, 실패 0.
 - `easy_a_e2e.py --quick`(엣지 1280) 8 장면 모두 통과. 820·390 과 크로미움 전체 실행은 다음 배포 전에 한다.
-- 스크린샷(저장소 밖, 직접 봄): `C:\Users\권준구\AppData\Local\Temp\claude\40f4efd3ccefd627\d4fabf86-90b2-4507-9d7e-f1f14b7b99e2\scratchpad\easyA\shots\`.
+- 스크린샷(저장소 밖, 직접 봄): `<임시폴더>\claude\40f4efd3ccefd627\d4fabf86-90b2-4507-9d7e-f1f14b7b99e2\scratchpad\easyA\shots\`.
 - 체크포인트에 같이 넣은 것: 팀 B 요청(머리줄 「내가 발표 중」 칩을 `meeting.presenter.cid === role.cid` 로 판정), 팀 C 요청(`MEETING_HOST` 에서 `upload` 를 뺌, 탭 이름, 「채팅과 투표」 숫자 표시, 녹음 없는 회의는 참석자 녹음 기록 탭 숨김). 옆칸 탭 그림은 빼서 「녹음 기록」이 1280 에서 잘리지 않게 했다.
 - 띄운 서버와 브라우저는 시험이 끝날 때 모두 닫힌다(시험마다 timeout 을 걸었다).
 
