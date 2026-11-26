@@ -190,8 +190,11 @@ export function mount(ctx) {
   const pageNo = h('span', { class: 'zv-pageno zz-num', 'aria-live': 'polite' });
   const btnFit = h('button', { type: 'button', class: 'zz-btn ghost zv-fit', onclick: fitPage }, t('쪽 전체 보기'));
   const zoomNo = h('span', { class: 'zv-zoom zz-num', 'aria-hidden': 'true' });
-  const pager = h('div', { class: 'zv-pager' }, btnList, btnPrev, pageNo, btnNext, btnFit, zoomNo);
+  const btnFull = h('button', { type: 'button', class: 'zz-btn zv-full-btn', 'aria-pressed': 'false', onclick: toggleFull }, t('전체 화면'));
+  const pager = h('div', { class: 'zv-pager' }, btnList, btnPrev, pageNo, btnNext, btnFit, zoomNo, btnFull);
   elPagebar.prepend(pager);
+  // 누구나 바로 발표하게(사용자 요청 2026-11-26): 보고 있는 자료를 내가 발표 중이 아니면 무대 아래 큰 단추. 확인 창은 agenda.js 의 것 그대로.
+  const bigPresent = h('button', { type: 'button', class: 'zz-btn primary zv-big-present', hidden: true, onclick: () => { if (S.aid) store.emit('cmd:present', S.aid); } }, t('이 자료 발표하기'));
 
   // ================= 그리기 =================
   let rafId = 0;
@@ -361,6 +364,7 @@ export function mount(ctx) {
     if (a) S.lastPageOf.set(a.aid, p);
     if (view) S.view = { cx: num(view.cx, 0.5), cy: num(view.cy, 0.5), z: num(view.z, 1) };
     if (changed) {
+      if (typeof applyFull === 'function') applyFull();   // 보고 있는 자료가 바뀌면 큰 「이 자료 발표하기」도 다시
       const agendaChanged = !lastAgendaAid || lastAgendaAid !== S.aid;
       loadCurrent();
       if (agendaChanged) renderAgenda(); else markAgenda();
@@ -402,12 +406,53 @@ export function mount(ctx) {
     return true;
   }
 
+  // ================= 전체 화면(사용자 요청 2026-11-26) =================
+  // 내가 누르면 내 화면만 무대가 꽉 차게(+브라우저 전체 화면). 발표자가 누르면 live.full 로 따라가는 모두의 화면도 꽉 차게.
+  // 브라우저는 남의 화면을 진짜 전체 화면으로 못 바꾸므로 참석자 쪽은 창 안에서 무대만 꽉 채운다.
+  const FS = { mine: false, optOut: false, lastShared: false, real: false };
+  const sharedFull = () => !!(S.live && S.live.full && meetingLive());
+  function fullOn() {
+    if (isPresenter()) return sharedFull() || FS.mine;
+    return FS.mine || (sharedFull() && S.follow === 'follow' && !FS.optOut);
+  }
+  function applyFull() {
+    const sh = sharedFull();
+    if (sh !== FS.lastShared) { FS.lastShared = sh; FS.optOut = false; }
+    const on = fullOn();
+    document.body.classList.toggle('zz-full', on);
+    btnFull.setAttribute('aria-pressed', String(on));
+    btnFull.textContent = on ? t('전체 화면 끝내기') : (isPresenter() && meetingLive() ? t('모두 전체 화면') : t('전체 화면'));
+    if (!on && document.fullscreenElement && FS.real) { FS.real = false; document.exitFullscreen?.().catch(() => {}); }
+    const a = curA();
+    bigPresent.hidden = !(meetingLive() && a && !noFile(a) && !penMode() && !(isPresenter() && S.live?.aid === a.aid));
+    if (!bigPresent.isConnected) elOverlay.append(bigPresent);
+  }
+  function toggleFull() {
+    const on = fullOn(), next = !on;
+    if (isPresenter() && meetingLive() && S.aid && !noFile(curA())) {
+      FS.mine = next;
+      P.fullWant = next; queueLive(true);    // 다음 live 에 full 을 실어 보낸다(보내기 묶음·409 처리는 그대로)
+    } else if (on) { FS.mine = false; if (sharedFull()) FS.optOut = true; }
+    else { FS.mine = true; FS.optOut = false; }
+    if (next && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => { FS.real = true; }).catch(() => {});
+    }
+    if (!next) FS.mine = false;
+    applyFull();
+  }
+  listen(document, 'fullscreenchange', () => {
+    if (!document.fullscreenElement && FS.real) {   // Esc 로 브라우저 전체 화면을 나가면 꽉 찬 화면도 끝낸다
+      FS.real = false;
+      if (fullOn()) toggleFull();
+    }
+  });
+
   // ================= 따라가기 =================
   function setFollow(mode) {
     if (S.follow === mode) return;
     S.follow = mode;
     store.set('follow', mode);
-    paintBar(); paintOverlay();
+    paintBar(); paintOverlay(); applyFull();
   }
   function applyLive(live) {
     if (!live?.aid || !findA(live.aid)) return;
@@ -416,6 +461,7 @@ export function mount(ctx) {
   function onLive(live) {
     S.live = live || null;
     if (live && S.lastForce === null) S.lastForce = live.forceSeq || 0;
+    applyFull();
     if (!live) { paintBar(); paintOverlay(); markAgenda(); return; }
     if (isPresenter()) { presenterIncoming(live); markAgenda(); return; }
     const fs = live.forceSeq || 0;
@@ -458,6 +504,7 @@ export function mount(ctx) {
     P.force = false; P.dirty = false; P.inflight = true;
     const body = { aid: S.aid, page: S.page, view: roundView(S.view) };
     if (force) body.force = true;
+    if (P.fullWant !== undefined) { body.full = P.fullWant; P.fullWant = undefined; }
     P.lastSent = body;
     Promise.resolve().then(() => api.sendLive(mid, body)).then(res => {
       P.fails = 0;
@@ -494,8 +541,9 @@ export function mount(ctx) {
   let wasPresenter = isPresenter();
   function rolesChanged() {
     const now = isPresenter();
-    if (now === wasPresenter) { paintBar(); paintOverlay(); return; }
+    if (now === wasPresenter) { paintBar(); paintOverlay(); applyFull(); return; }
     wasPresenter = now;
+    if (!now) FS.mine = false;   // 발표를 마치면 내가 켠 모두 전체 화면도 끝
     dropLive();
     setFollow('follow');
     if (S.live?.aid) applyLive(S.live); // 넘겨받을 때도, 내려갈 때도 지금 진행 화면에서 시작
@@ -914,11 +962,12 @@ export function mount(ctx) {
     S.meeting = m;
     if (m.presenter?.cid !== prevPc) P.lost = false;
     if (prevSt !== m.status && m.status !== 'live') dropLive();
-    rolesChanged(); markAgenda();
+    rolesChanged(); markAgenda(); applyFull();
   }));
   offs.push(store.on('tool', tl => {
     S.tool = tl || { mode: 'view' };
     elStage.classList.toggle('zv-pen', penMode());
+    applyFull();
     if (penMode() && gest?.kind === 'pan' && ptrs.get(gest.id)?.type !== 'mouse') { gest = null; ptrs.clear(); }
   }));
   offs.push(store.on('cmd:nav', d => {
@@ -944,6 +993,7 @@ export function mount(ctx) {
   paintBar(); paintOverlay();
   measure();
   elStage.classList.toggle('zv-pen', penMode());
+  applyFull();
 
   return {
     unmount() {
@@ -955,6 +1005,9 @@ export function mount(ctx) {
       if (rafId) cancelAnimationFrame(rafId);
       thumbIO?.disconnect();
       pager.remove();
+      bigPresent.remove();
+      document.body.classList.remove('zz-full');
+      if (document.fullscreenElement && FS.real) document.exitFullscreen?.().catch(() => {});
       agendaBox.remove();
       elAgenda.removeAttribute('data-open');
       elBar.replaceChildren();

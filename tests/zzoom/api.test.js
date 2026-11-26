@@ -94,10 +94,10 @@ test('격리: 시연본·비로그인·권한·다른 회의·만료 자격', as
     const amk = await h.call('POST', '/meetings', { auth: 'admin', body: { title: 'a', startsAt: Date.now(), hostCode: '123456' } });
     const ap = await h.call('PATCH', `/meetings/${amk.json.meeting.id}`, { auth: 'user', body: { title: 'z' } });
     assert.equal(ap.status, 403); assert.equal(ap.json.error, 'manager_only', '남이 만든 회의는 수정 못 함');
-    assert.equal((await h.call('DELETE', `/meetings/${amk.json.meeting.id}`, { auth: 'user' })).json.error, 'manager_only', '남이 만든 회의는 삭제 못 함');
+    // 2026-11-26 사용자 결정: 회의 지우기는 누구나 — 아래에서 남이 만든 회의도 지워지는지 본다
     assert.equal((await h.call('POST', `/meetings/${amk.json.meeting.id}/unlock`, { auth: 'user' })).json.error, 'manager_only');
     assert.equal((await h.call('DELETE', `/meetings/${umid}`, { auth: 'user' })).status, 200, '만든 사람은 삭제');
-    assert.equal((await h.call('DELETE', `/meetings/${amk.json.meeting.id}`, { auth: 'admin' })).status, 200, '관리자는 삭제');
+    assert.equal((await h.call('DELETE', `/meetings/${amk.json.meeting.id}`, { auth: 'user' })).status, 200, '남이 만든 회의도 누구나 삭제(2026-11-26)');
     assert.equal((await h.call('POST', '/meetings', { auth: 'admin', body: { title: 'x', startsAt: Date.now(), hostCode: '12345' } })).json.error, 'bad_code');
     assert.equal((await h.call('POST', '/meetings', { auth: 'admin', body: { title: '', startsAt: Date.now(), hostCode: '123456' } })).json.error, 'bad_title');
     assert.equal((await h.call('POST', '/meetings', { auth: 'admin', body: [] })).status, 400);
@@ -645,7 +645,8 @@ test('삭제: 즉시 정리·중복 실행·중간 실패 뒤 이어서·cron �
     const mid = await h.createMeeting();
     const { V } = await fill(mid);
     assert.ok(leftovers(mid).docs > 5 && leftovers(mid).objects === 1 && leftovers(mid).redis > 2);
-    assert.equal((await h.call('DELETE', `/meetings/${mid}`, { auth: 'user' })).status, 403);
+    // 2026-11-26: 회의 지우기는 누구나(로그인 필요). 비로그인 삭제는 401
+    assert.equal((await h.call('DELETE', `/meetings/${mid}`, {})).status, 401);
     const d = await h.call('DELETE', `/meetings/${mid}`, { auth: 'admin' });
     assert.equal(d.status, 200); assert.deepEqual(d.json, { deleted: true, queued: false });
     assert.deepEqual(leftovers(mid), { docs: 0, objects: 0, redis: 0 });
@@ -1670,7 +1671,6 @@ test('R3-P4: 기기 id 만으로는 만든 사람이 아니다(공용 PC). 다�
     assert.equal((await h.call('PATCH', `/meetings/${mid}`, { auth: 'user-t#login1', headers: dev, body: { title: '같은 세션' } })).status, 200);
     const other = await h.call('PATCH', `/meetings/${mid}`, { auth: 'user-t#login2', headers: dev, body: { hostCode: '000000' } });
     assert.equal(other.status, 403, other.text);
-    assert.equal((await h.call('DELETE', `/meetings/${mid}`, { auth: 'user-t#login2', headers: dev })).status, 403);
     const V = await h.join(mid, 'login2');
     const host = await h.call('POST', `/${mid}/host`, { pt: V.pt, body: { code: '123456' }, ip: '10.201.0.1' });
     assert.equal(host.status, 200, host.text); assert.equal(host.json.role, 'host');

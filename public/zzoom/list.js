@@ -173,8 +173,9 @@ export function mount(ctx) {
     if (isAdmin || m.mine) {
       if (m.hostLocked) actions.push(h('button', { type: 'button', class: 'zz-btn zl-unlock', onclick: () => unlock(m), text: '잠금 풀어 주기' }));
       if (!gone) actions.push(h('button', { type: 'button', class: 'zz-btn ghost zl-edit', onclick: () => openForm(m), 'aria-label': `${name} 회의 고치기`, text: '고치기' }));
-      actions.push(h('button', { type: 'button', class: 'zz-btn ghost danger zl-del', onclick: () => openDelete(m), 'aria-label': `${name} 회의 지우기`, text: '지우기' }));
     }
+    // 지우기는 누구나(사용자 결정 2026-11-26). 확인 창에서 한 번 더 묻는다.
+    actions.push(h('button', { type: 'button', class: 'zz-btn ghost danger zl-del', onclick: () => openDelete(m), 'aria-label': `${name} 회의 지우기`, text: '지우기' }));
     return h('li', { class: `zl-card zz-card${m.status === 'live' ? ' is-live' : ''}`, 'data-mid': m.id },
       h('div', { class: 'zl-card-main' },
         h('h2', { class: 'zl-card-title', text: m.title || '(제목 없음)' }),

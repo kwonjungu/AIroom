@@ -31,7 +31,7 @@
 .za-chip-mine { background: var(--zz-accent-soft); color: var(--zz-accent-ink); font-weight: 600; }
 .za-item.is-nofile .za-name { color: var(--zz-muted); }
 .za-actions { display: flex; flex-wrap: wrap; gap: var(--zz-s2); justify-content: flex-end; flex: 0 1 auto; }
-.za-present { font-weight: 600; }
+.za-present { font-weight: 700; font-size: 17px; min-height: 48px; padding: 0 22px; }   /* 누구나 바로 발표하게 크게(2026-11-26) */
 .za-edit[aria-expanded="true"] { background: var(--zz-canvas); }
 .za-edit-menu { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--zz-s2); justify-content: flex-end; padding: var(--zz-s2) var(--zz-s3); border-radius: var(--zz-r-btn); background: var(--zz-canvas); }
 .za-edit-menu .zz-btn { min-height: var(--zz-touch); }

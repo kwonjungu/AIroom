@@ -363,11 +363,12 @@ function beacon(leaving) {
 export const setState = (mid, action, value) => mcall(mid, 'POST', '/state', { body: value === undefined ? { action } : { action, value }, keepalive: true });
 export const takePresenter = mid => mcall(mid, 'POST', '/presenter', { body: {} });
 // 진행 상태: baseRev·epoch 는 store live 에서 읽는다. 409 면 e.extra.live 로 맞추면 된다(서버가 최신 상태를 줌).
-export async function sendLive(mid, { aid, page, view, force = false }) {
+export async function sendLive(mid, { aid, page, view, force = false, full }) {
   const live = store?.get('live') || {};
   const m = store?.get('meeting') || {};
   const body = { aid, page, view, baseRev: live.rev || 0, epoch: m.presenter?.epoch ?? live.epoch ?? 0 };
   if (force) body.force = true;
+  if (full !== undefined) body.full = !!full;   // 발표자 「전체 화면」(보내지 않으면 서버가 지금 값을 유지)
   try {
     const d = await mcall(mid, 'POST', '/live', { body });
     if (d?.live) acceptLive(d.live);

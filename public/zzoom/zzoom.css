@@ -237,3 +237,11 @@ body.is-host.route-meeting #zz-hostbar { display: flex; }
   #zz-status .zz-chip:not(.live) { display: none; }
   #zz-status { min-width: 0; }
 }
+
+/* ---------- 전체 화면(2026-11-26): 무대만 화면에 꽉 차게. 쪽 막대·펜 막대만 남긴다 ---------- */
+body.zz-full #zz-header, body.zz-full #zz-agenda, body.zz-full #zz-side, body.zz-full #zz-hostbar,
+body.zz-full #zz-follow-bar, body.zz-full #zz-notice, body.zz-full #zz-wait { display: none !important; }
+body.zz-full #zz-meeting, body.zz-full.is-host #zz-meeting, body.zz-full.side-closed #zz-meeting {
+  position: fixed; inset: 0; top: 0; bottom: 0; grid-template-columns: minmax(0, 1fr) !important; z-index: 50;
+}
+body.zz-full #zz-center { grid-column: 1 / -1; }

@@ -414,6 +414,7 @@ export function mount(ctx) {
   for (const k of ['meeting', 'live', 'role']) offs.push(store.on(k, () => render()));
   offs.push(store.on('agenda', () => { refreshMine(false); render(); }));
   offs.push(store.on('cmd:agenda-add', () => openAdd()));
+  offs.push(store.on('cmd:present', aid => { const a = agenda().find(x => x.aid === aid); if (a) askPresent(a); }));   // 무대 아래 큰 「이 자료 발표하기」(2팀)
   offs.push(store.on('cmd:agenda-open', () => { S.open = true; S.dismissed = false; render(); }));   // 2팀 띠 「오늘의 안건 보기」
   // 「화면은 무조건 발표자가 가져간다」(U16): 손으로 연 패널도 닫는다. 창은 app.js 가 닫거나 접는다
   offs.push(store.on('cmd:yield', () => { if (S.open || !root.hidden) { S.open = false; S.dismissed = true; render(); } }));
