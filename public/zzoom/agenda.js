@@ -178,7 +178,9 @@ export function mount(ctx) {
     const canClose = S.open || (liveOn && !!l?.aid) || list.some(hasFile);
     const sub = m?.status === 'ready'
       ? ['회의가 시작되기 전이에요. 안건과 자료를 미리 올려 두세요.', '회의가 시작되면 「발표하기」 단추가 생겨요.']
-      : ['안건 이름을 누르면 나만 그 자료를 봐요.', '「발표하기」를 누르면 모두가 내 화면을 봐요.'];
+      : presentingToday({ meeting: m, live: l, myCid: role()?.cid })
+        ? ['지금 모두가 이 화면을 봐요.', '안건 이름이나 「발표하기」를 누르면 확인한 뒤 모두 그 자료로 넘어가요.']
+        : ['안건 이름을 누르면 나만 그 자료를 봐요.', '「발표하기」를 누르면 모두가 내 화면을 봐요.'];
     const head = h('div', { class: 'za-head' },
       h('div', { class: 'za-head-text' },
         h('h2', { class: 'za-title' }, h('span', { text: '오늘의 안건' }), list.length ? h('span', { class: 'za-count zz-num', text: String(list.length) }) : null),
@@ -258,6 +260,7 @@ export function mount(ctx) {
       ctx.toast(canEdit(a) ? '아직 자료가 없어요. 「자료 올리기」로 올려 주세요.' : '아직 자료가 없는 안건이에요.', 'info');
       return;
     }
+    if (presentingToday({ meeting: meeting(), live: live(), myCid: role()?.cid })) { askPresent(a); return; }   // 0번 발표 중: 모두가 넘어가므로 확인 먼저
     store.emit('cmd:nav', { aid: a.aid, page: 1 });
     close();
   }
@@ -274,6 +277,12 @@ export function mount(ctx) {
       actions: [
         { label: '예', primary: true, onClick: async () => {
           try {
+            if (!today && presentingToday({ meeting: meeting(), live: live(), myCid: role()?.cid })) {
+              store.emit('cmd:nav', { aid: a.aid, page: 1 });   // 나는 이미 발표자: 쪽 넘기기처럼 모두 같이 넘어간다
+              S.open = false; S.dismissed = true; render();
+              ctx.toast('모두가 이 자료로 넘어갔어요.', 'ok');
+              return;
+            }
             await api.present(mid, today ? (api.TODAY || TODAY) : a.aid);
             if (!alive) return;
             if (today) { S.open = false; S.dismissed = false; render(); ctx.toast('모두가 오늘의 안건을 봐요.', 'ok'); return; }   // 발표자도 0번 화면을 본다

@@ -1725,6 +1725,7 @@ test('0번 오늘의 안건 발표: live 일 때만, 발표자는 부른 사람�
     assert.equal(earlyA.status, 409, earlyA.text); assert.equal(earlyA.json.error, 'state_ready');
     assert.equal(h.fb.docs.get(`zzoom_meetings/${mid}`).presenter, null, '시작 전 실패는 아무것도 바꾸지 않음');
     await h.call('POST', `/${mid}/state`, { pt: A.pt, body: { action: 'start' } });
+    { const d = h.fb.docs.get(`zzoom_meetings/${mid}`); d.live = { ...d.live, page: 2, view: { cx: 0.3, cy: 0.7, z: 2 } }; }   // 다른 쪽·확대에서 0번으로 가도 1쪽·기본 보기로 돌아오는지(감사 R12 L1)
     const before = h.fb.docs.get(`zzoom_meetings/${mid}`);
     assert.equal(before.live.aid, aid, '시작하면 첫 안건');
     // aid 를 같이 보내도 무시하고 0번으로

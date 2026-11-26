@@ -932,7 +932,7 @@ export function mount(ctx) {
       btn = ['end', t('발표 마치기')];
     } else if (st === 'today') {
       title = t('내가 오늘의 안건을 보여 주는 중이에요');
-      detail = t('모두가 오늘의 안건 화면을 봐요. 안건의 「발표하기」를 누르면 그 자료로 넘어가요.');
+      detail = t('모두가 오늘의 안건 화면을 봐요. 「다음 ›」이나 안건의 「발표하기」를 누르면 모두 그 자료로 넘어가요.');
       btn = ['end', t('발표 마치기')];
       if (waitShown !== 'full') btn2 = ['agenda', t('오늘의 안건 보기')];
     } else if (st === 'today-watch') {
