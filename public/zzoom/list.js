@@ -255,7 +255,7 @@ export function mount(ctx) {
         busy = false; save.disabled = false; save.textContent = saveLabel;
       }
     });
-    setTimeout(() => title.focus(), 30);
+    setTimeout(() => { if (!form.contains(document.activeElement)) title.focus(); }, 30);   // 이미 다른 칸을 누른 사람의 입력을 제목으로 빼앗지 않게
   }
 
   function field(id, label, control, hint, hintId) {
