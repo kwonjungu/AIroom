@@ -610,7 +610,7 @@ export function mount(ctx) {
         if (l && liveMatchesSent(l)) { P.dirty = true; keepAsk(); }
         else { dropLive(); if (l) applyLive(l); }
       } else if (e?.status === 409 && code === 'not_presenter' && S.meeting?.presenter?.epoch !== sentEp && isPresenter()) {
-        dropLive();   // 보내는 사이 내가 새로 발표(0번 등): 옛 epoch 거절일 뿐, 발표자 자격은 그대로(감사 R13 V1 M1)
+        // 보내는 사이 내가 새로 발표(0번 등): 옛 epoch 거절일 뿐, 발표자 자격은 그대로(감사 R13 V1 M1). 그 뒤 옮긴 화면(P.dirty)은 버리지 않는다(R14 V1 L1)
       } else if (e?.status === 409 && code === 'not_presenter') {
         dropLive();
         P.lost = true; // 역할·회의 문서가 바뀌면 다시 판단
@@ -618,6 +618,8 @@ export function mount(ctx) {
         paintBar(); paintOverlay();
       } else if (e?.status === 409 || e?.status === 403 || e?.status === 410) {
         dropLive(); // 회의 상태가 바뀜(끝남 등). 화면은 store 로 따라온다
+      } else if (S.meeting?.presenter?.epoch !== sentEp) {
+        P.fails = 0;   // 보내는 사이 발표가 바뀜(0번 등): 옛 화면을 다시 보내지 않는다(감사 R14 V1 M1)
       } else if (++P.fails <= 3) {
         P.dirty = true; keepAsk(); // 연결 문제: 조금 뒤 다시
         cancel(P.timer); P.timer = later(() => { P.timer = null; flushLive(); }, 800 * P.fails);
@@ -1048,7 +1050,7 @@ export function mount(ctx) {
     const txt = a ? `${S.page} / ${n}` : '0 / 0';
     if (pageNo.textContent !== txt) { pageNo.textContent = txt; pageNo.setAttribute('aria-label', a ? t('{n}쪽 중 {p}쪽', { n, p: S.page }) : t('안건 없음')); }
     btnPrev.disabled = !stepPage(S.agenda, S.aid, S.page, -1);
-    btnNext.disabled = !stepPage(S.agenda, S.aid, S.page, 1);
+    btnNext.disabled = !stepPage(S.agenda, S.aid, S.page, 1) && !(todayMine() && S.aid && !noFile(a));   // 0번 발표 중이면 깔린 자료로(감사 R14 V2 L1)
     btnFit.disabled = !a;
     const z = Math.round(S.view.z * 100);
     const zt = a && z > 100 ? `${z}%` : '';
