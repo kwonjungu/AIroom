@@ -226,16 +226,17 @@ export async function checkWebpSupport() {
  * WebP 가 아닌 결과(PNG 로 대신 저장하는 브라우저)는 서버가 받지 않으므로 WEBP_UNSUPPORTED 로 멈춘다(지적08).
  */
 export async function emitPage(canvas, out, ctx) {
-  // 마지막 안전망: 어떤 변환기든 긴 변이 한도를 넘으면 줄여서 낸다(서버 bad_sizes 방지)
-  if (Math.max(canvas.width, canvas.height) > LIMITS.longSide) {
-    const k = LIMITS.longSide / Math.max(canvas.width, canvas.height);
-    const c2 = makeCanvas(Math.max(1, Math.min(LIMITS.longSide, Math.round(canvas.width * k))), Math.max(1, Math.min(LIMITS.longSide, Math.round(canvas.height * k))));
-    const g2 = c2.getContext('2d'); g2.imageSmoothingQuality = 'high'; g2.drawImage(canvas, 0, 0, c2.width, c2.height);
-    freeCanvas(canvas); canvas = c2;
-  }
-  const w = canvas.width, h = canvas.height;
-  let t = null;
+  let t = null, src = null;
   try {
+    // 마지막 안전망: 어떤 변환기든 긴 변이 한도를 넘으면 줄여서 낸다(서버 bad_sizes 방지). 실패해도 finally 가 둘 다 비운다(감사 R15 L1)
+    if (Math.max(canvas.width, canvas.height) > LIMITS.longSide) {
+      const k = LIMITS.longSide / Math.max(canvas.width, canvas.height);
+      src = canvas;
+      canvas = makeCanvas(Math.max(1, Math.min(LIMITS.longSide, Math.round(src.width * k))), Math.max(1, Math.min(LIMITS.longSide, Math.round(src.height * k))));
+      const g2 = canvas.getContext('2d'); g2.imageSmoothingQuality = 'high'; g2.drawImage(src, 0, 0, canvas.width, canvas.height);
+      freeCanvas(src); src = null;
+    }
+    const w = canvas.width, h = canvas.height;
     const blob = await encodeWithin(canvas, LIMITS.webpQuality, Math.min(LIMITS.maxPageBytes, ctx?.caps?.page ?? Infinity), ctx);
     const s = Math.min(1, LIMITS.thumbSide / Math.max(w, h));
     t = makeCanvas(Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s)));
@@ -248,6 +249,7 @@ export async function emitPage(canvas, out, ctx) {
     out.thumbs.push(thumb);
   } finally {
     if (t) freeCanvas(t);
+    if (src) freeCanvas(src);
     freeCanvas(canvas);
   }
 }

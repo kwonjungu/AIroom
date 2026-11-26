@@ -73,8 +73,8 @@ export async function convertPptx(file, ctx, out) {
       let canvas;
       try {
         // 긴 변이 2000px 이 되게 가로 기준(가로 슬라이드)·세로 기준(세로 슬라이드)을 나눈다.
-        const cw = ratio <= 1 ? w : Math.max(1, Math.round(w / ratio));
-        const ch = Math.max(1, Math.round(cw * ratio));
+        const cw = ratio <= 1 ? w : Math.max(1, Math.floor(w / ratio));   // 내림: 세로가 조금 긴 슬라이드도 2001px 이 되지 않게(감사 R15 L2)
+        const ch = Math.max(1, Math.min(w, Math.round(cw * ratio)));
         canvas = makeCanvas(cw, ch);
         const g = canvas.getContext('2d');
         g.fillStyle = '#fff';
