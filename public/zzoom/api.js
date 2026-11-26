@@ -342,7 +342,7 @@ export function session(mid) {
 }
 function stopTimers() {
   if (!S) return;
-  clearTimeout(S.timers.refresh); clearInterval(S.timers.hb);
+  clearTimeout(S.timers.refresh); clearInterval(S.timers.hb); clearTimeout(S.timers.retry);
   if (S.timers.off) S.timers.off();
   S.timers = {};
 }
@@ -369,8 +369,11 @@ function onGrantError(mid, e) {
 function startHeartbeat() {
   if (!S) return;
   const mid = S.mid;
+  const T = S.timers;   // 이 heartbeat 묶음의 타이머 — stopTimers 가 함께 치운다
+  let inFlight = false;   // 멈춘 연결에서 신호가 겹쳐 나가지 않게(감사 R11 U2-2)
   const beat = async () => {
-    if (!S || S.mid !== mid) return;
+    if (!S || S.mid !== mid || S.timers !== T || inFlight) return;
+    inFlight = true;
     try {
       const d = await mcall(mid, 'POST', '/heartbeat', { body: {}, retry: false, idem: false });
       if (d && d.counts) sset('counts', d.counts);
@@ -378,12 +381,12 @@ function startHeartbeat() {
     } catch (e) {
       if (e.status === 0) {
         spatch('conn', { server: 'off' });
-        // 듣기만 하는 참여자는 다른 요청이 없어 띠가 60초 남는다 — 5초 뒤 한 번 더 확인(감사 R10 T2)
-        if (!retryBeat) retryBeat = setTimeout(() => { retryBeat = 0; beat(); }, 5000);
+        // 듣기만 하는 참여자는 다른 요청이 없어 띠가 60초 남는다 — 연결이 돌아올 때까지 5초마다 확인(감사 R10 T2).
+        // 타이머는 S.timers 에 두어 회의를 다시 열거나 주관자로 바뀌면 stopTimers 가 치운다(감사 R11 U2-1)
+        if (!T.retry) T.retry = setTimeout(() => { T.retry = 0; beat(); }, 5000);
       }
-    }
+    } finally { inFlight = false; }
   };
-  let retryBeat = 0;
   const vis = () => { if (document.visibilityState === 'visible') beat(); };
   const hide = () => beacon(true);
   document.addEventListener('visibilitychange', vis);

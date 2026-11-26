@@ -29,7 +29,7 @@
 | T1-2 채용 정리 GET 시험 없음 | GET 401·200 시험 추가 |
 | T1-3 서울 규칙이 시험에서 빠짐 | test:zzoom 이 firestore.zzoom.rules 쭘 블록과 firestore.rules 가 같은지 확인(바꿔서 잡히는 것 확인) |
 | T1-4 문서에 DB kwon | DESIGN·CONTRACTS 고침 |
-| T2 듣기만 하는 참여자 끊김 띠 60초 | heartbeat 실패하면 5초 뒤 다시 |
+| T2 듣기만 하는 참여자 끊김 띠 60초 | heartbeat 실패하면 연결이 돌아올 때까지 5초마다 다시(R11 U2: 타이머를 S.timers 에 두고, 겹쳐 보내지 않게) |
 | T3-T1 받는 중·실패한 쪽은 자료가 바뀌어도 다시 안 받음 | 받으려던 쪽(wantFor)과 비교 |
 | T3-T2 문법 확인이 없는 이름 import 를 못 잡음 | app.js 말고 모든 화면 모듈을 실제로 불러옴(없는 이름 넣어 잡히는 것 확인) |
 | T3-T4 운영 펜 점검이 늘 0 으로 끝남 | !! 줄·None 을 세어 1 로 끝냄 |
