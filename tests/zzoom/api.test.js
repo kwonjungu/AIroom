@@ -1841,7 +1841,7 @@ test('감사 R7: 큰 epoch 를 보내도 판서 상한 장부가 비워지지 �
     assert.equal(Number((await h.redis.hget(`zz:sc:${mid}`, pk + '@e')) || 0), 0);
 });
 
-test('감사 R7: 같은 요청 표 — 처리 중 표시만 남은 요청은 12초 뒤 새로 처리, 결과는 응답 전에 적힌다', async t => {
+test('감사 R7·R8: 같은 요청 표 — 처리 중 표시만 남은 요청은 25초 뒤 하나만 새로 처리, 결과는 응답 전에 적힌다(운영처럼 JSON 이 객체로 읽혀도)', async t => {
     const h = await setup(); t.after(h.close);
     const mid = await h.createMeeting();
     const V = await h.join(mid, '참석');
@@ -1852,10 +1852,13 @@ test('감사 R7: 같은 요청 표 — 처리 중 표시만 남은 요청은 12�
     const U = require('../../lib/zzoom/util');
     const keys = ['zz:idem:' + U.sha256(idem + '|POST|' + `/api/zzoom/${mid}/chat` + '|' + V.pt).slice(0, 32)];
     const stored = await h.redis.get(keys[0]);
-    assert.ok(String(stored).startsWith('{'), '응답 전에 결과가 적혀 있어야 함');
-    await h.redis.set(keys[0], 'p' + h.clock.t, { ex: 120 });
+    assert.ok(stored && stored.s, '응답 전에 결과가 적혀 있어야 함');
+    // 다시 보내면 처음 응답 그대로(운영 Upstash 처럼 객체로 읽혀도)
+    const again = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem } });
+    assert.equal(again.status, r1.status); assert.deepEqual(again.json, r1.json);
+    await h.redis.set(keys[0], JSON.stringify({ p: h.clock.t }), { ex: 120 });
     const r2 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem }, tick: 1000 });
     assert.equal(r2.status, 409); assert.equal(r2.json.error, 'in_progress');
-    const r3 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem }, tick: 13000 });
+    const r3 = await h.call('POST', `/${mid}/chat`, { pt: V.pt, body: { text: '하나' }, headers: { 'X-Zzoom-Idem': idem }, tick: 26000 });
     assert.ok(r3.status < 300, r3.text);
 });

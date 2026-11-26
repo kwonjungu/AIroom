@@ -109,7 +109,8 @@ function createFakeRedis({ now = Date.now } = {}) {
         setDown(v) { down = v; },
         // 시험 도우미: 다음 n번의 해당 명령을 실패시킨다(예: failNext('hdel'))
         failNext(name, n = 1) { failing.set(name, n); },
-        async get(k) { touch('get'); return cmd.get(k); },
+        // 운영 @upstash/redis 처럼 JSON 으로 읽히는 값은 객체·숫자로 바꿔 돌려준다(감사 R8 Q1-1: 문자열로만 시험해 운영 버그를 놓침)
+        async get(k) { touch('get'); const v = cmd.get(k); if (typeof v !== 'string') return v; try { return JSON.parse(v); } catch { return v; } },
         async set(k, v, o = {}) { touch('set'); return cmd.set(k, v, o); },
         async del(...ks) { touch('del'); return cmd.del(...ks); },
         async incr(k) { touch('incr'); return cmd.incr(k); },

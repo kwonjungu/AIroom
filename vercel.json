@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "regions": [
+    "icn1"
+  ],
   "crons": [
     {
       "path": "/api/recruitments/maintenance/purge",

@@ -446,6 +446,7 @@ export function mount(ctx) {
     if (n) userGo(n.aid, n.page);
   }
   function fitPage() {
+    cancelGlide();   // 「쪽 전체 보기」·0 키도 부드럽게 따라가기를 멈춘다(감사 R8 N1)
     if (sameView(S.view, { cx: 0.5, cy: 0.5, z: 1 })) return;
     S.view = { cx: 0.5, cy: 0.5, z: 1 };
     requestRender(); emitPage(false); userChanged();
@@ -480,6 +481,8 @@ export function mount(ctx) {
     const othersOn = !!S.live?.aid && !isPresenter() && S.follow !== 'free';   // 남의 발표를 따라가는 중(감사 R7 P3-4)
     bigPresent.hidden = !(meetingLive() && a && !noFile(a) && !penMode() && !on && !othersOn && !(isPresenter() && S.live?.aid === a.aid));
     if (!bigPresent.isConnected) elOverlay.append(bigPresent);
+    // agenda.js 가 먼저 떠서 ui:wait 를 놓칠 수 있으므로 화면을 직접 본다(감사 R8 N3)
+    bigPresent.classList.toggle('is-below-mini', !!document.querySelector('.za-mini'));
   }
   function toggleFull() {
     const on = fullOn(), next = !on;
@@ -511,16 +514,20 @@ export function mount(ctx) {
   // 따라가는 쪽: 같은 쪽에서 확대·이동만 바뀌면 순간이동 대신 0.14초 동안 부드럽게(지연 줄이기 B, 2026-11-26)
   let tweenId = 0;
   const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
-  function cancelGlide() { if (tweenId) { cancelAnimationFrame(tweenId); tweenId = 0; } }
+  let glideTarget = null;
+  function cancelGlide() { if (tweenId) { cancelAnimationFrame(tweenId); tweenId = 0; } glideTarget = null; }
+  // 손이 닿으면 중간에서 멈추지 않고 발표자 자리로 바로 맞춘다(감사 R8 N6)
+  function finishGlide() { if (tweenId && glideTarget) { const to = glideTarget; cancelGlide(); S.view = { ...to }; requestRender(); emitPage(false); } }
   function glideTo(to) {
     if (tweenId) cancelAnimationFrame(tweenId);
     const from = { ...S.view }, t0 = performance.now(), D = 140;
+    glideTarget = to;
     const tick = tnow => {
       if (dead) return;
       const k = Math.min(1, (tnow - t0) / D), e = 1 - (1 - k) * (1 - k);
       S.view = { cx: from.cx + (to.cx - from.cx) * e, cy: from.cy + (to.cy - from.cy) * e, z: from.z + (to.z - from.z) * e };
       requestRender();
-      if (k < 1) tweenId = requestAnimationFrame(tick); else { tweenId = 0; S.view = { ...to }; requestRender(); emitPage(false); }
+      if (k < 1) tweenId = requestAnimationFrame(tick); else { tweenId = 0; glideTarget = null; S.view = { ...to }; requestRender(); emitPage(false); }
     };
     tweenId = requestAnimationFrame(tick);
   }
@@ -649,7 +656,7 @@ export function mount(ctx) {
     if (!curA()) return;
     // 무대 위 단추(큰 발표하기·다시 불러오기)와 스크롤 막대는 무대가 잡지 않는다(감사 R7 P3-1: 마우스 클릭이 무대로 감)
     if (e.target?.closest?.('button, a, input, .zv-sb')) return;
-    cancelGlide();
+    finishGlide();
     const pos = local(e);
     if (penMode()) {
       // 펜 모드: 한 손가락은 3팀 몫. 손가락 두 개 이상(또는 마우스 가운데 단추)만 내가 받는다.

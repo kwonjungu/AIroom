@@ -5,7 +5,7 @@ const BASE = '/api/zzoom';
 const FB_VER = '10.12.0';
 const FB = n => `https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${n}.js`;
 const COLL = 'zzoom_meetings';
-const DB_NAME = 'kwon';
+const DB_NAME = 'zzoom';   // 서울 쭘 전용 DB(2026-11-26). 서버 lib/zzoom/fb.js 와 같아야 한다
 const PT_KEY = mid => 'zzoom_pt:' + mid;
 const REFRESH_MS = 50 * 60000;     // 맞춤 토큰 1시간 → 50분에 갱신
 const HEARTBEAT_MS = 60000;
@@ -62,10 +62,11 @@ async function retryNet(fn, tries = 4, ms = 15000) {
 }
 const REQ_TIMEOUT_MS = 20000;
 const idemKey = () => { try { return crypto.randomUUID().replace(/-/g, ''); } catch { return Date.now().toString(36) + Math.random().toString(36).slice(2, 12); } };
-async function request(method, path, { body, pt, raw, contentType, auth = true, keepalive = false, timeout = REQ_TIMEOUT_MS } = {}) {
+async function request(method, path, { body, pt, raw, contentType, auth = true, keepalive = false, timeout = REQ_TIMEOUT_MS, retry = true, idem = true } = {}) {
   const headers = {};
   // 보내기마다 「같은 요청」 표(감사 R7 P5-M1). 다시 보내도 서버가 한 번만 반영하고 처음 응답을 돌려준다.
-  if (method !== 'GET') headers['X-Zzoom-Idem'] = idemKey();
+  // 발표 화면(live)·접속 신호(heartbeat)는 늘 최신 값을 다시 보내므로 표도, 요청 단위 재시도도 쓰지 않는다(감사 R8 Q2-N4·N7).
+  if (method !== 'GET' && idem) headers['X-Zzoom-Idem'] = idemKey();
   if (auth) { const t = authToken(); if (t) headers['X-Auth-Token'] = t; const d = deviceId(); if (d) headers['X-Device-Id'] = d; }
   if (pt) headers['X-Zzoom-Pt'] = pt;
   let payload;
@@ -74,7 +75,7 @@ async function request(method, path, { body, pt, raw, contentType, auth = true, 
   const url = path.startsWith('/') ? path : BASE + '/' + path;
   // 응답이 끝내 안 오면 단추가 영영 잠기므로 시간 제한(기본 20초)에 끊는다.
   // 끊기면 다시 보낸다: GET 은 4번, 보내기는 3번. 보내기는 「같은 요청」 표가 있어 서버가 두 번 반영하지 않는다.
-  const tries = method === 'GET' ? 4 : 3;
+  const tries = !retry ? 1 : method === 'GET' ? 4 : 3;
   let waits = 0;
   for (let a = 0; ; a++) {
     const ac = typeof AbortController === 'function' ? new AbortController() : null;
@@ -86,12 +87,13 @@ async function request(method, path, { body, pt, raw, contentType, auth = true, 
       // 서버가 12초(받아쓰기 70초)가 지나도 안 끝난 앞 요청은 버리고 새로 처리하므로, 그동안 조용히 기다린다(최대 약 75초).
       if (r.status === 409 && headers['X-Zzoom-Idem'] && waits < 50) {
         const d = await r.clone().json().catch(() => null);
-        if (d?.error === 'in_progress') { waits++; a--; await sleep(1500); continue; }
+        // 큰 본문(받아쓰기 조각 등)은 자주 다시 올리지 않는다(감사 R8 Q2-N6)
+        if (d?.error === 'in_progress') { waits++; a--; await sleep(payload && payload.size > 100000 ? 6000 : 1500); continue; }
       }
       return r;
     }
     catch {
-      if (a < tries - 1 && !keepalive) { await sleep([300, 1000, 2500][a] || 2500); continue; }
+      if (a < tries - 1) { await sleep([300, 1000, 2500][a] || 2500); continue; }   // keepalive 보내기(회의 시작·끝 등)도 다시(감사 R8 Q2-N1)
       throw new ZzError(0, 'network', '서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.');
     } finally { if (timer) clearTimeout(timer); }
   }
@@ -128,7 +130,7 @@ export const unlockHost = mid => call('POST', `/meetings/${enc(mid)}/unlock`, { 
 // 익명(ANON): 교직원 명부·airoom_ws_name 을 읽지도 쓰지도 않는다(staffNames·rememberedName·rememberName 없앰).
 const enc = encodeURIComponent;
 
-// ================= Firebase (앱 'zzoom', inMemory, DB kwon) =================
+// ================= Firebase (앱 'zzoom', inMemory, DB zzoom — 서울) =================
 let fbp = null;          // Promise<{A, Au, F, S, app, auth, db, st}>
 let signedIn = null;     // { promise, resolve }
 function newSignedIn() { let resolve; const promise = new Promise(r => { resolve = r; }); signedIn = { promise, resolve, done: false }; }
@@ -300,7 +302,7 @@ export async function becomeHost(mid, code) {
   // 새 pt 로 바꿔 저장(옛 pt 는 서버가 폐기)
   try { await begin(mid, d, d.token, myGen); }
   catch (e) {
-    if (e?.code === 'aborted') throw e;
+    if (e?.code === 'aborted' || myGen !== gen) throw e;   // 그사이 나갔으면 되살리지 않는다(감사 R8 Q2-N2)
     // 실시간 로그인만 실패: 옛 자격은 이미 서버가 버렸으므로 새 자격을 살려 두고 곧 다시 로그인한다(감사 R7 P5-M2).
     // 그러지 않으면 화면은 입장한 채인데 채팅·손들기·발표하기가 모두 「참가 자격이 없어요」로 막혔다.
     console.warn('[zzoom] 주관자 전환 뒤 실시간 로그인 실패, 3초 뒤 다시', e);
@@ -368,7 +370,7 @@ function startHeartbeat() {
   const beat = async () => {
     if (!S || S.mid !== mid) return;
     try {
-      const d = await mcall(mid, 'POST', '/heartbeat', { body: {} });
+      const d = await mcall(mid, 'POST', '/heartbeat', { body: {}, retry: false, idem: false });
       if (d && d.counts) sset('counts', d.counts);
       spatch('conn', { server: 'ok' });
     } catch (e) { if (e.status === 0) spatch('conn', { server: 'off' }); }
@@ -398,7 +400,7 @@ export async function sendLive(mid, { aid, page, view, force = false, full }) {
   if (force) body.force = true;
   if (full !== undefined) body.full = !!full;   // 발표자 「전체 화면」(보내지 않으면 서버가 지금 값을 유지)
   try {
-    const d = await mcall(mid, 'POST', '/live', { body, timeout: 6000 });   // 멈춘 요청 하나가 발표 화면을 20초 막지 않게(감사 R7 P3-5)
+    const d = await mcall(mid, 'POST', '/live', { body, timeout: 6000, retry: false, idem: false });   // 멈춘 요청 하나가 발표 화면을 20초 막지 않게(감사 R7 P3-5)
     if (d?.live) acceptLive(d.live);
     return d;
   } catch (e) {

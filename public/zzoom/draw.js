@@ -53,11 +53,11 @@ export function simulatesPressure(pts) {
   return true;
 }
 // perfect-freehand 옵션
-export function strokeOptions(stroke, pageW, last = true) {
+export function strokeOptions(stroke, pageW, last = true, minPx = 0.5) {
   const pr = PRESETS[stroke.tool] || PRESETS.pen;
   return {
-    // 휴대폰(쪽 너비 약 370px)에서 펜이 1.5px 로 너무 가늘어 최소 2.2px(감사 R7 P4). 저장값(w)은 그대로.
-    size: Math.max(stroke.tool === 'hl' ? 0.5 : 2.2, (stroke.w || pr.w) * pageW),
+    // minPx 는 쪽 px 단위 최소 굵기. 화면에서 펜이 2.2px 아래로 가늘어지지 않게 그리는 쪽이 정한다(감사 R7 P4·R8 N2). 저장값(w)은 그대로.
+    size: Math.max(stroke.tool === 'hl' ? 0.5 : minPx, (stroke.w || pr.w) * pageW),
     thinning: pr.thinning, smoothing: pr.smoothing, streamline: pr.streamline,
     simulatePressure: simulatesPressure(stroke.pts), last,
   };
@@ -92,8 +92,10 @@ export function renderStroke(ctx2d, stroke, pageW, pageH, opts = {}) {
   if (!stroke || !Array.isArray(stroke.pts) || stroke.pts.length < 3) return;
   const pr = PRESETS[stroke.tool] || PRESETS.pen;
   const last = opts.last !== false;
-  const key = opts.cacheKey ? `${opts.cacheKey}@${pageW}x${pageH}` : null;
-  const path = cachedPath(key, () => outlineToPath(getStroke(toPagePts(stroke.pts, pageW, pageH), strokeOptions(stroke, pageW, last))));
+  // 화면 배율(scale)을 알면 화면에서 최소 2.2px 가 되도록 쪽 px 최소 굵기를 정한다. 캐시 열쇠에 넣으려 조금 둥글린다.
+  const minPx = opts.scale > 0 ? Math.max(0.5, Math.round((2.2 / opts.scale) * 4) / 4) : 0.5;
+  const key = opts.cacheKey ? `${opts.cacheKey}@${pageW}x${pageH}m${minPx}` : null;
+  const path = cachedPath(key, () => outlineToPath(getStroke(toPagePts(stroke.pts, pageW, pageH), strokeOptions(stroke, pageW, last, minPx))));
   ctx2d.save();
   ctx2d.globalAlpha = pr.alpha * (opts.alpha ?? 1);
   ctx2d.globalCompositeOperation = pr.op;
@@ -279,14 +281,14 @@ export function mount(ctx) {
     const { merged, ids } = visibleStrokes();
     const shownByServer = new Set();
     for (const s of merged) {
-      renderStroke(ictx, s, vp.pageW, vp.pageH, { cacheKey: s.ids.join(',') });
+      renderStroke(ictx, s, vp.pageW, vp.pageH, { cacheKey: s.ids.join(','), scale: vp.scale });
       for (const id of s.ids) shownByServer.add(id);
     }
     // 내 선(아직 구독에 안 온 것)은 위에. 실패한 선은 흐리게.
     for (const p of pending) {
       if (p.pageKey !== pageKey || (p.epoch !== null && p.epoch !== cur.epoch) || p.erased) continue;
       if (p.parts.length && p.parts.every(x => x.id && shownByServer.has(x.id))) continue;
-      renderStroke(ictx, p.stroke, vp.pageW, vp.pageH, { cacheKey: 'l' + p.lid, alpha: p.status === 'failed' ? FAIL_ALPHA : 1 });
+      renderStroke(ictx, p.stroke, vp.pageW, vp.pageH, { cacheKey: 'l' + p.lid, alpha: p.status === 'failed' ? FAIL_ALPHA : 1, scale: vp.scale });
     }
     void ids;
   }
@@ -296,7 +298,7 @@ export function mount(ctx) {
     if (drawing && drawing.pts.length >= 3) {
       const v = drawing.vp;
       applyViewport(tctx, v);
-      renderStroke(tctx, { tool: drawing.tool, color: drawing.color, w: drawing.w, pts: drawing.pts }, v.pageW, v.pageH, { last: false });
+      renderStroke(tctx, { tool: drawing.tool, color: drawing.color, w: drawing.w, pts: drawing.pts }, v.pageW, v.pageH, { last: false, scale: v.scale });
     }
     if (eraserAt && vp) {
       tctx.setTransform(vp.dpr, 0, 0, vp.dpr, 0, 0);
@@ -357,7 +359,7 @@ export function mount(ctx) {
     for (let i = pending.length - 1; i >= 0; i--) {
       const p = pending[i];
       // 짐작한 epoch(0)로 기다리는 선은 버리지 않는다 — 서버 값을 받아 다시 보낸다(감사 R7 P4)
-      if (p.pageKey === en.key && p.guessed && p.status !== 'sending') { p.epoch = en.epoch; p.guessed = false; for (const x of p.parts) x.body.epoch = en.epoch; continue; }
+      if (p.pageKey === en.key && p.guessed && (p.status === 'queued' || p.status === 'failed')) {   // 이미 저장된 선은 번호를 바꾸지 않는다(감사 R8 N7) p.epoch = en.epoch; p.guessed = false; for (const x of p.parts) x.body.epoch = en.epoch; continue; }
       if (p.pageKey === en.key && p.epoch !== null && p.epoch < en.epoch && p.status !== 'sending') pending.splice(i, 1);
     }
     renderBar();
