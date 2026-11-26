@@ -106,6 +106,8 @@ async function asJson(r) {
     if (r.status === 503 && error === 'not_configured') spatch('conn', { server: 'not_configured' });
     throw new ZzError(r.status, error || 'http_' + r.status, message || `서버 오류(${r.status})`, extra);
   }
+  // 아무 요청이나 성공하면 「연결이 잠깐 끊겼어요」 띠를 바로 내린다(heartbeat 를 60초 기다리지 않게, 감사 R9 S2-1)
+  if (store && store.get('conn')?.server === 'off') spatch('conn', { server: 'ok' });
   return data;
 }
 const call = async (method, path, opts) => asJson(await request(method, BASE + path, opts));

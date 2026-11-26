@@ -93,8 +93,11 @@ export function renderStroke(ctx2d, stroke, pageW, pageH, opts = {}) {
   const pr = PRESETS[stroke.tool] || PRESETS.pen;
   const last = opts.last !== false;
   // 화면 배율(scale)을 알면 화면에서 최소 2.2px 가 되도록 쪽 px 최소 굵기를 정한다. 캐시 열쇠에 넣으려 조금 둥글린다.
-  const minPx = opts.scale > 0 ? Math.max(0.5, Math.round((2.2 / opts.scale) * 4) / 4) : 0.5;
-  const key = opts.cacheKey ? `${opts.cacheKey}@${pageW}x${pageH}m${minPx}` : null;
+  let minPx = opts.scale > 0 ? Math.max(0.5, Math.round((2.2 / opts.scale) * 4) / 4) : 0.5;
+  // 최소 굵기가 실제 굵기보다 작으면 결과가 같으니 열쇠에 넣지 않는다 — 확대할 때마다 모든 선을 다시 계산하지 않게(감사 R9 S3)
+  const used = stroke.tool !== 'hl' && minPx > (stroke.w || pr.w) * pageW;
+  if (!used) minPx = 0.5;
+  const key = opts.cacheKey ? `${opts.cacheKey}@${pageW}x${pageH}${used ? 'm' + minPx : ''}` : null;
   const path = cachedPath(key, () => outlineToPath(getStroke(toPagePts(stroke.pts, pageW, pageH), strokeOptions(stroke, pageW, last, minPx))));
   ctx2d.save();
   ctx2d.globalAlpha = pr.alpha * (opts.alpha ?? 1);
@@ -359,7 +362,7 @@ export function mount(ctx) {
     for (let i = pending.length - 1; i >= 0; i--) {
       const p = pending[i];
       // 짐작한 epoch(0)로 기다리는 선은 버리지 않는다 — 서버 값을 받아 다시 보낸다(감사 R7 P4)
-      if (p.pageKey === en.key && p.guessed && (p.status === 'queued' || p.status === 'failed')) {
+      if (p.pageKey === en.key && p.guessed && (p.status === 'queued' || p.status === 'failed') && !p.parts.some(x => x.id)) {
         // 이미 저장된 선은 번호를 바꾸지 않는다(감사 R8 N7)
         p.epoch = en.epoch; p.guessed = false; for (const x of p.parts) x.body.epoch = en.epoch; continue;
       }
@@ -425,6 +428,7 @@ export function mount(ctx) {
       batch.forEach((b, i) => { if (got[i]?.id) b.part.id = got[i].id; });
       for (const p of new Set(batch.map(b => b.p))) {
         p.status = p.parts.every(x => x.id) ? 'saved' : 'queued';
+        if (p.parts.some(x => x.id)) p.guessed = false;   // 서버가 받은 epoch 로 저장됨 — 더는 짐작이 아니다(감사 R9 S2)
         if (p.erased && p.status === 'saved') for (const x of p.parts) enqueueDelete(x.id);
       }
     } catch (e) {

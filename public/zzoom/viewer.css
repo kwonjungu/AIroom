@@ -185,7 +185,7 @@
 .zv-sb-thumb:active { cursor: grabbing; background: rgba(29, 29, 31, .75); }
 @media (pointer: coarse) { .zv-sb-v { width: 22px; } .zv-sb-h { height: 22px; } }
 /* 펜 모드에서는 가장자리에서 시작하는 선을 막대가 먹지 않게(감사 R7 P3-6) */
-@media (pointer: coarse) { body.is-pen .zv-sb { pointer-events: none; opacity: .35; } }   /* 손가락·펜 화면만. 터치패드·마우스 PC 는 펜 켠 채로도 막대로 움직인다(감사 R8 N5) */
+@media (any-pointer: coarse) { body.is-pen .zv-sb { pointer-events: none; opacity: .35; } }   /* 손가락·펜이 있는 화면(터치 노트북·전자칠판 포함, 감사 R9 S4)은 펜 켠 동안 막대가 펜 선을 먹지 않게. 마우스만 있는 PC 는 막대로 움직인다 */
 /* 휴대폰 너비에서 「전체 화면」이 잘리지 않게(감사 R7 P5-L1) */
 @container (max-width: 400px) {
   .zv-zoom { display: none; }

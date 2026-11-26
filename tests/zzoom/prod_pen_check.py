@@ -302,21 +302,24 @@ class Run:
         bandp2 = [min(p[1] for p in conv(pts_p)) - 6, max(p[1] for p in conv(pts_p)) + 6]
         dt, _ = self.wait_ink(p2, 0, timeout=25, band=bandp2)
         note(f'   펜(밴드 0.8) 둘째 기기 나타남 {dt}s')
+        # 선이 둘째 기기에 정말 왔는지 먼저 확인 — 안 왔으면 지우개 「사라짐」은 거짓 통과다(감사 R8 N8·R9 S5)
+        arrived = self.ink(p2, pts=conv(pts_p), r=3)['cover']
+        note(f'   지우기 전 둘째 기기 펜 경로 일치율 {arrived:.2f} (0.5 이상이어야 지우개 판정 의미 있음)')
         # 지우개: 펜 선(0.8) 위를 가로지름
         self.choose(pg, 'eraser', None)
         er_path = [[x, y] for x, y in pts_p]
         t_er = time.time(); self.stroke(pg, er_path, kinds[0])
         pg.wait_for_timeout(400)
-        bandp1 = [min(p[1] for p in pts_p) - 6, max(p[1] for p in pts_p) + 6]
         r_after = self.ink(pg, pts=pts_p, r=3)
         note(f'   지우개 후 내 화면 펜 경로 일치율 {r_after["cover"]:.2f} (0.2 미만이면 지워짐)')
         # 둘째 기기
         t0 = time.time(); gone = None
-        while time.time() - t0 < 25:
+        while arrived >= 0.5 and time.time() - t0 < 25:
             # 지우개 동그라미·형광펜이 섞이지 않게 펜 경로 위 픽셀만 본다(감사 R7 P4)
             if self.ink(p2, pts=conv(pts_p), r=3)['cover'] < 0.2: gone = round(time.time() - t_er, 1); break
             p2.wait_for_timeout(300)
-        note(f'   둘째 기기에서 사라짐: {gone}s (None=25초 안에 안 사라짐)')
+        if arrived < 0.5: note('   !! 둘째 기기에 펜 선이 오지 않아 지우개 판정 못 함(실패로 셈)')
+        else: note(f'   둘째 기기에서 사라짐: {gone}s (None=25초 안에 안 사라짐)')
         self.shot('erased_host', pg); self.shot('erased_part', p2)
         # 7. 보기 모드와 충돌 / 터치 스크롤
         self.view_checks(pg)
