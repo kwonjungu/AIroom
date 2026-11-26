@@ -359,7 +359,10 @@ export function mount(ctx) {
     for (let i = pending.length - 1; i >= 0; i--) {
       const p = pending[i];
       // 짐작한 epoch(0)로 기다리는 선은 버리지 않는다 — 서버 값을 받아 다시 보낸다(감사 R7 P4)
-      if (p.pageKey === en.key && p.guessed && (p.status === 'queued' || p.status === 'failed')) {   // 이미 저장된 선은 번호를 바꾸지 않는다(감사 R8 N7) p.epoch = en.epoch; p.guessed = false; for (const x of p.parts) x.body.epoch = en.epoch; continue; }
+      if (p.pageKey === en.key && p.guessed && (p.status === 'queued' || p.status === 'failed')) {
+        // 이미 저장된 선은 번호를 바꾸지 않는다(감사 R8 N7)
+        p.epoch = en.epoch; p.guessed = false; for (const x of p.parts) x.body.epoch = en.epoch; continue;
+      }
       if (p.pageKey === en.key && p.epoch !== null && p.epoch < en.epoch && p.status !== 'sending') pending.splice(i, 1);
     }
     renderBar();
