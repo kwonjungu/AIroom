@@ -226,6 +226,13 @@ export async function checkWebpSupport() {
  * WebP 가 아닌 결과(PNG 로 대신 저장하는 브라우저)는 서버가 받지 않으므로 WEBP_UNSUPPORTED 로 멈춘다(지적08).
  */
 export async function emitPage(canvas, out, ctx) {
+  // 마지막 안전망: 어떤 변환기든 긴 변이 한도를 넘으면 줄여서 낸다(서버 bad_sizes 방지)
+  if (Math.max(canvas.width, canvas.height) > LIMITS.longSide) {
+    const k = LIMITS.longSide / Math.max(canvas.width, canvas.height);
+    const c2 = makeCanvas(Math.max(1, Math.min(LIMITS.longSide, Math.round(canvas.width * k))), Math.max(1, Math.min(LIMITS.longSide, Math.round(canvas.height * k))));
+    const g2 = c2.getContext('2d'); g2.imageSmoothingQuality = 'high'; g2.drawImage(canvas, 0, 0, c2.width, c2.height);
+    freeCanvas(canvas); canvas = c2;
+  }
   const w = canvas.width, h = canvas.height;
   let t = null;
   try {

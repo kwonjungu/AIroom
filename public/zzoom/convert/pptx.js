@@ -79,7 +79,7 @@ export async function convertPptx(file, ctx, out) {
         const g = canvas.getContext('2d');
         g.fillStyle = '#fff';
         g.fillRect(0, 0, cw, ch);
-        await ctx.race(pres.renderSlide(canvas, visible[i], { width: cw }));
+        await ctx.race(pres.renderSlide(canvas, visible[i], { width: cw, dpr: 1 })   /* dpr 없으면 화면 배율(125%·150%)만큼 캔버스가 커져 2000px 을 넘는다(사용자 신고 2026-11-26) */);
       } catch (e) {
         if (canvas) freeCanvas(canvas);   // 실패한 쪽 캔버스도 비운다(지적10)
         if (e instanceof ConvertError) throw e;
