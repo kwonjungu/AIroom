@@ -49,9 +49,14 @@ export function deviceId() {
 // 학교망은 구글(Firebase) 연결이 가끔 끊긴다(실측 10% 안팎). 권한·없음 오류가 아니면 잠깐 쉬고 다시 해 본다.
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const FATAL = /unauthorized|unauthenticated|permission|object-not-found|not-found|invalid-custom-token|custom-token-mismatch|canceled|aborted|quota/i;
-async function retryNet(fn, tries = 4) {
+// 끊기지 않고 멈춰 버리는 연결도 있어(실측) 한 번 시도마다 시간 제한을 둔다 — 멈추면 끊고 다시 한다.
+function withTimeout(p, ms) {
+  let t;
+  return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'net/timeout' })), ms); })]).finally(() => clearTimeout(t));
+}
+async function retryNet(fn, tries = 4, ms = 15000) {
   for (let a = 0; ; a++) {
-    try { return await fn(); }
+    try { return await withTimeout(Promise.resolve().then(fn), ms); }
     catch (e) { if (a >= tries - 1 || FATAL.test(String(e?.code || e?.message || e))) throw e; await sleep([400, 1200, 2500, 4000][a] || 4000); }
   }
 }
@@ -129,6 +134,8 @@ function firebase() {
     try { auth = Au.initializeAuth(app, { persistence: Au.inMemoryPersistence }); } catch { auth = Au.getAuth(app); }
     const db = F.getFirestore(app, DB_NAME);
     const st = S.getStorage(app);
+    // SDK 기본은 실패해도 2분 동안 속으로 다시 해 화면이 「불러오는 중」에 멈춘다. 15초로 줄이고 나머지는 retryNet 이 맡는다.
+    try { st.maxOperationRetryTime = 15000; } catch { /* 옛 SDK */ }
     return { A, Au, F, S, app, auth, db, st };
   })();
   fbp.catch(() => { fbp = null; });

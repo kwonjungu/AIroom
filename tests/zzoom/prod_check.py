@@ -228,6 +228,11 @@ class Run:
             expect(pg.locator('.zv-pageno')).to_have_text('1 / 2')
         self.step('발표하기: 확인 창 문구, 아니오 무변화, 예 발표 중', s_present)
 
+        def s_image():
+            # 쪽 그림이 Storage 에서 실제로 받아져 그려지는지(버킷 CORS 가 없으면 여기서 멈춘다 — 2026-11-26 실제 장애)
+            self.pg.wait_for_function("[...document.images].some(i => i.src.startsWith('blob:') && i.complete && i.naturalWidth > 0)", timeout=45000)
+        self.step('안건 쪽 그림이 실제로 보임', s_image)
+
         def s_follow():
             tok['b'] = login('zz-prod-check-b')
             self.ctx2, self.pg2 = self.new_ctx(tok['b'])
