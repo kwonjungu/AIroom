@@ -236,7 +236,7 @@ app.use((req, res, next) => req.isCopy ? nsStore.run('copy', next) : next());
 // 급식일지(Firestore 직접 사용)·메일(실제 계정)은 카피본에서 제외. 채용은 구글 연동·드라이브 보관·자동 삭제만 막는다.
 const COPY_BLOCKED = [/^\/api\/admin\//, /^\/api\/mail/, /^\/api\/bap/, /^\/api\/vibe(\/|$)/, /^\/api\/posting/,
     /^\/api\/recruitments\/(google|maintenance)(\/|$)/, /^\/api\/recruitments\/[^/]+\/archive$/,
-    /^\/api\/zzoom(\/|$)/];
+    /^\/api\/zzoom(\/|$)/, /^\/api\/meal(\/|$)/];
 // 서버 저장소(Redis)를 직접 쓰는 모듈(교구 대여소 사진·잠금 등)에 넘기는 래퍼 — 카피본 요청이면 키에 'copy:'를 붙인다.
 function nsRedis(r) {
     if (!r) return r;
@@ -800,6 +800,37 @@ app.get('/api/school-search', requireAuthOrVibe, async (req, res) => {
         res.json({ success: true, data });
     } catch (e) {
         res.json({ success: true, data: [], error: 'neis_unavailable' });
+    }
+});
+
+// ----- 오늘의 급식 (학교 일정 탭 위 카드) — NEIS 급식식단정보, 백암초(J10/7751084) -----
+// 메뉴는 공개 정보라 인증 없이 연다. 날짜별 30분 캐시. 키가 없어도 하루치(최대 3끼)는 5개 제한에 안 걸린다.
+const mealCache = new Map();
+app.get('/api/meal', async (req, res) => {
+    const kst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+    const date = /^\d{8}$/.test(String(req.query.date || '')) ? String(req.query.date) : kst;
+    const hit = mealCache.get(date);
+    if (hit && Date.now() - hit.at < 1800e3) return res.json(hit.data);
+    try {
+        const params = new URLSearchParams({ Type: 'json', pIndex: '1', pSize: '10', ATPT_OFCDC_SC_CODE: 'J10', SD_SCHUL_CODE: '7751084', MLSV_YMD: date });
+        if (process.env.NEIS_API_KEY) params.set('KEY', process.env.NEIS_API_KEY);
+        const j = await (await fetch('https://open.neis.go.kr/hub/mealServiceDietInfo?' + params)).json();
+        const rows = (j.mealServiceDietInfo && j.mealServiceDietInfo[1] && j.mealServiceDietInfo[1].row) || [];
+        const meals = rows.map(r => ({
+            type: r.MMEAL_SC_NM || '',
+            cal: r.CAL_INFO || '',
+            // "현미밥 <br/>쇠고기미역국 (5.9.10)" → [{name, allergy}]
+            dishes: String(r.DDISH_NM || '').split(/<br\s*\/?>/i).map(s => s.trim()).filter(Boolean).map(s => {
+                const m = s.match(/^(.*?)\s*\(([\d.\s]+)\)\s*$/);
+                return m ? { name: m[1].trim(), allergy: m[2].replace(/\s/g, '').replace(/\.$/, '') } : { name: s, allergy: '' };
+            })
+        }));
+        const data = { success: true, date, meals };
+        if (mealCache.size > 200) mealCache.clear();
+        mealCache.set(date, { at: Date.now(), data });
+        res.json(data);
+    } catch (e) {
+        res.json({ success: false, date, meals: [], error: 'neis_unavailable' });
     }
 });
 

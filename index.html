@@ -455,6 +455,19 @@
         .empty-state{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-light);}
 
         /* Schedule */
+        /* 오늘의 급식 카드 (학교 일정 탭 위) */
+        .meal-card{display:flex;align-items:flex-start;gap:14px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
+        .meal-card .meal-head{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:84px;}
+        .meal-card .meal-title{font-weight:800;font-size:14px;white-space:nowrap;}
+        .meal-card .meal-nav{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted,#666);}
+        .meal-card .meal-nav button{border:none;background:none;cursor:pointer;padding:2px 4px;font-size:12px;color:inherit;}
+        .meal-card .meal-body{flex:1;min-width:0;}
+        .meal-card .meal-dishes{display:flex;flex-wrap:wrap;gap:6px 8px;}
+        .meal-card .meal-dish{background:var(--surface-soft,#f5f5f7);border-radius:999px;padding:4px 10px;font-size:13px;}
+        .meal-card .meal-dish small{color:var(--muted,#888);margin-left:3px;font-size:10px;}
+        .meal-card .meal-meta{margin-top:6px;font-size:11px;color:var(--muted,#888);}
+        .meal-card .meal-empty{font-size:13px;color:var(--muted,#888);padding-top:6px;}
+        @media(max-width:640px){.meal-card{flex-direction:column;gap:8px;}.meal-card .meal-head{flex-direction:row;min-width:0;gap:10px;}}
         .schedule-view-tabs{display:flex;gap:4px;margin-bottom:16px;}
         .schedule-view-tab{padding:8px 18px;border:1px solid var(--border);background:var(--card-bg);cursor:pointer;font-size:13px;font-weight:600;border-radius:0;color:var(--text-light);transition:all .2s;}
         .schedule-view-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
@@ -1151,6 +1164,10 @@
 
     <!-- ===== SCHEDULE PAGE ===== -->
     <div class="page active" id="page-schedule">
+        <div class="meal-card" id="mealCard">
+            <div class="meal-head"><span class="meal-title">🍚 오늘의 급식</span><span class="meal-nav"><button onclick="mealShift(-1)" title="전날">◀</button><span id="mealDate"></span><button onclick="mealShift(1)" title="다음날">▶</button></span></div>
+            <div class="meal-body" id="mealBody"><div class="meal-empty">불러오는 중…</div></div>
+        </div>
         <div class="schedule-view-tabs">
             <button class="schedule-view-tab" onclick="setScheduleView('day',this)">일간</button>
             <button class="schedule-view-tab" onclick="setScheduleView('week',this)">주간</button>
@@ -2824,6 +2841,27 @@ function scheduleNav(dir){
     else scheduleDate.setDate(scheduleDate.getDate()+dir);
     renderSchedule();
 }
+// ===== 오늘의 급식 (학교 일정 탭 위 카드, /api/meal = NEIS 급식식단정보) =====
+let mealDay=new Date();
+function mealYmd(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+function mealShift(n){mealDay=new Date(mealDay.getFullYear(),mealDay.getMonth(),mealDay.getDate()+n);loadMeal();}
+async function loadMeal(){
+    const card=document.getElementById('mealCard');if(!card)return;
+    if(window.IS_COPY){card.style.display='none';return;}
+    const d=mealDay,today=new Date(),isToday=mealYmd(d)===mealYmd(today);
+    document.getElementById('mealDate').textContent=(isToday?'오늘 ':'')+(d.getMonth()+1)+'/'+d.getDate()+'('+'일월화수목금토'[d.getDay()]+')';
+    const body=document.getElementById('mealBody'),want=mealYmd(d);
+    const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    try{
+        const r=await (await fetch('/api/meal?date='+want)).json();
+        if(mealYmd(mealDay)!==want)return; // 그사이 날짜를 넘겼으면 버림
+        if(!r.meals||!r.meals.length){body.innerHTML='<div class="meal-empty">'+(r.error?'급식 정보를 불러오지 못했습니다.':'급식이 없는 날입니다.')+'</div>';return;}
+        body.innerHTML=r.meals.map(m=>'<div class="meal-dishes">'+m.dishes.map(x=>'<span class="meal-dish">'+esc(x.name)+(x.allergy?'<small>'+esc(x.allergy)+'</small>':'')+'</span>').join('')+'</div>'+'<div class="meal-meta">'+esc([r.meals.length>1?m.type:'',m.cal].filter(Boolean).join(' · '))+' · 숫자는 알레르기 유발 식품 번호</div>').join('');
+    }catch(e){body.innerHTML='<div class="meal-empty">급식 정보를 불러오지 못했습니다.</div>';}
+}
+document.addEventListener('DOMContentLoaded',loadMeal);
+if(document.readyState!=='loading')loadMeal();
+
 function scheduleToday(){scheduleDate=new Date();renderSchedule();}
 function fmtDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function getScheduleItems(dateStr){
