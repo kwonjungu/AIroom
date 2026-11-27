@@ -32,7 +32,7 @@
         const rows = schools.map(s => `<tr data-id="${esc(s.id)}"><td><b>${esc(s.name)}</b><div class="muted small">${esc([s.office || s.region, s.kind].filter(Boolean).join(' · '))} · ${esc(s.id)}</div></td><td>${s.active ? '<span class="pill on">사용 중</span>' : '<span class="pill off">정지</span>'}</td><td>채용 ${s.recruitments}건<div class="muted small">최근 ${fmt(s.lastActivity)}</div></td><td class="muted small">코드 변경 ${fmt(s.codeUpdatedAt)}</td><td><div class="actions"><a class="primary" href="/hub/s/${esc(s.id)}/recruitment" target="_blank" rel="noopener">열기</a><button class="secondary" data-act="code">코드 바꾸기</button><button class="secondary" data-act="active">${s.active ? '정지' : '다시 사용'}</button><button class="danger" data-act="delete">삭제</button></div></td></tr>`).join('');
         $('#app').innerHTML = `<section class="hub-hero"><h1>학교 공간 관리</h1><p>등록한 학교만 학교 코드로 들어올 수 있습니다. 관리자는 모든 학교의 채용·점수·처리 이력을 열고 학교 대신 작업할 수 있습니다.</p></section>
             <section class="panel"><h2>학교 등록</h2><p class="muted small">NEIS 에서 학교를 찾아 고르고, 그 학교 선생님들이 함께 쓸 코드를 정하세요. 이미 등록한 학교를 다시 고르면 코드만 새로 바뀝니다.</p>
-                <form id="find" class="search-box" style="margin-top:12px"><input name="q" placeholder="학교 이름" minlength="2" required><button class="secondary">NEIS 에서 찾기</button></form>
+                <form id="find" class="search-box" style="margin-top:12px"><input name="q" placeholder="학교 이름 또는 NEIS 학교 코드" minlength="2" required><button class="secondary">NEIS 에서 찾기</button></form>
                 <ul class="school-list" id="found"></ul>
                 <form id="register" class="inline-form" hidden><p style="width:100%;margin:0"><b id="reg-name"></b></p><label class="field">학교 코드 (공백 없이 4~40자)<input name="code" required minlength="4" maxlength="40" autocomplete="off"></label><button type="button" class="secondary" id="gen">코드 만들기</button><button class="primary">등록</button></form></section>
             <section class="panel"><div class="split"><h2>등록한 학교 ${schools.length}곳</h2><button class="secondary" id="refresh">새로고침</button></div>
@@ -45,9 +45,9 @@
         $('#refresh').onclick = load;
         $('#find').onsubmit = async e => {
             e.preventDefault(); $('#found').innerHTML = '<li class="muted small">찾는 중…</li>';
-            const { items, error } = await call('/neis?q=' + encodeURIComponent(e.target.q.value.trim()));
+            const { items, error, more } = await call('/neis?q=' + encodeURIComponent(e.target.q.value.trim()));
             if (error || !items.length) { $('#found').innerHTML = `<li class="muted small">${esc(error || '찾은 학교가 없습니다.')}</li>`; return; }
-            $('#found').innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}" aria-pressed="false"><span class="nm">${esc(s.name)}</span><span class="meta">${esc([s.office, s.kind, s.address].filter(Boolean).join(' · '))}</span>${s.registered ? '<span class="pill on">등록됨</span>' : ''}</button></li>`).join('');
+            $('#found').innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}" aria-pressed="false"><span class="nm">${esc(s.name)}</span><span class="meta">${esc([s.office, s.kind, s.address].filter(Boolean).join(' · '))}</span>${s.registered ? '<span class="pill on">등록됨</span>' : ''}</button></li>`).join('') + (more ? `<li class="muted small">${esc(more)}</li>` : '');
             $('#found').onclick = ev => { const b = ev.target.closest('button[data-i]'); if (!b) return; picked = items[+b.dataset.i]; document.querySelectorAll('#found button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); $('#reg-name').textContent = `${picked.name} · ${picked.office || picked.region}`; $('#register').hidden = false; };
         };
         $('#gen').onclick = () => { $('#register [name=code]').value = makeCode(); };

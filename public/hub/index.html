@@ -5,7 +5,7 @@
 <main class="hub-main" id="app">
   <section class="hub-hero"><h1>우리 학교 공간으로 들어가기</h1><p>학교를 찾고, 관리자가 준 학교 코드를 넣으세요. 평가위원은 받은 링크로 바로 들어가니 여기서 로그인하지 않아도 됩니다.</p></section>
   <div id="resume"></div>
-  <form id="search-form" class="search-box" role="search"><label class="sr-only" for="q">학교 이름</label><input id="q" name="q" placeholder="학교 이름 (예: 백암초등학교)" autocomplete="off" minlength="2" required><button class="primary">학교 찾기</button></form>
+  <form id="search-form" class="search-box" role="search"><label class="sr-only" for="q">학교 이름</label><input id="q" name="q" placeholder="학교 이름 또는 NEIS 학교 코드 (예: 백암초등학교, 7751084)" autocomplete="off" minlength="2" required><button class="primary">학교 찾기</button></form>
   <p class="muted small" id="search-note">NEIS 학교 정보에서 찾습니다. 관리자가 등록한 학교만 들어올 수 있습니다.</p>
   <ul class="school-list" id="results" aria-live="polite"></ul>
   <form id="code-form" class="code-step" hidden><p><b id="picked"></b></p><label class="field">학교 코드<input name="code" type="password" autocomplete="current-password" required></label><div class="actions" style="margin-top:16px"><button class="primary">들어가기</button></div><p class="notice error" id="err" hidden></p></form>
@@ -23,10 +23,10 @@
         e.preventDefault(); const q = $('#q').value.trim(); if (q.length < 2) return;
         $('#results').innerHTML = '<li class="muted small">찾는 중…</li>';
         try {
-            const { items, error } = await call('/neis?q=' + encodeURIComponent(q));
+            const { items, error, more } = await call('/neis?q=' + encodeURIComponent(q));
             if (error) { $('#results').innerHTML = `<li class="notice error">${esc(error)}</li>`; return; }
-            if (!items.length) { $('#results').innerHTML = '<li class="muted small">찾은 학교가 없습니다. 이름을 다시 확인하세요.</li>'; return; }
-            $('#results').innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}" ${s.registered ? '' : 'disabled'} aria-pressed="false"><span class="nm">${esc(s.name)}</span><span class="meta">${esc([s.office, s.kind, s.address].filter(Boolean).join(' · '))}</span>${s.registered ? '<span class="pill on">사용 중</span>' : '<span class="pill">미등록 · 관리자에게 요청</span>'}</button></li>`).join('');
+            if (!items.length) { $('#results').innerHTML = '<li class="muted small">찾은 학교가 없습니다. 이름이나 NEIS 학교 코드를 다시 확인하세요.</li>'; return; }
+            $('#results').innerHTML = items.map((s, i) => `<li><button type="button" data-i="${i}" ${s.registered ? '' : 'disabled'} aria-pressed="false"><span class="nm">${esc(s.name)}</span><span class="meta">${esc([s.office, s.kind, s.address].filter(Boolean).join(' · '))}</span>${s.registered ? '<span class="pill on">사용 중</span>' : '<span class="pill">미등록 · 관리자에게 요청</span>'}</button></li>`).join('') + (more ? `<li class="muted small">${esc(more)}</li>` : '');
             $('#results').onclick = ev => {
                 const b = ev.target.closest('button[data-i]'); if (!b || b.disabled) return;
                 picked = items[+b.dataset.i];
