@@ -776,6 +776,9 @@ app.patch('/api/vibe-progress/items/:id', requireAuthOrVibe, async (req, res) =>
     }
 });
 
+// NEIS 인증키: Vercel 환경변수 → 없으면 학교 공간 관리자(/hub/admin)에서 저장한 값. hub 는 아래에서 만들어지지만 요청 시점에만 부른다.
+async function neisApiKey() { try { return process.env.NEIS_API_KEY || (typeof hub !== 'undefined' && hub.getNeisKey ? await hub.getNeisKey() : ''); } catch { return ''; } }
+
 // ----- NEIS 학교 검색 프록시 (vibecoding 학생 식별용 — 학교명 자동완성) -----
 // NEIS_API_KEY 환경변수는 선택 (없으면 무인증 호출 — 소량 조회는 동작)
 const schoolSearchCache = new Map();
@@ -787,7 +790,7 @@ app.get('/api/school-search', requireAuthOrVibe, async (req, res) => {
     if (hit && Date.now() - hit.at < 3600 * 1000) return res.json({ success: true, data: hit.data });
     try {
         const params = new URLSearchParams({ Type: 'json', pIndex: '1', pSize: '20', SCHUL_NM: q });
-        if (process.env.NEIS_API_KEY) params.set('KEY', process.env.NEIS_API_KEY);
+        const neisKey = await neisApiKey(); if (neisKey) params.set('KEY', neisKey);
         const r = await fetch('https://open.neis.go.kr/hub/schoolInfo?' + params.toString());
         const j = await r.json();
         const rows = (j.schoolInfo && j.schoolInfo[1] && j.schoolInfo[1].row) || [];
@@ -813,7 +816,7 @@ app.get('/api/meal', async (req, res) => {
     if (hit && Date.now() - hit.at < 1800e3) return res.json(hit.data);
     try {
         const params = new URLSearchParams({ Type: 'json', pIndex: '1', pSize: '10', ATPT_OFCDC_SC_CODE: 'J10', SD_SCHUL_CODE: '7751084', MLSV_YMD: date });
-        if (process.env.NEIS_API_KEY) params.set('KEY', process.env.NEIS_API_KEY);
+        const neisKey = await neisApiKey(); if (neisKey) params.set('KEY', neisKey);
         const j = await (await fetch('https://open.neis.go.kr/hub/mealServiceDietInfo?' + params)).json();
         const rows = (j.mealServiceDietInfo && j.mealServiceDietInfo[1] && j.mealServiceDietInfo[1].row) || [];
         const meals = rows.map(r => ({

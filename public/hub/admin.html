@@ -37,11 +37,25 @@
                 <form id="register" class="inline-form" hidden><p style="width:100%;margin:0"><b id="reg-name"></b></p><label class="field">학교 코드 (공백 없이 4~40자)<input name="code" required minlength="4" maxlength="40" autocomplete="off"></label><button type="button" class="secondary" id="gen">코드 만들기</button><button class="primary">등록</button></form></section>
             <section class="panel"><div class="split"><h2>등록한 학교 ${schools.length}곳</h2><button class="secondary" id="refresh">새로고침</button></div>
                 ${schools.length ? `<div class="table-wrap"><table class="admin-table"><thead><tr><th>학교</th><th>상태</th><th>데이터</th><th>코드</th><th>관리</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">아직 등록한 학교가 없습니다. 위에서 학교를 찾아 등록하세요.</p>'}</section>
+            <section class="panel"><h2>NEIS 인증키</h2><p class="muted small">학교 이름 검색이 같은 이름 학교를 5곳까지만 보여 주는 문제를 풉니다. Vercel 환경변수(NEIS_API_KEY)에 넣었다면 그쪽이 먼저 쓰입니다.</p>
+                <p id="neis-state" class="small">확인 중…</p>
+                <form id="neis-key" class="inline-form"><label class="field">인증키 (open.neis.go.kr 에서 발급)<input name="key" autocomplete="off" spellcheck="false" maxlength="64"></label><div class="actions"><button class="primary">확인 후 저장</button><button type="button" class="secondary" id="neis-clear">지우기</button></div></form></section>
             <section class="panel"><h2>백암이 채용 옮기기</h2>${migrated ? `<p class="notice">${fmt(migrated.at)}에 <b>${esc(migrated.name)}</b> 학교 공간으로 ${migrated.copied}건을 옮겼습니다. 백암이 채용 관리(/recruitment)와 옛 위원 링크는 그 학교 공간으로 이어집니다. 다시 실행하면 새로 생긴 채용만 더 옮깁니다.</p>` : '<p class="muted small">백암이 안에 있던 채용 관리 데이터를 한 학교 공간으로 복사합니다. 원본은 지우지 않습니다. 옮긴 뒤에는 백암이 채용 메뉴와 옛 위원 링크가 그 학교 공간으로 이어집니다.</p>'}
                 <form id="migrate" class="inline-form"><label class="field">옮겨 갈 학교<select name="schoolId" required>${schools.map(s => `<option value="${esc(s.id)}" ${migrated?.schoolId === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label><button class="primary" ${schools.length ? '' : 'disabled'}>옮기기</button></form></section>`;
         bind();
     }
     function bind() {
+        const neisShow = r => { $('#neis-state').innerHTML = r.set ? `<span class="pill on">사용 중</span> 끝자리 …${esc(r.tail)} · ${r.source === 'env' ? 'Vercel 환경변수' : '이 화면에서 저장'}` : '<span class="pill">없음</span> 키 없이 조회 중(이름 검색 5곳 제한)'; };
+        call('/admin/neis-key', { token }).then(neisShow).catch(() => { $('#neis-state').textContent = '상태를 불러오지 못했습니다.'; });
+        $('#neis-key').onsubmit = async e => {
+            e.preventDefault(); const btn = e.target.querySelector('button.primary'); btn.disabled = true;
+            try { const r = await call('/admin/neis-key', { method: 'POST', token, body: { key: e.target.key.value.trim() } }); e.target.key.value = ''; neisShow(r); toast('인증키를 확인하고 저장했습니다.'); }
+            catch (err) { toast(err.message, true); } finally { btn.disabled = false; }
+        };
+        $('#neis-clear').onclick = async () => {
+            if (!confirm('저장한 NEIS 인증키를 지울까요?')) return;
+            try { neisShow(await call('/admin/neis-key', { method: 'POST', token, body: { key: '' } })); toast('지웠습니다.'); } catch (err) { toast(err.message, true); }
+        };
         $('#refresh').onclick = load;
         $('#find').onsubmit = async e => {
             e.preventDefault(); $('#found').innerHTML = '<li class="muted small">찾는 중…</li>';
